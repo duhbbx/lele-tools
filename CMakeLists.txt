@@ -16,9 +16,7 @@ set(TS_FILES lele-tools_zh_CN.ts)
 
 set(PROJECT_SOURCES
         main.cpp
-        main-widget/mainwindow.cpp
-        main-widget/mainwindow.h
-        main-widget/mainwindow.ui
+        main-widget/mainwindow.cpp main-widget/mainwindow.h main-widget/mainwindow.ui
         ${TS_FILES}
 )
 
@@ -26,6 +24,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(lele-tools
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        tool-list/toollist.h tool-list/toollist.cpp tool-list/toollist.ui
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET lele-tools APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
