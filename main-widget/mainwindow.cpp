@@ -33,3 +33,11 @@ void MainWindow::on_pushButton_clicked()
     ui->stackedWidget->setCurrentIndex(2);
 }
 
+
+void MainWindow::addTool(QWidget *w) {
+    qDebug() << "准备................增加widget 到stacked widget中了..............\n";
+    ui->stackedWidget->addWidget(w);
+
+    qDebug() << "增加widget 到stacked widget中了..............\n";
+    ui->stackedWidget->setCurrentIndex(3);
+}

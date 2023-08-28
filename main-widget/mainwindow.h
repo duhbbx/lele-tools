@@ -20,5 +20,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+public:
+    void addTool(QWidget* w);
 };
 #endif // MAINWINDOW_H

@@ -25,6 +25,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         tool-list/toollist.h tool-list/toollist.cpp tool-list/toollist.ui
+        modules/json-formatter/jsonformatter.h modules/json-formatter/jsonformatter.cpp modules/json-formatter/jsonformatter.ui
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET lele-tools APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
