@@ -16,6 +16,10 @@ ToolList::ToolList(QWidget *parent) : QWidget(parent)
 
     QHBoxLayout *searchLayout = new QHBoxLayout();
 
+    searchLayout->setAlignment(Qt::AlignLeft);
+
+    searchLayout->setContentsMargins(0, 0, 0, 0);
+
 
     QLineEdit * lineEdit = new QLineEdit;
     lineEdit->setFixedSize(300, 25);

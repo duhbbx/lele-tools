@@ -15,15 +15,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     QPushButton *button = new QPushButton("点击我");
 
-    button->setFixedSize(100, 20);
+    button->setFixedSize(100, 25);
+
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
 
     layout->addWidget(button);
+
 
     this->resize(1200, 800);
 
     this->pushButton = button;
 
     QStackedWidget * stackedWidget = new QStackedWidget;
+
+
+    stackedWidget->setContentsMargins(0,0,0,0);
+
 
     this->stackedWidget = stackedWidget;
 
