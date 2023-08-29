@@ -3,9 +3,16 @@
 
 #include <QWidget>
 
+#include <QVBoxLayout>
+#include <QSyntaxHighlighter>
+#include <QRegularExpression>
+#include <QTextCharFormat>
+
+
 namespace Ui {
 class JsonFormatter;
 }
+
 
 class JsonFormatter : public QWidget
 {
@@ -14,6 +21,9 @@ class JsonFormatter : public QWidget
 public:
     explicit JsonFormatter(QWidget *parent = nullptr);
     ~JsonFormatter();
+
+public slots:
+    void onTextChanged();
 
 private:
     Ui::JsonFormatter *ui;

@@ -6,29 +6,31 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>682</width>
-    <height>365</height>
+    <width>905</width>
+    <height>526</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QLabel" name="label">
+  <widget class="QTextEdit" name="textEdit">
    <property name="geometry">
     <rect>
-     <x>210</x>
-     <y>100</y>
-     <width>291</width>
-     <height>111</height>
+     <x>510</x>
+     <y>150</y>
+     <width>256</width>
+     <height>192</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <pointsize>16</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>我是json格式化，吼吼</string>
+  </widget>
+  <widget class="QPlainTextEdit" name="plainTextEdit">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>10</y>
+     <width>256</width>
+     <height>390</height>
+    </rect>
    </property>
   </widget>
  </widget>

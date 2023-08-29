@@ -2,10 +2,8 @@
 #define TOOLLIST_H
 
 #include <QWidget>
+#include "../main-widget/mainwindow.h"
 
-namespace Ui {
-class ToolList;
-}
 
 class ToolList : public QWidget
 {
@@ -14,9 +12,10 @@ class ToolList : public QWidget
 public:
     explicit ToolList(QWidget *parent = nullptr);
     ~ToolList();
+    void setMainWindow(MainWindow* mainWindow);
 
 private:
-    Ui::ToolList *ui;
+    MainWindow* mainWindow;
 };
 
 #endif // TOOLLIST_H

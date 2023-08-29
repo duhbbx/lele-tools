@@ -1,28 +1,48 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
 #include <QLabel>
 #include <QListWidget>
 #include <QBoxLayout>
 #include "../tool-list/toollist.h"
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-    ui->setupUi(this);
+
+    QWidget* centerWidget = new QWidget(this);
 
 
 
+    QVBoxLayout *layout = new QVBoxLayout(this);
 
-    ui->stackedWidget->addWidget(new ToolList);
+    QPushButton *button = new QPushButton("点击我");
 
-    ui->stackedWidget->setCurrentIndex(2);
+    button->setFixedSize(100, 20);
 
+    layout->addWidget(button);
 
+    this->resize(1200, 800);
+
+    this->pushButton = button;
+
+    QStackedWidget * stackedWidget = new QStackedWidget;
+
+    this->stackedWidget = stackedWidget;
+
+    layout->addWidget(this->stackedWidget);
+
+    ToolList * toolList = new ToolList;
+    toolList->setMainWindow(this);
+    stackedWidget->addWidget(toolList);
+
+    stackedWidget->setCurrentIndex(2);
+
+    centerWidget->setLayout(layout);
+
+    this->setCentralWidget(centerWidget);
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+
 }
 
 
@@ -30,14 +50,14 @@ void MainWindow::on_pushButton_clicked()
 {
 
     qDebug() << "呵呵呵，回到首页吧~";
-    ui->stackedWidget->setCurrentIndex(2);
+    this->stackedWidget->setCurrentIndex(2);
 }
 
 
 void MainWindow::addTool(QWidget *w) {
     qDebug() << "准备................增加widget 到stacked widget中了..............\n";
-    ui->stackedWidget->addWidget(w);
+    this->stackedWidget->addWidget(w);
 
     qDebug() << "增加widget 到stacked widget中了..............\n";
-    ui->stackedWidget->setCurrentIndex(3);
+    this->stackedWidget->setCurrentIndex(3);
 }
