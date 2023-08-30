@@ -12,6 +12,8 @@ ToolList::ToolList(QWidget *parent) : QWidget(parent)
 
     QVBoxLayout *layout = new QVBoxLayout(this);
 
+    layout->setContentsMargins(0,0,0,0);
+
     QWidget * wrap = new QWidget;
 
     QHBoxLayout *searchLayout = new QHBoxLayout();
