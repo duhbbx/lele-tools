@@ -1,5 +1,4 @@
 #include "jsonformatter.h"
-#include "ui_jsonformatter.h"
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -7,14 +6,15 @@
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 #include <QRegularExpression>
-
+#include <QHBoxLayout>
 #include <QTextEdit>
-
-#pragma once
-
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 #include <QRegularExpression>
+
+
+REGISTER_DYNAMICOBJECT(JsonFormatter);
+
 
 class jsonHighlighter : public QSyntaxHighlighter
 {
@@ -91,29 +91,41 @@ void jsonHighlighter::highlightBlock(const QString& text)
 }
 
 
-JsonFormatter::JsonFormatter(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::JsonFormatter)
-{
-    ui->setupUi(this);
+JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase() {
+
+
+    QHBoxLayout * layout = new QHBoxLayout;
+    QTextEdit * textEdit = new QTextEdit;
+    QPlainTextEdit * plainTextEdit = new QPlainTextEdit;
+
+
+    layout->addWidget(textEdit);
+
+    layout->addWidget(plainTextEdit);
+
+    this->textEdit = textEdit;
+    this->plainTextEdit = plainTextEdit;
+
+
+    this->setLayout(layout);
 
     // 创建字体对象
     QFont font;
     font.setFamily("Consolas"); // 设置字体家族
-    font.setPointSize(12);   // 设置字号
+    font.setPointSize(10);   // 设置字号
     font.setBold(true);      // 设置粗体
 
     // 将字体应用于QPlainTextEdit
-    ui->plainTextEdit->setFont(font);
+    this->plainTextEdit->setFont(font);
 
 
-    QObject::connect(ui->textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+    QObject::connect(this->textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
 
 }
 
 JsonFormatter::~JsonFormatter()
 {
-    delete ui;
+
 }
 
 
@@ -121,18 +133,19 @@ JsonFormatter::~JsonFormatter()
 void JsonFormatter::onTextChanged() {
     qDebug() << "准备格式化了";
 
-    QString text = ui->textEdit->toPlainText();
+    QString text = this->textEdit->toPlainText();
 
     QJsonDocument jsonDoc = QJsonDocument::fromJson(text.toUtf8());
 
     // 将QJsonDocument格式化为字符串
     QString formattedJson = QString::fromUtf8(jsonDoc.toJson(QJsonDocument::Indented));
 
-    ui->plainTextEdit->setPlainText(formattedJson);
 
-    jsonHighlighter* highlighter = new jsonHighlighter(ui->plainTextEdit->document());
+    this->plainTextEdit->setPlainText(formattedJson);
+
+    jsonHighlighter* highlighter = new jsonHighlighter(this->plainTextEdit->document());
 
 
 
-    ui->plainTextEdit->setReadOnly(true);
+    this->plainTextEdit->setReadOnly(true);
 }

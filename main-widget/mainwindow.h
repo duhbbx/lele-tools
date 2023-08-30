@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QPushButton>
+#include <QListWidgetItem>
 
 
 class MainWindow : public QMainWindow
@@ -14,8 +15,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:
+public slots:
     void on_pushButton_clicked();
+    void itemClickedSlot(QListWidgetItem *item);
 
 private:
     QStackedWidget * stackedWidget;

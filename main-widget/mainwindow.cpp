@@ -4,6 +4,7 @@
 #include <QBoxLayout>
 #include "../tool-list/toollist.h"
 #include <QObject>
+#include "../common/dynamicobjectbase.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -16,10 +17,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     QPushButton *button = new QPushButton("返回首页");
 
-    QObject::connect(button, SIGNAL(clicked()), this, SLOT(on_pushButton_clicked()));
+    // connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::on_pushButton_clicked);
+
+
+    QObject::connect(button, &QPushButton::clicked, this, &MainWindow::on_pushButton_clicked);
 
     button->setFixedSize(100, 25);
-
 
     layout->setContentsMargins(5, 5, 5, 5);
     layout->setSpacing(5);
@@ -27,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     layout->addWidget(button);
 
     layout->setAlignment(Qt::AlignLeft);
-
 
     this->resize(1200, 800);
 
@@ -39,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     stackedWidget->setContentsMargins(0,0,0,0);
 
 
+    qDebug() << "MainWindow...............";
 
 
 
@@ -47,9 +50,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     layout->addWidget(this->stackedWidget);
 
-    ToolList * toolList = new ToolList;
-//    toolList->setStyleSheet("border: 1px solid red;");
-    toolList->setMainWindow(this);
+
+    qDebug() << "MainWindow############################################";
+
+    ToolList * toolList = new ToolList(this, nullptr);
 
     stackedWidget->addWidget(toolList);
     stackedWidget->setCurrentIndex(2);
@@ -58,11 +62,33 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     this->setCentralWidget(centerWidget);
 
+    qDebug() << "MainWindow<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
+
 }
 
 MainWindow::~MainWindow()
 {
 
+}
+
+void MainWindow::itemClickedSlot(QListWidgetItem *item) {
+    qDebug() << "Item Clicked: " << item->text();
+
+    QString stringValue = item->data(Qt::UserRole).toString();
+
+
+    DynamicObjectBase* object = DynamicObjectFactory::Instance()->CreateObject(stringValue.toStdString());
+
+    QWidget * widget = dynamic_cast<QWidget *>(object); // 显式将double转换为int
+
+
+
+
+    qDebug() << "准备................增加widget 到stacked widget中了..............\n";
+    this->stackedWidget->addWidget(widget);
+
+    qDebug() << "增加widget 到stacked widget中了..............\n";
+    this->stackedWidget->setCurrentIndex(1);
 }
 
 
@@ -81,13 +107,4 @@ void MainWindow::on_pushButton_clicked()
     }
 
     this->setWindowTitle(tr("乐乐的工具箱"));
-}
-
-
-void MainWindow::addTool(QWidget *w) {
-    qDebug() << "准备................增加widget 到stacked widget中了..............\n";
-    this->stackedWidget->addWidget(w);
-
-    qDebug() << "增加widget 到stacked widget中了..............\n";
-    this->stackedWidget->setCurrentIndex(1);
 }

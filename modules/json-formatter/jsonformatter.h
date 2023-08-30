@@ -7,26 +7,27 @@
 #include <QSyntaxHighlighter>
 #include <QRegularExpression>
 #include <QTextCharFormat>
+#include <QTextEdit>
+#include <QPlainTextEdit>
+
+#include "../../common/dynamicobjectbase.h"
 
 
-namespace Ui {
-class JsonFormatter;
-}
-
-
-class JsonFormatter : public QWidget
+class JsonFormatter : public QWidget, public DynamicObjectBase
 {
     Q_OBJECT
 
 public:
-    explicit JsonFormatter(QWidget *parent = nullptr);
+    explicit JsonFormatter();
     ~JsonFormatter();
 
 public slots:
     void onTextChanged();
 
 private:
-    Ui::JsonFormatter *ui;
+    QTextEdit * textEdit;
+    QPlainTextEdit * plainTextEdit;
+
 };
 
 #endif // JSONFORMATTER_H

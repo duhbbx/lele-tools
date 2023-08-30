@@ -10,9 +10,8 @@ class ToolList : public QWidget
     Q_OBJECT
 
 public:
-    explicit ToolList(QWidget *parent = nullptr);
+    explicit ToolList(MainWindow * mainWindow, QWidget *parent = nullptr);
     ~ToolList();
-    void setMainWindow(MainWindow* mainWindow);
 
 private:
     MainWindow* mainWindow;

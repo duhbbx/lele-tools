@@ -17,6 +17,8 @@ set(TS_FILES lele-tools_zh_CN.ts)
 set(PROJECT_SOURCES
         main.cpp
         main-widget/mainwindow.cpp main-widget/mainwindow.h
+        common/dynamicobjectbase.cpp common/dynamicobjectbase.h
+        modules/xml-formatter/lib/pugixml.cpp modules/xml-formatter/lib/pugixml.hpp modules/xml-formatter/lib/pugiconfig.hpp
         ${TS_FILES}
 )
 
@@ -25,7 +27,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         tool-list/toollist.h tool-list/toollist.cpp
-        modules/json-formatter/jsonformatter.h modules/json-formatter/jsonformatter.cpp modules/json-formatter/jsonformatter.ui
+        modules/json-formatter/jsonformatter.h modules/json-formatter/jsonformatter.cpp
+        modules/xml-formatter/xmlformatter.h modules/xml-formatter/xmlformatter.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET lele-tools APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
