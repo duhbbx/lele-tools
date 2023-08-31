@@ -12,7 +12,7 @@
 #include <QXmlStreamReader>
 #include <QString>
 #include <QTextStream>
-#include "lib/pugixml.hpp"
+#include "../../common/thirdparty/pugixml/pugixml.hpp"
 #include <string>
 #include <iostream>
 #include <sstream>

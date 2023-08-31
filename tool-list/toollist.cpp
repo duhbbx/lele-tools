@@ -44,17 +44,20 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 
     QListWidgetItem * item1 = new QListWidgetItem(QIcon(QObject::tr("images/china.png")), QObject::tr("JSON格式化"));
     item1->setData(Qt::UserRole, QVariant("JsonFormatter"));
+    item1->setData(Qt::DisplayRole, QVariant("JSON格式化"));
     listWidget->addItem(item1);
 
 
     QListWidgetItem * item2 = new QListWidgetItem(QIcon(QObject::tr("images/hk.png")), QObject::tr("XML格式化"));
     item2->setData(Qt::UserRole, QVariant("XmlFormatter"));
+    item2->setData(Qt::DisplayRole, QVariant("XML格式化"));
     listWidget->addItem(item2);
 
     qDebug() << "ToolList############################################";
 
     QListWidgetItem * item3 = new QListWidgetItem(QIcon(QObject::tr("images/macau.png")), QObject::tr("YAML格式化"));
-    item3->setData(Qt::UserRole, QVariant("JsonFormatter"));
+    item3->setData(Qt::UserRole, QVariant("YamlFormatter"));
+    item3->setData(Qt::DisplayRole, QVariant("YAML格式化"));
     listWidget->addItem(item3);
 
 

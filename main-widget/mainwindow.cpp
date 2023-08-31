@@ -76,6 +76,8 @@ void MainWindow::itemClickedSlot(QListWidgetItem *item) {
 
     QString stringValue = item->data(Qt::UserRole).toString();
 
+    QString title = item->data(Qt::DisplayRole).toString();
+
 
     DynamicObjectBase* object = DynamicObjectFactory::Instance()->CreateObject(stringValue.toStdString());
 
@@ -89,6 +91,9 @@ void MainWindow::itemClickedSlot(QListWidgetItem *item) {
 
     qDebug() << "增加widget 到stacked widget中了..............\n";
     this->stackedWidget->setCurrentIndex(1);
+
+
+    this->setWindowTitle(title);
 }
 
 

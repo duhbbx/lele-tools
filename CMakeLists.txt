@@ -9,6 +9,9 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_subdirectory(common/thirdparty/yaml-cpp)
+
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
@@ -18,7 +21,7 @@ set(PROJECT_SOURCES
         main.cpp
         main-widget/mainwindow.cpp main-widget/mainwindow.h
         common/dynamicobjectbase.cpp common/dynamicobjectbase.h
-        modules/xml-formatter/lib/pugixml.cpp modules/xml-formatter/lib/pugixml.hpp modules/xml-formatter/lib/pugiconfig.hpp
+        common/thirdparty/pugixml/pugixml.cpp common/thirdparty/pugixml/pugixml.hpp common/thirdparty/pugixml/pugiconfig.hpp
         ${TS_FILES}
 )
 
@@ -29,6 +32,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         tool-list/toollist.h tool-list/toollist.cpp
         modules/json-formatter/jsonformatter.h modules/json-formatter/jsonformatter.cpp
         modules/xml-formatter/xmlformatter.h modules/xml-formatter/xmlformatter.cpp
+        modules/yaml-formatter/yamlformatter.h modules/yaml-formatter/yamlformatter.cpp
+        common/CurrentLineHighlighter.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET lele-tools APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -52,7 +57,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets yaml-cpp)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
