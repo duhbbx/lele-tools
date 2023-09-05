@@ -1,5 +1,7 @@
-#ifndef XMLFORMATTER_H
-#define XMLFORMATTER_H
+
+#ifndef RANDOMPASSWORDGEN_H
+#define RANDOMPASSWORDGEN_H
+
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -21,20 +23,23 @@
 #include <QTextCharFormat>
 #include <QTextEdit>
 #include <QPlainTextEdit>
+#include <QLabel>
+#include <QRadioButton>
+#include <QButtonGroup>
 
 #include "../../common/dynamicobjectbase.h"
 
-class XmlFormatter : public QWidget, public DynamicObjectBase {
+
+class RandomPasswordGen : public QWidget, public DynamicObjectBase {
+
     Q_OBJECT
 public:
-    explicit XmlFormatter();
-
-public slots:
-    void onTextChanged();
+    explicit RandomPasswordGen();
 
 private:
-    QTextEdit * textEdit;
-    QPlainTextEdit * plainTextEdit;
+
+
+public slots:
 };
 
-#endif // XMLFORMATTER_H
+#endif // RANDOMPASSWORDGEN_H

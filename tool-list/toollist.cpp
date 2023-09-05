@@ -5,6 +5,8 @@
 #include <QListWidget>
 #include <QVBoxLayout>
 #include <QLineEdit>
+
+#include "module-meta.h"
 ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 {
 
@@ -42,23 +44,14 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 
     QListWidget *listWidget = new QListWidget;
 
-    QListWidgetItem * item1 = new QListWidgetItem(QIcon(QObject::tr("images/china.png")), QObject::tr("JSON格式化"));
-    item1->setData(Qt::UserRole, QVariant("JsonFormatter"));
-    item1->setData(Qt::DisplayRole, QVariant("JSON格式化"));
-    listWidget->addItem(item1);
 
+    for (const ModuleMeta &moduleMeta : moduleMetaArray) {
 
-    QListWidgetItem * item2 = new QListWidgetItem(QIcon(QObject::tr("images/hk.png")), QObject::tr("XML格式化"));
-    item2->setData(Qt::UserRole, QVariant("XmlFormatter"));
-    item2->setData(Qt::DisplayRole, QVariant("XML格式化"));
-    listWidget->addItem(item2);
-
-    qDebug() << "ToolList############################################";
-
-    QListWidgetItem * item3 = new QListWidgetItem(QIcon(QObject::tr("images/macau.png")), QObject::tr("YAML格式化"));
-    item3->setData(Qt::UserRole, QVariant("YamlFormatter"));
-    item3->setData(Qt::DisplayRole, QVariant("YAML格式化"));
-    listWidget->addItem(item3);
+        QListWidgetItem * item0 = new QListWidgetItem(QIcon(moduleMeta.icon), moduleMeta.title);
+        item0->setData(Qt::UserRole, QVariant(moduleMeta.className));
+        item0->setData(Qt::DisplayRole, QVariant(moduleMeta.title));
+        listWidget->addItem(item0);
+    }
 
 
     layout->addWidget(listWidget);

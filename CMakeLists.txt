@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 
+
+
+
 project(lele-tools VERSION 0.1 LANGUAGES CXX)
+
+
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,11 +14,29 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
+
+# 第三方的代码
 add_subdirectory(common/thirdparty/yaml-cpp)
+
+
+
+# 源码加进来
+file(GLOB_RECURSE SOURCES ./modules/*.cpp)
+
+
+# 将模块的源码加进来
+SET(MODULE_SOURCES ${SOURCES})
+
 
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+
+
 
 set(TS_FILES lele-tools_zh_CN.ts)
 
@@ -29,11 +52,14 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(lele-tools
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        ${MODULE_SOURCES}
         tool-list/toollist.h tool-list/toollist.cpp
-        modules/json-formatter/jsonformatter.h modules/json-formatter/jsonformatter.cpp
-        modules/xml-formatter/xmlformatter.h modules/xml-formatter/xmlformatter.cpp
-        modules/yaml-formatter/yamlformatter.h modules/yaml-formatter/yamlformatter.cpp
-        common/CurrentLineHighlighter.h
+        common/string-utils/stringutils.h common/string-utils/stringutils.cpp
+        tool-list/module-meta.h
+        tool-list/module-meta-data.h
+        common/datetime-utils/datetimeutils.h common/datetime-utils/datetimeutils.cpp
+        my.qrc
+        resources/index.html
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET lele-tools APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -56,6 +82,12 @@ else()
 
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
+
+find_package(Qt6 REQUIRED COMPONENTS WebEngineCore)
+target_link_libraries(lele-tools PRIVATE Qt6::WebEngineCore)
+
+find_package(Qt6 REQUIRED COMPONENTS WebEngineWidgets)
+target_link_libraries(lele-tools PRIVATE Qt6::WebEngineWidgets)
 
 target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets yaml-cpp)
 

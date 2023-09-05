@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/index.html</file>
+        <file>resources/3rdparty/marked.min.js</file>
+        <file>resources/3rdparty/github-markdown.css</file>
+    </qresource>
+</RCC>

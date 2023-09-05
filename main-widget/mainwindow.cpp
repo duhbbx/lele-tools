@@ -6,6 +6,11 @@
 #include <QObject>
 #include "../common/dynamicobjectbase.h"
 
+#include <QApplication>
+#include <QScreen>
+#include <QMessageBox>
+
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 
@@ -22,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     QObject::connect(button, &QPushButton::clicked, this, &MainWindow::on_pushButton_clicked);
 
-    button->setFixedSize(100, 25);
+    button->setFixedSize(100, 30);
 
     layout->setContentsMargins(5, 5, 5, 5);
     layout->setSpacing(5);
@@ -78,8 +83,21 @@ void MainWindow::itemClickedSlot(QListWidgetItem *item) {
 
     QString title = item->data(Qt::DisplayRole).toString();
 
-
     DynamicObjectBase* object = DynamicObjectFactory::Instance()->CreateObject(stringValue.toStdString());
+
+    if (!object) {
+        // 创建一个错误提示对话框
+        QMessageBox errorBox;
+        errorBox.setIcon(QMessageBox::Critical); // 设置图标为错误图标
+        errorBox.setWindowTitle("错误提示");
+        errorBox.setText("对应的模块还未实现");
+        errorBox.setStandardButtons(QMessageBox::Ok);
+
+        // 弹出错误提示对话框
+        errorBox.exec();
+
+        return;
+    }
 
     QWidget * widget = dynamic_cast<QWidget *>(object); // 显式将double转换为int
 

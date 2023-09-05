@@ -5,6 +5,10 @@
 #include "../main-widget/mainwindow.h"
 
 
+
+
+
+
 class ToolList : public QWidget
 {
     Q_OBJECT

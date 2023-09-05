@@ -1,5 +1,7 @@
-#ifndef XMLFORMATTER_H
-#define XMLFORMATTER_H
+
+#ifndef ZIPCODEQUERY_H
+#define ZIPCODEQUERY_H
+
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -21,20 +23,23 @@
 #include <QTextCharFormat>
 #include <QTextEdit>
 #include <QPlainTextEdit>
+#include <QLabel>
+#include <QRadioButton>
+#include <QButtonGroup>
 
 #include "../../common/dynamicobjectbase.h"
 
-class XmlFormatter : public QWidget, public DynamicObjectBase {
+
+class ZipCodeQuery : public QWidget, public DynamicObjectBase {
+
     Q_OBJECT
 public:
-    explicit XmlFormatter();
-
-public slots:
-    void onTextChanged();
+    explicit ZipCodeQuery();
 
 private:
-    QTextEdit * textEdit;
-    QPlainTextEdit * plainTextEdit;
+
+
+public slots:
 };
 
-#endif // XMLFORMATTER_H
+#endif // ZIPCODEQUERY_H

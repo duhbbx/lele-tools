@@ -1,5 +1,6 @@
-#ifndef XMLFORMATTER_H
-#define XMLFORMATTER_H
+#ifndef MODULEGEN_H
+#define MODULEGEN_H
+
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -21,20 +22,26 @@
 #include <QTextCharFormat>
 #include <QTextEdit>
 #include <QPlainTextEdit>
+#include <QRadioButton>
+#include <QButtonGroup>
+#include <QLineEdit>
 
 #include "../../common/dynamicobjectbase.h"
 
-class XmlFormatter : public QWidget, public DynamicObjectBase {
+
+class ModuleGen  : public QWidget, public DynamicObjectBase {
+
     Q_OBJECT
 public:
-    explicit XmlFormatter();
-
-public slots:
-    void onTextChanged();
+    explicit ModuleGen();
 
 private:
-    QTextEdit * textEdit;
-    QPlainTextEdit * plainTextEdit;
+    QLineEdit * dirLineEdit;
+    QLineEdit * classNameEdit;
+    QLineEdit * titleEdit;
+public slots:
+    void onButtonClicked();
+    void gen();
 };
 
-#endif // XMLFORMATTER_H
+#endif // MODULEGEN_H

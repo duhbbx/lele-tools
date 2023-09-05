@@ -1,5 +1,7 @@
-#ifndef XMLFORMATTER_H
-#define XMLFORMATTER_H
+
+#ifndef BASE64ENCODEDECODE_H
+#define BASE64ENCODEDECODE_H
+
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -21,20 +23,23 @@
 #include <QTextCharFormat>
 #include <QTextEdit>
 #include <QPlainTextEdit>
+#include <QLabel>
+#include <QRadioButton>
+#include <QButtonGroup>
 
 #include "../../common/dynamicobjectbase.h"
 
-class XmlFormatter : public QWidget, public DynamicObjectBase {
+
+class Base64EncodeDecode : public QWidget, public DynamicObjectBase {
+
     Q_OBJECT
 public:
-    explicit XmlFormatter();
-
-public slots:
-    void onTextChanged();
+    explicit Base64EncodeDecode();
 
 private:
-    QTextEdit * textEdit;
-    QPlainTextEdit * plainTextEdit;
+
+
+public slots:
 };
 
-#endif // XMLFORMATTER_H
+#endif // BASE64ENCODEDECODE_H
