@@ -77,7 +77,6 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::itemClickedSlot(QListWidgetItem *item) {
-    qDebug() << "Item Clicked: " << item->text();
 
     QString stringValue = item->data(Qt::UserRole).toString();
 
@@ -99,32 +98,22 @@ void MainWindow::itemClickedSlot(QListWidgetItem *item) {
         return;
     }
 
-    QWidget * widget = dynamic_cast<QWidget *>(object); // 显式将double转换为int
-
-
-
-
-    qDebug() << "准备................增加widget 到stacked widget中了..............\n";
+    // 显式将double转换为int
+    QWidget * widget = dynamic_cast<QWidget *>(object);
     this->stackedWidget->addWidget(widget);
-
-    qDebug() << "增加widget 到stacked widget中了..............\n";
     this->stackedWidget->setCurrentIndex(1);
-
-
     this->setWindowTitle(title);
 }
 
 
-void MainWindow::on_pushButton_clicked()
-{
+void MainWindow::on_pushButton_clicked() {
 
-    qDebug() << "呵呵呵，回到首页吧~";
-
-    // 假设你有一个名为 stackedWidget 的 QStackedWidget
-    int currentIndex = stackedWidget->currentIndex();  // 获取当前显示的页面的索引
+    // 获取当前显示的页面的索引
+    int currentIndex = stackedWidget->currentIndex();
 
     if (currentIndex > 0) {
-        QWidget *currentWidget = stackedWidget->widget(currentIndex);  // 获取当前显示的页面
+        // 获取当前显示的页面
+        QWidget *currentWidget = stackedWidget->widget(currentIndex);
         stackedWidget->removeWidget(currentWidget);  // 从 stackedWidget 中移除当前页面
         delete currentWidget;  // 手动销毁该页面
     }
