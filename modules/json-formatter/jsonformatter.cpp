@@ -95,6 +95,7 @@ JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase() {
 
 
     QHBoxLayout * layout = new QHBoxLayout;
+    layout->setContentsMargins(0,0,0,0);
     QTextEdit * textEdit = new QTextEdit;
     QPlainTextEdit * plainTextEdit = new QPlainTextEdit;
 

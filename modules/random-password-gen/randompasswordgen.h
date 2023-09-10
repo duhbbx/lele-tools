@@ -26,10 +26,10 @@
 #include <QLabel>
 #include <QRadioButton>
 #include <QButtonGroup>
-
+#include <QPushButton>
 #include "../../common/dynamicobjectbase.h"
-
-
+#include <QCheckBox>
+#include <QLineEdit>
 class RandomPasswordGen : public QWidget, public DynamicObjectBase {
 
     Q_OBJECT
@@ -37,9 +37,19 @@ public:
     explicit RandomPasswordGen();
 
 private:
+    QCheckBox * digit;
+    QCheckBox * lowerCase;
+    QCheckBox * upperCase;
+    QCheckBox * specialChar;
+    QLineEdit * customerizedCharInput;
+    QLineEdit * numberInput;
+    QPlainTextEdit * content;
 
+    QLineEdit * minPasswordLengthInput;
+    QLineEdit * maxPasswordLengthInput;
 
 public slots:
+    void passwordGenerate();
 };
 
 #endif // RANDOMPASSWORDGEN_H

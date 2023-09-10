@@ -12,7 +12,7 @@ REGISTER_DYNAMICOBJECT(httpStatusCode);
 httpStatusCode::httpStatusCode() : QWidget(nullptr), DynamicObjectBase()
 {
     QVBoxLayout * layout = new QVBoxLayout;
-
+    layout->setContentsMargins(0,0,0,0);
 
     QTableWidget * httpCodeClassTable = new QTableWidget;
     // 设置水平表头标签
