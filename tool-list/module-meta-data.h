@@ -57,3 +57,5 @@
 {"xxx", "文字加密解密", "TextEncryptionAndDecryption"},
 
 {"xxx", "UUID生成器", "UuidGen"},
+
+{"xxx", "OpenCV示例", "OpenCvDemo"},

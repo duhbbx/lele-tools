@@ -14,9 +14,15 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(MSVC)
-    add_compile_options(/utf-8)
-endif()
+
+set(OpenCV_DIR "C:\\Users\\yangxu\\Downloads\\opencv\\build")
+find_package(OpenCV REQUIRED)
+
+message(STATUS "opencv include path is: " ${OpenCV_INCLUDE_DIRS})
+message(STATUS "opencv lib path is: " ${OpenCV_LIBS})
+
+# 头文件目录
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 
 # 第三方的代码
@@ -26,6 +32,8 @@ add_subdirectory(common/thirdparty/yaml-cpp)
 
 # 源码加进来
 file(GLOB_RECURSE SOURCES ./modules/*.cpp)
+
+
 
 
 # 将模块的源码加进来
@@ -90,6 +98,14 @@ find_package(Qt6 REQUIRED COMPONENTS WebEngineWidgets)
 target_link_libraries(lele-tools PRIVATE Qt6::WebEngineWidgets)
 
 target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets yaml-cpp)
+
+
+target_link_libraries(lele-tools PRIVATE ${OpenCV_LIBS})
+
+# 添加Windows Socket库
+#if(WIN32)
+#    target_link_libraries(lele-tools PRIVATE ws2_32)
+#endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
