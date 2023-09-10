@@ -6,15 +6,20 @@
 #include <QValidator>
 #include <QIntValidator>
 
-class MyIntValidator : public QIntValidator
-{
+class MyIntValidator : public QIntValidator {
 public:
 
     explicit MyIntValidator(QObject * parent = nullptr);
     MyIntValidator(int bottom, int top, QObject *parent = nullptr);
     ~MyIntValidator();
 
-    virtual QValidator::State validate(QString &, int &) const override;
+    QValidator::State validate(QString &input, int &pos) const;
+
+    void fixup(QString &input) const;
+
+private:
+    int min;
+    int max;
 };
 
 #endif // MYINTVALIDATOR_H
