@@ -34,7 +34,7 @@ DateTimeUtil::DateTimeUtil() : QWidget(nullptr), DynamicObjectBase()
 {
     QVBoxLayout * layout = new QVBoxLayout;
     QHBoxLayout * displayCurrent = new QHBoxLayout;
-
+    layout->setContentsMargins(0,0,0,0);
     // 创建 QLabel 来显示秒数
     QLabel * timeLabel = new QLabel(this);
     timeLabel->setText("Seconds: 0");

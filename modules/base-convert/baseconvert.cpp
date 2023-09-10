@@ -8,7 +8,7 @@ REGISTER_DYNAMICOBJECT(BaseConvert);
 BaseConvert::BaseConvert() : QWidget(nullptr), DynamicObjectBase()
 {
     QVBoxLayout * layout = new QVBoxLayout;
-
+    layout->setContentsMargins(0,0,0,0);
     QRadioButton * radioButtonSource_2 = new QRadioButton(this);
     radioButtonSource_2->setText("2进制");
     radioButtonSource_2->setObjectName("2");

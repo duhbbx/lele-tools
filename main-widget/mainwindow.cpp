@@ -20,7 +20,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     QVBoxLayout *layout = new QVBoxLayout();
 
+    QHBoxLayout * wrapBack = new QHBoxLayout;
     QPushButton *button = new QPushButton("返回首页");
+
+    wrapBack->setAlignment(Qt::AlignLeft);
+    wrapBack->addWidget(button);
 
     // connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::on_pushButton_clicked);
 
@@ -32,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     layout->setContentsMargins(5, 5, 5, 5);
     layout->setSpacing(5);
 
-    layout->addWidget(button);
+    layout->addLayout(wrapBack);
 
     layout->setAlignment(Qt::AlignLeft);
 
@@ -61,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     ToolList * toolList = new ToolList(this, nullptr);
 
     stackedWidget->addWidget(toolList);
-    stackedWidget->setCurrentIndex(2);
+    stackedWidget->setCurrentIndex(0);
 
     centerWidget->setLayout(layout);
 

@@ -27,11 +27,11 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 
 
     QLineEdit * lineEdit = new QLineEdit;
-    lineEdit->setFixedSize(300, 25);
+    lineEdit->setFixedSize(300, 30);
 
     QPushButton * button = new QPushButton("搜索");
 
-    button->setFixedSize(100, 25);
+    button->setFixedSize(100, 30);
 
     searchLayout->addWidget(lineEdit);
     searchLayout->addWidget(button);
@@ -43,7 +43,6 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 
 
     QListWidget *listWidget = new QListWidget;
-
 
     for (const ModuleMeta &moduleMeta : moduleMetaArray) {
 

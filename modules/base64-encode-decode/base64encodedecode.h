@@ -38,8 +38,13 @@ public:
 
 private:
 
+    QPlainTextEdit * source;
+    QPlainTextEdit * target;
 
 public slots:
+
+    void encode();
+    void decode();
 };
 
 #endif // BASE64ENCODEDECODE_H

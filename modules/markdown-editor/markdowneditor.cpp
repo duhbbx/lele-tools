@@ -32,6 +32,7 @@ bool PreviewPage::acceptNavigationRequest(const QUrl &url,
 MarkdownEditor::MarkdownEditor() : QWidget(nullptr), DynamicObjectBase()
 {
     QHBoxLayout * layout = new QHBoxLayout;
+    layout->setContentsMargins(0,0,0,0);
     QPlainTextEdit * textEdit = new QPlainTextEdit;
     QWebEngineView * preview = new QWebEngineView(this);
 
