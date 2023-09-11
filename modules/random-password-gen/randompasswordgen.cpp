@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QIntValidator>
+#include <set>
 
 #include "../../common/validator/myintvalidator.h"
 REGISTER_DYNAMICOBJECT(RandomPasswordGen);
@@ -18,7 +19,7 @@ RandomPasswordGen::RandomPasswordGen() : QWidget(nullptr), DynamicObjectBase()
     QCheckBox *digit = new QCheckBox("0-9");
     QCheckBox *lowerCase = new QCheckBox("a-z");
     QCheckBox *upperCase = new QCheckBox("A-Z");
-    QCheckBox *specialChar = new QCheckBox("`~!@#$%^&*()_+{}|:?><[];'./'");
+    QCheckBox *specialChar = new QCheckBox("`~!@#$%^&*()_+{}|:?><[];'./");
 
 
     digit->setFixedSize(100, 30);
@@ -102,8 +103,11 @@ RandomPasswordGen::RandomPasswordGen() : QWidget(nullptr), DynamicObjectBase()
     QHBoxLayout * buttonWrap = new QHBoxLayout;
 
     QPushButton * button = new QPushButton("生成");
-
+    button->setFixedSize(50, 30);
+    buttonWrap->setAlignment(Qt::AlignLeft);
     buttonWrap->addWidget(button);
+
+    layout->addLayout(buttonWrap);
 
     QObject::connect(button, &QPushButton::clicked, this, &RandomPasswordGen::passwordGenerate);
 
@@ -116,6 +120,19 @@ RandomPasswordGen::RandomPasswordGen() : QWidget(nullptr), DynamicObjectBase()
 }
 
 void RandomPasswordGen::passwordGenerate() {
+
+    qDebug() << "准备生成随机密码了....";
+
+    std::set<char> charSet;
+
+    QString digitStr = "0123456789";
+    QString lowerCase = "abcdefghijklmnopqrstuvwxyz";
+    QString upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    QString special = "`~!@#$%^&*()_+{}|:?><[];'./";
+
+    // 根据是否check，从对应数组选出至少一个
+
 
 
 
