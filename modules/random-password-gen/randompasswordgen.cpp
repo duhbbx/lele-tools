@@ -5,6 +5,8 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QIntValidator>
+
+#include "../../common/validator/myintvalidator.h"
 REGISTER_DYNAMICOBJECT(RandomPasswordGen);
 
 RandomPasswordGen::RandomPasswordGen() : QWidget(nullptr), DynamicObjectBase()
@@ -73,11 +75,11 @@ RandomPasswordGen::RandomPasswordGen() : QWidget(nullptr), DynamicObjectBase()
     passwordLengthLayout->addWidget(minPasswordLengthInput);
 
     // 创建一个整数验证器，限制输入值在0到100之间
-    QIntValidator *validatorForMin = new QIntValidator(6, 100, this);
+    QIntValidator *validatorForMin = new MyIntValidator(6, 100, this);
     minPasswordLengthInput->setValidator(validatorForMin);
 
     // 创建一个整数验证器，限制输入值在0到100之间
-    QIntValidator *validatorForMax = new QIntValidator(6, 100, this);
+    QIntValidator *validatorForMax = new MyIntValidator(6, 100, this);
     maxPasswordLengthInput->setValidator(validatorForMax);
 
     QLabel * to = new QLabel("-");

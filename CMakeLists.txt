@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-set(OpenCV_DIR "C:\\Users\\yangxu\\Downloads\\opencv\\build")
+set(OpenCV_DIR "D:\\opencv\\build")
 find_package(OpenCV REQUIRED)
 
 message(STATUS "opencv include path is: " ${OpenCV_INCLUDE_DIRS})
@@ -53,6 +53,7 @@ set(PROJECT_SOURCES
         main-widget/mainwindow.cpp main-widget/mainwindow.h
         common/dynamicobjectbase.cpp common/dynamicobjectbase.h
         common/thirdparty/pugixml/pugixml.cpp common/thirdparty/pugixml/pugixml.hpp common/thirdparty/pugixml/pugiconfig.hpp
+        common/validator/myintvalidator.cpp
         ${TS_FILES}
 )
 
