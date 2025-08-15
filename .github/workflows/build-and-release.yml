@@ -1,0 +1,489 @@
+name: Build and Release Lele Tools
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.0)'
+        required: false
+        default: '1.0.0'
+      build_type:
+        description: 'Build type'
+        required: false
+        default: 'Release'
+        type: choice
+        options:
+        - Release
+        - Debug
+
+env:
+  QT_VERSION: '6.9.1'
+  CMAKE_VERSION: '3.28'
+  MSVC_VERSION: '2022'
+  OPENCV_VERSION: '4.10.0'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: windows
+        target: desktop
+        arch: win64_msvc2022_64
+        tools: 'tools_ifw'
+        cache: true
+        
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v2
+      
+    - name: Setup CMake and Ninja
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: ${{ env.CMAKE_VERSION }}
+        ninjaVersion: latest
+        
+    - name: Setup OpenCV
+      shell: powershell
+      run: |
+        Write-Host "Setting up OpenCV ${{ env.OPENCV_VERSION }}..." -ForegroundColor Green
+        
+        # Download OpenCV pre-built binaries
+        $OpenCVUrl = "https://github.com/opencv/opencv/releases/download/${{ env.OPENCV_VERSION }}/opencv-${{ env.OPENCV_VERSION }}-windows.exe"
+        $OpenCVInstaller = "opencv-installer.exe"
+        
+        try {
+            Write-Host "Downloading OpenCV from: $OpenCVUrl" -ForegroundColor Yellow
+            Invoke-WebRequest -Uri $OpenCVUrl -OutFile $OpenCVInstaller -UseBasicParsing
+            
+            Write-Host "Extracting OpenCV..." -ForegroundColor Yellow
+            # OpenCV Windows installer is a self-extracting archive
+            Start-Process -FilePath $OpenCVInstaller -ArgumentList "-o", "C:\", "-y" -Wait -NoNewWindow
+            
+            # Verify installation
+            $OpenCVPath = "C:\opencv"
+            if (Test-Path $OpenCVPath) {
+                Write-Host "OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
+                
+                # Set environment variable for later steps
+                echo "OPENCV_DIR=C:\opencv\build" >> $env:GITHUB_ENV
+                
+                # Add OpenCV bin to PATH for runtime
+                $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
+                if (Test-Path $OpenCVBinPath) {
+                    echo "$OpenCVBinPath" >> $env:GITHUB_PATH
+                    Write-Host "Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
+                }
+            } else {
+                Write-Host "WARNING: OpenCV installation not found" -ForegroundColor Yellow
+            }
+        }
+        catch {
+            Write-Host "WARNING: Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "Continuing without OpenCV..." -ForegroundColor Yellow
+        }
+        finally {
+            # Clean up installer
+            if (Test-Path $OpenCVInstaller) {
+                Remove-Item $OpenCVInstaller -Force
+            }
+        }
+        
+    - name: Cache Qt and tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ runner.workspace }}/Qt
+          C:/Qt
+          C:/opencv
+        key: ${{ runner.os }}-qt-${{ env.QT_VERSION }}-opencv-${{ env.OPENCV_VERSION }}-cache-v1
+        
+    - name: Create build script
+      shell: powershell
+      run: |
+        # Create a simplified build script for GitHub Actions
+        $BuildScript = @'
+        param(
+            [string]$BuildType = "Release",
+            [string]$Version = "1.0.0"
+        )
+        
+        $ErrorActionPreference = "Stop"
+        
+        Write-Host "=== GitHub Actions Build Script ===" -ForegroundColor Cyan
+        Write-Host "Build Type: $BuildType" -ForegroundColor Yellow
+        Write-Host "Version: $Version" -ForegroundColor Yellow
+        
+        # Find Qt installation
+        $QtPath = Get-ChildItem -Path "C:\Qt" -Directory | Where-Object { $_.Name -like "*$env:QT_VERSION*" } | Select-Object -First 1
+        if (-not $QtPath) {
+            $QtPath = $env:Qt6_DIR
+        } else {
+            $QtPath = Join-Path $QtPath.FullName "msvc2022_64"
+        }
+        
+        Write-Host "Qt Path: $QtPath" -ForegroundColor Cyan
+        
+        # Find OpenCV installation
+        $OpenCVPath = $env:OPENCV_DIR
+        if (-not $OpenCVPath) {
+            $OpenCVPath = "C:\opencv\build"
+        }
+        
+        Write-Host "OpenCV Path: $OpenCVPath" -ForegroundColor Cyan
+        
+        # Configuration paths
+        $CMakePath = 'cmake'
+        $IFWPath = Join-Path $QtPath "../../Tools/QtInstallerFramework/4.10/bin"
+        if (-not (Test-Path $IFWPath)) {
+            $IFWPath = "$QtPath/../../../Tools/QtInstallerFramework/*/bin"
+            $IFWPath = Get-ChildItem -Path $IFWPath -Directory | Select-Object -First 1 | ForEach-Object FullName
+        }
+        
+        Write-Host "IFW Path: $IFWPath" -ForegroundColor Cyan
+        
+        # Project paths
+        $ProjectRoot = Get-Location
+        $BuildDir = Join-Path $ProjectRoot "build"
+        
+        Write-Host "Project Root: $ProjectRoot" -ForegroundColor Cyan
+        Write-Host "Build Directory: $BuildDir" -ForegroundColor Cyan
+        
+        # Step 1: Build project
+        Write-Host "`nStep 1: Building project..." -ForegroundColor Green
+        
+        if (Test-Path $BuildDir) {
+            Remove-Item -Recurse -Force $BuildDir
+        }
+        
+        New-Item -ItemType Directory -Path $BuildDir | Out-Null
+        Set-Location $BuildDir
+        
+        Write-Host "Configuring project..." -ForegroundColor Yellow
+        
+        # Setup CMAKE_PREFIX_PATH with Qt and OpenCV
+        $CMakePrefixPath = $QtPath
+        if (Test-Path $OpenCVPath) {
+            $CMakePrefixPath = "$QtPath;$OpenCVPath"
+            Write-Host "Using OpenCV: $OpenCVPath" -ForegroundColor Green
+        } else {
+            Write-Host "OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
+        }
+        
+        & $CMakePath $ProjectRoot -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=$CMakePrefixPath
+        
+        if ($LASTEXITCODE -ne 0) {
+            throw "Project configuration failed!"
+        }
+        
+        Write-Host "Compiling project..." -ForegroundColor Yellow
+        & $CMakePath --build . --parallel
+        
+        if ($LASTEXITCODE -ne 0) {
+            throw "Project compilation failed!"
+        }
+        
+        Write-Host "OK Project build successful!" -ForegroundColor Green
+        
+        # Step 2: Find executable
+        Write-Host "`nStep 2: Finding executable file..." -ForegroundColor Green
+        
+        $ExeFile = Get-ChildItem -Path $BuildDir -Filter "*.exe" -Recurse | 
+            Where-Object { $_.Name -like "*lele*" -or $_.Name -like "*tools*" } |
+            Where-Object { $_.Name -notlike "*Installer*" } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+        
+        if (-Not $ExeFile) {
+            throw "Executable file not found!"
+        }
+        
+        Write-Host "Found executable file: $($ExeFile.FullName)" -ForegroundColor Green
+        
+        # Step 3: Deploy Qt dependencies
+        Write-Host "`nStep 3: Deploying Qt dependencies..." -ForegroundColor Green
+        
+        $Windeployqt = "$QtPath/bin/windeployqt.exe"
+        if (-Not (Test-Path $Windeployqt)) {
+            throw "windeployqt.exe not found!"
+        }
+        
+        Write-Host "Running windeployqt..." -ForegroundColor Yellow
+        & $Windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw $ExeFile.FullName
+        
+        Write-Host "OK Qt dependencies deployed!" -ForegroundColor Green
+        
+        # Set output variables for GitHub Actions
+        $ExeDir = $ExeFile.DirectoryName
+        $ExeName = $ExeFile.Name
+        
+        Write-Host "##[set-output name=exe_path]$($ExeFile.FullName)"
+        Write-Host "##[set-output name=exe_dir]$ExeDir"
+        Write-Host "##[set-output name=exe_name]$ExeName"
+        Write-Host "##[set-output name=build_dir]$BuildDir"
+        
+        Write-Host "`nBuild completed successfully!" -ForegroundColor Green
+        
+        Set-Location $ProjectRoot
+        '@
+        
+        $BuildScript | Out-File -FilePath "build-action.ps1" -Encoding UTF8
+        
+    - name: Set version
+      id: version
+      shell: powershell
+      run: |
+        $version = "${{ github.event.inputs.version }}"
+        if ([string]::IsNullOrEmpty($version)) {
+            if ("${{ github.ref }}" -like "refs/tags/v*") {
+                $version = "${{ github.ref_name }}".Substring(1)
+            } else {
+                $version = "1.0.${{ github.run_number }}"
+            }
+        }
+        Write-Host "Version: $version"
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        
+    - name: Build project
+      id: build
+      shell: powershell
+      run: |
+        $buildType = "${{ github.event.inputs.build_type }}"
+        if ([string]::IsNullOrEmpty($buildType)) {
+            $buildType = "Release"
+        }
+        .\build-action.ps1 -BuildType $buildType -Version "${{ steps.version.outputs.version }}"
+        
+    - name: Create installer
+      if: github.event_name != 'pull_request'
+      shell: powershell
+      run: |
+        # Run the original installer creation logic
+        Write-Host "Creating installer package..." -ForegroundColor Green
+        
+        # Use the logic from your build.ps1 script here
+        $Version = "${{ steps.version.outputs.version }}"
+        $BuildDir = "${{ steps.build.outputs.build_dir }}"
+        $ExeDir = "${{ steps.build.outputs.exe_dir }}"
+        
+        # Find Qt installation
+        $QtPath = Get-ChildItem -Path "C:\Qt" -Directory | Where-Object { $_.Name -like "*$env:QT_VERSION*" } | Select-Object -First 1
+        if (-not $QtPath) {
+            $QtPath = $env:Qt6_DIR
+        } else {
+            $QtPath = Join-Path $QtPath.FullName "msvc2022_64"
+        }
+        
+        $IFWPath = Join-Path $QtPath "../../Tools/QtInstallerFramework/4.10/bin"
+        if (-not (Test-Path $IFWPath)) {
+            $IFWPath = "$QtPath/../../../Tools/QtInstallerFramework/*/bin"
+            $IFWPath = Get-ChildItem -Path $IFWPath -Directory | Select-Object -First 1 | ForEach-Object FullName
+        }
+        
+        $ProjectRoot = Get-Location
+        $IFWProject = Join-Path $ProjectRoot "project_installer"
+        $ConfigDir = Join-Path $IFWProject "config"
+        $PackagesDir = Join-Path $IFWProject "packages\com.leletools"
+        $MetaDir = Join-Path $PackagesDir "meta"
+        $DataDir = Join-Path $PackagesDir "data"
+        
+        # Create directory structure
+        New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+        New-Item -ItemType Directory -Force -Path $MetaDir | Out-Null
+        New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+        
+        # Create config files (using your existing logic)
+        $TodayDate = Get-Date -Format "yyyy-MM-dd"
+        
+        $ConfigXml = @"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Installer>
+            <Name>Lele Tools</Name>
+            <Version>$Version</Version>
+            <Title>Lele Tools Installer v$Version</Title>
+            <Publisher>Lele Tools</Publisher>
+            <ProductUrl>https://github.com/${{ github.repository }}</ProductUrl>
+            <TargetDir>@ApplicationsDir@/LeleTools</TargetDir>
+            <StartMenuDir>LeleTools</StartMenuDir>
+            <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
+            <AllowSpaceInPath>true</AllowSpaceInPath>
+            <WizardStyle>Modern</WizardStyle>
+            <RemoveTargetDir>true</RemoveTargetDir>
+            <RunProgram>@TargetDir@/lele-tools.exe</RunProgram>
+            <RunProgramDescription>Launch Lele Tools</RunProgramDescription>
+            <RepositorySettingsPageVisible>false</RepositorySettingsPageVisible>
+        </Installer>
+        "@
+        
+        $PackageXml = @"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Package>
+            <DisplayName>Lele Tools v$Version</DisplayName>
+            <Description>Lele Tools Utility Collection - Comprehensive toolset for developers and system administrators</Description>
+            <Version>$Version</Version>
+            <ReleaseDate>$TodayDate</ReleaseDate>
+            <Default>true</Default>
+            <Essential>true</Essential>
+            <Script>installscript.qs</Script>
+            <ForcedInstallation>false</ForcedInstallation>
+        </Package>
+        "@
+        
+        # Your install script logic
+        $InstallScript = @'
+        var targetDirectoryPage = null;
+        
+        function Component() 
+        {
+            installer.gainAdminRights();
+            component.loaded.connect(this, this.installerLoaded);
+        }
+        
+        Component.prototype.createOperations = function() 
+        {
+            component.createOperations();
+        
+            var targetDir = installer.value("TargetDir");
+            var exePath = targetDir + "/lele-tools.exe";
+        
+            component.addOperation("CreateShortcut",
+                                   exePath,
+                                   "@DesktopDir@/Lele Tools.lnk",
+                                   "workingDirectory=" + targetDir,
+                                   "iconPath=" + exePath,
+                                   "description=Lele Tools Utility Collection");
+        
+            component.addOperation("CreateShortcut",
+                                   exePath,
+                                   "@StartMenuDir@/Lele Tools.lnk",
+                                   "workingDirectory=" + targetDir,
+                                   "iconPath=" + exePath,
+                                   "description=Lele Tools Utility Collection");
+        }
+        
+        Component.prototype.isDefault = function() { return true; }
+        Component.prototype.componentChangeRequested = function() { return true; }
+        '@
+        
+        # Write config files
+        $ConfigXmlPath = Join-Path $ConfigDir "config.xml"
+        [System.IO.File]::WriteAllText($ConfigXmlPath, $ConfigXml, [System.Text.Encoding]::UTF8)
+        
+        $PackageXmlPath = Join-Path $MetaDir "package.xml"
+        [System.IO.File]::WriteAllText($PackageXmlPath, $PackageXml, [System.Text.Encoding]::UTF8)
+        
+        $InstallScriptPath = Join-Path $MetaDir "installscript.qs"
+        [System.IO.File]::WriteAllText($InstallScriptPath, $InstallScript, [System.Text.Encoding]::UTF8)
+        
+        # Copy application files
+        Write-Host "Copying application files..." -ForegroundColor Yellow
+        
+        $FilesToCopy = Get-ChildItem -Path $ExeDir -File | 
+            Where-Object { ($_.Extension -eq ".exe" -or $_.Extension -eq ".dll") -and 
+                           $_.Name -notlike "*Installer*" }
+        
+        foreach ($file in $FilesToCopy) {
+            Copy-Item -Path $file.FullName -Destination $DataDir -Force
+            Write-Host "  Copied: $($file.Name)" -ForegroundColor Green
+        }
+        
+        # Copy Qt directories
+        $QtDirs = @('platforms', 'imageformats', 'styles', 'translations', 'iconengines', 'generic', 'networkinformation', 'tls')
+        foreach ($qtDir in $QtDirs) {
+            $QtDirPath = Join-Path $ExeDir $qtDir
+            if (Test-Path $QtDirPath) {
+                $TargetPath = Join-Path $DataDir $qtDir
+                Copy-Item -Path $QtDirPath -Destination $TargetPath -Recurse -Force
+                Write-Host "  Copied directory: $qtDir" -ForegroundColor Green
+            }
+        }
+        
+        # Create installer
+        $BinaryCreator = Join-Path $IFWPath "binarycreator.exe"
+        $InstallerName = "LeleToolsInstaller_v$($Version.Replace('.','_')).exe"
+        $InstallerPath = Join-Path $ProjectRoot $InstallerName
+        
+        Write-Host "Creating installer: $InstallerName" -ForegroundColor Yellow
+        $PackagesRootDir = Split-Path $DataDir -Parent | Split-Path -Parent
+        
+        & $BinaryCreator --offline-only -c $ConfigXmlPath -p $PackagesRootDir $InstallerPath
+        
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $InstallerPath)) {
+            $InstallerSize = [math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)
+            Write-Host "Installer created successfully!" -ForegroundColor Green
+            Write-Host "  File: $InstallerPath" -ForegroundColor Cyan
+            Write-Host "  Size: $InstallerSize MB" -ForegroundColor Cyan
+            
+            echo "installer_path=$InstallerPath" >> $env:GITHUB_OUTPUT
+            echo "installer_name=$InstallerName" >> $env:GITHUB_OUTPUT
+            echo "installer_size=$InstallerSize" >> $env:GITHUB_OUTPUT
+        } else {
+            throw "Installer creation failed!"
+        }
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: lele-tools-build-${{ steps.version.outputs.version }}
+        path: |
+          ${{ steps.build.outputs.build_dir }}/*.exe
+          ${{ steps.build.outputs.build_dir }}/*.dll
+        retention-days: 30
+        
+    - name: Upload installer artifact
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: lele-tools-installer-${{ steps.version.outputs.version }}
+        path: "*.exe"
+        retention-days: 90
+        
+    - name: Create release
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          LeleToolsInstaller_*.exe
+        name: Lele Tools ${{ steps.version.outputs.version }}
+        body: |
+          ## Lele Tools ${{ steps.version.outputs.version }}
+          
+          ### 🚀 新功能
+          - 一键构建、部署和打包
+          - 智能覆盖安装处理
+          - 版本管理和自动化
+          
+          ### 📦 下载
+          - **Windows 安装包**: LeleToolsInstaller_${{ steps.version.outputs.version }}.exe (${{ steps.create_installer.outputs.installer_size }} MB)
+          
+          ### 🔧 安装说明
+          1. 下载对应的安装包
+          2. 以管理员身份运行安装程序
+          3. 选择安装目录（支持覆盖现有安装）
+          4. 完成安装并启动应用
+          
+          ### 📋 系统要求
+          - Windows 10/11 (x64)
+          - Visual C++ Redistributable 2022
+          
+          ---
+          
+          **完整构建信息**: 
+          - 构建类型: Release
+          - Qt版本: ${{ env.QT_VERSION }}
+          - 提交: ${{ github.sha }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -49,6 +49,7 @@ $QtPath = 'C:/Qt/6.9.1/msvc2022_64'
 $CMakePath = 'C:/Qt/Tools/CMake_64/bin/cmake.exe'
 $VSDevBat = 'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvars64.bat'
 $IFWPath = 'C:/Qt/Tools/QtInstallerFramework/4.10/bin'
+$OpenCVPath = 'C:/opencv/build'  # OpenCV installation path
 
 # Project paths
 $ScriptDir = $PSScriptRoot
@@ -73,7 +74,17 @@ Set-Location $BuildDir
 
 # Configure and build
 Write-Host "Configuring project..." -ForegroundColor Yellow
-$ConfigCommand = "call `"$VSDevBat`" && `"$CMakePath`" `"$ProjectRoot`" -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=`"$QtPath`""
+
+# Check if OpenCV exists and add to CMAKE_PREFIX_PATH
+$CMakePrefixPath = $QtPath
+if (Test-Path $OpenCVPath) {
+    $CMakePrefixPath = "$QtPath;$OpenCVPath"
+    Write-Host "OpenCV found at: $OpenCVPath" -ForegroundColor Green
+} else {
+    Write-Host "OpenCV not found at: $OpenCVPath (skipping)" -ForegroundColor Yellow
+}
+
+$ConfigCommand = "call `"$VSDevBat`" && `"$CMakePath`" `"$ProjectRoot`" -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=`"$CMakePrefixPath`""
 cmd /c $ConfigCommand
 
 if ($LASTEXITCODE -ne 0) {
@@ -125,6 +136,35 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "OK Qt dependencies deployed!" -ForegroundColor Green
+
+# Deploy OpenCV dependencies if available
+if (Test-Path $OpenCVPath) {
+    Write-Host "Deploying OpenCV dependencies..." -ForegroundColor Yellow
+    
+    $OpenCVBinPath = Join-Path $OpenCVPath "x64\vc16\bin"  # VS2019/2022 compatible
+    if (-not (Test-Path $OpenCVBinPath)) {
+        $OpenCVBinPath = Join-Path $OpenCVPath "x64\vc15\bin"  # VS2017 fallback
+    }
+    
+    if (Test-Path $OpenCVBinPath) {
+        $OpenCVDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "opencv_*.dll"
+        $ExeDir = $ExeFile.DirectoryName
+        
+        foreach ($dll in $OpenCVDlls) {
+            try {
+                Copy-Item -Path $dll.FullName -Destination $ExeDir -Force
+                Write-Host "  Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "  Warning: Failed to copy $($dll.Name)" -ForegroundColor Yellow
+            }
+        }
+        
+        Write-Host "OK OpenCV dependencies deployed!" -ForegroundColor Green
+    } else {
+        Write-Host "WARNING: OpenCV bin directory not found at $OpenCVBinPath" -ForegroundColor Yellow
+    }
+}
 
 # ==================== 第四步：创建安装包结构 ====================
 Write-Host "`nStep 4: Creating installer structure..." -ForegroundColor Green
