@@ -210,7 +210,8 @@ jobs:
                 (Join-Path $env:GITHUB_WORKSPACE "..\Qt\$env:QT_VERSION\msvc2022_64")
             )
             foreach ($Path in $PossiblePaths) {
-                Write-Host "  $Path: $(Test-Path $Path)" -ForegroundColor Yellow
+                $PathExists = Test-Path $Path
+                Write-Host "  $Path - $PathExists" -ForegroundColor Yellow
             }
             throw "Qt installation not found!"
         }
