@@ -50,52 +50,52 @@ jobs:
       run: |
         Write-Host "=== Qt Installation Debug ===" -ForegroundColor Cyan
         Write-Host "Environment Variables:" -ForegroundColor Yellow
-        Write-Host "  Qt6_DIR: $env:Qt6_DIR" -ForegroundColor Yellow
-        Write-Host "  QT_ROOT_DIR: $env:QT_ROOT_DIR" -ForegroundColor Yellow
-        Write-Host "  RUNNER_WORKSPACE: $env:RUNNER_WORKSPACE" -ForegroundColor Yellow
-        Write-Host "  GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE" -ForegroundColor Yellow
-        Write-Host "  QT_VERSION: ${{ env.QT_VERSION }}" -ForegroundColor Yellow
+        Write-Host "Qt6_DIR: $env:Qt6_DIR" -ForegroundColor Yellow
+        Write-Host "QT_ROOT_DIR: $env:QT_ROOT_DIR" -ForegroundColor Yellow
+        Write-Host "RUNNER_WORKSPACE: $env:RUNNER_WORKSPACE" -ForegroundColor Yellow
+        Write-Host "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE" -ForegroundColor Yellow
+        Write-Host "QT_VERSION: ${{ env.QT_VERSION }}" -ForegroundColor Yellow
         
-        # Show all environment variables that contain "Qt" or "qt"
         Write-Host "All Qt-related environment variables:" -ForegroundColor Cyan
         Get-ChildItem Env: | Where-Object { $_.Name -match "qt|Qt|QT" } | ForEach-Object {
-            Write-Host "  $($_.Name) = $($_.Value)" -ForegroundColor Gray
+            Write-Host "$($_.Name) = $($_.Value)" -ForegroundColor Gray
         }
-        
-        # Check common Qt paths
-        $PossiblePaths = @(
-            (Join-Path $env:RUNNER_WORKSPACE "Qt\${{ env.QT_VERSION }}\msvc2022_64"),
-            "C:\Qt\${{ env.QT_VERSION }}\msvc2022_64",
-            (Join-Path $env:GITHUB_WORKSPACE "..\Qt\${{ env.QT_VERSION }}\msvc2022_64")
-        )
         
         Write-Host "Checking possible Qt paths:" -ForegroundColor Cyan
-        foreach ($Path in $PossiblePaths) {
-            Write-Host "Checking: $Path" -ForegroundColor Green
-            if (Test-Path $Path) {
-                Write-Host "  ✓ Found!" -ForegroundColor Green
-                Write-Host "  Contents:" -ForegroundColor Yellow
-                Get-ChildItem $Path | ForEach-Object { Write-Host "    $($_.Name)" -ForegroundColor Gray }
-            } else {
-                Write-Host "  ✗ Not found" -ForegroundColor Red
-            }
+        $Path1 = Join-Path $env:RUNNER_WORKSPACE "Qt\${{ env.QT_VERSION }}\msvc2022_64"
+        $Path2 = "C:\Qt\${{ env.QT_VERSION }}\msvc2022_64"
+        $Path3 = Join-Path $env:GITHUB_WORKSPACE "..\Qt\${{ env.QT_VERSION }}\msvc2022_64"
+        
+        Write-Host "Path 1: $Path1" -ForegroundColor Green
+        if (Test-Path $Path1) {
+            Write-Host "  Found!" -ForegroundColor Green
+        } else {
+            Write-Host "  Not found" -ForegroundColor Red
         }
         
-        # Check if RUNNER_WORKSPACE/Qt exists
+        Write-Host "Path 2: $Path2" -ForegroundColor Green
+        if (Test-Path $Path2) {
+            Write-Host "  Found!" -ForegroundColor Green
+        } else {
+            Write-Host "  Not found" -ForegroundColor Red
+        }
+        
+        Write-Host "Path 3: $Path3" -ForegroundColor Green
+        if (Test-Path $Path3) {
+            Write-Host "  Found!" -ForegroundColor Green
+        } else {
+            Write-Host "  Not found" -ForegroundColor Red
+        }
+        
         $QtWorkspaceDir = Join-Path $env:RUNNER_WORKSPACE "Qt"
+        Write-Host "Checking RUNNER_WORKSPACE Qt directory: $QtWorkspaceDir" -ForegroundColor Green
         if (Test-Path $QtWorkspaceDir) {
-            Write-Host "Found Qt directory at RUNNER_WORKSPACE/Qt:" -ForegroundColor Green
+            Write-Host "Found Qt directory" -ForegroundColor Green
             Get-ChildItem $QtWorkspaceDir | ForEach-Object { 
                 Write-Host "  $($_.Name)" -ForegroundColor Gray 
-                if ($_.PSIsContainer) {
-                    $subPath = Join-Path $_.FullName "msvc2022_64"
-                    if (Test-Path $subPath) {
-                        Write-Host "    -> Found msvc2022_64" -ForegroundColor Green
-                    }
-                }
             }
         } else {
-            Write-Host "No Qt directory found at RUNNER_WORKSPACE/Qt" -ForegroundColor Red
+            Write-Host "No Qt directory found" -ForegroundColor Red
         }
         
     - name: Setup MSVC
@@ -166,6 +166,7 @@ jobs:
       shell: powershell
       run: |
         # Create a simplified build script for GitHub Actions
+        $QtVersion = "${{ env.QT_VERSION }}"
         $BuildScript = @'
         param(
             [string]$BuildType = "Release",
@@ -334,6 +335,8 @@ jobs:
         Set-Location $ProjectRoot
         '@
         
+        # Replace placeholder with actual Qt version
+        $BuildScript = $BuildScript -replace '\$env:QT_VERSION', $QtVersion
         $BuildScript | Out-File -FilePath "build-action.ps1" -Encoding UTF8
         
     - name: Set version
