@@ -84,7 +84,13 @@ if (Test-Path $OpenCVPath) {
     Write-Host "OpenCV not found at: $OpenCVPath (skipping)" -ForegroundColor Yellow
 }
 
-$ConfigCommand = "call `"$VSDevBat`" && `"$CMakePath`" `"$ProjectRoot`" -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=`"$CMakePrefixPath`""
+# Configure with appropriate OpenCV setting
+if (Test-Path $OpenCVPath) {
+    $ConfigCommand = "call `"$VSDevBat`" && `"$CMakePath`" `"$ProjectRoot`" -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=`"$CMakePrefixPath`" -DWITH_OPENCV=ON"
+} else {
+    $ConfigCommand = "call `"$VSDevBat`" && `"$CMakePath`" `"$ProjectRoot`" -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=`"$QtPath`" -DWITH_OPENCV=OFF"
+}
+
 cmd /c $ConfigCommand
 
 if ($LASTEXITCODE -ne 0) {

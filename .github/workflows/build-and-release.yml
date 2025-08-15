@@ -181,7 +181,13 @@ jobs:
             Write-Host "OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
         }
         
-        & $CMakePath $ProjectRoot -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=$CMakePrefixPath
+        # Configure with or without OpenCV
+        if (Test-Path $OpenCVPath) {
+            & $CMakePath $ProjectRoot -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=$CMakePrefixPath -DWITH_OPENCV=ON
+        } else {
+            Write-Host "Building without OpenCV support" -ForegroundColor Yellow
+            & $CMakePath $ProjectRoot -G Ninja -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_PREFIX_PATH=$QtPath -DWITH_OPENCV=OFF
+        }
         
         if ($LASTEXITCODE -ne 0) {
             throw "Project configuration failed!"

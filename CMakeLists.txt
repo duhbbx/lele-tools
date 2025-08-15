@@ -15,14 +15,40 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-set(OpenCV_DIR "C:\\opencv\\build")
-find_package(OpenCV REQUIRED)
+# OpenCV 可选支持
+option(WITH_OPENCV "Enable OpenCV support" ON)
 
-message(STATUS "opencv include path is: " ${OpenCV_INCLUDE_DIRS})
-message(STATUS "opencv lib path is: " ${OpenCV_LIBS})
+if(WITH_OPENCV)
+    # 尝试不同的OpenCV路径
+    if(NOT OpenCV_DIR AND EXISTS "C:/opencv/build")
+        set(OpenCV_DIR "C:/opencv/build")
+    endif()
+    
+    # 查找OpenCV（可选）
+    find_package(OpenCV QUIET)
+    
+    if(OpenCV_FOUND)
+        message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+        message(STATUS "OpenCV include path: ${OpenCV_INCLUDE_DIRS}")
+        message(STATUS "OpenCV lib path: ${OpenCV_LIBS}")
+        
+        # 定义宏表示OpenCV可用
+        add_definitions(-DWITH_OPENCV)
+        set(HAVE_OPENCV TRUE)
+    else()
+        message(WARNING "OpenCV not found. Building without OpenCV support.")
+        message(STATUS "Set OpenCV_DIR to OpenCV installation path to enable OpenCV")
+        set(HAVE_OPENCV FALSE)
+    endif()
+else()
+    message(STATUS "OpenCV support disabled")
+    set(HAVE_OPENCV FALSE)
+endif()
 
 # 头文件目录
-include_directories(${OpenCV_INCLUDE_DIRS})
+if(HAVE_OPENCV)
+    include_directories(${OpenCV_INCLUDE_DIRS})
+endif()
 
 
 # 第三方的代码
@@ -101,7 +127,10 @@ target_link_libraries(lele-tools PRIVATE Qt6::WebEngineWidgets)
 target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets yaml-cpp)
 
 
-target_link_libraries(lele-tools PRIVATE ${OpenCV_LIBS})
+# 链接库
+if(HAVE_OPENCV)
+    target_link_libraries(lele-tools PRIVATE ${OpenCV_LIBS})
+endif()
 
 # 添加Windows Socket库
 #if(WIN32)
