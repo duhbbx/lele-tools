@@ -75,7 +75,7 @@ CMakeLists.txt.user*
 # Build directories
 # -----------------
 build*/
-project_installer/
+project_installer/packages/data
 
 # Package files
 # -------------

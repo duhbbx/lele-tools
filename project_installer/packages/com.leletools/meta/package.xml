@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Lele Tools v1.0.0</DisplayName>
+    <Description>Lele Tools Utility Collection - Comprehensive toolset for developers and system administrators</Description>
+    <Version>1.0.0</Version>
+    <ReleaseDate>2025-08-15</ReleaseDate>
+    <Default>true</Default>
+    <Essential>true</Essential>
+    <Script>installscript.qs</Script>
+    <ForcedInstallation>false</ForcedInstallation>
+</Package>

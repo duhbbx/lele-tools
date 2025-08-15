@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>Lele Tools</Name>
+    <Version>1.0.0</Version>
+    <Title>Lele Tools Installer v1.0.0</Title>
+    <Publisher>Lele Tools</Publisher>
+    <ProductUrl>https://github.com/lele-tools</ProductUrl>
+    <TargetDir>@ApplicationsDir@/LeleTools</TargetDir>
+    <StartMenuDir>LeleTools</StartMenuDir>
+    <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
+    <AllowSpaceInPath>true</AllowSpaceInPath>
+    <WizardStyle>Modern</WizardStyle>
+    <RemoveTargetDir>true</RemoveTargetDir>
+    <RunProgram>@TargetDir@/lele-tools.exe</RunProgram>
+    <RunProgramDescription>Launch Lele Tools</RunProgramDescription>
+    <ControlScript>controlscript.qs</ControlScript>
+    <RepositorySettingsPageVisible>false</RepositorySettingsPageVisible>
+</Installer>
