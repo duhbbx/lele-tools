@@ -64,9 +64,9 @@ jobs:
         
         # Check common Qt paths
         $PossiblePaths = @(
-            "$env:RUNNER_WORKSPACE\Qt\${{ env.QT_VERSION }}\msvc2022_64",
+            (Join-Path $env:RUNNER_WORKSPACE "Qt\${{ env.QT_VERSION }}\msvc2022_64"),
             "C:\Qt\${{ env.QT_VERSION }}\msvc2022_64",
-            "$env:GITHUB_WORKSPACE\..\Qt\${{ env.QT_VERSION }}\msvc2022_64"
+            (Join-Path $env:GITHUB_WORKSPACE "..\Qt\${{ env.QT_VERSION }}\msvc2022_64")
         )
         
         Write-Host "Checking possible Qt paths:" -ForegroundColor Cyan
@@ -82,9 +82,10 @@ jobs:
         }
         
         # Check if RUNNER_WORKSPACE/Qt exists
-        if (Test-Path "$env:RUNNER_WORKSPACE\Qt") {
-            Write-Host "Found Qt directory at RUNNER_WORKSPACE\Qt:" -ForegroundColor Green
-            Get-ChildItem "$env:RUNNER_WORKSPACE\Qt" | ForEach-Object { 
+        $QtWorkspaceDir = Join-Path $env:RUNNER_WORKSPACE "Qt"
+        if (Test-Path $QtWorkspaceDir) {
+            Write-Host "Found Qt directory at RUNNER_WORKSPACE/Qt:" -ForegroundColor Green
+            Get-ChildItem $QtWorkspaceDir | ForEach-Object { 
                 Write-Host "  $($_.Name)" -ForegroundColor Gray 
                 if ($_.PSIsContainer) {
                     $subPath = Join-Path $_.FullName "msvc2022_64"
@@ -94,7 +95,7 @@ jobs:
                 }
             }
         } else {
-            Write-Host "No Qt directory found at RUNNER_WORKSPACE\Qt" -ForegroundColor Red
+            Write-Host "No Qt directory found at RUNNER_WORKSPACE/Qt" -ForegroundColor Red
         }
         
     - name: Setup MSVC
@@ -185,9 +186,9 @@ jobs:
         if (-not $QtPath) {
             # Fallback to common paths
             $PossiblePaths = @(
-                "$env:RUNNER_WORKSPACE\Qt\$env:QT_VERSION\msvc2022_64",
+                (Join-Path $env:RUNNER_WORKSPACE "Qt\$env:QT_VERSION\msvc2022_64"),
                 "C:\Qt\$env:QT_VERSION\msvc2022_64",
-                "$env:GITHUB_WORKSPACE\..\Qt\$env:QT_VERSION\msvc2022_64"
+                (Join-Path $env:GITHUB_WORKSPACE "..\Qt\$env:QT_VERSION\msvc2022_64")
             )
             foreach ($Path in $PossiblePaths) {
                 if (Test-Path $Path) {
@@ -203,9 +204,9 @@ jobs:
             Write-Host "  Qt6_DIR: $env:Qt6_DIR" -ForegroundColor Yellow
             Write-Host "  QT_ROOT_DIR: $env:QT_ROOT_DIR" -ForegroundColor Yellow
             $PossiblePaths = @(
-                "$env:RUNNER_WORKSPACE\Qt\$env:QT_VERSION\msvc2022_64",
+                (Join-Path $env:RUNNER_WORKSPACE "Qt\$env:QT_VERSION\msvc2022_64"),
                 "C:\Qt\$env:QT_VERSION\msvc2022_64",
-                "$env:GITHUB_WORKSPACE\..\Qt\$env:QT_VERSION\msvc2022_64"
+                (Join-Path $env:GITHUB_WORKSPACE "..\Qt\$env:QT_VERSION\msvc2022_64")
             )
             foreach ($Path in $PossiblePaths) {
                 Write-Host "  $Path: $(Test-Path $Path)" -ForegroundColor Yellow
@@ -381,9 +382,9 @@ jobs:
         if (-not $QtPath -or -not (Test-Path $QtPath)) {
             # Fallback to common paths
             $PossiblePaths = @(
-                "$env:RUNNER_WORKSPACE\Qt\$env:QT_VERSION\msvc2022_64",
+                (Join-Path $env:RUNNER_WORKSPACE "Qt\$env:QT_VERSION\msvc2022_64"),
                 "C:\Qt\$env:QT_VERSION\msvc2022_64",
-                "$env:GITHUB_WORKSPACE\..\Qt\$env:QT_VERSION\msvc2022_64"
+                (Join-Path $env:GITHUB_WORKSPACE "..\Qt\$env:QT_VERSION\msvc2022_64")
             )
             foreach ($Path in $PossiblePaths) {
                 if (Test-Path $Path) {
