@@ -2,6 +2,8 @@
 #define TOOLLIST_H
 
 #include <QWidget>
+#include <QLineEdit>
+#include <QListWidget>
 #include "../main-widget/mainwindow.h"
 
 
@@ -17,8 +19,15 @@ public:
     explicit ToolList(MainWindow * mainWindow, QWidget *parent = nullptr);
     ~ToolList();
 
+private slots:
+    void filterTools(const QString &text);
+
 private:
     MainWindow* mainWindow;
+    QLineEdit* searchLineEdit;
+    QListWidget* listWidget;
+    
+    void setupSearchFunctionality();
 };
 
 #endif // TOOLLIST_H

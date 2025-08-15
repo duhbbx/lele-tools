@@ -72,3 +72,13 @@ CMakeLists.txt.user*
 *.dll
 *.exe
 
+# Build directories
+# -----------------
+build*/
+project_installer/
+
+# Package files
+# -------------
+*.bat
+LeleToolsInstaller*.exe
+

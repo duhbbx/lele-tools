@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-set(OpenCV_DIR "D:\\opencv\\build")
+set(OpenCV_DIR "C:\\opencv\\build")
 find_package(OpenCV REQUIRED)
 
 message(STATUS "opencv include path is: " ${OpenCV_INCLUDE_DIRS})
