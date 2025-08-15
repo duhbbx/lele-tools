@@ -161,166 +161,165 @@ jobs:
         # Create a simplified build script for GitHub Actions
         $QtVersion = "${{ env.QT_VERSION }}"
         
-        # Create script content - use here-string to avoid variable expansion issues
-        $ScriptContent = @"
-param(
-    [string]`$Version = "1.0.0"
-)
-
-`$ErrorActionPreference = "Stop"
-
-Write-Host "=== GitHub Actions Build Script ===" -ForegroundColor Cyan
-Write-Host "Build Type: Release" -ForegroundColor Yellow
-Write-Host "Version: `$Version" -ForegroundColor Yellow
-
-# Find Qt installation - prioritize environment variables from install-qt-action
-`$QtPath = `$env:Qt6_DIR
-if (-not `$QtPath) {
-    `$QtPath = `$env:QT_ROOT_DIR
-}
-if (-not `$QtPath) {
-    # Fallback to common paths
-    `$PossiblePaths = @(
-        (Join-Path `$env:RUNNER_WORKSPACE "Qt\$QtVersion\msvc2022_64"),
-        "C:\Qt\$QtVersion\msvc2022_64",
-        (Join-Path `$env:GITHUB_WORKSPACE "..\Qt\$QtVersion\msvc2022_64")
-    )
-    foreach (`$Path in `$PossiblePaths) {
-        if (Test-Path `$Path) {
-            `$QtPath = `$Path
-            break
-        }
-    }
-}
-
-if (-not `$QtPath -or -not (Test-Path `$QtPath)) {
-    Write-Host "ERROR: Qt installation not found!" -ForegroundColor Red
-    Write-Host "Checked paths:" -ForegroundColor Yellow
-    Write-Host "  Qt6_DIR: `$env:Qt6_DIR" -ForegroundColor Yellow
-    Write-Host "  QT_ROOT_DIR: `$env:QT_ROOT_DIR" -ForegroundColor Yellow
-    throw "Qt installation not found!"
-}
-
-Write-Host "Qt Path: `$QtPath" -ForegroundColor Cyan
-
-# Find OpenCV installation
-`$OpenCVPath = `$env:OPENCV_DIR
-if (-not `$OpenCVPath) {
-    `$OpenCVPath = "C:\opencv\build"
-}
-
-Write-Host "OpenCV Path: `$OpenCVPath" -ForegroundColor Cyan
-
-# Project paths
-`$ProjectRoot = Get-Location
-`$BuildDir = Join-Path `$ProjectRoot "build"
-
-Write-Host "Project Root: `$ProjectRoot" -ForegroundColor Cyan
-Write-Host "Build Directory: `$BuildDir" -ForegroundColor Cyan
-
-# Step 1: Build project
-Write-Host "`nStep 1: Building project..." -ForegroundColor Green
-
-if (Test-Path `$BuildDir) {
-    Remove-Item -Recurse -Force `$BuildDir
-}
-
-New-Item -ItemType Directory -Path `$BuildDir | Out-Null
-Set-Location `$BuildDir
-
-Write-Host "Configuring project..." -ForegroundColor Yellow
-
-# Setup CMAKE_PREFIX_PATH with Qt and OpenCV
-`$CMakePrefixPath = `$QtPath
-if (Test-Path `$OpenCVPath) {
-    `$CMakePrefixPath = "`$QtPath;`$OpenCVPath"
-    Write-Host "Using OpenCV: `$OpenCVPath" -ForegroundColor Green
-} else {
-    Write-Host "OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
-}
-
-# Configure with or without OpenCV
-if (Test-Path `$OpenCVPath) {
-    & cmake `$ProjectRoot -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="`$CMakePrefixPath" -DWITH_OPENCV=ON
-} else {
-    Write-Host "Building without OpenCV support" -ForegroundColor Yellow
-    & cmake `$ProjectRoot -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="`$QtPath" -DWITH_OPENCV=OFF
-}
-
-if (`$LASTEXITCODE -ne 0) {
-    throw "Project configuration failed!"
-}
-
-Write-Host "Compiling project..." -ForegroundColor Yellow
-& cmake --build . --config Release --parallel
-
-if (`$LASTEXITCODE -ne 0) {
-    throw "Project compilation failed!"
-}
-
-Write-Host "OK Project build successful!" -ForegroundColor Green
-
-# Step 2: Find executable
-Write-Host "`nStep 2: Finding executable file..." -ForegroundColor Green
-
-`$ExeFile = Get-ChildItem -Path "`$BuildDir\Release" -Filter "*.exe" -ErrorAction SilentlyContinue |
-    Where-Object { `$_.Name -like "*lele*" -or `$_.Name -like "*tools*" } |
-    Where-Object { `$_.Name -notlike "*Installer*" } |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 1
-
-# If not found in Release, try Debug or root build directory
-if (-not `$ExeFile) {
-    `$ExeFile = Get-ChildItem -Path "`$BuildDir\Debug" -Filter "*.exe" -ErrorAction SilentlyContinue |
-        Where-Object { `$_.Name -like "*lele*" -or `$_.Name -like "*tools*" } |
-        Where-Object { `$_.Name -notlike "*Installer*" } |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
-}
-
-if (-not `$ExeFile) {
-    `$ExeFile = Get-ChildItem -Path `$BuildDir -Filter "*.exe" -Recurse |
-        Where-Object { `$_.Name -like "*lele*" -or `$_.Name -like "*tools*" } |
-        Where-Object { `$_.Name -notlike "*Installer*" } |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
-}
-
-if (-Not `$ExeFile) {
-    throw "Executable file not found!"
-}
-
-Write-Host "Found executable file: `$(`$ExeFile.FullName)" -ForegroundColor Green
-
-# Step 3: Deploy Qt dependencies
-Write-Host "`nStep 3: Deploying Qt dependencies..." -ForegroundColor Green
-
-`$Windeployqt = "`$QtPath/bin/windeployqt.exe"
-if (-Not (Test-Path `$Windeployqt)) {
-    throw "windeployqt.exe not found!"
-}
-
-Write-Host "Running windeployqt..." -ForegroundColor Yellow
-& `$Windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw `$ExeFile.FullName
-
-Write-Host "OK Qt dependencies deployed!" -ForegroundColor Green
-
-# Set output variables for GitHub Actions
-`$ExeDir = `$ExeFile.DirectoryName
-`$ExeName = `$ExeFile.Name
-
-echo "exe_path=`$(`$ExeFile.FullName)" >> `$env:GITHUB_OUTPUT
-echo "exe_dir=`$ExeDir" >> `$env:GITHUB_OUTPUT
-echo "exe_name=`$ExeName" >> `$env:GITHUB_OUTPUT
-echo "build_dir=`$BuildDir" >> `$env:GITHUB_OUTPUT
-
-Write-Host "`nBuild completed successfully!" -ForegroundColor Green
-
-Set-Location `$ProjectRoot
-"@
+        # Create script content using array to avoid indentation issues
+        $Lines = @()
+        $Lines += 'param('
+        $Lines += '    [string]$Version = "1.0.0"'
+        $Lines += ')'
+        $Lines += ''
+        $Lines += '$ErrorActionPreference = "Stop"'
+        $Lines += ''
+        $Lines += 'Write-Host "=== GitHub Actions Build Script ===" -ForegroundColor Cyan'
+        $Lines += 'Write-Host "Build Type: Release" -ForegroundColor Yellow'
+        $Lines += 'Write-Host "Version: $Version" -ForegroundColor Yellow'
+        $Lines += ''
+        $Lines += '# Find Qt installation - prioritize environment variables from install-qt-action'
+        $Lines += '$QtPath = $env:Qt6_DIR'
+        $Lines += 'if (-not $QtPath) {'
+        $Lines += '    $QtPath = $env:QT_ROOT_DIR'
+        $Lines += '}'
+        $Lines += 'if (-not $QtPath) {'
+        $Lines += '    # Fallback to common paths'
+        $Lines += '    $PossiblePaths = @('
+        $Lines += "        (Join-Path `$env:RUNNER_WORKSPACE `"Qt\$QtVersion\msvc2022_64`"),"
+        $Lines += "        `"C:\Qt\$QtVersion\msvc2022_64`","
+        $Lines += '        (Join-Path $env:GITHUB_WORKSPACE "..\Qt\' + $QtVersion + '\msvc2022_64")'
+        $Lines += '    )'
+        $Lines += '    foreach ($Path in $PossiblePaths) {'
+        $Lines += '        if (Test-Path $Path) {'
+        $Lines += '            $QtPath = $Path'
+        $Lines += '            break'
+        $Lines += '        }'
+        $Lines += '    }'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'if (-not $QtPath -or -not (Test-Path $QtPath)) {'
+        $Lines += '    Write-Host "ERROR: Qt installation not found!" -ForegroundColor Red'
+        $Lines += '    Write-Host "Checked paths:" -ForegroundColor Yellow'
+        $Lines += '    Write-Host "  Qt6_DIR: $env:Qt6_DIR" -ForegroundColor Yellow'
+        $Lines += '    Write-Host "  QT_ROOT_DIR: $env:QT_ROOT_DIR" -ForegroundColor Yellow'
+        $Lines += '    throw "Qt installation not found!"'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'Write-Host "Qt Path: $QtPath" -ForegroundColor Cyan'
+        $Lines += ''
+        $Lines += '# Find OpenCV installation'
+        $Lines += '$OpenCVPath = $env:OPENCV_DIR'
+        $Lines += 'if (-not $OpenCVPath) {'
+        $Lines += '    $OpenCVPath = "C:\opencv\build"'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'Write-Host "OpenCV Path: $OpenCVPath" -ForegroundColor Cyan'
+        $Lines += ''
+        $Lines += '# Project paths'
+        $Lines += '$ProjectRoot = Get-Location'
+        $Lines += '$BuildDir = Join-Path $ProjectRoot "build"'
+        $Lines += ''
+        $Lines += 'Write-Host "Project Root: $ProjectRoot" -ForegroundColor Cyan'
+        $Lines += 'Write-Host "Build Directory: $BuildDir" -ForegroundColor Cyan'
+        $Lines += ''
+        $Lines += '# Step 1: Build project'
+        $Lines += 'Write-Host "`nStep 1: Building project..." -ForegroundColor Green'
+        $Lines += ''
+        $Lines += 'if (Test-Path $BuildDir) {'
+        $Lines += '    Remove-Item -Recurse -Force $BuildDir'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'New-Item -ItemType Directory -Path $BuildDir | Out-Null'
+        $Lines += 'Set-Location $BuildDir'
+        $Lines += ''
+        $Lines += 'Write-Host "Configuring project..." -ForegroundColor Yellow'
+        $Lines += ''
+        $Lines += '# Setup CMAKE_PREFIX_PATH with Qt and OpenCV'
+        $Lines += '$CMakePrefixPath = $QtPath'
+        $Lines += 'if (Test-Path $OpenCVPath) {'
+        $Lines += '    $CMakePrefixPath = "$QtPath;$OpenCVPath"'
+        $Lines += '    Write-Host "Using OpenCV: $OpenCVPath" -ForegroundColor Green'
+        $Lines += '} else {'
+        $Lines += '    Write-Host "OpenCV not found, building without OpenCV support" -ForegroundColor Yellow'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += '# Configure with or without OpenCV'
+        $Lines += 'if (Test-Path $OpenCVPath) {'
+        $Lines += '    & cmake $ProjectRoot -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$CMakePrefixPath" -DWITH_OPENCV=ON'
+        $Lines += '} else {'
+        $Lines += '    Write-Host "Building without OpenCV support" -ForegroundColor Yellow'
+        $Lines += '    & cmake $ProjectRoot -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$QtPath" -DWITH_OPENCV=OFF'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'if ($LASTEXITCODE -ne 0) {'
+        $Lines += '    throw "Project configuration failed!"'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'Write-Host "Compiling project..." -ForegroundColor Yellow'
+        $Lines += '& cmake --build . --config Release --parallel'
+        $Lines += ''
+        $Lines += 'if ($LASTEXITCODE -ne 0) {'
+        $Lines += '    throw "Project compilation failed!"'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'Write-Host "OK Project build successful!" -ForegroundColor Green'
+        $Lines += ''
+        $Lines += '# Step 2: Find executable'
+        $Lines += 'Write-Host "`nStep 2: Finding executable file..." -ForegroundColor Green'
+        $Lines += ''
+        $Lines += '$ExeFile = Get-ChildItem -Path "$BuildDir\Release" -Filter "*.exe" -ErrorAction SilentlyContinue |'
+        $Lines += '    Where-Object { $_.Name -like "*lele*" -or $_.Name -like "*tools*" } |'
+        $Lines += '    Where-Object { $_.Name -notlike "*Installer*" } |'
+        $Lines += '    Sort-Object LastWriteTime -Descending |'
+        $Lines += '    Select-Object -First 1'
+        $Lines += ''
+        $Lines += '# If not found in Release, try Debug or root build directory'
+        $Lines += 'if (-not $ExeFile) {'
+        $Lines += '    $ExeFile = Get-ChildItem -Path "$BuildDir\Debug" -Filter "*.exe" -ErrorAction SilentlyContinue |'
+        $Lines += '        Where-Object { $_.Name -like "*lele*" -or $_.Name -like "*tools*" } |'
+        $Lines += '        Where-Object { $_.Name -notlike "*Installer*" } |'
+        $Lines += '        Sort-Object LastWriteTime -Descending |'
+        $Lines += '        Select-Object -First 1'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'if (-not $ExeFile) {'
+        $Lines += '    $ExeFile = Get-ChildItem -Path $BuildDir -Filter "*.exe" -Recurse |'
+        $Lines += '        Where-Object { $_.Name -like "*lele*" -or $_.Name -like "*tools*" } |'
+        $Lines += '        Where-Object { $_.Name -notlike "*Installer*" } |'
+        $Lines += '        Sort-Object LastWriteTime -Descending |'
+        $Lines += '        Select-Object -First 1'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'if (-Not $ExeFile) {'
+        $Lines += '    throw "Executable file not found!"'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'Write-Host "Found executable file: $($ExeFile.FullName)" -ForegroundColor Green'
+        $Lines += ''
+        $Lines += '# Step 3: Deploy Qt dependencies'
+        $Lines += 'Write-Host "`nStep 3: Deploying Qt dependencies..." -ForegroundColor Green'
+        $Lines += ''
+        $Lines += '$Windeployqt = "$QtPath/bin/windeployqt.exe"'
+        $Lines += 'if (-Not (Test-Path $Windeployqt)) {'
+        $Lines += '    throw "windeployqt.exe not found!"'
+        $Lines += '}'
+        $Lines += ''
+        $Lines += 'Write-Host "Running windeployqt..." -ForegroundColor Yellow'
+        $Lines += '& $Windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw $ExeFile.FullName'
+        $Lines += ''
+        $Lines += 'Write-Host "OK Qt dependencies deployed!" -ForegroundColor Green'
+        $Lines += ''
+        $Lines += '# Set output variables for GitHub Actions'
+        $Lines += '$ExeDir = $ExeFile.DirectoryName'
+        $Lines += '$ExeName = $ExeFile.Name'
+        $Lines += ''
+        $Lines += 'echo "exe_path=$($ExeFile.FullName)" >> $env:GITHUB_OUTPUT'
+        $Lines += 'echo "exe_dir=$ExeDir" >> $env:GITHUB_OUTPUT'
+        $Lines += 'echo "exe_name=$ExeName" >> $env:GITHUB_OUTPUT'
+        $Lines += 'echo "build_dir=$BuildDir" >> $env:GITHUB_OUTPUT'
+        $Lines += ''
+        $Lines += 'Write-Host "`nBuild completed successfully!" -ForegroundColor Green'
+        $Lines += ''
+        $Lines += 'Set-Location $ProjectRoot'
         
-        # Write the script content to file
-        $ScriptContent | Out-File -FilePath "build-action.ps1" -Encoding UTF8
+        # Write all lines to the file
+        $Lines | Out-File -FilePath "build-action.ps1" -Encoding UTF8
         
         # Debug: Show the generated script content
         Write-Host "=== Generated build-action.ps1 content ===" -ForegroundColor Cyan
