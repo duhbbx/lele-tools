@@ -5,7 +5,9 @@
 #include <QImage>
 #include <QLabel>
 #include <QPixmap>
+#ifdef WITH_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 
 
 REGISTER_DYNAMICOBJECT(OpenCvDemo);
@@ -18,6 +20,7 @@ OpenCvDemo::OpenCvDemo() : QWidget(nullptr), DynamicObjectBase()
 
     label->setText("待实现.....");
 
+#ifdef WITH_OPENCV
     // Load an image using OpenCV
     cv::Mat cvImage = cv::imread(QString("C:\\Users\\yangxu\\Pictures\\下载.jpg").toLocal8Bit().toStdString());
     if (cvImage.empty()) {
@@ -31,6 +34,11 @@ OpenCvDemo::OpenCvDemo() : QWidget(nullptr), DynamicObjectBase()
     QLabel * label1 = new QLabel;
     label1->setPixmap(QPixmap::fromImage(qtImage));
     layout->addWidget(label1);
+#else
+    QLabel * label1 = new QLabel;
+    label1->setText("OpenCV support not available");
+    layout->addWidget(label1);
+#endif
 
     layout->addWidget(label);
     layout->setAlignment(Qt::AlignTop);

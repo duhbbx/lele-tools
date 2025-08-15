@@ -67,8 +67,8 @@ SET(MODULE_SOURCES ${SOURCES})
 
 
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network)
 
 
 
@@ -137,7 +137,7 @@ else()
     message(WARNING "Qt6 WebEngineWidgets not found - some features may be disabled")
 endif()
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets yaml-cpp)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network yaml-cpp)
 
 
 # 链接库
