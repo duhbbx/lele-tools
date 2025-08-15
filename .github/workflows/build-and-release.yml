@@ -385,6 +385,18 @@ jobs:
         $PackageXmlPath = Join-Path $MetaDir "package.xml"
         $InstallScriptPath = Join-Path $MetaDir "installscript.qs"
         
+        # Ensure installer directories exist
+        Write-Host "Creating installer directory structure..." -ForegroundColor Yellow
+        if (-not (Test-Path $ConfigDir)) {
+            New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
+        }
+        if (-not (Test-Path $MetaDir)) {
+            New-Item -ItemType Directory -Path $MetaDir -Force | Out-Null
+        }
+        if (-not (Test-Path $DataDir)) {
+            New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
+        }
+        
         # Copy application files
         Write-Host "Copying application files..." -ForegroundColor Yellow
         
