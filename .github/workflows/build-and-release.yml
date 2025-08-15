@@ -45,6 +45,33 @@ jobs:
         tools: 'tools_ifw'
         cache: true
         
+    - name: Debug Qt installation
+      shell: powershell
+      run: |
+        Write-Host "=== Qt Installation Debug ===" -ForegroundColor Cyan
+        Write-Host "Qt6_DIR: $env:Qt6_DIR" -ForegroundColor Yellow
+        Write-Host "QT_ROOT_DIR: $env:QT_ROOT_DIR" -ForegroundColor Yellow
+        Write-Host "RUNNER_WORKSPACE: $env:RUNNER_WORKSPACE" -ForegroundColor Yellow
+        Write-Host "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE" -ForegroundColor Yellow
+        
+        # Check common Qt paths
+        $PossiblePaths = @(
+            "$env:RUNNER_WORKSPACE\Qt\${{ env.QT_VERSION }}\msvc2022_64",
+            "C:\Qt\${{ env.QT_VERSION }}\msvc2022_64",
+            "$env:GITHUB_WORKSPACE\..\Qt\${{ env.QT_VERSION }}\msvc2022_64"
+        )
+        
+        foreach ($Path in $PossiblePaths) {
+            Write-Host "Checking: $Path" -ForegroundColor Green
+            if (Test-Path $Path) {
+                Write-Host "  ✓ Found!" -ForegroundColor Green
+                Write-Host "  Contents:" -ForegroundColor Yellow
+                Get-ChildItem $Path | ForEach-Object { Write-Host "    $($_.Name)" -ForegroundColor Gray }
+            } else {
+                Write-Host "  ✗ Not found" -ForegroundColor Red
+            }
+        }
+        
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v2
       
@@ -125,12 +152,40 @@ jobs:
         Write-Host "Build Type: $BuildType" -ForegroundColor Yellow
         Write-Host "Version: $Version" -ForegroundColor Yellow
         
-        # Find Qt installation
-        $QtPath = Get-ChildItem -Path "C:\Qt" -Directory | Where-Object { $_.Name -like "*$env:QT_VERSION*" } | Select-Object -First 1
+        # Find Qt installation - prioritize environment variables from install-qt-action
+        $QtPath = $env:Qt6_DIR
         if (-not $QtPath) {
-            $QtPath = $env:Qt6_DIR
-        } else {
-            $QtPath = Join-Path $QtPath.FullName "msvc2022_64"
+            $QtPath = $env:QT_ROOT_DIR
+        }
+        if (-not $QtPath) {
+            # Fallback to common paths
+            $PossiblePaths = @(
+                "$env:RUNNER_WORKSPACE\Qt\$env:QT_VERSION\msvc2022_64",
+                "C:\Qt\$env:QT_VERSION\msvc2022_64",
+                "$env:GITHUB_WORKSPACE\..\Qt\$env:QT_VERSION\msvc2022_64"
+            )
+            foreach ($Path in $PossiblePaths) {
+                if (Test-Path $Path) {
+                    $QtPath = $Path
+                    break
+                }
+            }
+        }
+        
+        if (-not $QtPath -or -not (Test-Path $QtPath)) {
+            Write-Host "ERROR: Qt installation not found!" -ForegroundColor Red
+            Write-Host "Checked paths:" -ForegroundColor Yellow
+            Write-Host "  Qt6_DIR: $env:Qt6_DIR" -ForegroundColor Yellow
+            Write-Host "  QT_ROOT_DIR: $env:QT_ROOT_DIR" -ForegroundColor Yellow
+            $PossiblePaths = @(
+                "$env:RUNNER_WORKSPACE\Qt\$env:QT_VERSION\msvc2022_64",
+                "C:\Qt\$env:QT_VERSION\msvc2022_64",
+                "$env:GITHUB_WORKSPACE\..\Qt\$env:QT_VERSION\msvc2022_64"
+            )
+            foreach ($Path in $PossiblePaths) {
+                Write-Host "  $Path: $(Test-Path $Path)" -ForegroundColor Yellow
+            }
+            throw "Qt installation not found!"
         }
         
         Write-Host "Qt Path: $QtPath" -ForegroundColor Cyan
@@ -234,10 +289,10 @@ jobs:
         $ExeDir = $ExeFile.DirectoryName
         $ExeName = $ExeFile.Name
         
-        Write-Host "##[set-output name=exe_path]$($ExeFile.FullName)"
-        Write-Host "##[set-output name=exe_dir]$ExeDir"
-        Write-Host "##[set-output name=exe_name]$ExeName"
-        Write-Host "##[set-output name=build_dir]$BuildDir"
+        echo "exe_path=$($ExeFile.FullName)" >> $env:GITHUB_OUTPUT
+        echo "exe_dir=$ExeDir" >> $env:GITHUB_OUTPUT
+        echo "exe_name=$ExeName" >> $env:GITHUB_OUTPUT
+        echo "build_dir=$BuildDir" >> $env:GITHUB_OUTPUT
         
         Write-Host "`nBuild completed successfully!" -ForegroundColor Green
         
@@ -272,6 +327,7 @@ jobs:
         .\build-action.ps1 -BuildType $buildType -Version "${{ steps.version.outputs.version }}"
         
     - name: Create installer
+      id: create_installer
       if: github.event_name != 'pull_request'
       shell: powershell
       run: |
@@ -283,12 +339,29 @@ jobs:
         $BuildDir = "${{ steps.build.outputs.build_dir }}"
         $ExeDir = "${{ steps.build.outputs.exe_dir }}"
         
-        # Find Qt installation
-        $QtPath = Get-ChildItem -Path "C:\Qt" -Directory | Where-Object { $_.Name -like "*$env:QT_VERSION*" } | Select-Object -First 1
+        # Find Qt installation - use same logic as build script
+        $QtPath = $env:Qt6_DIR
         if (-not $QtPath) {
-            $QtPath = $env:Qt6_DIR
-        } else {
-            $QtPath = Join-Path $QtPath.FullName "msvc2022_64"
+            $QtPath = $env:QT_ROOT_DIR
+        }
+        if (-not $QtPath -or -not (Test-Path $QtPath)) {
+            # Fallback to common paths
+            $PossiblePaths = @(
+                "$env:RUNNER_WORKSPACE\Qt\$env:QT_VERSION\msvc2022_64",
+                "C:\Qt\$env:QT_VERSION\msvc2022_64",
+                "$env:GITHUB_WORKSPACE\..\Qt\$env:QT_VERSION\msvc2022_64"
+            )
+            foreach ($Path in $PossiblePaths) {
+                if (Test-Path $Path) {
+                    $QtPath = $Path
+                    break
+                }
+            }
+        }
+        
+        if (-not $QtPath -or -not (Test-Path $QtPath)) {
+            Write-Host "ERROR: Qt installation not found for installer creation!" -ForegroundColor Red
+            throw "Qt installation not found!"
         }
         
         $IFWPath = Join-Path $QtPath "../../Tools/QtInstallerFramework/4.10/bin"
