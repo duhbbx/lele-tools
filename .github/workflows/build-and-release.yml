@@ -43,6 +43,7 @@ jobs:
         target: desktop
         arch: win64_msvc2022_64
         tools: 'tools_ifw'
+        modules: 'qtwebengine'
         cache: true
         
     - name: Debug Qt installation
