@@ -87,6 +87,29 @@ jobs:
             Get-ChildItem $QtWorkspaceDir | ForEach-Object { 
                 Write-Host "  $($_.Name)" -ForegroundColor Gray 
             }
+            
+            # Check for Tools directory
+            $QtToolsDir = Join-Path $QtWorkspaceDir "Tools"
+            Write-Host "Checking Qt Tools directory: $QtToolsDir" -ForegroundColor Green
+            if (Test-Path $QtToolsDir) {
+                Write-Host "Found Qt Tools directory" -ForegroundColor Green
+                Get-ChildItem $QtToolsDir | ForEach-Object { 
+                    Write-Host "  Tools/$($_.Name)" -ForegroundColor Gray 
+                }
+                
+                # Check specifically for QtInstallerFramework
+                $IFWDir = Join-Path $QtToolsDir "QtInstallerFramework"
+                if (Test-Path $IFWDir) {
+                    Write-Host "Found QtInstallerFramework directory" -ForegroundColor Green
+                    Get-ChildItem $IFWDir | ForEach-Object { 
+                        Write-Host "  QtInstallerFramework/$($_.Name)" -ForegroundColor Gray 
+                    }
+                } else {
+                    Write-Host "QtInstallerFramework directory not found" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "Qt Tools directory not found" -ForegroundColor Yellow
+            }
         } else {
             Write-Host "No Qt directory found" -ForegroundColor Red
         }
@@ -360,19 +383,51 @@ jobs:
             throw "Qt installation not found!"
         }
         
-        $IFWPath = Join-Path $QtPath "../../Tools/QtInstallerFramework/4.10/bin"
-        if (-not (Test-Path $IFWPath)) {
-            $IFWSearchPath = "$QtPath/../../../Tools/QtInstallerFramework/*/bin"
-            try {
-                $IFWPath = Get-ChildItem -Path $IFWSearchPath -Directory -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object FullName
-                if (-not $IFWPath) {
-                    Write-Host "WARNING: Qt Installer Framework not found, installer creation may fail" -ForegroundColor Yellow
-                    $IFWPath = ""
-                }
-            } catch {
-                Write-Host "WARNING: Failed to find Qt Installer Framework: $($_.Exception.Message)" -ForegroundColor Yellow
-                $IFWPath = ""
+        # Search for Qt Installer Framework in multiple possible locations
+        Write-Host "Searching for Qt Installer Framework..." -ForegroundColor Yellow
+        
+        $IFWSearchPaths = @(
+            (Join-Path $QtPath "../../Tools/QtInstallerFramework/4.10/bin"),
+            (Join-Path $QtPath "../../../Tools/QtInstallerFramework/4.10/bin"),
+            (Join-Path $env:RUNNER_WORKSPACE "Qt/Tools/QtInstallerFramework/4.10/bin"),
+            "C:\Qt\Tools\QtInstallerFramework\4.10\bin"
+        )
+        
+        $IFWPath = ""
+        foreach ($SearchPath in $IFWSearchPaths) {
+            Write-Host "  Checking: $SearchPath" -ForegroundColor Gray
+            if (Test-Path $SearchPath) {
+                $IFWPath = $SearchPath
+                Write-Host "  Found IFW at: $IFWPath" -ForegroundColor Green
+                break
             }
+        }
+        
+        # If not found in fixed paths, try wildcard search
+        if ([string]::IsNullOrEmpty($IFWPath)) {
+            Write-Host "  Trying wildcard search..." -ForegroundColor Gray
+            $WildcardPaths = @(
+                "$QtPath/../../../Tools/QtInstallerFramework/*/bin",
+                "$env:RUNNER_WORKSPACE/Qt/Tools/QtInstallerFramework/*/bin",
+                "C:\Qt\Tools\QtInstallerFramework\*\bin"
+            )
+            
+            foreach ($WildPath in $WildcardPaths) {
+                try {
+                    $FoundPath = Get-ChildItem -Path $WildPath -Directory -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object FullName
+                    if ($FoundPath) {
+                        $IFWPath = $FoundPath
+                        Write-Host "  Found IFW via wildcard at: $IFWPath" -ForegroundColor Green
+                        break
+                    }
+                } catch {
+                    # Ignore errors in wildcard search
+                }
+            }
+        }
+        
+        if ([string]::IsNullOrEmpty($IFWPath)) {
+            Write-Host "WARNING: Qt Installer Framework not found in any location" -ForegroundColor Yellow
         }
         
         $ProjectRoot = Get-Location
@@ -456,58 +511,117 @@ jobs:
             }
         }
         
-    - name: Upload build artifacts
+    - name: Upload portable ZIP artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: lele-tools-portable-${{ steps.version.outputs.version }}
+        path: "*_Portable.zip"
+        retention-days: 90
+        
+    - name: Upload installer artifact
+      if: github.event_name != 'pull_request' && steps.create_installer.outputs.installer_path != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: lele-tools-installer-${{ steps.version.outputs.version }}
+        path: "LeleToolsInstaller_*.exe"
+        retention-days: 90
+        
+    - name: Upload build artifacts (Debug)
+      if: github.event_name == 'pull_request'
       uses: actions/upload-artifact@v4
       with:
         name: lele-tools-build-${{ steps.version.outputs.version }}
         path: |
-          ${{ steps.build.outputs.build_dir }}/*.exe
-          ${{ steps.build.outputs.build_dir }}/*.dll
-        retention-days: 30
+          ${{ steps.build.outputs.exe_dir }}/*.exe
+          ${{ steps.build.outputs.exe_dir }}/*.dll
+        retention-days: 7
         
-    - name: Upload installer artifact
-      if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@v4
-      with:
-        name: lele-tools-installer-${{ steps.version.outputs.version }}
-        path: "*.exe"
-        retention-days: 90
+    - name: Create portable ZIP package
+      id: create_portable
+      shell: powershell
+      run: |
+        Write-Host "Creating portable ZIP package..." -ForegroundColor Green
+        
+        $Version = "${{ steps.version.outputs.version }}"
+        $ExeDir = "${{ steps.build.outputs.exe_dir }}"
+        $ZipName = "LeleTools_v$($Version.Replace('.','_'))_Portable.zip"
+        $ZipPath = Join-Path (Get-Location) $ZipName
+        
+        # Create ZIP package with all files
+        if (Test-Path $ExeDir) {
+            Compress-Archive -Path "$ExeDir\*" -DestinationPath $ZipPath -Force
+            $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
+            Write-Host "Portable ZIP created: $ZipName ($ZipSize MB)" -ForegroundColor Green
+            
+            echo "zip_path=$ZipPath" >> $env:GITHUB_OUTPUT
+            echo "zip_name=$ZipName" >> $env:GITHUB_OUTPUT
+            echo "zip_size=$ZipSize" >> $env:GITHUB_OUTPUT
+        } else {
+            Write-Host "WARNING: Executable directory not found, skipping ZIP creation" -ForegroundColor Yellow
+            echo "zip_path=" >> $env:GITHUB_OUTPUT
+            echo "zip_name=" >> $env:GITHUB_OUTPUT
+            echo "zip_size=0" >> $env:GITHUB_OUTPUT
+        }
         
     - name: Create release
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      id: create_release
+      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          LeleToolsInstaller_*.exe
+        tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', steps.version.outputs.version) }}
         name: Lele Tools ${{ steps.version.outputs.version }}
         body: |
           ## Lele Tools ${{ steps.version.outputs.version }}
           
-          ### 🚀 新功能
-          - 一键构建、部署和打包
-          - 智能覆盖安装处理
-          - 版本管理和自动化
+          ### 📦 下载选项
           
-          ### 📦 下载
-          - **Windows 安装包**: LeleToolsInstaller_${{ steps.version.outputs.version }}.exe (${{ steps.create_installer.outputs.installer_size }} MB)
+          **🎯 推荐下载**：
+          - **便携版 (ZIP)**: `${{ steps.create_portable.outputs.zip_name }}` (${{ steps.create_portable.outputs.zip_size }} MB)
+            - 解压即用，无需安装
+            - 包含所有必要的依赖文件
           
-          ### 🔧 安装说明
-          1. 下载对应的安装包
-          2. 以管理员身份运行安装程序
-          3. 选择安装目录（支持覆盖现有安装）
-          4. 完成安装并启动应用
+          ${{ steps.create_installer.outputs.installer_name && format('- **安装包 (EXE)**: `{0}` ({1} MB)', steps.create_installer.outputs.installer_name, steps.create_installer.outputs.installer_size) || '- **安装包**: 构建中未生成（Qt Installer Framework不可用）' }}
+          
+          ### 🚀 功能特性
+          - 🛠️ 多种实用工具集合
+          - 🎨 现代化用户界面
+          - 🔧 一键构建、部署和打包
+          - 📱 支持多种格式转换
+          - 🔐 文本加密解密功能
+          - 🌐 网络工具集成
+          
+          ### 🔧 使用说明
+          
+          **便携版使用**：
+          1. 下载 ZIP 文件
+          2. 解压到任意目录
+          3. 运行 `lele-tools.exe`
+          
+          **安装包使用**：
+          1. 下载 EXE 安装包
+          2. 以管理员身份运行
+          3. 按向导完成安装
           
           ### 📋 系统要求
           - Windows 10/11 (x64)
           - Visual C++ Redistributable 2022
           
+          ### 🔨 构建信息
+          - **构建时间**: ${{ github.event.head_commit.timestamp }}
+          - **构建类型**: Release
+          - **Qt版本**: ${{ env.QT_VERSION }}
+          - **OpenCV支持**: ${{ env.OPENCV_VERSION && 'Yes' || 'No' }}
+          - **提交哈希**: `${{ github.sha }}`
+          - **分支**: ${{ github.ref_name }}
+          
           ---
           
-          **完整构建信息**: 
-          - 构建类型: Release
-          - Qt版本: ${{ env.QT_VERSION }}
-          - 提交: ${{ github.sha }}
+          > 💡 **提示**: 首次使用推荐下载便携版，无需安装即可体验所有功能！
+        files: |
+          ${{ steps.create_portable.outputs.zip_path }}
+          ${{ steps.create_installer.outputs.installer_path }}
         draft: false
-        prerelease: false
+        prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        make_latest: ${{ startsWith(github.ref, 'refs/tags/v') }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
