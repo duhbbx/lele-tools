@@ -13,6 +13,11 @@ on:
         required: false
         default: '1.0.0'
 
+permissions:
+  contents: write
+  packages: write
+  actions: read
+
 env:
   QT_VERSION: '6.9.1'
   CMAKE_VERSION: '3.28'
@@ -547,17 +552,38 @@ jobs:
         $ZipName = "LeleTools_v$($Version.Replace('.','_'))_Portable.zip"
         $ZipPath = Join-Path (Get-Location) $ZipName
         
+        Write-Host "Version: $Version" -ForegroundColor Cyan
+        Write-Host "Exe Directory: $ExeDir" -ForegroundColor Cyan
+        Write-Host "ZIP Name: $ZipName" -ForegroundColor Cyan
+        Write-Host "ZIP Path: $ZipPath" -ForegroundColor Cyan
+        
         # Create ZIP package with all files
         if (Test-Path $ExeDir) {
-            Compress-Archive -Path "$ExeDir\*" -DestinationPath $ZipPath -Force
-            $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
-            Write-Host "Portable ZIP created: $ZipName ($ZipSize MB)" -ForegroundColor Green
+            Write-Host "Found executable directory, creating ZIP..." -ForegroundColor Yellow
             
-            echo "zip_path=$ZipPath" >> $env:GITHUB_OUTPUT
-            echo "zip_name=$ZipName" >> $env:GITHUB_OUTPUT
-            echo "zip_size=$ZipSize" >> $env:GITHUB_OUTPUT
+            # List files to be included
+            Write-Host "Files to include:" -ForegroundColor Yellow
+            Get-ChildItem -Path $ExeDir | ForEach-Object {
+                Write-Host "  $($_.Name)" -ForegroundColor Gray
+            }
+            
+            Compress-Archive -Path "$ExeDir\*" -DestinationPath $ZipPath -Force
+            
+            if (Test-Path $ZipPath) {
+                $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
+                Write-Host "Portable ZIP created successfully: $ZipName ($ZipSize MB)" -ForegroundColor Green
+                
+                echo "zip_path=$ZipPath" >> $env:GITHUB_OUTPUT
+                echo "zip_name=$ZipName" >> $env:GITHUB_OUTPUT
+                echo "zip_size=$ZipSize" >> $env:GITHUB_OUTPUT
+            } else {
+                Write-Host "ERROR: Failed to create ZIP file" -ForegroundColor Red
+                echo "zip_path=" >> $env:GITHUB_OUTPUT
+                echo "zip_name=" >> $env:GITHUB_OUTPUT
+                echo "zip_size=0" >> $env:GITHUB_OUTPUT
+            }
         } else {
-            Write-Host "WARNING: Executable directory not found, skipping ZIP creation" -ForegroundColor Yellow
+            Write-Host "WARNING: Executable directory not found at: $ExeDir" -ForegroundColor Yellow
             echo "zip_path=" >> $env:GITHUB_OUTPUT
             echo "zip_name=" >> $env:GITHUB_OUTPUT
             echo "zip_size=0" >> $env:GITHUB_OUTPUT
@@ -618,10 +644,10 @@ jobs:
           
           > 💡 **提示**: 首次使用推荐下载便携版，无需安装即可体验所有功能！
         files: |
-          ${{ steps.create_portable.outputs.zip_path }}
-          ${{ steps.create_installer.outputs.installer_path }}
+          LeleTools_*_Portable.zip
+          LeleToolsInstaller_*.exe
         draft: false
         prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        make_latest: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
