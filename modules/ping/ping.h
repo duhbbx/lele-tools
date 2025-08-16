@@ -1,134 +1,154 @@
-
 #ifndef PING_H
 #define PING_H
 
-
-#include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QSyntaxHighlighter>
-#include <QTextCharFormat>
-#include <QRegularExpression>
-#include <QHBoxLayout>
-#include <QTextEdit>
-#include <QSyntaxHighlighter>
-#include <QTextCharFormat>
-#include <QRegularExpression>
-
 #include <QWidget>
-#include <QPushButton>
 #include <QVBoxLayout>
-#include <QSyntaxHighlighter>
-#include <QRegularExpression>
-#include <QTextCharFormat>
-#include <QTextEdit>
-#include <QPlainTextEdit>
-#include <QLabel>
-#include <QRadioButton>
-#include <QButtonGroup>
+#include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLineEdit>
-#include <QtNetwork>
+#include <QPushButton>
+#include <QLabel>
+#include <QTextEdit>
+#include <QSpinBox>
+#include <QProgressBar>
+#include <QTimer>
+#include <QProcess>
+#include <QGroupBox>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QSplitter>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QtNetwork/QHostInfo>
+#include <QtNetwork/QNetworkInterface>
+
 #include "../../common/dynamicobjectbase.h"
 
-#include <stdio.h>
-#include <winsock2.h>
-
-namespace PING_PRIVATE {
-
-
-
-// IP数据包头结构
-typedef struct iphdr
-{
-    unsigned int headLen:4;
-    unsigned int version:4;
-    unsigned char tos;
-    unsigned short totalLen;
-    unsigned short ident;
-    unsigned short fragAndFlags;
-    unsigned char ttl;
-    unsigned char proto;
-    unsigned short checkSum;
-    unsigned int sourceIP;
-    unsigned int destIP;
-}IpHeader;
-
-// ICMP数据头结构
-typedef struct ihdr
-{
-    unsigned char iType;
-    unsigned char iCode;
-    unsigned short iCheckSum;
-    unsigned short iID;
-    unsigned short iSeq;
-    unsigned long  timeStamp;
-}IcmpHeader;
-
-// 计算ICMP包的校验和(发送前要用)
-unsigned short checkSum(unsigned short *buffer, int size);
-
-// 填充ICMP请求包的具体参数
-void fillIcmpData(char *icmpData, int dataSize);
-
-// 对返回的IP数据包进行解析，定位到ICMP数据
-int decodeResponse(char *buf, int bytes, struct sockaddr_in *from, int tid);
-
-// ping操作
-int do_ping(const char *ip, unsigned int timeout);
-
-}
-
-class PingWorker : public QObject
-{
-    Q_OBJECT
-
-public:
-    PingWorker(const QString& host) : host_(host) {}
-
-signals:
-    void returnCode(int value);
-
-public slots:
-    void ping()
-    {
-
-        // 将QString转换为QByteArray
-        QByteArray byteArray = host_.toUtf8();
-
-        // 使用data()函数获取char*指针
-        const char *charArray = byteArray.constData();
-
-        int code = PING_PRIVATE::do_ping(charArray, 3000);
-
-
-        emit returnCode(code);
-
-    }
-
-private:
-    QString host_;
+struct PingResult {
+    QString host;
+    QString ip;
+    int sequenceNumber;
+    double responseTime;
+    int ttl;
+    bool success;
+    QString errorMessage;
 };
 
+struct PingStatistics {
+    int packetsSent;
+    int packetsReceived;
+    int packetsLost;
+    double lossPercentage;
+    double minTime;
+    double maxTime;
+    double avgTime;
+    QString resolvedIP;
+};
 
-
-class Ping : public QWidget, public DynamicObjectBase {
-
+class Ping : public QWidget, public DynamicObjectBase
+{
     Q_OBJECT
+
 public:
     explicit Ping();
-
-private:
-    QLineEdit * hostInputEdit;
-    QPushButton * startButton;
-    QPlainTextEdit * response;
-    PingWorker* pingWorker;
-    QThread* thread;
-    QTimer * timer;
-    bool flag;
+    ~Ping();
 
 public slots:
-    void startPing();
-    void appendResponse(int value);
+    void onStartPing();
+    void onStopPing();
+    void onClearResults();
+    void onCopyResults();
+    void onHostChanged();
+    void onPingFinished();
+    void onPingTimeout();
+    void onResolveHost();
+
+private slots:
+    void processPingOutput();
+    void processPingError();
+    void pingProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
+
+private:
+    void setupUI();
+    void setupInputArea();
+    void setupControlArea();
+    void setupResultsArea();
+    void setupStatisticsArea();
+    void startPingProcess();
+    void stopPingProcess();
+    void updateStatistics();
+    void addPingResult(const PingResult& result);
+    void updateStatus(const QString& message, bool isError = false);
+    void resolveHostname();
+    PingResult parsePingOutput(const QString& output);
+    
+    // UI组件
+    QVBoxLayout* mainLayout;
+    QSplitter* mainSplitter;
+    
+    // 输入区域
+    QGroupBox* inputGroup;
+    QGridLayout* inputLayout;
+    QLabel* hostLabel;
+    QLineEdit* hostEdit;
+    QPushButton* resolveBtn;
+    QLabel* ipLabel;
+    QLabel* ipValueLabel;
+    
+    // 控制区域
+    QGroupBox* controlGroup;
+    QHBoxLayout* controlLayout;
+    QLabel* countLabel;
+    QSpinBox* countSpinBox;
+    QLabel* intervalLabel;
+    QSpinBox* intervalSpinBox;
+    QLabel* timeoutLabel;
+    QSpinBox* timeoutSpinBox;
+    QCheckBox* continuousCheck;
+    
+    // 按钮区域
+    QHBoxLayout* buttonLayout;
+    QPushButton* startBtn;
+    QPushButton* stopBtn;
+    QPushButton* clearBtn;
+    QPushButton* copyBtn;
+    QLabel* statusLabel;
+    
+    // 结果区域
+    QWidget* resultsWidget;
+    QVBoxLayout* resultsLayout;
+    QLabel* resultsLabel;
+    QTableWidget* resultsTable;
+    
+    // 统计区域
+    QGroupBox* statsGroup;
+    QGridLayout* statsLayout;
+    QLabel* sentLabel;
+    QLabel* sentValueLabel;
+    QLabel* receivedLabel;
+    QLabel* receivedValueLabel;
+    QLabel* lossLabel;
+    QLabel* lossValueLabel;
+    QLabel* minLabel;
+    QLabel* minValueLabel;
+    QLabel* maxLabel;
+    QLabel* maxValueLabel;
+    QLabel* avgLabel;
+    QLabel* avgValueLabel;
+    
+    // 进度显示
+    QProgressBar* progressBar;
+    
+    // 状态和数据
+    QProcess* pingProcess;
+    QTimer* pingTimer;
+    QTimer* timeoutTimer;
+    PingStatistics statistics;
+    QList<PingResult> pingResults;
+    bool isPinging;
+    int currentSequence;
+    QString currentHost;
+    QString resolvedIP;
 };
 
 #endif // PING_H

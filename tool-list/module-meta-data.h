@@ -6,7 +6,7 @@
 {"xxx", "YAML格式化", "YamlFormatter"},
 {"xxx", "日期时间戳", "DateTimeUtil"},
 
-
+{"xxx", "Base64编码解码", "Base64EncodeDecode"},
 
 {"xxx", "根据正则表达式生成内容", "RegExContentGen"},
 

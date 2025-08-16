@@ -1,40 +1,96 @@
 #ifndef XMLFORMATTER_H
 #define XMLFORMATTER_H
 
-#include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QSyntaxHighlighter>
-#include <QTextCharFormat>
-#include <QRegularExpression>
-#include <QHBoxLayout>
-#include <QTextEdit>
-#include <QSyntaxHighlighter>
-#include <QTextCharFormat>
-#include <QRegularExpression>
-
 #include <QWidget>
-
 #include <QVBoxLayout>
-#include <QSyntaxHighlighter>
-#include <QRegularExpression>
-#include <QTextCharFormat>
+#include <QHBoxLayout>
+#include <QSplitter>
 #include <QTextEdit>
 #include <QPlainTextEdit>
+#include <QPushButton>
+#include <QLabel>
+#include <QSyntaxHighlighter>
+#include <QTextCharFormat>
+#include <QRegularExpression>
+#include <QXmlStreamReader>
+#include <QXmlStreamWriter>
 
 #include "../../common/dynamicobjectbase.h"
 
-class XmlFormatter : public QWidget, public DynamicObjectBase {
+// XML语法高亮器
+class XmlHighlighter : public QSyntaxHighlighter
+{
     Q_OBJECT
-public:
-    explicit XmlFormatter();
 
-public slots:
-    void onTextChanged();
+public:
+    explicit XmlHighlighter(QTextDocument* parent = nullptr);
+
+protected:
+    void highlightBlock(const QString& text) override;
 
 private:
-    QTextEdit * textEdit;
-    QPlainTextEdit * plainTextEdit;
+    void setupFormats();
+    
+    QTextCharFormat xmlElementFormat;
+    QTextCharFormat xmlAttributeFormat;
+    QTextCharFormat xmlValueFormat;
+    QTextCharFormat xmlCommentFormat;
+    QTextCharFormat xmlKeywordFormat;
+};
+
+class XmlFormatter : public QWidget, public DynamicObjectBase
+{
+    Q_OBJECT
+
+public:
+    explicit XmlFormatter();
+    ~XmlFormatter();
+
+public slots:
+    void onInputTextChanged();
+    void onFormatXml();
+    void onMinifyXml();
+    void onValidateXml();
+    void onClearAll();
+    void onCopyFormatted();
+
+private:
+    void setupUI();
+    void setupToolbar();
+    void setupInputOutput();
+    QString formatXmlString(const QString& xml);
+    QString minifyXmlString(const QString& xml);
+    bool validateXmlString(const QString& xml, QString& errorMessage);
+    void updateStatus(const QString& message, bool isError = false);
+    
+    // UI组件
+    QVBoxLayout* mainLayout;
+    QSplitter* mainSplitter;
+    
+    // 工具栏
+    QWidget* toolbarWidget;
+    QHBoxLayout* toolbarLayout;
+    QPushButton* formatBtn;
+    QPushButton* minifyBtn;
+    QPushButton* validateBtn;
+    QPushButton* clearBtn;
+    QPushButton* copyBtn;
+    QLabel* statusLabel;
+    
+    // 输入输出区域
+    QWidget* inputWidget;
+    QWidget* outputWidget;
+    QVBoxLayout* inputLayout;
+    QVBoxLayout* outputLayout;
+    
+    QLabel* inputLabel;
+    QLabel* outputLabel;
+    QTextEdit* inputTextEdit;
+    QPlainTextEdit* outputTextEdit;
+    XmlHighlighter* highlighter;
+    
+    // 状态
+    bool isValidXml;
 };
 
 #endif // XMLFORMATTER_H

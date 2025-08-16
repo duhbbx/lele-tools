@@ -33,7 +33,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     this->setAttribute(Qt::WA_PaintOnScreen, false);
     // 设置全局样式
     QString globalStyle = 
+        "* { font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; }"
         "QMainWindow { background-color: #ffffff; border-radius: 8px; }"
+        "QPushButton { font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 11pt; font-weight: bold; padding: 6px 12px; min-width: 60px; }"
         
         // 美化所有文本编辑框
         "QTextEdit {"
@@ -151,7 +153,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     
     // 创建左侧面板（功能菜单）
     leftPanel = new QWidget();
-    leftPanel->setFixedWidth(300);  // 固定左侧宽度
+    leftPanel->setFixedWidth(200);  // 进一步缩窄左侧宽度
     leftPanel->setStyleSheet("background-color: #f5f5f5; border-right: 1px solid #ddd;");
     
     // 创建右侧面板（工作区）
@@ -216,9 +218,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     
     // 添加窗口阴影效果
     QGraphicsDropShadowEffect *shadowEffect = new QGraphicsDropShadowEffect(this);
-    shadowEffect->setOffset(0, 2);
-    shadowEffect->setBlurRadius(20);
-    shadowEffect->setColor(QColor(0, 0, 0, 100));
+    shadowEffect->setOffset(0, 6);
+    shadowEffect->setBlurRadius(40);
+    shadowEffect->setColor(QColor(0, 0, 0, 180));
     this->setGraphicsEffect(shadowEffect);
     
     qDebug() << "MainWindow初始化完成，使用左右分栏布局";
@@ -493,7 +495,6 @@ void MainWindow::createStatusBar()
         "}"
         "QLabel:hover {"
         "    background-color: #e9ecef;"
-        "    cursor: pointer;"
         "}"
     );
     timeLabel->setToolTip("点击复制时间");
@@ -573,7 +574,7 @@ void MainWindow::toggleLeftPanel()
     if (isLeftPanelCollapsed) {
         // 展开左侧面板
         leftPanel->setVisible(true);
-        leftPanel->setFixedWidth(300);
+        leftPanel->setFixedWidth(200);
         collapseButton->setText("⋯");
         collapseButton->setToolTip("收起左侧菜单");
         isLeftPanelCollapsed = false;
@@ -765,14 +766,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     // 移除自定义缩放逻辑，使用Windows原生缩放
     if (m_bPressed && (event->buttons() & Qt::LeftButton)) {
         move(event->globalPos() - m_point);
-        setCursor(Qt::ClosedHandCursor); // 拖拽时的抓取光标
+        setCursor(Qt::ArrowCursor); // 使用普通箭头光标
     } else {
-        // Windows原生缩放会自动处理光标，只需要设置拖拽区域的光标
-        if (isDraggableArea(event->pos())) {
-            setCursor(Qt::OpenHandCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
+        setCursor(Qt::ArrowCursor); // 始终使用箭头光标
     }
     QMainWindow::mouseMoveEvent(event);
 }
@@ -781,13 +777,7 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         m_bPressed = false;
-        
-        // 重置光标
-        if (isDraggableArea(event->pos())) {
-            setCursor(Qt::OpenHandCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
+        setCursor(Qt::ArrowCursor); // 重置为箭头光标
     }
     QMainWindow::mouseReleaseEvent(event);
 }

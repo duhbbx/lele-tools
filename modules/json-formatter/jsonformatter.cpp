@@ -355,10 +355,12 @@ void JsonFormatter::setupTreeView()
     searchLineEdit->setFixedSize(180, 28);
     
     expandAllBtn = new QPushButton("展开全部");
-    expandAllBtn->setFixedSize(70, 28);
+    expandAllBtn->setFixedSize(80, 28);
+    expandAllBtn->setStyleSheet("font-size: 10pt;");
     
     collapseAllBtn = new QPushButton("折叠全部");
-    collapseAllBtn->setFixedSize(70, 28);
+    collapseAllBtn->setFixedSize(80, 28);
+    collapseAllBtn->setStyleSheet("font-size: 10pt;");
     
     treeToolbarLayout->addWidget(searchLineEdit);
     treeToolbarLayout->addStretch();
