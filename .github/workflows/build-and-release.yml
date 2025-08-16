@@ -12,6 +12,11 @@ on:
         description: 'Version number (e.g., 1.2.0)'
         required: false
         default: '1.0.0'
+      create_release:
+        description: 'Create GitHub Release'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -591,7 +596,9 @@ jobs:
         
     - name: Create release
       id: create_release
-      if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      if: |
+        (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', steps.version.outputs.version) }}

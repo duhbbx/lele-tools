@@ -300,12 +300,13 @@ void MainWindow::createTitleBar()
         "    border: none;"
         "    padding: 0px;"
         "    margin: 0px;"
+        "    spacing: 0px;"
         "}"
         "QMenuBar::item {"
         "    background-color: transparent;"
         "    color: #343a40;"
-        "    padding: 8px 12px;"
-        "    margin: 0px;"
+        "    padding: 6px 10px;"
+        "    margin: 0px 1px;"
         "    border-radius: 4px;"
         "}"
         "QMenuBar::item:selected {"
@@ -316,10 +317,13 @@ void MainWindow::createTitleBar()
         "}"
     );
     
+    // 设置菜单栏的大小策略为最小
+    customMenuBar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    
     // 在这里我们稍后会填充菜单
     
     titleLayout->addWidget(customMenuBar);
-    titleLayout->addStretch(); // 占用剩余空间
+    titleLayout->addStretch(); // 占用剩余空间，推动窗口控制按钮到右侧
     
     // 创建窗口控制按钮
     setupWindowControls();
