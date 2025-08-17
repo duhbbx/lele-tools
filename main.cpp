@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
+#include <QSettings>
 
 int main(int argc, char *argv[])
 {
@@ -18,14 +19,37 @@ int main(int argc, char *argv[])
     defaultFont.setHintingPreference(QFont::PreferDefaultHinting);
     QApplication::setFont(defaultFont);
 
+    // 加载翻译文件
     QTranslator translator;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
-        const QString baseName = "lele-tools_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
-            a.installTranslator(&translator);
-            break;
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "LeleTools", "Settings");
+    QString savedLanguage = settings.value("language", "").toString();
+    
+    QString languageToLoad;
+    if (!savedLanguage.isEmpty()) {
+        // 使用保存的语言设置
+        languageToLoad = savedLanguage;
+    } else {
+        // 使用系统语言作为默认
+        const QStringList uiLanguages = QLocale::system().uiLanguages();
+        for (const QString &locale : uiLanguages) {
+            QString localeCode = QLocale(locale).name();
+            if (localeCode.startsWith("zh_CN") || localeCode.startsWith("zh-CN")) {
+                languageToLoad = "zh_CN";
+                break;
+            } else if (localeCode.startsWith("en")) {
+                languageToLoad = "en_US";
+                break;
+            }
         }
+        // 如果没有匹配的语言，默认使用中文
+        if (languageToLoad.isEmpty()) {
+            languageToLoad = "zh_CN";
+        }
+    }
+    
+    const QString qmFile = QString(":/i18n/lele-tools_%1.qm").arg(languageToLoad);
+    if (translator.load(qmFile)) {
+        a.installTranslator(&translator);
     }
     MainWindow w;
     w.show();

@@ -75,7 +75,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Net
 
 
 
-set(TS_FILES lele-tools_zh_CN.ts)
+set(TS_FILES 
+    translations/lele-tools_zh_CN.ts
+    translations/lele-tools_en_US.ts
+)
 
 set(PROJECT_SOURCES
         main.cpp

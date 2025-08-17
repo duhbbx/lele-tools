@@ -13,10 +13,19 @@
 #include <QMenu>
 #include <QKeySequence>
 #include <QDateTime>
+#include <QProcess>
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false), isLeftPanelCollapsed(false), copyTooltip(nullptr) {
-    this->setWindowTitle("乐乐的工具箱");
+    // 初始化设置和翻译器
+    m_settings = new QSettings(QSettings::IniFormat, QSettings::UserScope, "LeleTools", "Settings", this);
+    m_translator = new QTranslator(this);
+    
+    // 加载保存的语言设置
+    QString savedLanguage = m_settings->value("language", "zh_CN").toString();
+    loadLanguage(savedLanguage);
+    
+    this->setWindowTitle(tr("乐乐的工具箱"));
     this->resize(1200, 800);
     
     // 移除标题栏，设置为无边框窗口
@@ -423,6 +432,30 @@ void MainWindow::createMenuBar()
     aboutAction->setIcon(this->style()->standardIcon(QStyle::SP_MessageBoxInformation));
     connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
     helpMenu->addAction(aboutAction);
+    
+    // 语言菜单
+    QMenu *languageMenu = customMenuBar->addMenu(tr("语言(&L)"));
+    languageMenu->setStyleSheet(menuStyle); // 使用相同样式
+    
+    QAction *chineseAction = new QAction(tr("中文（简体）"), this);
+    chineseAction->setCheckable(true);
+    chineseAction->setData("zh_CN");
+    connect(chineseAction, &QAction::triggered, [this]() { changeLanguage("zh_CN"); });
+    languageMenu->addAction(chineseAction);
+    
+    QAction *englishAction = new QAction(tr("English"), this);
+    englishAction->setCheckable(true);
+    englishAction->setData("en_US");
+    connect(englishAction, &QAction::triggered, [this]() { changeLanguage("en_US"); });
+    languageMenu->addAction(englishAction);
+    
+    // 设置当前语言的选中状态
+    QString currentLang = m_settings->value("language", "zh_CN").toString();
+    if (currentLang == "zh_CN") {
+        chineseAction->setChecked(true);
+    } else {
+        englishAction->setChecked(true);
+    }
 }
 
 void MainWindow::setupWindowControls()
@@ -1017,5 +1050,42 @@ void MainWindow::switchToTab(int index)
 {
     if (index >= 0 && index < rightTabWidget->count()) {
         rightTabWidget->setCurrentIndex(index);
+    }
+}
+
+void MainWindow::loadLanguage(const QString &language)
+{
+    // 移除之前的翻译器
+    QApplication::removeTranslator(m_translator);
+    
+    // 加载新的翻译文件
+    QString qmFile = QString(":/i18n/lele-tools_%1.qm").arg(language);
+    if (m_translator->load(qmFile)) {
+        QApplication::installTranslator(m_translator);
+    }
+}
+
+void MainWindow::changeLanguage(const QString &language)
+{
+    // 保存语言设置
+    m_settings->setValue("language", language);
+    
+    // 加载新语言
+    loadLanguage(language);
+    
+    // 显示重启提示
+    QString languageName = (language == "zh_CN") ? tr("中文（简体）") : tr("English");
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setWindowTitle(tr("语言已更改"));
+    msgBox.setText(tr("语言已更改为 %1。\n请重启应用程序以使更改完全生效。").arg(languageName));
+    msgBox.addButton(tr("立即重启"), QMessageBox::AcceptRole);
+    msgBox.addButton(tr("稍后重启"), QMessageBox::RejectRole);
+    
+    int ret = msgBox.exec();
+    if (ret == QMessageBox::AcceptRole) {
+        // 重启应用程序
+        QApplication::quit();
+        QProcess::startDetached(QApplication::applicationFilePath());
     }
 }

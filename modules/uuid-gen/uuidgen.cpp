@@ -38,10 +38,10 @@ void UuidGen::setupUI()
     setupConverterTab();
     setupHistoryTab();
     
-    mainTabWidget->addTab(generatorTab, "UUID生成器");
-    mainTabWidget->addTab(validatorTab, "UUID验证器");
-    mainTabWidget->addTab(converterTab, "格式转换");
-    mainTabWidget->addTab(historyTab, "历史记录");
+    mainTabWidget->addTab(generatorTab, tr("UUID生成器"));
+    mainTabWidget->addTab(validatorTab, tr("UUID验证器"));
+    mainTabWidget->addTab(converterTab, tr("格式转换"));
+    mainTabWidget->addTab(historyTab, tr("历史记录"));
     
     mainLayout->addWidget(mainTabWidget);
     

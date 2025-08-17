@@ -21,6 +21,11 @@
 #include "mainwindowtabwidget.h"
 #include <QGraphicsDropShadowEffect>
 #include <QResizeEvent>
+#include <QTranslator>
+#include <QLocale>
+#include <QSettings>
+#include <QDir>
+#include <QStandardPaths>
 
 #ifdef Q_OS_WIN
 #ifndef WIN32_LEAN_AND_MEAN
@@ -48,6 +53,7 @@ public slots:
     void showAbout();
     void showHelp();
     void exitApplication();
+    void changeLanguage(const QString &language);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -101,6 +107,10 @@ private:
     QRect m_originalGeometry;             // 原始窗口几何
     int m_resizeDirection;                // 缩放方向
     
+    // 国际化相关
+    QTranslator *m_translator;            // 翻译器
+    QSettings *m_settings;                // 设置
+    
     void createTitleBar();                // 创建自定义标题栏
     void createMenuBar();                 // 创建菜单栏
     void setupWindowControls();           // 设置窗口控制按钮
@@ -118,6 +128,7 @@ private:
     void setupTabDropdown();              // 设置标签页下拉菜单
     void updateTabDropdownMenu();         // 更新标签页下拉菜单
     void switchToTab(int index);          // 切换到指定标签页
+    void loadLanguage(const QString &language); // 加载语言
 
 public:
     void addTool(QWidget* w);
