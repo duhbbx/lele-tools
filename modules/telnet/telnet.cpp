@@ -73,7 +73,7 @@ void Telnet::setupUI()
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 6px 12px;
             font-weight: bold;
             font-size: 11pt;
@@ -83,19 +83,19 @@ void Telnet::setupUI()
         QGroupBox {
             font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }
         QLineEdit, QSpinBox, QComboBox {
             border: 2px solid #dddddd;
-            border-radius: 6px;
+            border-radius: 0px;
             padding: 4px 8px;
             font-size: 11pt;
         }
         QTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', monospace;
             font-size: 10pt;
@@ -205,7 +205,7 @@ void Telnet::setupStatusArea()
     statusLayout = new QHBoxLayout();
     
     statusLabel = new QLabel("就绪");
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 4px 8px; background: #f9f9f9; border-radius: 4px;");
+    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 4px 8px; background: #f9f9f9; border-radius: 0px;");
     
     connectionStatusLabel = new QLabel("未连接");
     connectionStatusLabel->setStyleSheet("color: #f44336; font-weight: bold;");

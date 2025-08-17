@@ -52,8 +52,10 @@ HostsEditor::HostsEditor() : QWidget(nullptr), DynamicObjectBase()
     connect(hostsTable, &QTableWidget::itemSelectionChanged, this, &HostsEditor::onTableSelectionChanged);
     
     // 自动加载hosts文件
+    qDebug() << "HostsEditor: 开始加载hosts文件，路径:" << hostsFilePath;
     loadHostsFile();
     updateButtonStates();
+    qDebug() << "HostsEditor: 初始化完成，加载了" << hostEntries.size() << "个条目";
 }
 
 HostsEditor::~HostsEditor() 
@@ -79,10 +81,9 @@ void HostsEditor::setupUI()
         QPushButton {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             padding: 8px 16px;
-            border-radius: 4px;
+            border-radius: 0px;
             border: 1px solid #ccc;
-            font-size: 11pt;
-            font-weight: bold;
+            font-size: 10pt;
             min-width: 80px;
             background-color: #f8f9fa;
         }
@@ -100,9 +101,8 @@ void HostsEditor::setupUI()
         }
         QGroupBox {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-weight: bold;
             border: 2px solid #dee2e6;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
             font-size: 12pt;
@@ -116,7 +116,7 @@ void HostsEditor::setupUI()
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             padding: 8px;
             border: 2px solid #ced4da;
-            border-radius: 4px;
+            border-radius: 0px;
             font-size: 11pt;
             background-color: white;
         }
@@ -128,7 +128,7 @@ void HostsEditor::setupUI()
         QTableWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             border: 2px solid #dee2e6;
-            border-radius: 8px;
+            border-radius: 0px;
             font-size: 11pt;
             gridline-color: #dee2e6;
             background-color: white;
@@ -296,6 +296,21 @@ void HostsEditor::loadHostsFile()
 {
     isLoading = true;
     updateStatus("正在加载hosts文件...", false);
+    
+    // 检查文件是否存在
+    QFileInfo fileInfo(hostsFilePath);
+    if (!fileInfo.exists()) {
+        updateStatus("hosts文件不存在: " + hostsFilePath, true);
+        isLoading = false;
+        return;
+    }
+    
+    // 检查文件是否可读
+    if (!fileInfo.isReadable()) {
+        updateStatus("hosts文件不可读，可能需要管理员权限", true);
+        isLoading = false;
+        return;
+    }
     
     QFile file(hostsFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {

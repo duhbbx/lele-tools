@@ -197,10 +197,10 @@ void YamlFormatter::setupUI()
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 4px 8px;
-            font-weight: bold;
-            font-size: 11pt;
+            font-size: 10pt;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
         }
         QPushButton:hover {
             background-color: #e0e0e0;
@@ -212,7 +212,7 @@ void YamlFormatter::setupUI()
         QGroupBox {
             font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }
@@ -220,10 +220,11 @@ void YamlFormatter::setupUI()
             subcontrol-origin: margin;
             left: 10px;
             padding: 0 5px 0 5px;
+            font-size: 11px;
         }
         QTextEdit, QPlainTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 11pt;
@@ -233,9 +234,10 @@ void YamlFormatter::setupUI()
         }
         QSpinBox {
             border: 2px solid #dddddd;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 11pt;
+            border-radius: 0px;
+            padding: 2px 4px;
+            font-size: 10pt;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
         }
         QSpinBox:focus {
             border-color: #4CAF50;
@@ -268,7 +270,7 @@ void YamlFormatter::setupToolbar()
     
     statusLabel = new QLabel("就绪");
     statusLabel->setFixedHeight(32);
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 6px 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd;");
+    statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 10pt;");
     
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
@@ -504,7 +506,7 @@ void YamlFormatter::updateStatus(const QString& message, bool isError)
     statusLabel->setText(message);
     QString color = isError ? "#d32f2f" : "#2e7d32";
     QString bg = isError ? "#ffebee" : "#e8f5e8";
-    statusLabel->setStyleSheet(QString("color: %1; font-weight: bold; padding: 6px 12px; background: %2; border-radius: 6px;").arg(color, bg));
+    statusLabel->setStyleSheet(QString("color: %1; padding: 6px 12px; background: %2; border-radius: 0px;").arg(color, bg));
 }
 
 #include "yamlformatter.moc"

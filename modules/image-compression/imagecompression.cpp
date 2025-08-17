@@ -185,7 +185,7 @@ void ImageCompression::setupUI()
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 6px 12px;
             font-weight: bold;
         }
@@ -195,7 +195,7 @@ void ImageCompression::setupUI()
         QGroupBox {
             font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }

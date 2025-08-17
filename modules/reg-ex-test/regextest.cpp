@@ -163,7 +163,7 @@ void RegExTest::setupUI()
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 6px 12px;
             font-weight: bold;
             font-size: 11pt;
@@ -178,7 +178,7 @@ void RegExTest::setupUI()
         QGroupBox {
             font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }
@@ -189,7 +189,7 @@ void RegExTest::setupUI()
         }
         QLineEdit, QTextEdit, QPlainTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 6px;
+            border-radius: 0px;
             padding: 6px;
             font-size: 11pt;
         }
@@ -198,7 +198,7 @@ void RegExTest::setupUI()
         }
         QTableWidget {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             alternate-background-color: #f9f9f9;
             gridline-color: #eeeeee;
         }
@@ -211,7 +211,7 @@ void RegExTest::setupUI()
         }
         QTabWidget::pane {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             background-color: white;
         }
         QTabBar::tab {
@@ -256,7 +256,7 @@ void RegExTest::setupToolbar()
             font-weight: bold; 
             padding: 6px 12px; 
             background: #f9f9f9; 
-            border-radius: 6px; 
+            border-radius: 0px; 
             border: 1px solid #ddd;
         }
     )");
@@ -501,7 +501,7 @@ void RegExTest::updateStatus(const QString& message, bool isError)
                 font-weight: bold; 
                 padding: 6px 12px; 
                 background: #ffebee; 
-                border-radius: 6px; 
+                border-radius: 0px; 
                 border: 1px solid #f8bbd9;
             }
         )");
@@ -512,7 +512,7 @@ void RegExTest::updateStatus(const QString& message, bool isError)
                 font-weight: bold; 
                 padding: 6px 12px; 
                 background: #e8f5e8; 
-                border-radius: 6px; 
+                border-radius: 0px; 
                 border: 1px solid #c8e6c9;
             }
         )");

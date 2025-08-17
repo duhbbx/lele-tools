@@ -48,15 +48,14 @@ void Base64EncodeDecode::setupUI()
     // 设置样式
     setStyleSheet(R"(
         QWidget {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
         }
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 4px 8px;
-            font-weight: bold;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QPushButton:hover {
             background-color: #e0e0e0;
@@ -67,7 +66,7 @@ void Base64EncodeDecode::setupUI()
         }
         QTextEdit, QPlainTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 11pt;
@@ -76,9 +75,8 @@ void Base64EncodeDecode::setupUI()
             border-color: #4CAF50;
         }
         QGroupBox {
-            font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }
@@ -120,7 +118,7 @@ void Base64EncodeDecode::setupToolbar()
             font-weight: bold; 
             padding: 6px 12px; 
             background: #f9f9f9; 
-            border-radius: 6px; 
+            border-radius: 0px; 
             border: 1px solid #ddd;
         }
     )");
@@ -261,10 +259,9 @@ void Base64EncodeDecode::updateStatus(const QString& message, bool isError)
         statusLabel->setStyleSheet(R"(
             QLabel {
                 color: #d32f2f; 
-                font-weight: bold; 
                 padding: 6px 12px; 
                 background: #ffebee; 
-                border-radius: 6px; 
+                border-radius: 0px; 
                 border: 1px solid #f8bbd9;
             }
         )");
@@ -272,10 +269,9 @@ void Base64EncodeDecode::updateStatus(const QString& message, bool isError)
         statusLabel->setStyleSheet(R"(
             QLabel {
                 color: #2e7d32; 
-                font-weight: bold; 
                 padding: 6px 12px; 
                 background: #e8f5e8; 
-                border-radius: 6px; 
+                border-radius: 0px; 
                 border: 1px solid #c8e6c9;
             }
         )");

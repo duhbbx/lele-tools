@@ -64,7 +64,7 @@ void SimpleHostsEditor::setupUI()
         QPushButton {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             padding: 8px 16px;
-            border-radius: 4px;
+            border-radius: 0px;
             border: 1px solid #ccc;
             font-size: 11pt;
             font-weight: bold;
@@ -87,7 +87,7 @@ void SimpleHostsEditor::setupUI()
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             font-weight: bold;
             border: 2px solid #dee2e6;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
             font-size: 12pt;
@@ -101,7 +101,7 @@ void SimpleHostsEditor::setupUI()
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 11pt;
             border: 2px solid #ced4da;
-            border-radius: 4px;
+            border-radius: 0px;
             background-color: white;
             line-height: 1.4;
         }
@@ -150,7 +150,7 @@ void SimpleHostsEditor::setupEditorArea()
     
     // 信息标签
     infoLabel = new QLabel("💡 提示：直接编辑hosts文件内容，格式为：IP地址 主机名 # 注释");
-    infoLabel->setStyleSheet("color: #6c757d; font-style: italic; padding: 5px; background-color: #f8f9fa; border-radius: 4px;");
+    infoLabel->setStyleSheet("color: #6c757d; font-style: italic; padding: 5px; background-color: #f8f9fa; border-radius: 0px;");
     infoLabel->setWordWrap(true);
     
     // 文本编辑器

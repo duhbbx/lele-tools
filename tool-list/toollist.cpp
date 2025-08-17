@@ -29,7 +29,7 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
     searchLineEdit = new QLineEdit;
     searchLineEdit->setPlaceholderText("搜索工具...");
     searchLineEdit->setFixedHeight(30);
-    searchLineEdit->setStyleSheet("border: 1px solid #ccc; border-radius: 5px; padding: 5px;");
+    searchLineEdit->setStyleSheet("border: 1px solid #ccc; border-radius: 0px; padding: 5px;");
 
     searchLayout->addWidget(searchLineEdit);
     layout->addWidget(searchWidget, 0); // 搜索区域不拉伸，保持固定大小
@@ -46,7 +46,7 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
         "QListWidget::item {"
         "    padding: 8px;"
         "    margin: 2px 5px;"
-        "    border-radius: 5px;"
+        "    border-radius: 0px;"
         "    border: none;"
         "}"
         "QListWidget::item:hover {"
@@ -59,11 +59,11 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
         "QScrollBar:vertical {"
         "    background: #f0f0f0;"
         "    width: 8px;"
-        "    border-radius: 4px;"
+        "    border-radius: 0px;"
         "}"
         "QScrollBar::handle:vertical {"
         "    background: #c0c0c0;"
-        "    border-radius: 4px;"
+        "    border-radius: 0px;"
         "    min-height: 20px;"
         "}"
         "QScrollBar::handle:vertical:hover {"

@@ -90,7 +90,7 @@ void RandomPasswordGen::setupUI()
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 6px 12px;
             font-weight: bold;
             font-size: 11pt;
@@ -105,7 +105,7 @@ void RandomPasswordGen::setupUI()
         QGroupBox {
             font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }
@@ -123,7 +123,7 @@ void RandomPasswordGen::setupUI()
         }
         QLineEdit, QSpinBox {
             border: 2px solid #dddddd;
-            border-radius: 6px;
+            border-radius: 0px;
             padding: 4px 8px;
             font-size: 11pt;
         }
@@ -135,21 +135,21 @@ void RandomPasswordGen::setupUI()
             height: 8px;
             background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4);
             margin: 2px 0;
-            border-radius: 4px;
+            border-radius: 0px;
         }
         QSlider::handle:horizontal {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
             border: 1px solid #5c5c5c;
             width: 18px;
             margin: -2px 0;
-            border-radius: 9px;
+            border-radius: 0px;
         }
         QSlider::handle:horizontal:hover {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #d4d4d4, stop:1 #afafaf);
         }
         QListWidget {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             alternate-background-color: #f9f9f9;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 11pt;
@@ -164,19 +164,19 @@ void RandomPasswordGen::setupUI()
         }
         QPlainTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 11pt;
         }
         QProgressBar {
             border: 2px solid #cccccc;
-            border-radius: 6px;
+            border-radius: 0px;
             text-align: center;
             font-weight: bold;
         }
         QProgressBar::chunk {
-            border-radius: 4px;
+            border-radius: 0px;
         }
     )");
 }
@@ -210,7 +210,7 @@ void RandomPasswordGen::setupToolbar()
             font-weight: bold; 
             padding: 6px 12px; 
             background: #f9f9f9; 
-            border-radius: 6px; 
+            border-radius: 0px; 
             border: 1px solid #ddd;
         }
     )");
@@ -611,7 +611,7 @@ void RandomPasswordGen::updateStatus(const QString& message, bool isError)
                 font-weight: bold; 
                 padding: 6px 12px; 
                 background: #ffebee; 
-                border-radius: 6px; 
+                border-radius: 0px; 
                 border: 1px solid #f8bbd9;
             }
         )");
@@ -622,7 +622,7 @@ void RandomPasswordGen::updateStatus(const QString& message, bool isError)
                 font-weight: bold; 
                 padding: 6px 12px; 
                 background: #e8f5e8; 
-                border-radius: 6px; 
+                border-radius: 0px; 
                 border: 1px solid #c8e6c9;
             }
         )");

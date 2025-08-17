@@ -393,7 +393,7 @@ void Calculator::applyStyles()
     setStyleSheet(
         "QTextEdit {"
         "    border: 2px solid #bdc3c7;"
-        "    border-radius: 8px;"
+        "    border-radius: 0px;"
         "    padding: 8px;"
         "    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;"
         "    font-size: 14px;"
@@ -411,7 +411,7 @@ void Calculator::applyStyles()
         "    background-color: #3498db;"
         "    color: white;"
         "    border: none;"
-        "    border-radius: 6px;"
+        "    border-radius: 0px;"
         "    padding: 8px 16px;"
         "    font-size: 13px;"
         "    font-weight: bold;"

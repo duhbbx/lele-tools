@@ -177,15 +177,14 @@ void JsonFormatter::setupUI()
     // 设置样式
     setStyleSheet(R"(
         QWidget {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
         }
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 4px 8px;
-            font-weight: bold;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QPushButton:hover {
             background-color: #e0e0e0;
@@ -196,7 +195,7 @@ void JsonFormatter::setupUI()
         }
         QTextEdit, QPlainTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 11pt;
@@ -206,7 +205,7 @@ void JsonFormatter::setupUI()
         }
         QTreeWidget {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             alternate-background-color: #f9f9f9;
         }
         QTreeWidget::item {
@@ -218,7 +217,7 @@ void JsonFormatter::setupUI()
         }
         QTabWidget::pane {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             background-color: white;
         }
         QTabBar::tab {
@@ -233,7 +232,7 @@ void JsonFormatter::setupUI()
         }
         QLineEdit {
             border: 2px solid #dddddd;
-            border-radius: 6px;
+            border-radius: 0px;
             padding: 6px;
         }
         QLineEdit:focus {
@@ -253,7 +252,7 @@ void JsonFormatter::setupToolbar()
     // 创建紧凑的按钮
     formatBtn = new QPushButton("🎨 格式化");
     formatBtn->setToolTip("格式化JSON并添加缩进");
-    formatBtn->setFixedSize(85, 32);
+    formatBtn->setFixedSize(90, 32);
     
     minifyBtn = new QPushButton("📦 压缩");
     minifyBtn->setToolTip("移除空白字符，压缩JSON");
@@ -277,10 +276,9 @@ void JsonFormatter::setupToolbar()
     statusLabel->setStyleSheet(R"(
         QLabel {
             color: #666; 
-            font-weight: bold; 
             padding: 6px 12px; 
             background: #f9f9f9; 
-            border-radius: 6px; 
+            border-radius: 0px; 
             border: 1px solid #ddd;
         }
     )");
@@ -576,9 +574,9 @@ void JsonFormatter::updateStatusBar(const QString& message, bool isError)
 {
     statusLabel->setText(message);
     if (isError) {
-        statusLabel->setStyleSheet("color: #d32f2f; font-weight: bold; padding: 8px; background: #ffebee; border-radius: 6px; border: 1px solid #f8bbd9;");
+        statusLabel->setStyleSheet("color: #d32f2f; padding: 8px; background: #ffebee; border-radius: 0px; border: 1px solid #f8bbd9;");
     } else {
-        statusLabel->setStyleSheet("color: #2e7d32; font-weight: bold; padding: 8px; background: #e8f5e8; border-radius: 6px; border: 1px solid #c8e6c9;");
+        statusLabel->setStyleSheet("color: #2e7d32; padding: 8px; background: #e8f5e8; border-radius: 0px; border: 1px solid #c8e6c9;");
     }
 }
 

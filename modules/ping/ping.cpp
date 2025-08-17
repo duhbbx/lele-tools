@@ -73,7 +73,7 @@ void Ping::setupUI()
     copyBtn->setFixedSize(80, 32);
     
     statusLabel = new QLabel("就绪");
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 6px 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd;");
+    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd;");
     
     buttonLayout->addWidget(startBtn);
     buttonLayout->addWidget(stopBtn);
@@ -113,7 +113,7 @@ void Ping::setupUI()
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
+            border-radius: 0px;
             padding: 6px 12px;
             font-weight: bold;
             font-size: 11pt;
@@ -125,19 +125,19 @@ void Ping::setupUI()
         QGroupBox {
             font-weight: bold;
             border: 2px solid #cccccc;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 1ex;
             padding-top: 10px;
         }
         QLineEdit, QSpinBox {
             border: 2px solid #dddddd;
-            border-radius: 6px;
+            border-radius: 0px;
             padding: 4px 8px;
             font-size: 11pt;
         }
         QTableWidget {
             border: 2px solid #dddddd;
-            border-radius: 8px;
+            border-radius: 0px;
             alternate-background-color: #f9f9f9;
         }
     )");
@@ -378,7 +378,7 @@ void Ping::updateStatus(const QString& message, bool isError)
     statusLabel->setText(message);
     QString color = isError ? "#d32f2f" : "#2e7d32";
     QString bg = isError ? "#ffebee" : "#e8f5e8";
-    statusLabel->setStyleSheet(QString("color: %1; font-weight: bold; padding: 6px 12px; background: %2; border-radius: 6px;").arg(color, bg));
+    statusLabel->setStyleSheet(QString("color: %1; font-weight: bold; padding: 6px 12px; background: %2; border-radius: 0px;").arg(color, bg));
 }
 
 void Ping::onPingFinished() {}
