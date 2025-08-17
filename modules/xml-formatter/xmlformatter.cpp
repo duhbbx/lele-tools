@@ -123,15 +123,14 @@ void XmlFormatter::setupUI()
     // 设置样式
     setStyleSheet(R"(
         QWidget {
-            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
         }
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
-            font-weight: bold;
+            padding: 6px 12px;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            font-weight: normal;
             font-size: 10pt;
         }
         QPushButton:hover {
@@ -143,8 +142,7 @@ void XmlFormatter::setupUI()
         }
         QTextEdit, QPlainTextEdit {
             border: 2px solid #dddddd;
-            border-radius: 8px;
-            padding: 8px;
+            padding: 2px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 11pt;
         }
@@ -179,7 +177,7 @@ void XmlFormatter::setupToolbar()
     
     statusLabel = new QLabel("就绪");
     statusLabel->setFixedHeight(32);
-    statusLabel->setStyleSheet("font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif; color: #666; font-weight: bold; font-size: 10pt; padding: 6px 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd;");
+    statusLabel->setStyleSheet("color: #666; font-weight: bold; font-size: 10pt; padding: 6px 12px; background: #f9f9f9; border: 1px solid #ddd;");
     
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
@@ -199,7 +197,7 @@ void XmlFormatter::setupInputOutput()
     inputLayout = new QVBoxLayout(inputWidget);
     
     inputLabel = new QLabel("📝 XML输入");
-    inputLabel->setStyleSheet("font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif; font-weight: bold; font-size: 11pt; color: #333;");
+    inputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
     
     inputTextEdit = new QTextEdit();
     inputTextEdit->setPlaceholderText("请输入要格式化的XML数据...");
@@ -212,7 +210,7 @@ void XmlFormatter::setupInputOutput()
     outputLayout = new QVBoxLayout(outputWidget);
     
     outputLabel = new QLabel("📄 格式化结果");
-    outputLabel->setStyleSheet("font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif; font-weight: bold; font-size: 11pt; color: #333;");
+    outputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
     
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);
@@ -332,7 +330,7 @@ void XmlFormatter::updateStatus(const QString& message, bool isError)
     statusLabel->setText(message);
     QString color = isError ? "#d32f2f" : "#2e7d32";
     QString bg = isError ? "#ffebee" : "#e8f5e8";
-    statusLabel->setStyleSheet(QString("font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif; color: %1; font-weight: bold; font-size: 10pt; padding: 6px 12px; background: %2; border-radius: 6px;").arg(color, bg));
+    statusLabel->setStyleSheet(QString("color: %1; font-weight: bold; font-size: 11pt; padding: 6px 12px; background: %2;").arg(color, bg));
 }
 
 #include "xmlformatter.moc"

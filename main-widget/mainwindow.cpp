@@ -34,14 +34,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     // 设置全局样式
     QString globalStyle = 
         "* { font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; }"
-        "QMainWindow { background-color: #ffffff; border-radius: 8px; }"
+        "QMainWindow { background-color: #000000; }"
         "QPushButton { font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 11pt; font-weight: bold; padding: 6px 12px; min-width: 60px; }"
         
         // 美化所有文本编辑框
         "QTextEdit {"
         "    border: 2px solid #dee2e6;"
-        "    border-radius: 6px;"
-        "    padding: 8px;"
+        "    padding: 2px;"
         "    background-color: #ffffff;"
         "    color: #495057;"
         "    font-size: 13px;"
@@ -59,8 +58,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
         // 美化所有纯文本编辑框
         "QPlainTextEdit {"
         "    border: 2px solid #dee2e6;"
-        "    border-radius: 6px;"
-        "    padding: 8px;"
+        "    padding: 2px;"
         "    background-color: #ffffff;"
         "    color: #495057;"
         "    font-size: 13px;"
@@ -78,7 +76,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
         // 美化所有单行输入框
         "QLineEdit {"
         "    border: 2px solid #dee2e6;"
-        "    border-radius: 6px;"
         "    padding: 8px 12px;"
         "    background-color: #ffffff;"
         "    color: #495057;"
@@ -97,7 +94,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
         // 美化组合框
         "QComboBox {"
         "    border: 2px solid #dee2e6;"
-        "    border-radius: 6px;"
         "    padding: 8px 12px;"
         "    background-color: #ffffff;"
         "    color: #495057;"
@@ -123,7 +119,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
         // 美化数字输入框
         "QSpinBox, QDoubleSpinBox {"
         "    border: 2px solid #dee2e6;"
-        "    border-radius: 6px;"
         "    padding: 8px 12px;"
         "    background-color: #ffffff;"
         "    color: #495057;"
