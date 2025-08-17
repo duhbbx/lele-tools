@@ -140,6 +140,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
 
     // 创建主容器
     QWidget *mainWidget = new QWidget(this);
+
+    // 主容器是垂直布局的
     QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
@@ -148,25 +150,29 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     createTitleBar();
     mainLayout->addWidget(titleBar);
 
-    // 创建主分割器
-    mainSplitter = new QSplitter(Qt::Horizontal, this);
-    mainSplitter->setChildrenCollapsible(false);
-    mainSplitter->setContentsMargins(0, 0, 0, 0);
+    // 创建主内容区域
+    QWidget *contentWidget = new QWidget();
+    QHBoxLayout *contentLayout = new QHBoxLayout(contentWidget);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
+    contentLayout->setSpacing(0);
     
     // 创建左侧面板（功能菜单）
     leftPanel = new QWidget();
     leftPanel->setFixedWidth(200);  // 进一步缩窄左侧宽度
     leftPanel->setContentsMargins(0, 0, 0, 0);
     leftPanel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    leftPanel->setStyleSheet("background-color: #f5f5f5; border-right: 1px solid #ddd;");
+    leftPanel->setStyleSheet("background-color: #f8f9fa;");
     
     // 创建右侧面板（工作区）
     rightPanel = new QWidget();
     rightPanel->setContentsMargins(0, 0, 0, 0);
+    rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    rightPanel->setStyleSheet("background-color: #ffffff;");
     
     // 创建右侧标签页窗口
     rightTabWidget = new QTabWidget();
     rightTabWidget->setContentsMargins(0, 0, 0, 0);
+    rightTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     rightTabWidget->setTabsClosable(true); // 启用关闭按钮
     rightTabWidget->setMovable(true);      // 允许拖拽标签页
     
@@ -188,30 +194,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     
     // 设置右侧面板布局
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setContentsMargins(0, 0, 0, 0);  // 无边距
     rightLayout->setSpacing(0);
-    rightLayout->addWidget(rightTabWidget);
+    rightLayout->addWidget(rightTabWidget, 1); // 设置拉伸因子为1，让标签页填满右侧面板
     
     // 创建工具列表并添加到左侧面板
     ToolList *toolList = new ToolList(this, nullptr);
     QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
-    leftLayout->setContentsMargins(5, 5, 5, 5);
+    leftLayout->setContentsMargins(5, 5, 5, 5);  // 保持适当边距用于美观
     leftLayout->setSpacing(0);
     leftLayout->addWidget(toolList, 1); // 设置拉伸因子为1，让ToolList填满整个左侧面板
     
-    // 将左右面板添加到分割器
-    mainSplitter->addWidget(leftPanel);
-    mainSplitter->addWidget(rightPanel);
+    // 将左右面板添加到水平布局
+    contentLayout->addWidget(leftPanel, 0);  // 左侧固定宽度，不拉伸
+    contentLayout->addWidget(rightPanel, 1); // 右侧拉伸填满剩余空间
     
-    // 设置分割器比例，左侧固定，右侧自适应
-    mainSplitter->setStretchFactor(0, 0);  // 左侧不拉伸
-    mainSplitter->setStretchFactor(1, 1);  // 右侧可拉伸
-    
-    // 隐藏分割器手柄，使用状态栏toggle控制
-    mainSplitter->setHandleWidth(0);
-    
-    // 将分割器添加到主布局
-    mainLayout->addWidget(mainSplitter);
+    // 将内容区域添加到主布局
+    mainLayout->addWidget(contentWidget, 1); // 设置拉伸因子为1，让内容区域填满可用空间
     
     // 创建状态栏
     createStatusBar();
@@ -312,6 +311,7 @@ void MainWindow::createTitleBar()
         "    padding: 0px;"
         "    margin: 0px;"
         "    spacing: 0px;"
+        "    outline: none;"
         "}"
         "QMenuBar::item {"
         "    background-color: transparent;"
@@ -319,12 +319,16 @@ void MainWindow::createTitleBar()
         "    padding: 6px 10px;"
         "    margin: 0px 1px;"
         "    border-radius: 4px;"
+        "    border: none;"
+        "    outline: none;"
         "}"
         "QMenuBar::item:selected {"
         "    background-color: #e9ecef;"
+        "    border: none;"
         "}"
         "QMenuBar::item:pressed {"
         "    background-color: #dee2e6;"
+        "    border: none;"
         "}"
     );
     
@@ -348,30 +352,41 @@ void MainWindow::createMenuBar()
 {
     // 文件菜单
     QMenu *fileMenu = customMenuBar->addMenu(tr("文件(&F)"));
-    fileMenu->setStyleSheet(
+    QString menuStyle = 
         "QMenu {"
         "    background-color: #ffffff;"
         "    color: #343a40;"
-        "    border: 1px solid #dee2e6;"
-        "    border-radius: 6px;"
-        "    padding: 4px;"
+        "    border: 1px solid #e0e0e0;"
+        "    border-radius: 8px;"
+        "    padding: 8px 4px;"
+        "    outline: none;"
+        "    selection-background-color: #e9ecef;"
         "}"
         "QMenu::item {"
         "    background-color: transparent;"
         "    color: #343a40;"
         "    padding: 8px 16px;"
         "    border-radius: 4px;"
-        "    margin: 1px;"
+        "    margin: 2px 6px;"
+        "    border: none;"
+        "    min-width: 120px;"
         "}"
         "QMenu::item:selected {"
         "    background-color: #e9ecef;"
+        "    border: none;"
+        "    color: #343a40;"
+        "}"
+        "QMenu::item:pressed {"
+        "    background-color: #dee2e6;"
         "}"
         "QMenu::separator {"
         "    height: 1px;"
-        "    background-color: #dee2e6;"
-        "    margin: 4px 8px;"
-        "}"
-    );
+        "    background-color: #e0e0e0;"
+        "    margin: 8px 16px;"
+        "    border: none;"
+        "}";
+    
+    fileMenu->setStyleSheet(menuStyle);
     
     QAction *exitAction = new QAction(tr("退出(&X)"), this);
     exitAction->setShortcut(QKeySequence::Quit);
@@ -383,7 +398,7 @@ void MainWindow::createMenuBar()
     
     // 工具菜单
     QMenu *toolsMenu = customMenuBar->addMenu(tr("工具(&T)"));
-    toolsMenu->setStyleSheet(fileMenu->styleSheet()); // 使用相同样式
+    toolsMenu->setStyleSheet(menuStyle); // 使用相同样式
     
     QAction *backToHomeAction = new QAction(tr("返回首页(&H)"), this);
     backToHomeAction->setShortcut(QKeySequence(tr("Ctrl+H")));
@@ -397,7 +412,7 @@ void MainWindow::createMenuBar()
     
     // 帮助菜单
     QMenu *helpMenu = customMenuBar->addMenu(tr("帮助(&H)"));
-    helpMenu->setStyleSheet(fileMenu->styleSheet()); // 使用相同样式
+    helpMenu->setStyleSheet(menuStyle); // 使用相同样式
     
     QAction *helpAction = new QAction(tr("使用说明(&U)"), this);
     helpAction->setShortcut(QKeySequence::HelpContents);
@@ -575,14 +590,12 @@ void MainWindow::toggleLeftPanel()
     if (isLeftPanelCollapsed) {
         // 展开左侧面板
         leftPanel->setVisible(true);
-        leftPanel->setFixedWidth(200);
         leftPanelToggle->setText("◀ 收起");
         leftPanelToggle->setToolTip("收起左侧工具栏");
         isLeftPanelCollapsed = false;
     } else {
         // 收起左侧面板
         leftPanel->setVisible(false);
-        leftPanel->setFixedWidth(0);
         leftPanelToggle->setText("▶ 展开");
         leftPanelToggle->setToolTip("展开左侧工具栏");
         isLeftPanelCollapsed = true;
@@ -594,8 +607,9 @@ void MainWindow::setupTabWidget()
     // 设置标签页样式
     rightTabWidget->setStyleSheet(
         "QTabWidget::pane {"
-        "    border: 1px solid #dee2e6;"
+        "    border: 1px solid #ced4da;"
         "    background-color: #ffffff;"
+        "    border-radius: 0px;"
         "    margin: 0px;"
         "    padding: 0px;"
         "}"
@@ -620,7 +634,7 @@ void MainWindow::setupTabWidget()
         "    height: 16px;"
         "    margin: 1px;"
         "    background-color: transparent;"
-        "    border-radius: 8px;"
+        "    border-radius: 0px;"
         "}"
         "QTabBar::close-button:hover {"
         "    background-color: #dc3545;"
