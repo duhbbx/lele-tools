@@ -77,10 +77,10 @@ private:
     // 状态栏相关
     QWidget * statusBar;                  // 自定义状态栏
     QLabel * timeLabel;                   // 时间显示标签
+    QPushButton * leftPanelToggle;        // 左侧面板收起/展开按钮
     QTimer * timer;                       // 定时器
     
     // 左侧菜单收起功能
-    QPushButton * collapseButton;         // 收起/展开按钮
     bool isLeftPanelCollapsed;            // 左侧面板是否收起
     
     // 复制提示相关
@@ -104,7 +104,7 @@ private:
     void createMenuBar();                 // 创建菜单栏
     void setupWindowControls();           // 设置窗口控制按钮
     void createStatusBar();               // 创建状态栏
-    void setupCollapseButton();           // 设置收起按钮
+    // setupCollapseButton已移除，改用状态栏toggle
     void updateTime();                    // 更新时间显示
     void toggleLeftPanel();               // 切换左侧面板显示状态
     void setupTabWidget();                // 设置标签页组件

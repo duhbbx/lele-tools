@@ -150,18 +150,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
 
     // 创建主分割器
     mainSplitter = new QSplitter(Qt::Horizontal, this);
+    mainSplitter->setChildrenCollapsible(false);
+    mainSplitter->setContentsMargins(0, 0, 0, 0);
     
     // 创建左侧面板（功能菜单）
     leftPanel = new QWidget();
     leftPanel->setFixedWidth(200);  // 进一步缩窄左侧宽度
+    leftPanel->setContentsMargins(0, 0, 0, 0);
+    leftPanel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     leftPanel->setStyleSheet("background-color: #f5f5f5; border-right: 1px solid #ddd;");
     
     // 创建右侧面板（工作区）
     rightPanel = new QWidget();
+    rightPanel->setContentsMargins(0, 0, 0, 0);
     
     // 创建右侧标签页窗口
     rightTabWidget = new QTabWidget();
-    rightTabWidget->setContentsMargins(10, 10, 10, 10);
+    rightTabWidget->setContentsMargins(0, 0, 0, 0);
     rightTabWidget->setTabsClosable(true); // 启用关闭按钮
     rightTabWidget->setMovable(true);      // 允许拖拽标签页
     
@@ -184,13 +189,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     // 设置右侧面板布局
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(0);
     rightLayout->addWidget(rightTabWidget);
     
     // 创建工具列表并添加到左侧面板
     ToolList *toolList = new ToolList(this, nullptr);
     QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setContentsMargins(5, 5, 5, 5);
-    leftLayout->addWidget(toolList);
+    leftLayout->setSpacing(0);
+    leftLayout->addWidget(toolList, 1); // 设置拉伸因子为1，让ToolList填满整个左侧面板
     
     // 将左右面板添加到分割器
     mainSplitter->addWidget(leftPanel);
@@ -199,6 +206,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     // 设置分割器比例，左侧固定，右侧自适应
     mainSplitter->setStretchFactor(0, 0);  // 左侧不拉伸
     mainSplitter->setStretchFactor(1, 1);  // 右侧可拉伸
+    
+    // 隐藏分割器手柄，使用状态栏toggle控制
+    mainSplitter->setHandleWidth(0);
     
     // 将分割器添加到主布局
     mainLayout->addWidget(mainSplitter);
@@ -213,8 +223,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     // 创建菜单栏内容
     createMenuBar();
     
-    // 设置收起按钮
-    setupCollapseButton();
+    // 移除中间折叠按钮，改用状态栏toggle
     
     // 添加窗口阴影效果
     QGraphicsDropShadowEffect *shadowEffect = new QGraphicsDropShadowEffect(this);
@@ -413,11 +422,13 @@ void MainWindow::setupWindowControls()
         "    background-color: transparent;"
         "    border: none;"
         "    color: #343a40;"
-        "    font-size: 16px;"
-        "    width: 30px;"
-        "    height: 30px;"
-        "    margin: 2px;"
-        "    border-radius: 4px;"
+        "    font-size: 12px;"
+        "    width: 20px;"
+        "    height: 20px;"
+        "    margin: 1px;"
+        "    border-radius: 3px;"
+        "    font-family: 'Segoe UI', Arial, sans-serif;"
+        "    font-weight: normal;"
         "}"
         "QPushButton:hover {"
         "    background-color: #e9ecef;"
@@ -431,11 +442,13 @@ void MainWindow::setupWindowControls()
         "    background-color: transparent;"
         "    border: none;"
         "    color: #343a40;"
-        "    font-size: 16px;"
-        "    width: 30px;"
-        "    height: 30px;"
-        "    margin: 2px;"
-        "    border-radius: 4px;"
+        "    font-size: 12px;"
+        "    width: 20px;"
+        "    height: 20px;"
+        "    margin: 1px;"
+        "    border-radius: 3px;"
+        "    font-family: 'Segoe UI', Arial, sans-serif;"
+        "    font-weight: normal;"
         "}"
         "QPushButton:hover {"
         "    background-color: #e74c3c;"
@@ -478,11 +491,46 @@ void MainWindow::setupWindowControls()
 void MainWindow::createStatusBar()
 {
     statusBar = new QWidget();
-    statusBar->setFixedHeight(25);
+    statusBar->setFixedHeight(28);
     statusBar->setStyleSheet("background-color: #f0f0f0; border-top: 1px solid #ddd;");
     
     QHBoxLayout *statusLayout = new QHBoxLayout(statusBar);
-    statusLayout->setContentsMargins(10, 2, 10, 2);
+    statusLayout->setContentsMargins(10, 3, 10, 3);
+    
+    // 添加左侧面板toggle按钮
+    leftPanelToggle = new QPushButton();
+    leftPanelToggle->setFixedSize(85, 22);
+    leftPanelToggle->setText("◀ 收起");
+    leftPanelToggle->setStyleSheet(
+        "QPushButton {"
+        "    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f8f9fa, stop:1 #e9ecef);"
+        "    border: 1px solid #ced4da;"
+        "    border-radius: 4px;"
+        "    color: #495057;"
+        "    font-size: 10px;"
+        "    font-weight: bold;"
+        "    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;"
+        "    padding: 2px 6px;"
+        "    text-align: center;"
+        "}"
+        "QPushButton:hover {"
+        "    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e3f2fd, stop:1 #bbdefb);"
+        "    border-color: #2196F3;"
+        "    color: #1976D2;"
+        "}"
+        "QPushButton:pressed {"
+        "    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #bbdefb, stop:1 #90caf9);"
+        "    border-color: #1976D2;"
+        "    color: #0d47a1;"
+        "}"
+        "QPushButton:focus {"
+        "    outline: none;"
+        "    border-color: #2196F3;"
+        "    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);"
+        "}"
+    );
+    leftPanelToggle->setToolTip("收起/展开左侧工具栏");
+    connect(leftPanelToggle, &QPushButton::clicked, this, &MainWindow::toggleLeftPanel);
     
     // 添加时间标签
     timeLabel = new QLabel();
@@ -504,6 +552,7 @@ void MainWindow::createStatusBar()
     timeLabel->setAttribute(Qt::WA_Hover, true);
     timeLabel->installEventFilter(this);
     
+    statusLayout->addWidget(leftPanelToggle);
     statusLayout->addStretch(); // 推到右侧
     statusLayout->addWidget(timeLabel);
     
@@ -519,55 +568,7 @@ void MainWindow::updateTime()
     timeLabel->setText(currentTime.toString("yyyy-MM-dd hh:mm:ss"));
 }
 
-void MainWindow::setupCollapseButton()
-{
-    collapseButton = new QPushButton();
-    collapseButton->setFixedSize(8, 100); // 更小的宽度
-    
-    // 创建一个竖线样式的按钮
-    collapseButton->setStyleSheet(
-        "QPushButton {"
-        "    background-color: #e9ecef;"
-        "    border: none;"
-        "    color: #6c757d;"
-        "    font-size: 8px;"
-        "    border-left: 1px solid #dee2e6;"
-        "    border-right: 1px solid #dee2e6;"
-        "    border-radius: 0px;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #007bff;"
-        "    color: white;"
-        "}"
-        "QPushButton:pressed {"
-        "    background-color: #0056b3;"
-        "}"
-    );
-    
-    // 设置按钮文本为小点
-    collapseButton->setText("⋯");
-    collapseButton->setToolTip("收起/展开左侧菜单");
-    
-    // 将按钮添加到右侧面板的布局中
-    QVBoxLayout *rightLayout = qobject_cast<QVBoxLayout*>(rightPanel->layout());
-    if (rightLayout) {
-        // 创建一个包含按钮的容器
-        QWidget *buttonContainer = new QWidget();
-        buttonContainer->setFixedWidth(8);
-        
-        QVBoxLayout *buttonLayout = new QVBoxLayout(buttonContainer);
-        buttonLayout->setContentsMargins(0, 0, 0, 0);
-        buttonLayout->addStretch();
-        buttonLayout->addWidget(collapseButton);
-        buttonLayout->addStretch();
-        
-        // 将按钮容器添加到分割器的右侧
-        mainSplitter->insertWidget(1, buttonContainer);
-        mainSplitter->insertWidget(2, rightPanel);
-    }
-    
-    connect(collapseButton, &QPushButton::clicked, this, &MainWindow::toggleLeftPanel);
-}
+// setupCollapseButton函数已移除，改用状态栏toggle按钮
 
 void MainWindow::toggleLeftPanel()
 {
@@ -575,15 +576,15 @@ void MainWindow::toggleLeftPanel()
         // 展开左侧面板
         leftPanel->setVisible(true);
         leftPanel->setFixedWidth(200);
-        collapseButton->setText("⋯");
-        collapseButton->setToolTip("收起左侧菜单");
+        leftPanelToggle->setText("◀ 收起");
+        leftPanelToggle->setToolTip("收起左侧工具栏");
         isLeftPanelCollapsed = false;
     } else {
         // 收起左侧面板
         leftPanel->setVisible(false);
         leftPanel->setFixedWidth(0);
-        collapseButton->setText("⋮");
-        collapseButton->setToolTip("展开左侧菜单");
+        leftPanelToggle->setText("▶ 展开");
+        leftPanelToggle->setToolTip("展开左侧工具栏");
         isLeftPanelCollapsed = true;
     }
 }
@@ -595,6 +596,8 @@ void MainWindow::setupTabWidget()
         "QTabWidget::pane {"
         "    border: 1px solid #dee2e6;"
         "    background-color: #ffffff;"
+        "    margin: 0px;"
+        "    padding: 0px;"
         "}"
         "QTabBar::tab {"
         "    background-color: #f8f9fa;"

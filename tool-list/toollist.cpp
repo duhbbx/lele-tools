@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QLabel>
+#include <QSizePolicy>
 
 #include "module-meta.h"
 ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
@@ -20,6 +21,7 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 
     // 搜索区域
     QWidget *searchWidget = new QWidget;
+    searchWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QVBoxLayout *searchLayout = new QVBoxLayout(searchWidget);
     searchLayout->setContentsMargins(5, 0, 5, 0);
     searchLayout->setSpacing(5);
@@ -30,10 +32,11 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
     searchLineEdit->setStyleSheet("border: 1px solid #ccc; border-radius: 5px; padding: 5px;");
 
     searchLayout->addWidget(searchLineEdit);
-    layout->addWidget(searchWidget);
+    layout->addWidget(searchWidget, 0); // 搜索区域不拉伸，保持固定大小
 
     // 工具列表
     listWidget = new QListWidget;
+    listWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     listWidget->setStyleSheet(
         "QListWidget {"
         "    border: none;"
@@ -85,13 +88,16 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
         listWidget->addItem(item0);
     }
 
-    layout->addWidget(listWidget);
+    layout->addWidget(listWidget, 1); // 设置拉伸因子为1，让列表填满剩余空间
 
     QObject::connect(listWidget, &QListWidget::itemClicked, mainWindow, &MainWindow::itemClickedSlot);
 
     // 设置搜索功能
     setupSearchFunctionality();
 
+    // 设置大小策略，确保组件能填满父容器
+    this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
     this->setLayout(layout);
 }
 

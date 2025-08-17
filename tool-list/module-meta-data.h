@@ -14,6 +14,10 @@
 
 {"xxx", "Telnet工具", "Telnet"},
 
+{"xxx", "Hosts文件编辑", "HostsEditor"},
+
+{"xxx", "Hosts文本编辑", "SimpleHostsEditor"},
+
 {"xxx", "Ping工具", "Ping"},
 
 {"xxx", "Pdf合并", "PdfMerge"},
