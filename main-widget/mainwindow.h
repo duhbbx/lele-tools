@@ -18,6 +18,7 @@
 #include <QPropertyAnimation>
 #include <QApplication>
 #include <QClipboard>
+#include "mainwindowtabwidget.h"
 #include <QGraphicsDropShadowEffect>
 #include <QResizeEvent>
 
@@ -62,7 +63,7 @@ protected:
 #endif
 
 private:
-    QTabWidget * rightTabWidget;          // 右侧标签页工作区
+    MainWindowTabWidget * rightTabWidget;          // 右侧标签页工作区
     // QSplitter * mainSplitter;             // 主分割器 - 已移除，改用水平布局
     QWidget * leftPanel;                  // 左侧面板
     QWidget * rightPanel;                 // 右侧面板

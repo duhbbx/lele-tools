@@ -254,7 +254,7 @@ void YamlFormatter::setupToolbar()
     toolbarLayout->setSpacing(8);
     
     formatBtn = new QPushButton("🎨 格式化");
-    formatBtn->setFixedSize(85, 32);
+    formatBtn->setFixedSize(90, 32);
     
     minifyBtn = new QPushButton("📦 压缩");
     minifyBtn->setFixedSize(75, 32);

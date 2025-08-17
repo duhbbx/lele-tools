@@ -58,17 +58,20 @@ add_subdirectory(common/thirdparty/yaml-cpp)
 
 # 源码加进来
 file(GLOB_RECURSE SOURCES ./modules/*.cpp)
+file(GLOB_RECURSE COMMON_SOURCES ./common/*.cpp)
+# 排除第三方库的源码，它们有自己的编译规则
+list(FILTER COMMON_SOURCES EXCLUDE REGEX ".*thirdparty.*")
 
 
 
 
 # 将模块的源码加进来
-SET(MODULE_SOURCES ${SOURCES})
+SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 
 
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent)
 
 
 
@@ -77,7 +80,10 @@ set(TS_FILES lele-tools_zh_CN.ts)
 set(PROJECT_SOURCES
         main.cpp
         main-widget/mainwindow.cpp main-widget/mainwindow.h
+        main-widget/customtabbar.cpp main-widget/customtabbar.h
+        main-widget/mainwindowtabwidget.cpp main-widget/mainwindowtabwidget.h
         common/dynamicobjectbase.cpp common/dynamicobjectbase.h
+        common/customtabwidget.cpp common/customtabwidget.h
         common/thirdparty/pugixml/pugixml.cpp common/thirdparty/pugixml/pugixml.hpp common/thirdparty/pugixml/pugiconfig.hpp
         common/validator/myintvalidator.cpp
         ${TS_FILES}
@@ -137,7 +143,7 @@ else()
     message(WARNING "Qt6 WebEngineWidgets not found - some features may be disabled")
 endif()
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network yaml-cpp)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent yaml-cpp)
 
 
 # 链接库

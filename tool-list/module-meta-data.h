@@ -14,15 +14,13 @@
 
 {"xxx", "Telnet工具", "Telnet"},
 
-{"xxx", "Hosts文件编辑", "HostsEditor"},
+{"xxx", "Hosts编辑(表格)", "HostsEditor"},
 
-{"xxx", "Hosts文本编辑", "SimpleHostsEditor"},
+{"xxx", "Hosts编辑(文本)", "SimpleHostsEditor"},
 
 {"xxx", "Ping工具", "Ping"},
 
 {"xxx", "Pdf合并", "PdfMerge"},
-
-{"xxx", "时间日期计算器", "DateTimeCalculator"},
 
 {"xxx", "正则测试工具", "RegExTest"},
 
@@ -42,7 +40,7 @@
 
 {"xxx", "邮编区号查询", "ZipCodeQuery"},
 
-{"xxx", "二维码生成", "QrCodeGen"},
+{"xxx", "二维码", "QrCodeGen"},
 
 {"xxx", "图片文字识别", "ImageTextRecognition"},
 
@@ -52,7 +50,7 @@
 
 {"xxx", "图片格式转换", "ImageFormatConversion"},
 
-{"xxx", "http状态码", "httpStatusCode"},
+{"xxx", "HTTP状态码", "HttpStatusCode"},
 
 {"xxx", "crontab时间计算", "CrontabTimeCalculation"},
 

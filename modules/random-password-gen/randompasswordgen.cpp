@@ -1,4 +1,5 @@
 #include "randompasswordgen.h"
+#include "../../common/global-styles.h"
 
 #include <QDebug>
 #include <QFont>
@@ -80,20 +81,19 @@ void RandomPasswordGen::setupUI()
     
     // 添加到主布局
     mainLayout->addWidget(toolbarWidget);
-    mainLayout->addWidget(mainSplitter);
+    mainLayout->addWidget(mainSplitter, 1); // 添加stretch factor，让splitter占据剩余空间
     
     // 设置样式
     setStyleSheet(R"(
         QWidget {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
         }
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
             border-radius: 0px;
-            padding: 6px 12px;
-            font-weight: bold;
-            font-size: 11pt;
+            padding: 4px 8px;
+            font-size: 10pt;
         }
         QPushButton:hover {
             background-color: #e0e0e0;
@@ -116,10 +116,31 @@ void RandomPasswordGen::setupUI()
         }
         QCheckBox {
             spacing: 8px;
+            font-size: 11pt;
         }
         QCheckBox::indicator {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #cccccc;
+            border-radius: 3px;
+            background-color: white;
+        }
+        QCheckBox::indicator:hover {
+            border-color: #4CAF50;
+            background-color: #f8f8f8;
+        }
+        QCheckBox::indicator:checked {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDNMNC41IDguNUwyIDYiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=);
+        }
+        QCheckBox::indicator:checked:hover {
+            background-color: #45a049;
+            border-color: #45a049;
+        }
+        QCheckBox::indicator:disabled {
+            background-color: #f5f5f5;
+            border-color: #e0e0e0;
         }
         QLineEdit, QSpinBox {
             border: 2px solid #dddddd;
@@ -367,8 +388,8 @@ void RandomPasswordGen::setupPasswordDisplay()
     previewLayout->addWidget(previewEdit);
     
     displayLayout->addWidget(displayLabel);
-    displayLayout->addWidget(passwordList, 2);
-    displayLayout->addWidget(previewGroup, 0);
+    displayLayout->addWidget(passwordList, 2); // 密码列表占主要空间
+    displayLayout->addWidget(previewGroup, 0); // 预览区域固定大小
 }
 
 void RandomPasswordGen::onGenerateClicked()

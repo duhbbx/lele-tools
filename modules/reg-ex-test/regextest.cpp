@@ -224,6 +224,27 @@ void RegExTest::setupUI()
             background-color: white;
             border-bottom-color: white;
         }
+        QTabBar::close-button {
+            subcontrol-position: right;
+            border: none;
+            width: 16px;
+            height: 16px;
+            margin: 1px;
+            background-color: transparent;
+            border-radius: 8px;
+            image: none;
+        }
+        QTabBar::tab:hover QTabBar::close-button {
+            image: url(:/resources/close.svg);
+        }
+        QTabBar::close-button:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid #dc3545;
+        }
+        QTabBar::close-button:pressed {
+            background-color: rgba(200, 35, 51, 0.2);
+            border: 1px solid #c82333;
+        }
     )");
 }
 

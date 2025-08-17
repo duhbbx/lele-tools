@@ -165,7 +165,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     rightPanel->setStyleSheet("background-color: #ffffff;");
     
     // 创建右侧标签页窗口
-    rightTabWidget = new QTabWidget();
+    rightTabWidget = new MainWindowTabWidget();
     rightTabWidget->setContentsMargins(0, 0, 0, 0);
     rightTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     rightTabWidget->setTabsClosable(true); // 启用关闭按钮
@@ -599,45 +599,7 @@ void MainWindow::toggleLeftPanel()
 
 void MainWindow::setupTabWidget()
 {
-    // 设置标签页样式
-    rightTabWidget->setStyleSheet(
-        "QTabWidget::pane {"
-        "    border: 1px solid #ced4da;"
-        "    background-color: #ffffff;"
-        "    border-radius: 0px;"
-        "    margin: 0px;"
-        "    padding: 0px;"
-        "}"
-        "QTabBar::tab {"
-        "    background-color: #f8f9fa;"
-        "    color: #495057;"
-        "    padding: 8px 16px;"
-        "    margin-right: 2px;"
-        "    border: 1px solid #dee2e6;"
-        "    border-bottom: none;"
-        "    min-width: 80px;"
-        "}"
-        "QTabBar::tab:selected {"
-        "    background-color: #ffffff;"
-        "    color: #212529;"
-        "    border-bottom: 1px solid #ffffff;"
-        "}"
-        "QTabBar::close-button {"
-        "    subcontrol-position: right;"
-        "    border: none;"
-        "    width: 16px;"
-        "    height: 16px;"
-        "    margin: 1px;"
-        "    background-color: transparent;"
-        "    border-radius: 0px;"
-        "}"
-        "QTabBar::close-button:hover {"
-        "    background-color: #dc3545;"
-        "}"
-        "QTabBar::close-button:pressed {"
-        "    background-color: #c82333;"
-        "}"
-    );
+    // 标签页样式已在 MainWindowTabWidget 中设置
     
 
     
@@ -777,7 +739,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
     // 移除自定义缩放逻辑，使用Windows原生缩放
     if (m_bPressed && (event->buttons() & Qt::LeftButton)) {
-        move(event->globalPos() - m_point);
+        move(event->globalPosition().toPoint() - m_point);
         setCursor(Qt::ArrowCursor); // 使用普通箭头光标
     } else {
         setCursor(Qt::ArrowCursor); // 始终使用箭头光标

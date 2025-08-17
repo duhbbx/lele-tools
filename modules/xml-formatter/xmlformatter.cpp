@@ -128,7 +128,7 @@ void XmlFormatter::setupUI()
         QPushButton {
             background-color: #f0f0f0;
             border: 1px solid #cccccc;
-            padding: 6px 12px;
+            padding: 4px 8px;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             font-weight: normal;
             font-size: 10pt;
@@ -144,7 +144,7 @@ void XmlFormatter::setupUI()
             border: 2px solid #dddddd;
             padding: 2px;
             font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QTextEdit:focus, QPlainTextEdit:focus {
             border-color: #4CAF50;
@@ -330,7 +330,7 @@ void XmlFormatter::updateStatus(const QString& message, bool isError)
     statusLabel->setText(message);
     QString color = isError ? "#d32f2f" : "#2e7d32";
     QString bg = isError ? "#ffebee" : "#e8f5e8";
-    statusLabel->setStyleSheet(QString("color: %1; font-weight: bold; font-size: 11pt; padding: 6px 12px; background: %2;").arg(color, bg));
+    statusLabel->setStyleSheet(QString("color: %1; font-size: 1pt; padding: 4px 8px; background: %2;").arg(color, bg));
 }
 
 #include "xmlformatter.moc"
