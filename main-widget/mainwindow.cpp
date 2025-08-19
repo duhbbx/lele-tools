@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QTimer>
+#include <QPushButton>
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false), isLeftPanelCollapsed(false), copyTooltip(nullptr) {
@@ -45,10 +46,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     this->setAttribute(Qt::WA_StaticContents);
     this->setAttribute(Qt::WA_PaintOnScreen, false);
     // 设置全局样式
-    QString globalStyle = 
-        "* { font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; }"
+    QString globalStyle = GlobalStyles::getGlobalStyle() + 
         "QMainWindow { background-color: #000000; }"
-        "QPushButton { font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 10pt; padding: 6px 12px; min-width: 60px; }"
         
         // 美化所有文本编辑框
         "QTextEdit {"
@@ -1099,11 +1098,19 @@ void MainWindow::changeLanguage(const QString &language)
     msgBox.setIcon(QMessageBox::Information);
     msgBox.setWindowTitle(tr("语言已更改"));
     msgBox.setText(tr("语言已更改为 %1。\n请重启应用程序以使更改完全生效。").arg(languageName));
-    msgBox.addButton(tr("立即重启"), QMessageBox::AcceptRole);
-    msgBox.addButton(tr("稍后重启"), QMessageBox::RejectRole);
+    
+    // 创建按钮并保存引用
+    QPushButton *restartNowBtn = msgBox.addButton(tr("立即重启"), QMessageBox::AcceptRole);
+    QPushButton *restartLaterBtn = msgBox.addButton(tr("稍后重启"), QMessageBox::RejectRole);
     
     int ret = msgBox.exec();
-    if (ret == QMessageBox::AcceptRole) {
+    QPushButton *clickedBtn = qobject_cast<QPushButton*>(msgBox.clickedButton());
+    
+    qDebug() << "changeLanguage - 返回值：" << ret;
+    qDebug() << "changeLanguage - 点击的按钮：" << (clickedBtn ? clickedBtn->text() : "未知");
+    qDebug() << "changeLanguage - 是否是立即重启按钮：" << (clickedBtn == restartNowBtn);
+    
+    if (clickedBtn == restartNowBtn) {
         // 重启应用程序
         // 获取应用程序路径和参数
         QString program = QApplication::applicationFilePath();

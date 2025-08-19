@@ -4,45 +4,57 @@ QString GlobalStyles::getCheckBoxStyle()
 {
     return R"(
         QCheckBox {
-            spacing: 8px;
-            font-size: 11pt;
+            spacing: 10px;
+            font-size: 10px;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
+            padding: 2px;
         }
         QCheckBox::indicator {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #cccccc;
-            border-radius: 4px;
-            background-color: white;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            background-color: #ffffff;
+            margin: 1px;
         }
         QCheckBox::indicator:hover {
-            border-color: #4CAF50;
-            background-color: #f0f8f0;
+            border-color: #3498db;
+            background-color: #ecf0f1;
         }
         QCheckBox::indicator:checked {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAxNCAxNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTExLjMzMzMgMy41TDUuMjUgOS41ODMzTDIuNjY2NjcgNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyLjMzMzMzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+);
+            background-color: #3498db;
+            border-color: #2980b9;
+            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzLjMzMzMgNEw2IDExLjMzMzNMMi42NjY2NyA4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=);
         }
         QCheckBox::indicator:checked:hover {
-            background-color: #45a049;
-            border-color: #45a049;
+            background-color: #2980b9;
+            border-color: #1f618d;
         }
         QCheckBox::indicator:checked:pressed {
-            background-color: #3d8b40;
-            border-color: #3d8b40;
+            background-color: #1f618d;
+            border-color: #154360;
+        }
+        QCheckBox::indicator:unchecked:pressed {
+            background-color: #d5dbdb;
+            border-color: #85929e;
         }
         QCheckBox::indicator:disabled {
-            background-color: #f5f5f5;
-            border-color: #e0e0e0;
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
         }
         QCheckBox::indicator:checked:disabled {
-            background-color: #cccccc;
-            border-color: #cccccc;
+            background-color: #adb5bd;
+            border-color: #6c757d;
         }
         QCheckBox:disabled {
-            color: #999999;
+            color: #6c757d;
+        }
+        QCheckBox:focus {
+            outline: none;
+        }
+        QCheckBox::indicator:focus {
+            border-color: #3498db;
         }
     )";
 }
@@ -54,8 +66,8 @@ QString GlobalStyles::getButtonStyle()
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 6px;
-            padding: 8px 16px;
-            font-size: 11pt;
+            padding: 4px 8px;
+            font-size: 10px;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             min-height: 16px;
@@ -95,8 +107,8 @@ QString GlobalStyles::getInputStyle()
         QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
             border: 2px solid #e1e5e9;
             border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 11pt;
+            padding: 4px 8px;
+            font-size: 10px;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             background-color: white;
             color: #333333;
@@ -118,7 +130,7 @@ QString GlobalStyles::getGlobalStyle()
     return QString(R"(
         QWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10px;
             color: #333333;
         }
         QGroupBox {
@@ -126,20 +138,20 @@ QString GlobalStyles::getGlobalStyle()
             border: 2px solid #dee2e6;
             border-radius: 8px;
             margin-top: 1ex;
-            padding-top: 12px;
-            font-size: 11pt;
+            padding-top: 8px;
+            font-size: 10px;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
-            left: 12px;
-            padding: 0 8px 0 8px;
+            left: 8px;
+            padding: 0 4px 0 4px;
             color: #495057;
         }
         QProgressBar {
             border: 1px solid #dee2e6;
             border-radius: 6px;
             text-align: center;
-            font-size: 11pt;
+            font-size: 10px;
         }
         QProgressBar::chunk {
             background-color: #4CAF50;
@@ -149,11 +161,11 @@ QString GlobalStyles::getGlobalStyle()
             border: 1px solid #dee2e6;
             border-radius: 6px;
             gridline-color: #e9ecef;
-            font-size: 11pt;
+            font-size: 10px;
             background-color: white;
         }
         QTableWidget::item {
-            padding: 6px;
+            padding: 4px 8px;
             border-bottom: 1px solid #e9ecef;
         }
         QTableWidget::item:selected {
@@ -163,9 +175,9 @@ QString GlobalStyles::getGlobalStyle()
         QHeaderView::section {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
-            padding: 8px;
+            padding: 4px 8px;
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 10px;
         }
     )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle();
 }

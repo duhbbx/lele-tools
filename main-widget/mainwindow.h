@@ -27,6 +27,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QActionGroup>
+#include "../common/global-styles.h"
 
 #ifdef Q_OS_WIN
 #ifndef WIN32_LEAN_AND_MEAN
