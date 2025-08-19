@@ -4,6 +4,7 @@
 #include <QLocale>
 #include <QTranslator>
 #include <QSettings>
+#include <QDebug>
 
 int main(int argc, char *argv[])
 {
@@ -47,9 +48,35 @@ int main(int argc, char *argv[])
         }
     }
     
-    const QString qmFile = QString(":/i18n/lele-tools_%1.qm").arg(languageToLoad);
+    // 尝试加载翻译文件，Qt6的qt_add_translations可能使用不同的资源路径
+    bool translationLoaded = false;
+    
+    // 调试输出
+    qDebug() << "Trying to load language:" << languageToLoad;
+    
+    // 尝试Qt6 qt_add_translations的默认路径
+    QString qmFile = QString(":/qt/qml/lele-tools/lele-tools_%1.qm").arg(languageToLoad);
+    qDebug() << "Trying path 1:" << qmFile;
     if (translator.load(qmFile)) {
+        translationLoaded = true;
+        qDebug() << "Translation loaded from path 1";
+    } else {
+        // 尝试标准的i18n路径
+        qmFile = QString(":/i18n/lele-tools_%1.qm").arg(languageToLoad);
+        qDebug() << "Trying path 2:" << qmFile;
+        if (translator.load(qmFile)) {
+            translationLoaded = true;
+            qDebug() << "Translation loaded from path 2";
+        } else {
+            qDebug() << "Failed to load translation files";
+        }
+    }
+    
+    if (translationLoaded) {
         a.installTranslator(&translator);
+        qDebug() << "Translator installed successfully";
+    } else {
+        qDebug() << "No translator installed, using default language";
     }
     MainWindow w;
     w.show();

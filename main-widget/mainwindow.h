@@ -26,6 +26,7 @@
 #include <QSettings>
 #include <QDir>
 #include <QStandardPaths>
+#include <QActionGroup>
 
 #ifdef Q_OS_WIN
 #ifndef WIN32_LEAN_AND_MEAN
@@ -110,6 +111,7 @@ private:
     // 国际化相关
     QTranslator *m_translator;            // 翻译器
     QSettings *m_settings;                // 设置
+    QActionGroup *m_languageActionGroup;  // 语言选项组
     
     void createTitleBar();                // 创建自定义标题栏
     void createMenuBar();                 // 创建菜单栏

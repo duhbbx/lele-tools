@@ -96,24 +96,24 @@
         <translation>Lele's Toolbox</translation>
     </message>
     <message>
-        <source>文件(&F)</source>
-        <translation>File(&F)</translation>
+        <source>文件(&amp;F)</source>
+        <translation>File(&amp;F)</translation>
     </message>
     <message>
-        <source>退出(&X)</source>
-        <translation>Exit(&X)</translation>
+        <source>退出(&amp;X)</source>
+        <translation>Exit(&amp;X)</translation>
     </message>
     <message>
         <source>退出应用程序</source>
         <translation>Exit the application</translation>
     </message>
     <message>
-        <source>工具(&T)</source>
-        <translation>Tools(&T)</translation>
+        <source>工具(&amp;T)</source>
+        <translation>Tools(&amp;T)</translation>
     </message>
     <message>
-        <source>返回首页(&H)</source>
-        <translation>Back to Home(&H)</translation>
+        <source>返回首页(&amp;H)</source>
+        <translation>Back to Home(&amp;H)</translation>
     </message>
     <message>
         <source>Ctrl+H</source>
@@ -124,28 +124,28 @@
         <translation>Return to tool selection page</translation>
     </message>
     <message>
-        <source>帮助(&H)</source>
-        <translation>Help(&H)</translation>
+        <source>帮助(&amp;H)</source>
+        <translation>Help(&amp;H)</translation>
     </message>
     <message>
-        <source>使用说明(&U)</source>
-        <translation>User Guide(&U)</translation>
+        <source>使用说明(&amp;U)</source>
+        <translation>User Guide(&amp;U)</translation>
     </message>
     <message>
         <source>查看使用说明</source>
         <translation>View user guide</translation>
     </message>
     <message>
-        <source>关于(&A)</source>
-        <translation>About(&A)</translation>
+        <source>关于(&amp;A)</source>
+        <translation>About(&amp;A)</translation>
     </message>
     <message>
         <source>关于乐乐的工具箱</source>
         <translation>About Lele's Toolbox</translation>
     </message>
     <message>
-        <source>语言(&L)</source>
-        <translation>Language(&L)</translation>
+        <source>语言(&amp;L)</source>
+        <translation>Language(&amp;L)</translation>
     </message>
     <message>
         <source>中文（简体）</source>
@@ -184,6 +184,22 @@ Please restart the application for changes to take full effect.</translation>
     <message>
         <source>稍后重启</source>
         <translation>Restart Later</translation>
+    </message>
+    <message>
+        <source>重启失败</source>
+        <translation>Restart Failed</translation>
+    </message>
+    <message>
+        <source>无法启动新实例，请手动重启应用程序。</source>
+        <translation>Failed to start new instance, please restart the application manually.</translation>
+    </message>
+    <message>
+        <source>无法启动新实例，请手动重启应用程序。
+
+程序路径: %1</source>
+        <translation>Failed to start new instance, please restart the application manually.
+
+Program path: %1</translation>
     </message>
 </context>
 <context>

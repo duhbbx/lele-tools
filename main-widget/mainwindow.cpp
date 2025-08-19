@@ -14,12 +14,16 @@
 #include <QKeySequence>
 #include <QDateTime>
 #include <QProcess>
+#include <QDebug>
+#include <QDir>
+#include <QTimer>
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false), isLeftPanelCollapsed(false), copyTooltip(nullptr) {
     // 初始化设置和翻译器
     m_settings = new QSettings(QSettings::IniFormat, QSettings::UserScope, "LeleTools", "Settings", this);
     m_translator = new QTranslator(this);
+    m_languageActionGroup = new QActionGroup(this);
     
     // 加载保存的语言设置
     QString savedLanguage = m_settings->value("language", "zh_CN").toString();
@@ -440,12 +444,14 @@ void MainWindow::createMenuBar()
     QAction *chineseAction = new QAction(tr("中文（简体）"), this);
     chineseAction->setCheckable(true);
     chineseAction->setData("zh_CN");
+    m_languageActionGroup->addAction(chineseAction);
     connect(chineseAction, &QAction::triggered, [this]() { changeLanguage("zh_CN"); });
     languageMenu->addAction(chineseAction);
     
     QAction *englishAction = new QAction(tr("English"), this);
     englishAction->setCheckable(true);
     englishAction->setData("en_US");
+    m_languageActionGroup->addAction(englishAction);
     connect(englishAction, &QAction::triggered, [this]() { changeLanguage("en_US"); });
     languageMenu->addAction(englishAction);
     
@@ -1060,8 +1066,14 @@ void MainWindow::loadLanguage(const QString &language)
     
     // 加载新的翻译文件
     QString qmFile = QString(":/i18n/lele-tools_%1.qm").arg(language);
+    qDebug() << "MainWindow::loadLanguage - Loading:" << language;
+    qDebug() << "MainWindow::loadLanguage - QM file path:" << qmFile;
+    
     if (m_translator->load(qmFile)) {
         QApplication::installTranslator(m_translator);
+        qDebug() << "MainWindow::loadLanguage - Translation loaded and installed successfully";
+    } else {
+        qDebug() << "MainWindow::loadLanguage - Failed to load translation file";
     }
 }
 
@@ -1069,6 +1081,14 @@ void MainWindow::changeLanguage(const QString &language)
 {
     // 保存语言设置
     m_settings->setValue("language", language);
+    
+    // 更新菜单选中状态
+    foreach (QAction *action, m_languageActionGroup->actions()) {
+        if (action->data().toString() == language) {
+            action->setChecked(true);
+            break;
+        }
+    }
     
     // 加载新语言
     loadLanguage(language);
@@ -1085,7 +1105,51 @@ void MainWindow::changeLanguage(const QString &language)
     int ret = msgBox.exec();
     if (ret == QMessageBox::AcceptRole) {
         // 重启应用程序
-        QApplication::quit();
-        QProcess::startDetached(QApplication::applicationFilePath());
+        // 获取应用程序路径和参数
+        QString program = QApplication::applicationFilePath();
+        QStringList arguments = QApplication::arguments();
+        arguments.removeFirst(); // 移除程序名
+        
+        qDebug() << "Restart - Program path:" << program;
+        qDebug() << "Restart - Arguments:" << arguments;
+        qDebug() << "Restart - Working directory:" << QDir::currentPath();
+        
+        // 尝试不同的重启方法
+        bool startResult = false;
+        
+        // 方法1：使用完整路径和工作目录
+        QString workingDir = QApplication::applicationDirPath();
+        startResult = QProcess::startDetached(program, arguments, workingDir);
+        qDebug() << "Restart - Method 1 result:" << startResult;
+        
+        if (!startResult) {
+            // 方法2：不带参数启动
+            startResult = QProcess::startDetached(program, QStringList(), workingDir);
+            qDebug() << "Restart - Method 2 result:" << startResult;
+        }
+        
+        if (!startResult) {
+            // 方法3：使用系统命令
+#ifdef Q_OS_WIN
+            QString command = QString("start \"\" \"%1\"").arg(program);
+            startResult = (QProcess::execute("cmd", QStringList() << "/c" << command) == 0);
+            qDebug() << "Restart - Method 3 (Windows) result:" << startResult;
+#else
+            startResult = QProcess::startDetached(program);
+            qDebug() << "Restart - Method 3 (Unix) result:" << startResult;
+#endif
+        }
+        
+        if (startResult) {
+            qDebug() << "Restart - New instance started successfully, quitting current instance";
+            // 延迟退出，确保新实例启动
+            QTimer::singleShot(500, []() {
+                QApplication::quit();
+            });
+        } else {
+            qDebug() << "Restart - All methods failed";
+            QMessageBox::warning(this, tr("重启失败"), 
+                                tr("无法启动新实例，请手动重启应用程序。\n\n程序路径: %1").arg(program));
+        }
     }
 }

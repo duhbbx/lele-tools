@@ -110,7 +110,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
-    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+    # 添加翻译文件到目标（这会自动处理.qm文件的生成）
+    qt_add_translations(lele-tools TS_FILES ${TS_FILES})
 else()
     if(ANDROID)
         add_library(lele-tools SHARED
@@ -124,6 +125,7 @@ else()
         )
     endif()
 
+    # 为Qt5创建翻译文件
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 

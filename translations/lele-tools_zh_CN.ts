@@ -96,24 +96,24 @@
         <translation>乐乐的工具箱</translation>
     </message>
     <message>
-        <source>文件(&F)</source>
-        <translation>文件(&F)</translation>
+        <source>文件(&amp;F)</source>
+        <translation>文件(&amp;F)</translation>
     </message>
     <message>
-        <source>退出(&X)</source>
-        <translation>退出(&X)</translation>
+        <source>退出(&amp;X)</source>
+        <translation>退出(&amp;X)</translation>
     </message>
     <message>
         <source>退出应用程序</source>
         <translation>退出应用程序</translation>
     </message>
     <message>
-        <source>工具(&T)</source>
-        <translation>工具(&T)</translation>
+        <source>工具(&amp;T)</source>
+        <translation>工具(&amp;T)</translation>
     </message>
     <message>
-        <source>返回首页(&H)</source>
-        <translation>返回首页(&H)</translation>
+        <source>返回首页(&amp;H)</source>
+        <translation>返回首页(&amp;H)</translation>
     </message>
     <message>
         <source>Ctrl+H</source>
@@ -124,28 +124,28 @@
         <translation>返回到工具选择页面</translation>
     </message>
     <message>
-        <source>帮助(&H)</source>
-        <translation>帮助(&H)</translation>
+        <source>帮助(&amp;H)</source>
+        <translation>帮助(&amp;H)</translation>
     </message>
     <message>
-        <source>使用说明(&U)</source>
-        <translation>使用说明(&U)</translation>
+        <source>使用说明(&amp;U)</source>
+        <translation>使用说明(&amp;U)</translation>
     </message>
     <message>
         <source>查看使用说明</source>
         <translation>查看使用说明</translation>
     </message>
     <message>
-        <source>关于(&A)</source>
-        <translation>关于(&A)</translation>
+        <source>关于(&amp;A)</source>
+        <translation>关于(&amp;A)</translation>
     </message>
     <message>
         <source>关于乐乐的工具箱</source>
         <translation>关于乐乐的工具箱</translation>
     </message>
     <message>
-        <source>语言(&L)</source>
-        <translation>语言(&L)</translation>
+        <source>语言(&amp;L)</source>
+        <translation>语言(&amp;L)</translation>
     </message>
     <message>
         <source>中文（简体）</source>
@@ -184,6 +184,22 @@
     <message>
         <source>稍后重启</source>
         <translation>稍后重启</translation>
+    </message>
+    <message>
+        <source>重启失败</source>
+        <translation>重启失败</translation>
+    </message>
+    <message>
+        <source>无法启动新实例，请手动重启应用程序。</source>
+        <translation>无法启动新实例，请手动重启应用程序。</translation>
+    </message>
+    <message>
+        <source>无法启动新实例，请手动重启应用程序。
+
+程序路径: %1</source>
+        <translation>无法启动新实例，请手动重启应用程序。
+
+程序路径: %1</translation>
     </message>
 </context>
 <context>

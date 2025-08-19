@@ -4,10 +4,18 @@
 Write-Host "正在生成翻译文件..." -ForegroundColor Green
 
 # 检查Qt工具是否可用
-$lrelease = Get-Command lrelease -ErrorAction SilentlyContinue
-if (-not $lrelease) {
-    Write-Host "错误: 找不到lrelease工具。请确保Qt开发环境已正确安装并添加到PATH中。" -ForegroundColor Red
-    exit 1
+$qtPath = "C:\Qt\6.9.1\msvc2022_64\bin"
+$lrelease = Join-Path $qtPath "lrelease.exe"
+
+if (-not (Test-Path $lrelease)) {
+    # 尝试从PATH中查找
+    $lrelease = Get-Command lrelease -ErrorAction SilentlyContinue
+    if (-not $lrelease) {
+        Write-Host "错误: 找不到lrelease工具。请确保Qt开发环境已正确安装。" -ForegroundColor Red
+        Write-Host "尝试查找的路径: $qtPath" -ForegroundColor Yellow
+        exit 1
+    }
+    $lrelease = $lrelease.Source
 }
 
 # 定义源目录和目标目录

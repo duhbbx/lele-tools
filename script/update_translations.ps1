@@ -1,7 +1,9 @@
-# 更新翻译文件脚本
-# 此脚本用于扫描源代码中的tr()函数并更新.ts文件
+# 🌐 更新翻译文件脚本
+# 📝 此脚本会自动扫描源代码中的tr()函数并更新.ts文件
+# 🎯 您只需要运行这个脚本，所有转义字符都会自动处理！
 
-Write-Host "正在更新翻译文件..." -ForegroundColor Green
+Write-Host "🚀 正在更新翻译文件..." -ForegroundColor Green
+Write-Host "💡 提示：所有XML转义字符将自动处理，您无需手动操作！" -ForegroundColor Cyan
 
 # 检查Qt工具是否可用
 $lupdate = Get-Command lupdate -ErrorAction SilentlyContinue

@@ -3,8 +3,4 @@
         <file>resources/index.html</file>
         <file>resources/close.svg</file>
     </qresource>
-    <qresource prefix="/i18n">
-        <file>translations/lele-tools_zh_CN.qm</file>
-        <file>translations/lele-tools_en_US.qm</file>
-    </qresource>
 </RCC>
