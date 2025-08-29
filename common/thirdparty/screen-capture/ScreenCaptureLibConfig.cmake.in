@@ -1,0 +1,14 @@
+# ScreenCapture库的CMake配置文件模板
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# 查找依赖项
+find_dependency(Qt6 REQUIRED COMPONENTS Core Widgets Concurrent)
+
+# 包含目标文件
+include("${CMAKE_CURRENT_LIST_DIR}/ScreenCaptureLibTargets.cmake")
+
+# 检查组件
+check_required_components(ScreenCaptureLib)

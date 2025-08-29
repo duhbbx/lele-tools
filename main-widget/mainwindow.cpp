@@ -18,6 +18,9 @@
 #include <QDir>
 #include <QTimer>
 #include <QPushButton>
+#include <QClipboard>
+#include <QStandardPaths>
+#include "../common/thirdparty/screen-capture/App/App.h"
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false), isLeftPanelCollapsed(false), copyTooltip(nullptr) {
@@ -29,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     // 加载保存的语言设置
     QString savedLanguage = m_settings->value("language", "zh_CN").toString();
     loadLanguage(savedLanguage);
+    
+    // 截图功能固定为显示工具栏模式
     
     this->setWindowTitle(tr("乐乐的工具箱"));
     this->resize(1200, 800);
@@ -229,6 +234,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_bPressed(false)
     // 创建菜单栏内容
     createMenuBar();
     
+    // 设置截图功能
+    setupScreenCapture();
+    
     // 移除中间折叠按钮，改用状态栏toggle
     
     // 添加窗口阴影效果
@@ -416,6 +424,15 @@ void MainWindow::createMenuBar()
         this->setWindowTitle("乐乐的工具箱");
     });
     toolsMenu->addAction(backToHomeAction);
+    
+    toolsMenu->addSeparator();
+    
+    QAction *screenshotAction = new QAction(tr("截图(&S)"), this);
+    screenshotAction->setShortcut(QKeySequence(Qt::Key_F1));
+    screenshotAction->setStatusTip(tr("按F1或点击此处开始截图"));
+    screenshotAction->setIcon(this->style()->standardIcon(QStyle::SP_DesktopIcon));
+    connect(screenshotAction, &QAction::triggered, this, &MainWindow::startScreenCapture);
+    toolsMenu->addAction(screenshotAction);
     
     // 帮助菜单
     QMenu *helpMenu = customMenuBar->addMenu(tr("帮助(&H)"));
@@ -700,11 +717,20 @@ void MainWindow::showHelp()
                                 "<li>工具将在右侧工作区打开</li>"
                                 "<li>可以通过菜单栏快速返回首页</li>"
                                 "</ul>"
+                                "<p><b>截图功能：</b></p>"
+                                "<ul>"
+                                "<li>按F1键开始截图</li>"
+                                "<li>拖拽选择要截图的区域</li>"
+                                "<li>释放鼠标后会显示编辑工具栏</li>"
+                                "<li>可以添加箭头、文字、马赛克等</li>"
+                                "<li>完成编辑后点击保存按钮</li>"
+                                "</ul>"
                                 "<p><b>快捷键：</b></p>"
                                 "<ul>"
+                                "<li>F1 - 截图</li>"
+                                "<li>ESC - 取消截图</li>"
                                 "<li>Ctrl+H - 返回首页</li>"
                                 "<li>Ctrl+Q - 退出程序</li>"
-                                "<li>F1 - 查看帮助</li>"
                                 "</ul>"));
 }
 
@@ -1159,4 +1185,155 @@ void MainWindow::changeLanguage(const QString &language)
                                 tr("无法启动新实例，请手动重启应用程序。\n\n程序路径: %1").arg(program));
         }
     }
+}
+
+void MainWindow::setupScreenCapture()
+{
+    // 创建截图API实例
+    m_screenCapture = new ScreenCaptureAPI(this);
+    
+    // 连接截图完成信号
+    connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted,
+            this, &MainWindow::onCaptureCompleted);
+    
+    // 创建F1全局快捷键
+    m_screenshotShortcut = new QShortcut(QKeySequence(Qt::Key_F1), this);
+    m_screenshotShortcut->setContext(Qt::ApplicationShortcut); // 应用程序级别的快捷键
+    
+    // 连接快捷键信号
+    connect(m_screenshotShortcut, &QShortcut::activated,
+            this, &MainWindow::startScreenCapture);
+    
+    qDebug() << "截图功能已初始化，F1快捷键已设置";
+}
+
+void MainWindow::startScreenCapture()
+{
+    qDebug() << "F1快捷键被触发，开始截图...";
+    
+    // 隐藏主窗口，避免影响截图
+    this->hide();
+    
+    // 短暂延迟，确保窗口完全隐藏
+    QTimer::singleShot(200, [this]() {
+        // 设置截图模式为显示工具栏
+        App::setCustomCap(2);  // 2 = 显示工具栏进行编辑
+        
+        qDebug() << "开始截图，将显示工具栏";
+        
+        // 配置截图参数
+        ScreenCaptureAPI::CaptureConfig config;
+        config.mode = ScreenCaptureAPI::CaptureMode::SelectArea; // 选择区域模式
+        config.includeDecorations = false; // 不包含窗口装饰
+        config.hideCursor = false; // 显示鼠标光标
+        config.quality = 100; // 最高质量
+        config.format = "PNG"; // PNG格式
+        config.timeoutMs = 0; // 禁用超时，允许用户慢慢编辑
+        
+        // 开始截图
+        if (!m_screenCapture->startCapture(config)) {
+            qDebug() << "启动截图失败";
+            // 如果截图失败，重新显示主窗口
+            this->show();
+        }
+    });
+}
+
+void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image)
+{
+    qDebug() << "截图完成，结果：" << static_cast<int>(result);
+    
+    // 重新显示主窗口
+    this->show();
+    this->raise();
+    this->activateWindow();
+    
+    switch (result) {
+        case ScreenCaptureAPI::CaptureResult::Success:
+            if (!image.isNull()) {
+                qDebug() << "截图成功，图片大小：" << image.size();
+                
+                // 将图片复制到剪贴板
+                QClipboard *clipboard = QApplication::clipboard();
+                clipboard->setImage(image);
+                
+                // 可选：保存到默认位置
+                QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+                if (defaultPath.isEmpty()) {
+                    defaultPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+                }
+                
+                QString fileName = QString("screenshot_%1.png")
+                    .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+                QString fullPath = QDir(defaultPath).filePath(fileName);
+                
+                if (image.save(fullPath)) {
+                    qDebug() << "截图已保存到：" << fullPath;
+                    
+                    // 显示成功提示
+                    showScreenshotTooltip("截图成功！\n已保存到剪贴板和图片文件夹");
+                } else {
+                    qDebug() << "保存截图失败：" << fullPath;
+                    showScreenshotTooltip("截图成功！\n已保存到剪贴板");
+                }
+            } else {
+                qDebug() << "截图成功但图片为空";
+                showScreenshotTooltip("截图失败：图片为空");
+            }
+            break;
+            
+        case ScreenCaptureAPI::CaptureResult::Cancelled:
+            qDebug() << "用户取消了截图";
+            // 用户取消时不显示任何提示
+            break;
+            
+        case ScreenCaptureAPI::CaptureResult::Error:
+            qDebug() << "截图过程中发生错误";
+            showScreenshotTooltip("截图失败：发生错误");
+            break;
+            
+        case ScreenCaptureAPI::CaptureResult::Timeout:
+            qDebug() << "截图超时";
+            showScreenshotTooltip("截图失败：操作超时");
+            break;
+    }
+}
+
+void MainWindow::showScreenshotTooltip(const QString& message)
+{
+    // 创建截图提示框
+    QWidget *tooltip = new QWidget(this, Qt::ToolTip | Qt::FramelessWindowHint);
+    tooltip->setFixedSize(200, 60);
+    tooltip->setStyleSheet(
+        "QWidget {"
+        "    background-color: #2c3e50;"
+        "    color: white;"
+        "    border-radius: 8px;"
+        "    font-size: 12px;"
+        "    font-weight: bold;"
+        "}"
+    );
+    
+    QVBoxLayout *tooltipLayout = new QVBoxLayout(tooltip);
+    tooltipLayout->setContentsMargins(15, 10, 15, 10);
+    
+    QLabel *tooltipLabel = new QLabel(message);
+    tooltipLabel->setAlignment(Qt::AlignCenter);
+    tooltipLabel->setStyleSheet("background-color: transparent; border: none; color: white;");
+    tooltipLabel->setWordWrap(true);
+    tooltipLayout->addWidget(tooltipLabel);
+    
+    // 计算提示框位置（屏幕右下角）
+    QScreen *screen = QApplication::primaryScreen();
+    QRect screenGeometry = screen->availableGeometry();
+    int x = screenGeometry.right() - tooltip->width() - 20;
+    int y = screenGeometry.bottom() - tooltip->height() - 20;
+    tooltip->move(x, y);
+    
+    // 显示提示框
+    tooltip->show();
+    tooltip->raise();
+    
+    // 3秒后自动隐藏并销毁
+    QTimer::singleShot(3000, tooltip, &QWidget::deleteLater);
 }

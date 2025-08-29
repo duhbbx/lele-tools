@@ -7,11 +7,14 @@ project(lele-tools VERSION 0.1 LANGUAGES CXX)
 
 
 
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+# 告诉 CMake 去哪里找 Qt，使用-DCMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64/lib/cmake这个指定避免代码中硬编码
+# set(CMAKE_PREFIX_PATH "C:/Qt/6.9.1/msvc2022_64/lib/cmake/Qt6")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_AUTOMOC ON)   # 自动处理 moc (信号与槽)
+set(CMAKE_AUTORCC ON)   # 自动处理 qrc 资源文件
+set(CMAKE_AUTOUIC ON)   # 自动处理 .ui 文件
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
@@ -53,6 +56,7 @@ endif()
 
 # 第三方的代码
 add_subdirectory(common/thirdparty/yaml-cpp)
+add_subdirectory(common/thirdparty/screen-capture)
 
 
 
@@ -149,7 +153,7 @@ else()
     message(WARNING "Qt6 WebEngineWidgets not found - some features may be disabled")
 endif()
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent yaml-cpp)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent yaml-cpp ScreenCaptureLib)
 
 
 # 链接库

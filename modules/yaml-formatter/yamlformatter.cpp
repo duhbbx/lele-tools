@@ -509,4 +509,3 @@ void YamlFormatter::updateStatus(const QString& message, bool isError)
     statusLabel->setStyleSheet(QString("color: %1; padding: 6px 12px; background: %2; border-radius: 0px;").arg(color, bg));
 }
 
-#include "yamlformatter.moc"

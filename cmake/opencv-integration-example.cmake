@@ -70,3 +70,6 @@ endif()
 #     qDebug() << "OpenCV not available, skipping image processing";
 # }
 # #endif
+
+
+

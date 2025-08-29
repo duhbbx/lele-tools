@@ -440,3 +440,6 @@ void Calculator::showMessage(const QString &message, bool isError)
 }
 
 #include "calculator.moc"
+
+
+

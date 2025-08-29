@@ -27,7 +27,9 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QActionGroup>
+#include <QShortcut>
 #include "../common/global-styles.h"
+#include "../common/thirdparty/screen-capture/ScreenCaptureAPI.h"
 
 #ifdef Q_OS_WIN
 #ifndef WIN32_LEAN_AND_MEAN
@@ -56,6 +58,7 @@ public slots:
     void showHelp();
     void exitApplication();
     void changeLanguage(const QString &language);
+    void startScreenCapture();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -114,6 +117,10 @@ private:
     QSettings *m_settings;                // 设置
     QActionGroup *m_languageActionGroup;  // 语言选项组
     
+    // 截图相关
+    ScreenCaptureAPI *m_screenCapture;    // 截图API实例
+    QShortcut *m_screenshotShortcut;      // F1截图快捷键
+    
     void createTitleBar();                // 创建自定义标题栏
     void createMenuBar();                 // 创建菜单栏
     void setupWindowControls();           // 设置窗口控制按钮
@@ -132,6 +139,9 @@ private:
     void updateTabDropdownMenu();         // 更新标签页下拉菜单
     void switchToTab(int index);          // 切换到指定标签页
     void loadLanguage(const QString &language); // 加载语言
+    void setupScreenCapture();            // 设置截图功能
+    void onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image); // 截图完成处理
+    void showScreenshotTooltip(const QString& message); // 显示截图提示
 
 public:
     void addTool(QWidget* w);

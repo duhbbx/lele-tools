@@ -156,3 +156,6 @@ jobs:
                 Write-Host "  - $($installer.Name) ($size MB)" -ForegroundColor Green
             }
         }
+
+
+

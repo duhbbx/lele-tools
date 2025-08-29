@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>resources/index.html</file>
         <file>resources/close.svg</file>
+        <file>common/thirdparty/screen-capture/Res/iconfont.ttf</file>
     </qresource>
 </RCC>
