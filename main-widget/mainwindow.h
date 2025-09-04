@@ -126,7 +126,7 @@ private:
     void setupWindowControls();           // 设置窗口控制按钮
     void createStatusBar();               // 创建状态栏
     // setupCollapseButton已移除，改用状态栏toggle
-    void updateTime();                    // 更新时间显示
+    void updateTime() const;                    // 更新时间显示
     void toggleLeftPanel();               // 切换左侧面板显示状态
     void setupTabWidget();                // 设置标签页组件
     void closeTab(int index);             // 关闭标签页

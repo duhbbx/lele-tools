@@ -29,8 +29,7 @@
 #include "../../common/dynamicobjectbase.h"
 
 // JSON语法高亮器
-class JsonHighlighter : public QSyntaxHighlighter
-{
+class JsonHighlighter : public QSyntaxHighlighter {
     Q_OBJECT
 
 public:
@@ -41,7 +40,7 @@ protected:
 
 private:
     void setupFormats();
-    
+
     QTextCharFormat keyFormat;
     QTextCharFormat stringFormat;
     QTextCharFormat numberFormat;
@@ -51,8 +50,7 @@ private:
     QTextCharFormat errorFormat;
 };
 
-class JsonFormatter : public QWidget, public DynamicObjectBase
-{
+class JsonFormatter : public QWidget, public DynamicObjectBase {
     Q_OBJECT
 
 public:
@@ -81,13 +79,13 @@ private:
     void updateStatusBar(const QString& message, bool isError = false);
     QString getJsonValueTypeString(const QJsonValue& value);
     QIcon getJsonValueIcon(const QJsonValue& value);
-    
+
     // UI组件
     QVBoxLayout* mainLayout;
     QHBoxLayout* toolbarLayout;
     QSplitter* mainSplitter;
     QSplitter* rightSplitter;
-    
+
     // 工具栏
     QWidget* toolbarWidget;
     QPushButton* formatBtn;
@@ -96,23 +94,23 @@ private:
     QPushButton* clearBtn;
     QPushButton* copyBtn;
     QLabel* statusLabel;
-    
+
     // 输入区域
     QWidget* inputWidget;
     QVBoxLayout* inputLayout;
     QLabel* inputLabel;
     QTextEdit* inputTextEdit;
-    
+
     // 输出区域
     QTabWidget* outputTabWidget;
     QWidget* formattedTab;
     QWidget* treeTab;
-    
+
     // 格式化输出
     QVBoxLayout* formattedLayout;
     QPlainTextEdit* outputTextEdit;
     JsonHighlighter* highlighter;
-    
+
     // 树形视图
     QVBoxLayout* treeLayout;
     QHBoxLayout* treeToolbarLayout;
@@ -120,7 +118,7 @@ private:
     QPushButton* expandAllBtn;
     QPushButton* collapseAllBtn;
     QTreeWidget* jsonTreeWidget;
-    
+
     // 状态
     bool isValidJson;
     QJsonDocument currentJsonDoc;

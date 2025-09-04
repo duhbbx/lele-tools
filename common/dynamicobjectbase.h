@@ -19,9 +19,9 @@ class DynamicObjectBase
 {
 public:
 
-    DynamicObjectBase() {}
+    DynamicObjectBase() = default;
 
-    virtual ~DynamicObjectBase(){ }
+    virtual ~DynamicObjectBase()= default;
 
     virtual void Initialise(){}
 

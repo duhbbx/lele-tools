@@ -12,8 +12,7 @@ set(APP_SOURCES
     Logger.cpp      # 日志系统实现
     Logger.h        # 日志系统头文件
     State.h         # 应用程序状态定义
-    Res.h           # 资源定义
-    Res.rc          # Windows资源文件
+
 )
 
 # 创建App静态库

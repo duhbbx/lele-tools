@@ -16,6 +16,10 @@ Lang::~Lang()
 
 QString Lang::get(const QString& name)
 {
+	// 如果语言模块未初始化，先进行初始化
+	if (!lang) {
+		init("zhcn");
+	}
 	return lang->dic[name];
 }
 

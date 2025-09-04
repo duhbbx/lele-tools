@@ -1,4 +1,4 @@
-#include "simplehostseditor.h"
+#include "hostseditortext.h"
 #include <QDebug>
 #include <QMessageBox>
 #include <QScrollBar>

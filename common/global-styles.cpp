@@ -67,7 +67,7 @@ QString GlobalStyles::getButtonStyle()
             border: 1px solid #dee2e6;
             border-radius: 6px;
             padding: 4px 8px;
-            font-size: 10px;
+            font-size: 12px;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             min-height: 16px;
@@ -130,7 +130,7 @@ QString GlobalStyles::getGlobalStyle()
     return QString(R"(
         QWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 10px;
+            font-size: 12px;
             color: #333333;
         }
         QGroupBox {

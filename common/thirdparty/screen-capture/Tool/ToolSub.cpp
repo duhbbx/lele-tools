@@ -105,7 +105,7 @@ ToolSub::ToolSub(QWidget* parent) : ToolBase(parent) {
 }
 
 void ToolSub::initPos() {
-    const auto win = static_cast<WinBase*>(parent());
+    const auto win = dynamic_cast<WinBase*>(parent());
     int x { win->toolMain->x() }, y { win->toolMain->y() + win->toolMain->height() + 2 };
     if (win->toolMain->btnCheckedCenterX > width()) { //向上箭头不足以出现在子工具条上方时，调整子工具条的位置
         x = win->toolMain->x() + win->toolMain->btnCheckedCenterX - width() / 2;
@@ -116,8 +116,7 @@ void ToolSub::initPos() {
     move(x, y);
 }
 
-ToolSub::~ToolSub() {
-}
+ToolSub::~ToolSub() = default;
 
 
 bool ToolSub::getSelectState(const QString& btnName) const {
@@ -160,7 +159,7 @@ void ToolSub::closeEvent(QCloseEvent* event) {
     LOG_DEBUG("ToolSub", "=== ToolSub::closeEvent 开始 ===");
     LOG_DEBUG("ToolSub", QString("ToolSub指针: 0x%1").arg(reinterpret_cast<quintptr>(this), 0, 16));
 
-    if (auto win = static_cast<WinBase*>(parent())) {
+    if (auto win = dynamic_cast<WinBase*>(parent())) {
         LOG_DEBUG("ToolSub", QString("父窗口指针: 0x%1").arg(reinterpret_cast<quintptr>(win), 0, 16));
         LOG_DEBUG("ToolMain", QString("当前win->toolSub: 0x%1").arg(reinterpret_cast<quintptr>(win->toolSub), 0, 16));
 

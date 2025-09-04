@@ -8,27 +8,30 @@
 
 class BtnBase;
 class BtnCheck;
-class ToolMain : public ToolBase
-{
-	Q_OBJECT
+
+class ToolMain final : public ToolBase {
+    Q_OBJECT
+
 public:
-	ToolMain(QWidget* parent = nullptr);
-	~ToolMain();
-	void setBtnEnable(const QString& name, bool flag) const;
-	void confirmPos();
-	void btnCheckChange(BtnCheck* btn) override;
-	void btnClick(Btn* btn) override;
-public:
-	int btnCheckedCenterX;
+    explicit ToolMain(QWidget* parent = nullptr);
+    ~ToolMain() override;
+    void setBtnEnable(const QString& name, bool flag) const;
+    void confirmPos();
+    void btnCheckChange(BtnCheck* btn) override;
+    void btnClick(Btn* btn) override;
+
+    int btnCheckedCenterX { };
+
 protected:
-	void paintEvent(QPaintEvent* event) override;
-	void closeEvent(QCloseEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
+
 private:
-	QWidget* getTool(const QString& toolName);
-	void initDefaultTool(QHBoxLayout* layout);
-private:
-	bool topFlag{false};
-	std::vector<BtnBase> btns;
-	QList<int> splitters;
-	int posState{ -1 };
+    QWidget* getTool(const QString& toolName);
+    void initDefaultTool(QHBoxLayout* layout);
+
+    bool topFlag { false };
+    std::vector<BtnBase> btns;
+    QList<int> splitters;
+    int posState { -1 };
 };

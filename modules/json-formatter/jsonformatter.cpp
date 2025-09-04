@@ -14,41 +14,38 @@ REGISTER_DYNAMICOBJECT(JsonFormatter);
 
 // JSON语法高亮器实现
 JsonHighlighter::JsonHighlighter(QTextDocument* parent)
-    : QSyntaxHighlighter(parent)
-{
+    : QSyntaxHighlighter(parent) {
     setupFormats();
 }
 
-void JsonHighlighter::setupFormats()
-{
+void JsonHighlighter::setupFormats() {
     // 键名格式 - 蓝色
     keyFormat.setForeground(QColor(0, 102, 204));
     keyFormat.setFontWeight(QFont::Bold);
-    
+
     // 字符串格式 - 绿色
     stringFormat.setForeground(QColor(0, 153, 0));
-    
+
     // 数字格式 - 紫色
     numberFormat.setForeground(QColor(153, 0, 153));
-    
+
     // 布尔值格式 - 橙色
     booleanFormat.setForeground(QColor(255, 102, 0));
     booleanFormat.setFontWeight(QFont::Bold);
-    
+
     // null格式 - 灰色
     nullFormat.setForeground(QColor(128, 128, 128));
     nullFormat.setFontItalic(true);
-    
+
     // 标点符号格式 - 深灰色
     punctuationFormat.setForeground(QColor(64, 64, 64));
-    
+
     // 错误格式 - 红色背景
     errorFormat.setBackground(QColor(255, 200, 200));
     errorFormat.setForeground(QColor(204, 0, 0));
 }
 
-void JsonHighlighter::highlightBlock(const QString& text)
-{
+void JsonHighlighter::highlightBlock(const QString& text) {
     // 高亮键名 (带引号的键后跟冒号)
     QRegularExpression keyRegex("(\"[^\"]*\")\\s*:");
     QRegularExpressionMatchIterator keyIterator = keyRegex.globalMatch(text);
@@ -56,7 +53,7 @@ void JsonHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = keyIterator.next();
         setFormat(match.capturedStart(1), match.capturedLength(1), keyFormat);
     }
-    
+
     // 高亮字符串值 (不是键的字符串)
     QRegularExpression stringRegex(":\\s*(\"[^\"]*\")");
     QRegularExpressionMatchIterator stringIterator = stringRegex.globalMatch(text);
@@ -64,7 +61,7 @@ void JsonHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = stringIterator.next();
         setFormat(match.capturedStart(1), match.capturedLength(1), stringFormat);
     }
-    
+
     // 高亮数字
     QRegularExpression numberRegex(":\\s*(-?\\d+\\.?\\d*([eE][+-]?\\d+)?)");
     QRegularExpressionMatchIterator numberIterator = numberRegex.globalMatch(text);
@@ -72,7 +69,7 @@ void JsonHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = numberIterator.next();
         setFormat(match.capturedStart(1), match.capturedLength(1), numberFormat);
     }
-    
+
     // 高亮布尔值
     QRegularExpression boolRegex(":\\s*(true|false)");
     QRegularExpressionMatchIterator boolIterator = boolRegex.globalMatch(text);
@@ -80,7 +77,7 @@ void JsonHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = boolIterator.next();
         setFormat(match.capturedStart(1), match.capturedLength(1), booleanFormat);
     }
-    
+
     // 高亮null
     QRegularExpression nullRegex(":\\s*(null)");
     QRegularExpressionMatchIterator nullIterator = nullRegex.globalMatch(text);
@@ -88,7 +85,7 @@ void JsonHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = nullIterator.next();
         setFormat(match.capturedStart(1), match.capturedLength(1), nullFormat);
     }
-    
+
     // 高亮标点符号
     QRegularExpression punctRegex("[{}\\[\\],:]");
     QRegularExpressionMatchIterator punctIterator = punctRegex.globalMatch(text);
@@ -99,10 +96,9 @@ void JsonHighlighter::highlightBlock(const QString& text)
 }
 
 // JsonFormatter实现
-JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidJson(false)
-{
+JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidJson(false) {
     setupUI();
-    
+
     // 连接信号槽
     connect(inputTextEdit, &QTextEdit::textChanged, this, &JsonFormatter::onInputTextChanged);
     connect(formatBtn, &QPushButton::clicked, this, &JsonFormatter::onFormatJson);
@@ -113,7 +109,7 @@ JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidJ
     connect(expandAllBtn, &QPushButton::clicked, this, &JsonFormatter::onExpandAll);
     connect(collapseAllBtn, &QPushButton::clicked, this, &JsonFormatter::onCollapseAll);
     connect(searchLineEdit, &QLineEdit::textChanged, this, &JsonFormatter::onSearchInTree);
-    
+
     // 设置默认示例
     QString sampleJson = R"({
   "name": "乐乐的工具箱",
@@ -135,45 +131,42 @@ JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidJ
     "lastUpdate": null
   }
 })";
-    
+
     inputTextEdit->setPlainText(sampleJson);
     onFormatJson();
 }
 
-JsonFormatter::~JsonFormatter()
-{
-}
+JsonFormatter::~JsonFormatter() = default;
 
-void JsonFormatter::setupUI()
-{
+void JsonFormatter::setupUI() {
     // 主布局
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(10, 10, 10, 10);
     mainLayout->setSpacing(10);
-    
+
     // 设置工具栏
     setupToolbar();
-    
+
     // 创建主分割器
     mainSplitter = new QSplitter(Qt::Horizontal);
     mainSplitter->setChildrenCollapsible(false);
-    
+
     // 设置输入区域
     setupInputArea();
-    
+
     // 设置输出区域
     setupOutputArea();
-    
+
     // 添加到分割器
     mainSplitter->addWidget(inputWidget);
     mainSplitter->addWidget(outputTabWidget);
     mainSplitter->setStretchFactor(0, 1);
     mainSplitter->setStretchFactor(1, 2);
-    
+
     // 添加到主布局
     mainLayout->addWidget(toolbarWidget);
     mainLayout->addWidget(mainSplitter);
-    
+
     // 设置样式
     setStyleSheet(R"(
         QWidget {
@@ -198,7 +191,7 @@ void JsonFormatter::setupUI()
             border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QTextEdit:focus, QPlainTextEdit:focus {
             border-color: #4CAF50;
@@ -262,48 +255,47 @@ void JsonFormatter::setupUI()
     )");
 }
 
-void JsonFormatter::setupToolbar()
-{
+void JsonFormatter::setupToolbar() {
     toolbarWidget = new QWidget();
     toolbarWidget->setFixedHeight(45); // 固定工具栏高度
     toolbarLayout = new QHBoxLayout(toolbarWidget);
     toolbarLayout->setContentsMargins(5, 5, 5, 5);
     toolbarLayout->setSpacing(8);
-    
+
     // 创建紧凑的按钮
     formatBtn = new QPushButton("🎨 格式化");
     formatBtn->setToolTip("格式化JSON并添加缩进");
     formatBtn->setFixedSize(90, 32);
-    
+
     minifyBtn = new QPushButton("📦 压缩");
     minifyBtn->setToolTip("移除空白字符，压缩JSON");
     minifyBtn->setFixedSize(75, 32);
-    
+
     validateBtn = new QPushButton("✅ 验证");
     validateBtn->setToolTip("验证JSON格式是否正确");
     validateBtn->setFixedSize(75, 32);
-    
+
     clearBtn = new QPushButton("🗑️ 清空");
     clearBtn->setToolTip("清空所有内容");
     clearBtn->setFixedSize(75, 32);
-    
+
     copyBtn = new QPushButton("📋 复制");
     copyBtn->setToolTip("复制格式化后的JSON到剪贴板");
     copyBtn->setFixedSize(75, 32);
-    
+
     // 状态标签也设置固定高度
     statusLabel = new QLabel("就绪");
     statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet(R"(
         QLabel {
-            color: #666; 
-            padding: 6px 12px; 
-            background: #f9f9f9; 
-            border-radius: 0px; 
+            color: #666;
+            padding: 6px 12px;
+            background: #f9f9f9;
+            border-radius: 0px;
             border: 1px solid #ddd;
         }
     )");
-    
+
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
     toolbarLayout->addWidget(validateBtn);
@@ -313,105 +305,114 @@ void JsonFormatter::setupToolbar()
     toolbarLayout->addWidget(statusLabel);
 }
 
-void JsonFormatter::setupInputArea()
-{
+void JsonFormatter::setupInputArea() {
     inputWidget = new QWidget();
     inputLayout = new QVBoxLayout(inputWidget);
     inputLayout->setContentsMargins(0, 0, 0, 0);
     inputLayout->setSpacing(8);
-    
+
     inputLabel = new QLabel("📝 JSON输入");
-    inputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
-    
+    inputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
+
     inputTextEdit = new QTextEdit();
     inputTextEdit->setPlaceholderText("请输入要格式化的JSON数据...");
     
+    // 设置为纯文本模式，禁用富文本格式
+    inputTextEdit->setAcceptRichText(false);
+    
+    // 设置等宽字体，大小为10pt
+    QFont inputFont("Consolas", 10);
+    if (!inputFont.exactMatch()) {
+        inputFont.setFamily("Monaco");
+        if (!inputFont.exactMatch()) {
+            inputFont.setFamily("Courier New");
+        }
+    }
+    inputTextEdit->setFont(inputFont);
+
     inputLayout->addWidget(inputLabel);
     inputLayout->addWidget(inputTextEdit);
 }
 
-void JsonFormatter::setupOutputArea()
-{
+void JsonFormatter::setupOutputArea() {
     outputTabWidget = new QTabWidget();
-    
+
     // 格式化输出标签页
     formattedTab = new QWidget();
     formattedLayout = new QVBoxLayout(formattedTab);
     formattedLayout->setContentsMargins(8, 8, 8, 8);
-    
+
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);
     outputTextEdit->setPlaceholderText("格式化后的JSON将显示在这里...");
-    
-    QFont monoFont("Consolas", 11);
+
+    QFont monoFont("Consolas", 10);
     outputTextEdit->setFont(monoFont);
-    
+
     highlighter = new JsonHighlighter(outputTextEdit->document());
     formattedLayout->addWidget(outputTextEdit);
-    
+
     setupTreeView();
-    
+
     outputTabWidget->addTab(formattedTab, "📄 格式化视图");
     outputTabWidget->addTab(treeTab, "🌳 树形结构");
 }
 
-void JsonFormatter::setupTreeView()
-{
+void JsonFormatter::setupTreeView() {
     treeTab = new QWidget();
     treeLayout = new QVBoxLayout(treeTab);
     treeLayout->setContentsMargins(8, 8, 8, 8);
     treeLayout->setSpacing(6);
-    
+
     // 创建紧凑的树形视图工具栏
-    QWidget* treeToolbarWidget = new QWidget();
+    auto* treeToolbarWidget = new QWidget();
     treeToolbarWidget->setFixedHeight(35); // 固定高度
     treeToolbarLayout = new QHBoxLayout(treeToolbarWidget);
     treeToolbarLayout->setContentsMargins(0, 0, 0, 0);
     treeToolbarLayout->setSpacing(8);
-    
+
     searchLineEdit = new QLineEdit();
     searchLineEdit->setPlaceholderText("🔍 搜索节点...");
     searchLineEdit->setFixedSize(180, 28);
-    
+
     expandAllBtn = new QPushButton("展开全部");
     expandAllBtn->setFixedSize(80, 28);
     expandAllBtn->setStyleSheet("font-size: 10pt;");
-    
+
     collapseAllBtn = new QPushButton("折叠全部");
     collapseAllBtn->setFixedSize(80, 28);
     collapseAllBtn->setStyleSheet("font-size: 10pt;");
-    
+
     treeToolbarLayout->addWidget(searchLineEdit);
     treeToolbarLayout->addStretch();
     treeToolbarLayout->addWidget(expandAllBtn);
     treeToolbarLayout->addWidget(collapseAllBtn);
-    
+
     jsonTreeWidget = new QTreeWidget();
     jsonTreeWidget->setHeaderLabels(QStringList() << "键/索引" << "值" << "类型");
     jsonTreeWidget->setAlternatingRowColors(true);
     jsonTreeWidget->setRootIsDecorated(true);
-    
+
     jsonTreeWidget->header()->resizeSection(0, 200);
     jsonTreeWidget->header()->resizeSection(1, 300);
     jsonTreeWidget->header()->resizeSection(2, 80);
-    
+
     treeLayout->addWidget(treeToolbarWidget);
     treeLayout->addWidget(jsonTreeWidget);
 }
 
 // 主要功能方法实现
-void JsonFormatter::onInputTextChanged()
-{
+void JsonFormatter::onInputTextChanged() {
     QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
         updateStatusBar("输入为空", false);
         isValidJson = false;
         return;
     }
-    
+
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(text.toUtf8(), &error);
-    
+
     if (error.error != QJsonParseError::NoError) {
         updateStatusBar(QString("JSON格式错误: %1").arg(error.errorString()), true);
         isValidJson = false;
@@ -422,116 +423,107 @@ void JsonFormatter::onInputTextChanged()
     }
 }
 
-void JsonFormatter::onFormatJson()
-{
+void JsonFormatter::onFormatJson() {
     if (!isValidJson) {
         QMessageBox::warning(this, "格式化失败", "请先输入有效的JSON数据");
         return;
     }
-    
+
     QString formatted = QString::fromUtf8(currentJsonDoc.toJson(QJsonDocument::Indented));
     outputTextEdit->setPlainText(formatted);
     updateJsonTree(currentJsonDoc);
     updateStatusBar("JSON格式化完成", false);
 }
 
-void JsonFormatter::onMinifyJson()
-{
+void JsonFormatter::onMinifyJson() {
     if (!isValidJson) {
         QMessageBox::warning(this, "压缩失败", "请先输入有效的JSON数据");
         return;
     }
-    
+
     QString minified = QString::fromUtf8(currentJsonDoc.toJson(QJsonDocument::Compact));
     outputTextEdit->setPlainText(minified);
     updateStatusBar("JSON压缩完成", false);
 }
 
-void JsonFormatter::onValidateJson()
-{
+void JsonFormatter::onValidateJson() {
     QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
         QMessageBox::information(this, "验证结果", "输入为空，请输入JSON数据");
         return;
     }
-    
+
     QJsonParseError error;
     QJsonDocument::fromJson(text.toUtf8(), &error);
-    
+
     if (error.error == QJsonParseError::NoError) {
         QMessageBox::information(this, "验证结果", "✅ JSON格式正确！");
         updateStatusBar("JSON验证通过", false);
     } else {
         QString errorMsg = QString("❌ JSON格式错误:\n\n错误位置: 第%1个字符\n错误信息: %2")
-                          .arg(error.offset)
-                          .arg(error.errorString());
+                           .arg(error.offset)
+                           .arg(error.errorString());
         QMessageBox::warning(this, "验证结果", errorMsg);
         updateStatusBar(QString("JSON验证失败: %1").arg(error.errorString()), true);
     }
 }
 
-void JsonFormatter::onClearAll()
-{
+void JsonFormatter::onClearAll() {
     inputTextEdit->clear();
     outputTextEdit->clear();
     jsonTreeWidget->clear();
     updateStatusBar("已清空所有内容", false);
 }
 
-void JsonFormatter::onCopyFormatted()
-{
+void JsonFormatter::onCopyFormatted() {
     QString text = outputTextEdit->toPlainText();
     if (text.isEmpty()) {
         QMessageBox::information(this, "复制失败", "没有可复制的内容，请先格式化JSON");
         return;
     }
-    
+
     QApplication::clipboard()->setText(text);
     updateStatusBar("已复制到剪贴板", false);
 }
 
-void JsonFormatter::onExpandAll()
-{
+void JsonFormatter::onExpandAll() {
     jsonTreeWidget->expandAll();
 }
 
-void JsonFormatter::onCollapseAll()
-{
+void JsonFormatter::onCollapseAll() {
     jsonTreeWidget->collapseAll();
 }
 
-void JsonFormatter::onSearchInTree()
-{
+void JsonFormatter::onSearchInTree() {
     QString searchText = searchLineEdit->text().toLower();
-    
+
     QTreeWidgetItemIterator it(jsonTreeWidget);
     while (*it) {
         QTreeWidgetItem* item = *it;
         bool matches = false;
-        
+
         for (int col = 0; col < item->columnCount(); ++col) {
             if (item->text(col).toLower().contains(searchText)) {
                 matches = true;
                 break;
             }
         }
-        
+
         item->setHidden(!matches && !searchText.isEmpty());
         ++it;
     }
 }
 
-void JsonFormatter::updateJsonTree(const QJsonDocument& doc)
-{
+void JsonFormatter::updateJsonTree(const QJsonDocument& doc) {
     jsonTreeWidget->clear();
-    
-    QTreeWidgetItem* rootItem = new QTreeWidgetItem(jsonTreeWidget);
-    
+
+    auto* rootItem = new QTreeWidgetItem(jsonTreeWidget);
+
     if (doc.isObject()) {
         rootItem->setText(0, "root");
         rootItem->setText(1, "{...}");
         rootItem->setText(2, "Object");
-        
+
         QJsonObject obj = doc.object();
         for (auto it = obj.begin(); it != obj.end(); ++it) {
             addJsonValueToTree(rootItem, it.key(), it.value());
@@ -540,22 +532,21 @@ void JsonFormatter::updateJsonTree(const QJsonDocument& doc)
         rootItem->setText(0, "root");
         rootItem->setText(1, "[...]");
         rootItem->setText(2, "Array");
-        
+
         QJsonArray arr = doc.array();
         for (int i = 0; i < arr.size(); ++i) {
             addJsonValueToTree(rootItem, QString("[%1]").arg(i), arr[i]);
         }
     }
-    
+
     jsonTreeWidget->expandAll();
 }
 
-void JsonFormatter::addJsonValueToTree(QTreeWidgetItem* parent, const QString& key, const QJsonValue& value)
-{
-    QTreeWidgetItem* item = new QTreeWidgetItem(parent);
+void JsonFormatter::addJsonValueToTree(QTreeWidgetItem* parent, const QString& key, const QJsonValue& value) {
+    auto* item = new QTreeWidgetItem(parent);
     item->setText(0, key);
     item->setText(2, getJsonValueTypeString(value));
-    
+
     switch (value.type()) {
     case QJsonValue::Object: {
         item->setText(1, "{...}");
@@ -591,18 +582,18 @@ void JsonFormatter::addJsonValueToTree(QTreeWidgetItem* parent, const QString& k
     }
 }
 
-void JsonFormatter::updateStatusBar(const QString& message, bool isError)
-{
+void JsonFormatter::updateStatusBar(const QString& message, bool isError) {
     statusLabel->setText(message);
     if (isError) {
-        statusLabel->setStyleSheet("color: #d32f2f; padding: 8px; background: #ffebee; border-radius: 0px; border: 1px solid #f8bbd9;");
+        statusLabel->setStyleSheet(
+            "color: #d32f2f; padding: 8px; background: #ffebee; border-radius: 0px; border: 1px solid #f8bbd9;");
     } else {
-        statusLabel->setStyleSheet("color: #2e7d32; padding: 8px; background: #e8f5e8; border-radius: 0px; border: 1px solid #c8e6c9;");
+        statusLabel->setStyleSheet(
+            "color: #2e7d32; padding: 8px; background: #e8f5e8; border-radius: 0px; border: 1px solid #c8e6c9;");
     }
 }
 
-QString JsonFormatter::getJsonValueTypeString(const QJsonValue& value)
-{
+QString JsonFormatter::getJsonValueTypeString(const QJsonValue& value) {
     switch (value.type()) {
     case QJsonValue::Object: return "Object";
     case QJsonValue::Array: return "Array";
@@ -614,8 +605,7 @@ QString JsonFormatter::getJsonValueTypeString(const QJsonValue& value)
     }
 }
 
-QIcon JsonFormatter::getJsonValueIcon(const QJsonValue& value)
-{
+QIcon JsonFormatter::getJsonValueIcon(const QJsonValue& value) {
     return QIcon();
 }
 

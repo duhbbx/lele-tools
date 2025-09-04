@@ -1,4 +1,5 @@
-#include "hostseditor.h"
+
+#include "hostseditortable.h"
 #include <QDebug>
 #include <QMessageBox>
 #include <QFile>
@@ -28,15 +29,14 @@
 
 REGISTER_DYNAMICOBJECT(HostsEditor);
 
-HostsEditor::HostsEditor() : QWidget(nullptr), DynamicObjectBase()
-{
+HostsEditor::HostsEditor() : QWidget(nullptr), DynamicObjectBase() {
     isLoading = false;
     hasUnsavedChanges = false;
-    
+
     setupUI();
     hostsFilePath = getHostsFilePath();
     hasAdminRights = checkAdminRights();
-    
+
     // 连接信号槽
     connect(loadBtn, &QPushButton::clicked, this, &HostsEditor::onLoadHosts);
     connect(saveBtn, &QPushButton::clicked, this, &HostsEditor::onSaveHosts);
@@ -46,11 +46,11 @@ HostsEditor::HostsEditor() : QWidget(nullptr), DynamicObjectBase()
     connect(removeBtn, &QPushButton::clicked, this, &HostsEditor::onRemoveEntry);
     connect(toggleBtn, &QPushButton::clicked, this, &HostsEditor::onToggleEntry);
     connect(clearBtn, &QPushButton::clicked, this, &HostsEditor::onClearAll);
-    
+
     // 表格信号
     connect(hostsTable, &QTableWidget::itemChanged, this, &HostsEditor::onTableItemChanged);
     connect(hostsTable, &QTableWidget::itemSelectionChanged, this, &HostsEditor::onTableSelectionChanged);
-    
+
     // 自动加载hosts文件
     qDebug() << "HostsEditor: 开始加载hosts文件，路径:" << hostsFilePath;
     loadHostsFile();
@@ -58,24 +58,20 @@ HostsEditor::HostsEditor() : QWidget(nullptr), DynamicObjectBase()
     qDebug() << "HostsEditor: 初始化完成，加载了" << hostEntries.size() << "个条目";
 }
 
-HostsEditor::~HostsEditor() 
-{
-    if (fileWatcher) {
-        delete fileWatcher;
-    }
+HostsEditor::~HostsEditor() {
+    delete fileWatcher;
 }
 
-void HostsEditor::setupUI()
-{
+void HostsEditor::setupUI() {
     mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(8);
     mainLayout->setContentsMargins(10, 10, 10, 10);
-    
+
     setupToolbar();
     setupTableArea();
     setupQuickAddArea();
     setupStatusArea();
-    
+
     // 应用全局样式
     setStyleSheet(R"(
         QPushButton {
@@ -87,8 +83,8 @@ void HostsEditor::setupUI()
             min-width: 80px;
             background-color: #f8f9fa;
         }
-        QPushButton:hover { 
-            background-color: #e9ecef; 
+        QPushButton:hover {
+            background-color: #e9ecef;
             border-color: #adb5bd;
         }
         QPushButton:pressed {
@@ -155,11 +151,10 @@ void HostsEditor::setupUI()
     )");
 }
 
-void HostsEditor::setupToolbar()
-{
+void HostsEditor::setupToolbar() {
     toolbarGroup = new QGroupBox("🛠️ Hosts文件编辑器");
     toolbarLayout = new QHBoxLayout(toolbarGroup);
-    
+
     loadBtn = new QPushButton("📂 重新加载");
     saveBtn = new QPushButton("💾 保存文件");
     addBtn = new QPushButton("➕ 添加条目");
@@ -167,13 +162,17 @@ void HostsEditor::setupToolbar()
     toggleBtn = new QPushButton("🔄 启用/禁用");
     clearBtn = new QPushButton("🧹 清空全部");
     flushDnsBtn = new QPushButton("🔄 刷新DNS");
-    
+
     // 设置按钮样式
-    saveBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
-    flushDnsBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
-    removeBtn->setStyleSheet("QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
-    clearBtn->setStyleSheet("QPushButton { background-color: #fd7e14; color: white; } QPushButton:hover { background-color: #e66100; }");
-    
+    saveBtn->setStyleSheet(
+        "QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
+    flushDnsBtn->setStyleSheet(
+        "QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
+    removeBtn->setStyleSheet(
+        "QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
+    clearBtn->setStyleSheet(
+        "QPushButton { background-color: #fd7e14; color: white; } QPushButton:hover { background-color: #e66100; }");
+
     toolbarLayout->addWidget(loadBtn);
     toolbarLayout->addWidget(saveBtn);
     toolbarLayout->addWidget(addBtn);
@@ -182,57 +181,56 @@ void HostsEditor::setupToolbar()
     toolbarLayout->addWidget(clearBtn);
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(flushDnsBtn);
-    
+
     mainLayout->addWidget(toolbarGroup);
 }
 
-void HostsEditor::setupTableArea()
-{
+void HostsEditor::setupTableArea() {
     tableGroup = new QGroupBox("📋 Hosts条目列表");
     tableLayout = new QVBoxLayout(tableGroup);
-    
+
     hostsTable = new QTableWidget();
     hostsTable->setColumnCount(4);
     hostsTable->setHorizontalHeaderLabels(QStringList() << "状态" << "IP地址" << "主机名" << "注释");
-    
+
     // 设置表格属性
     hostsTable->setAlternatingRowColors(true);
     hostsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     hostsTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     hostsTable->setSortingEnabled(true);
     hostsTable->verticalHeader()->setVisible(false);
-    
+
     // 设置列宽
     QHeaderView* header = hostsTable->horizontalHeader();
     header->setStretchLastSection(true);
     hostsTable->setColumnWidth(0, 80);
     hostsTable->setColumnWidth(1, 150);
     hostsTable->setColumnWidth(2, 200);
-    
+
     tableLayout->addWidget(hostsTable);
     mainLayout->addWidget(tableGroup);
 }
 
-void HostsEditor::setupQuickAddArea()
-{
+void HostsEditor::setupQuickAddArea() {
     quickAddGroup = new QGroupBox("⚡ 快速添加Hosts条目");
     quickAddLayout = new QGridLayout(quickAddGroup);
-    
+
     ipEdit = new QLineEdit();
     ipEdit->setPlaceholderText("输入IP地址 (例: 127.0.0.1)");
-    
+
     hostnameEdit = new QLineEdit();
     hostnameEdit->setPlaceholderText("输入主机名 (例: example.com)");
-    
+
     commentEdit = new QLineEdit();
     commentEdit->setPlaceholderText("输入注释 (可选)");
-    
+
     enabledCheck = new QCheckBox("启用此条目");
     enabledCheck->setChecked(true);
-    
+
     quickAddBtn = new QPushButton("➕ 添加到Hosts");
-    quickAddBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; min-width: 120px; } QPushButton:hover { background-color: #218838; }");
-    
+    quickAddBtn->setStyleSheet(
+        "QPushButton { background-color: #28a745; color: white; min-width: 120px; } QPushButton:hover { background-color: #218838; }");
+
     // 常用hosts下拉框
     commonHostsCombo = new QComboBox();
     commonHostsCombo->addItem("选择常用hosts...");
@@ -240,7 +238,7 @@ void HostsEditor::setupQuickAddArea()
     commonHostsCombo->addItem("0.0.0.0 ads.google.com");
     commonHostsCombo->addItem("0.0.0.0 facebook.com");
     commonHostsCombo->addItem("0.0.0.0 twitter.com");
-    
+
     connect(commonHostsCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
         if (index > 0) {
             QString text = commonHostsCombo->itemText(index);
@@ -252,7 +250,7 @@ void HostsEditor::setupQuickAddArea()
             commonHostsCombo->setCurrentIndex(0);
         }
     });
-    
+
     quickAddLayout->addWidget(new QLabel("IP地址:"), 0, 0);
     quickAddLayout->addWidget(ipEdit, 0, 1);
     quickAddLayout->addWidget(new QLabel("主机名:"), 0, 2);
@@ -263,62 +261,60 @@ void HostsEditor::setupQuickAddArea()
     quickAddLayout->addWidget(quickAddBtn, 1, 3);
     quickAddLayout->addWidget(new QLabel("常用:"), 2, 0);
     quickAddLayout->addWidget(commonHostsCombo, 2, 1, 1, 3);
-    
+
     mainLayout->addWidget(quickAddGroup);
 }
 
-void HostsEditor::setupStatusArea()
-{
+void HostsEditor::setupStatusArea() {
     statusLayout = new QHBoxLayout();
-    
+
     statusLabel = new QLabel("就绪");
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
-    
+
     entriesCountLabel = new QLabel("条目: 0");
     entriesCountLabel->setStyleSheet("color: #6c757d;");
-    
+
     adminStatusLabel = new QLabel("权限检查中...");
-    
+
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
     progressBar->setMaximumHeight(20);
-    
+
     statusLayout->addWidget(statusLabel);
     statusLayout->addWidget(entriesCountLabel);
     statusLayout->addStretch();
     statusLayout->addWidget(progressBar);
     statusLayout->addWidget(adminStatusLabel);
-    
+
     mainLayout->addLayout(statusLayout);
 }
 
-void HostsEditor::loadHostsFile()
-{
+void HostsEditor::loadHostsFile() {
     isLoading = true;
     updateStatus("正在加载hosts文件...", false);
-    
+
     // 检查文件是否存在
-    QFileInfo fileInfo(hostsFilePath);
+    const QFileInfo fileInfo(hostsFilePath);
     if (!fileInfo.exists()) {
         updateStatus("hosts文件不存在: " + hostsFilePath, true);
         isLoading = false;
         return;
     }
-    
+
     // 检查文件是否可读
     if (!fileInfo.isReadable()) {
         updateStatus("hosts文件不可读，可能需要管理员权限", true);
         isLoading = false;
         return;
     }
-    
+
     QFile file(hostsFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         updateStatus("无法读取hosts文件: " + file.errorString(), true);
         isLoading = false;
         return;
     }
-    
+
     hostEntries.clear();
     QTextStream in(&file);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -326,52 +322,52 @@ void HostsEditor::loadHostsFile()
 #else
     in.setEncoding(QStringConverter::Utf8);
 #endif
-    
+
     while (!in.atEnd()) {
         QString line = in.readLine();
         parseHostsLine(line);
     }
-    
+
     file.close();
+    isLoading = false;
     updateTable();
     updateStatus("hosts文件加载完成", false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = false;
-    isLoading = false;
+
 }
 
-void HostsEditor::parseHostsLine(const QString& line)
-{
+void HostsEditor::parseHostsLine(const QString& line) {
     QString trimmedLine = line.trimmed();
-    
+
     // 跳过空行
     if (trimmedLine.isEmpty()) {
         return;
     }
-    
+
     bool enabled = true;
     QString workingLine = trimmedLine;
-    
+
     // 检查是否被注释掉（禁用）
     if (trimmedLine.startsWith("#")) {
         enabled = false;
         workingLine = trimmedLine.mid(1).trimmed();
-        
+
         // 如果是纯注释行（不是被注释的hosts条目），跳过
         if (workingLine.isEmpty() || !workingLine.contains(QRegularExpression("^\\d+\\.\\d+\\.\\d+\\.\\d+"))) {
             return;
         }
     }
-    
+
     // 解析IP和主机名
     QRegularExpression regex("^(\\S+)\\s+(\\S+)(?:\\s*#?\\s*(.*))?$");
     QRegularExpressionMatch match = regex.match(workingLine);
-    
+
     if (match.hasMatch()) {
         QString ip = match.captured(1);
         QString hostname = match.captured(2);
         QString comment = match.captured(3).trimmed();
-        
+
         // 验证IP格式
         if (isValidIP(ip)) {
             hostEntries.append(HostEntry(ip, hostname, comment, enabled));
@@ -379,13 +375,11 @@ void HostsEditor::parseHostsLine(const QString& line)
     }
 }
 
-void HostsEditor::onLoadHosts()
-{
+void HostsEditor::onLoadHosts() {
     loadHostsFile();
 }
 
-void HostsEditor::onSaveHosts()
-{
+void HostsEditor::onSaveHosts() {
     if (!hasAdminRights) {
         // 尝试提升权限保存
         if (saveWithElevation()) {
@@ -396,23 +390,22 @@ void HostsEditor::onSaveHosts()
         }
         return;
     }
-    
+
     saveHostsFile();
 }
 
-bool HostsEditor::saveWithElevation()
-{
+bool HostsEditor::saveWithElevation() {
 #ifdef Q_OS_WIN
     // 创建临时文件
     QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch());
-    
+
     // 写入临时文件
     QFile file(tempFile);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         return false;
     }
-    
+
     QTextStream out(&file);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     out.setCodec("UTF-8");
@@ -421,32 +414,32 @@ bool HostsEditor::saveWithElevation()
 #endif
     out << generateHostsContent();
     file.close();
-    
+
     // 使用ShellExecuteEx提升权限复制文件
     QString cmdLine = QString("cmd.exe /c copy \"%1\" \"%2\"").arg(tempFile, hostsFilePath);
-    
-    SHELLEXECUTEINFOW sei = {0};
+
+    SHELLEXECUTEINFOW sei = { 0 };
     sei.cbSize = sizeof(sei);
     sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
     sei.lpVerb = L"runas";
     sei.lpFile = L"cmd.exe";
     sei.lpParameters = reinterpret_cast<LPCWSTR>(cmdLine.utf16());
     sei.nShow = SW_HIDE;
-    
+
     if (ShellExecuteExW(&sei)) {
         if (sei.hProcess) {
             WaitForSingleObject(sei.hProcess, INFINITE);
             DWORD exitCode;
             GetExitCodeProcess(sei.hProcess, &exitCode);
             CloseHandle(sei.hProcess);
-            
+
             // 清理临时文件
             QFile::remove(tempFile);
-            
+
             return (exitCode == 0);
         }
     }
-    
+
     // 清理临时文件
     QFile::remove(tempFile);
     return false;
@@ -456,20 +449,19 @@ bool HostsEditor::saveWithElevation()
 #endif
 }
 
-void HostsEditor::saveHostsFile()
-{
+void HostsEditor::saveHostsFile() {
     updateStatus("正在保存hosts文件...", false);
-    
+
     // 备份原文件
     QString backupPath = hostsFilePath + ".backup." + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
     QFile::copy(hostsFilePath, backupPath);
-    
+
     QFile file(hostsFilePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         updateStatus("无法写入hosts文件: " + file.errorString(), true);
         return;
     }
-    
+
     QTextStream out(&file);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     out.setCodec("UTF-8");
@@ -477,17 +469,16 @@ void HostsEditor::saveHostsFile()
     out.setEncoding(QStringConverter::Utf8);
 #endif
     out << generateHostsContent();
-    
+
     file.close();
     updateStatus("hosts文件保存成功", false);
     hasUnsavedChanges = false;
 }
 
-QString HostsEditor::generateHostsContent()
-{
+QString HostsEditor::generateHostsContent() {
     QString content;
     QTextStream stream(&content);
-    
+
     // 添加文件头注释
     stream << "# Hosts file - Modified by 乐乐的工具箱\n";
     stream << "# " << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") << "\n";
@@ -495,41 +486,39 @@ QString HostsEditor::generateHostsContent()
     stream << "# This file contains the mappings of IP addresses to host names.\n";
     stream << "# Each entry should be kept on an individual line.\n";
     stream << "# \n\n";
-    
+
     // 添加hosts条目
     for (const HostEntry& entry : hostEntries) {
         if (!entry.enabled) {
             stream << "# ";
         }
-        
+
         stream << entry.ip << "\t" << entry.hostname;
-        
+
         if (!entry.comment.isEmpty()) {
             stream << "\t# " << entry.comment;
         }
-        
+
         stream << "\n";
     }
-    
+
     return content;
 }
 
-void HostsEditor::onFlushDns()
-{
+void HostsEditor::onFlushDns() {
     updateStatus("正在刷新DNS缓存...", false);
     flushDnsWithAPI();
 }
 
-void HostsEditor::flushDnsWithAPI()
-{
+void HostsEditor::flushDnsWithAPI() {
 #ifdef Q_OS_WIN
     // 使用Windows API刷新DNS缓存
     HMODULE hDnsApi = LoadLibraryW(L"dnsapi.dll");
     if (hDnsApi) {
         typedef BOOL (WINAPI *DnsFlushResolverCacheFunc)();
-        DnsFlushResolverCacheFunc DnsFlushResolverCache = 
-            (DnsFlushResolverCacheFunc)GetProcAddress(hDnsApi, "DnsFlushResolverCache");
-        
+        DnsFlushResolverCacheFunc DnsFlushResolverCache =
+            (DnsFlushResolverCacheFunc) GetProcAddress(hDnsApi, "DnsFlushResolverCache");
+
         if (DnsFlushResolverCache) {
             if (DnsFlushResolverCache()) {
                 updateStatus("DNS缓存刷新成功", false);
@@ -539,7 +528,7 @@ void HostsEditor::flushDnsWithAPI()
         } else {
             updateStatus("无法找到DNS刷新函数", true);
         }
-        
+
         FreeLibrary(hDnsApi);
     } else {
         updateStatus("无法加载DNS API", true);
@@ -550,28 +539,27 @@ void HostsEditor::flushDnsWithAPI()
 #endif
 }
 
-void HostsEditor::onQuickAdd()
-{
+void HostsEditor::onQuickAdd() {
     QString ip = ipEdit->text().trimmed();
     QString hostname = hostnameEdit->text().trimmed();
     QString comment = commentEdit->text().trimmed();
     bool enabled = enabledCheck->isChecked();
-    
+
     if (ip.isEmpty() || hostname.isEmpty()) {
         updateStatus("IP地址和主机名不能为空", true);
         return;
     }
-    
+
     if (!isValidIP(ip)) {
         updateStatus("IP地址格式不正确", true);
         return;
     }
-    
+
     if (!isValidHostname(hostname)) {
         updateStatus("主机名格式不正确", true);
         return;
     }
-    
+
     // 检查是否已存在
     for (const HostEntry& entry : hostEntries) {
         if (entry.hostname == hostname) {
@@ -579,39 +567,37 @@ void HostsEditor::onQuickAdd()
             return;
         }
     }
-    
+
     hostEntries.append(HostEntry(ip, hostname, comment, enabled));
     updateTable();
-    
+
     // 清空输入框
     ipEdit->clear();
     hostnameEdit->clear();
     commentEdit->clear();
     enabledCheck->setChecked(true);
-    
+
     updateStatus("已添加新的hosts条目", false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
 }
 
-void HostsEditor::onAddEntry()
-{
+void HostsEditor::onAddEntry() {
     // 添加空条目供用户编辑
     hostEntries.append(HostEntry("127.0.0.1", "example.com", "新条目", true));
     updateTable();
-    
+
     // 选中新添加的行
     int newRow = hostsTable->rowCount() - 1;
     hostsTable->selectRow(newRow);
     hostsTable->scrollToItem(hostsTable->item(newRow, 0));
-    
+
     updateStatus("已添加新条目，请编辑", false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
 }
 
-void HostsEditor::onRemoveEntry()
-{
+void HostsEditor::onRemoveEntry() {
     QList<int> selectedRows;
     for (QTableWidgetItem* item : hostsTable->selectedItems()) {
         int row = item->row();
@@ -619,29 +605,28 @@ void HostsEditor::onRemoveEntry()
             selectedRows.append(row);
         }
     }
-    
+
     if (selectedRows.isEmpty()) {
         updateStatus("请先选择要删除的条目", true);
         return;
     }
-    
+
     // 按行号倒序排列，从后往前删除
     std::sort(selectedRows.begin(), selectedRows.end(), std::greater<int>());
-    
+
     for (int row : selectedRows) {
         if (row >= 0 && row < hostEntries.size()) {
             hostEntries.removeAt(row);
         }
     }
-    
+
     updateTable();
     updateStatus(QString("已删除 %1 个条目").arg(selectedRows.size()), false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
 }
 
-void HostsEditor::onToggleEntry()
-{
+void HostsEditor::onToggleEntry() {
     QList<int> selectedRows;
     for (QTableWidgetItem* item : hostsTable->selectedItems()) {
         int row = item->row();
@@ -649,35 +634,35 @@ void HostsEditor::onToggleEntry()
             selectedRows.append(row);
         }
     }
-    
+
     if (selectedRows.isEmpty()) {
         updateStatus("请先选择要启用/禁用的条目", true);
         return;
     }
-    
+
     for (int row : selectedRows) {
         if (row >= 0 && row < hostEntries.size()) {
             hostEntries[row].enabled = !hostEntries[row].enabled;
         }
     }
-    
+
     updateTable();
     updateStatus(QString("已切换 %1 个条目的状态").arg(selectedRows.size()), false);
     hasUnsavedChanges = true;
 }
 
-void HostsEditor::onClearAll()
-{
+void HostsEditor::onClearAll() {
     if (hostEntries.isEmpty()) {
         updateStatus("没有条目可清空", true);
         return;
     }
-    
-    QMessageBox::StandardButton reply = QMessageBox::question(this, 
-        "确认清空", 
-        QString("确定要清空所有 %1 个hosts条目吗？\n此操作不可撤销！").arg(hostEntries.size()),
-        QMessageBox::Yes | QMessageBox::No);
-        
+
+    QMessageBox::StandardButton reply = QMessageBox::question(this,
+                                                              "确认清空",
+                                                              QString("确定要清空所有 %1 个hosts条目吗？\n此操作不可撤销！").arg(
+                                                                  hostEntries.size()),
+                                                              QMessageBox::Yes | QMessageBox::No);
+
     if (reply == QMessageBox::Yes) {
         hostEntries.clear();
         updateTable();
@@ -687,15 +672,15 @@ void HostsEditor::onClearAll()
     }
 }
 
-void HostsEditor::updateTable()
-{
-    if (isLoading) return;
-    
+void HostsEditor::updateTable() {
+    if (isLoading)
+        return;
+
     hostsTable->setRowCount(hostEntries.size());
-    
+
     for (int i = 0; i < hostEntries.size(); ++i) {
         const HostEntry& entry = hostEntries[i];
-        
+
         // 状态列
         QTableWidgetItem* statusItem = new QTableWidgetItem(entry.enabled ? "✅ 启用" : "❌ 禁用");
         statusItem->setFlags(statusItem->flags() & ~Qt::ItemIsEditable);
@@ -703,21 +688,21 @@ void HostsEditor::updateTable()
             statusItem->setForeground(QBrush(QColor("#6c757d")));
         }
         hostsTable->setItem(i, 0, statusItem);
-        
+
         // IP地址列
         QTableWidgetItem* ipItem = new QTableWidgetItem(entry.ip);
         if (!entry.enabled) {
             ipItem->setForeground(QBrush(QColor("#6c757d")));
         }
         hostsTable->setItem(i, 1, ipItem);
-        
+
         // 主机名列
         QTableWidgetItem* hostnameItem = new QTableWidgetItem(entry.hostname);
         if (!entry.enabled) {
             hostnameItem->setForeground(QBrush(QColor("#6c757d")));
         }
         hostsTable->setItem(i, 2, hostnameItem);
-        
+
         // 注释列
         QTableWidgetItem* commentItem = new QTableWidgetItem(entry.comment);
         if (!entry.enabled) {
@@ -725,31 +710,26 @@ void HostsEditor::updateTable()
         }
         hostsTable->setItem(i, 3, commentItem);
     }
-    
+
     updateButtonStates();
 }
 
-void HostsEditor::updateStatus(const QString& message, bool isError)
-{
+void HostsEditor::updateStatus(const QString& message, bool isError) {
     statusLabel->setText(message);
-    statusLabel->setStyleSheet(isError ? 
-        "color: #dc3545; font-weight: bold;" : 
-        "color: #28a745; font-weight: bold;");
+    statusLabel->setStyleSheet(isError ? "color: #dc3545; font-weight: bold;" : "color: #28a745; font-weight: bold;");
 }
 
-void HostsEditor::updateButtonStates()
-{
+void HostsEditor::updateButtonStates() {
     bool hasSelection = !hostsTable->selectedItems().isEmpty();
     bool hasEntries = !hostEntries.isEmpty();
-    
+
     removeBtn->setEnabled(hasSelection);
     toggleBtn->setEnabled(hasSelection);
     clearBtn->setEnabled(hasEntries);
     saveBtn->setEnabled(hasUnsavedChanges);
 }
 
-QString HostsEditor::getHostsFilePath()
-{
+QString HostsEditor::getHostsFilePath() {
 #ifdef Q_OS_WIN
     return "C:/Windows/System32/drivers/etc/hosts";
 #else
@@ -757,61 +737,59 @@ QString HostsEditor::getHostsFilePath()
 #endif
 }
 
-bool HostsEditor::checkAdminRights()
-{
+bool HostsEditor::checkAdminRights() {
 #ifdef Q_OS_WIN
     BOOL isAdmin = FALSE;
     PSID adminGroup = NULL;
     SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
-    
+
     if (AllocateAndInitializeSid(&ntAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID,
-                                DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &adminGroup)) {
+                                 DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &adminGroup)) {
         CheckTokenMembership(NULL, adminGroup, &isAdmin);
         FreeSid(adminGroup);
     }
-    
+
     adminStatusLabel->setText(isAdmin ? "✅ 管理员权限" : "⚠️ 普通用户权限");
-    adminStatusLabel->setStyleSheet(isAdmin ? 
-        "color: #28a745; font-weight: bold;" : 
-        "color: #ffc107; font-weight: bold;");
-    
+    adminStatusLabel->setStyleSheet(isAdmin
+                                        ? "color: #28a745; font-weight: bold;"
+                                        : "color: #ffc107; font-weight: bold;");
+
     return isAdmin;
 #else
     bool isRoot = (getuid() == 0);
     adminStatusLabel->setText(isRoot ? "✅ Root权限" : "⚠️ 普通用户权限");
-    adminStatusLabel->setStyleSheet(isRoot ? 
-        "color: #28a745; font-weight: bold;" : 
-        "color: #ffc107; font-weight: bold;");
+    adminStatusLabel->setStyleSheet(
+        isRoot ? "color: #28a745; font-weight: bold;" : "color: #ffc107; font-weight: bold;");
     return isRoot;
 #endif
 }
 
-bool HostsEditor::isValidIP(const QString& ip)
-{
-    QRegularExpression ipRegex("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+bool HostsEditor::isValidIP(const QString& ip) {
+    QRegularExpression ipRegex(
+        "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
     return ipRegex.match(ip).hasMatch();
 }
 
-bool HostsEditor::isValidHostname(const QString& hostname)
-{
+bool HostsEditor::isValidHostname(const QString& hostname) {
     if (hostname.isEmpty() || hostname.length() > 253) {
         return false;
     }
-    
-    QRegularExpression hostnameRegex("^[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?(\\.([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?))*$");
+
+    QRegularExpression hostnameRegex(
+        "^[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?(\\.([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?))*$");
     return hostnameRegex.match(hostname).hasMatch();
 }
 
-void HostsEditor::onTableItemChanged(QTableWidgetItem* item)
-{
-    if (isLoading) return;
-    
+void HostsEditor::onTableItemChanged(QTableWidgetItem* item) {
+    if (isLoading)
+        return;
+
     int row = item->row();
     int column = item->column();
-    
+
     if (row >= 0 && row < hostEntries.size()) {
         QString newValue = item->text().trimmed();
-        
+
         switch (column) {
         case 1: // IP地址
             if (isValidIP(newValue)) {
@@ -836,28 +814,55 @@ void HostsEditor::onTableItemChanged(QTableWidgetItem* item)
             hasUnsavedChanges = true;
             break;
         }
-        
+
         updateButtonStates();
     }
 }
 
-void HostsEditor::onTableSelectionChanged()
-{
+void HostsEditor::onTableSelectionChanged() {
     updateButtonStates();
 }
 
 // 空实现的槽函数
-void HostsEditor::onEditEntry() {}
-void HostsEditor::onBackupHosts() {}
-void HostsEditor::onRestoreHosts() {}
-void HostsEditor::onImportHosts() {}
-void HostsEditor::onExportHosts() {}
-void HostsEditor::onSearchHosts() {}
-void HostsEditor::onFileChanged(const QString&) {}
-void HostsEditor::onDnsFlushFinished(int, QProcess::ExitStatus) {}
-void HostsEditor::parseHostsContent(const QString&) {}
-void HostsEditor::addHostEntry(const QString&, const QString&, const QString&, bool) {}
-void HostsEditor::removeSelectedEntries() {}
-void HostsEditor::toggleSelectedEntries() {}
-void HostsEditor::showAdminWarning() {}
-bool HostsEditor::requestAdminRights() { return false; }
+void HostsEditor::onEditEntry() {
+}
+
+void HostsEditor::onBackupHosts() {
+}
+
+void HostsEditor::onRestoreHosts() {
+}
+
+void HostsEditor::onImportHosts() {
+}
+
+void HostsEditor::onExportHosts() {
+}
+
+void HostsEditor::onSearchHosts() {
+}
+
+void HostsEditor::onFileChanged(const QString&) {
+}
+
+void HostsEditor::onDnsFlushFinished(int, QProcess::ExitStatus) {
+}
+
+void HostsEditor::parseHostsContent(const QString&) {
+}
+
+void HostsEditor::addHostEntry(const QString&, const QString&, const QString&, bool) {
+}
+
+void HostsEditor::removeSelectedEntries() {
+}
+
+void HostsEditor::toggleSelectedEntries() {
+}
+
+void HostsEditor::showAdminWarning() {
+}
+
+bool HostsEditor::requestAdminRights() {
+    return false;
+}

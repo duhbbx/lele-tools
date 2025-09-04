@@ -1,28 +1,25 @@
 #include "toollist.h"
 
-#include <QTextEdit>
 #include "../main-widget/mainwindow.h"
 #include <QListWidget>
 #include <QVBoxLayout>
 #include <QLineEdit>
-#include <QLabel>
 #include <QSizePolicy>
 
 #include "module-meta.h"
-ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
-{
+
+ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
     this->mainWindow = mainWindow;
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
 
-
     // 搜索区域
-    QWidget *searchWidget = new QWidget;
+    QWidget* searchWidget = new QWidget;
     searchWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QVBoxLayout *searchLayout = new QVBoxLayout(searchWidget);
+    QVBoxLayout* searchLayout = new QVBoxLayout(searchWidget);
     searchLayout->setContentsMargins(5, 0, 5, 0);
     searchLayout->setSpacing(5);
 
@@ -81,8 +78,8 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
         "}"
     );
 
-    for (const ModuleMeta &moduleMeta : moduleMetaArray) {
-        QListWidgetItem *item0 = new QListWidgetItem(QIcon(moduleMeta.icon), moduleMeta.title);
+    for (const ModuleMeta& moduleMeta : moduleMetaArray) {
+        auto* item0 = new QListWidgetItem(QIcon(moduleMeta.icon), moduleMeta.title);
         item0->setData(Qt::UserRole, QVariant(moduleMeta.className));
         item0->setData(Qt::DisplayRole, QVariant(moduleMeta.title));
         listWidget->addItem(item0);
@@ -90,25 +87,23 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget *parent) : QWidget(parent)
 
     layout->addWidget(listWidget, 1); // 设置拉伸因子为1，让列表填满剩余空间
 
-    QObject::connect(listWidget, &QListWidget::itemClicked, mainWindow, &MainWindow::itemClickedSlot);
+    connect(listWidget, &QListWidget::itemClicked, mainWindow, &MainWindow::itemClickedSlot);
 
     // 设置搜索功能
     setupSearchFunctionality();
 
     // 设置大小策略，确保组件能填满父容器
     this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
+
     this->setLayout(layout);
 }
 
-void ToolList::setupSearchFunctionality()
-{
+void ToolList::setupSearchFunctionality() {
     // 连接搜索框的文本变化信号到过滤槽函数
     connect(searchLineEdit, &QLineEdit::textChanged, this, &ToolList::filterTools);
 }
 
-void ToolList::filterTools(const QString &text)
-{
+void ToolList::filterTools(const QString& text) const {
     // 如果搜索文本为空，显示所有项目
     if (text.isEmpty()) {
         for (int i = 0; i < listWidget->count(); ++i) {
@@ -116,20 +111,17 @@ void ToolList::filterTools(const QString &text)
         }
         return;
     }
-    
+
     // 根据搜索文本过滤项目（不区分大小写）
-    QString searchText = text.toLower();
+    const QString searchText = text.toLower();
     for (int i = 0; i < listWidget->count(); ++i) {
-        QListWidgetItem *item = listWidget->item(i);
+        QListWidgetItem* item = listWidget->item(i);
         QString itemText = item->text().toLower();
-        
+
         // 如果项目文本包含搜索文本，则显示；否则隐藏
-        bool shouldShow = itemText.contains(searchText);
+        const bool shouldShow = itemText.contains(searchText);
         item->setHidden(!shouldShow);
     }
 }
 
-ToolList::~ToolList()
-{
-
-}
+ToolList::~ToolList() = default;

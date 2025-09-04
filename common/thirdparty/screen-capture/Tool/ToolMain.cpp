@@ -1,5 +1,4 @@
 ﻿#include <QWindow>
-#include <QCoreApplication>
 
 #include "../App/App.h"
 #include "../App/Util.h"
@@ -15,18 +14,12 @@
 #include "BtnCheck.h"
 
 ToolMain::ToolMain(QWidget* parent) : ToolBase(parent) {
-    LOG_INFO("ToolMain", "=== ToolMain构造函数开始 ===");
-    LOG_DEBUG("ToolMain", QString("ToolMain: this指针: 0x%1, parent指针: 0x%2")
-              .arg(reinterpret_cast<quintptr>(this), 0, 16)
-              .arg(reinterpret_cast<quintptr>(parent), 0, 16));
-
     LOG_DEBUG("ToolMain", "调用initWindow()初始化窗口");
-    qDebug() << "ToolMain: 开始调用initWindow()";
     initWindow();
     qDebug() << "ToolMain: initWindow()调用完成";
 
     qDebug() << "ToolMain: 开始创建布局";
-    QHBoxLayout* layout = new QHBoxLayout(this);
+    auto* layout = new QHBoxLayout(this);
     qDebug() << "ToolMain: 布局对象创建完成:" << layout;
     layout->setSpacing(0);
     layout->setContentsMargins(4, 2, 4, 2);
@@ -88,24 +81,24 @@ ToolMain::ToolMain(QWidget* parent) : ToolBase(parent) {
                   .arg(reinterpret_cast<quintptr>(btn->parent()), 0, 16)
                   .arg(btn->isVisible() ? "是" : "否")
                   .arg(btn->isEnabled() ? "是" : "否"));
-        
+
         // 强制设置按钮为可见
         if (!btn->isVisible()) {
             LOG_DEBUG("ToolMain", QString("强制设置按钮 %1 为可见").arg(btn->name));
             btn->setVisible(true);
         }
     }
-    
+
     // 再次验证可见性
     LOG_DEBUG("ToolMain", "=== 设置可见性后的状态 ===");
     LOG_DEBUG("ToolMain", QString("ToolMain自身可见性: %1").arg(this->isVisible() ? "是" : "否"));
-    
+
     // 安全地检查父窗口可见性
     QObject* parentObj = this->parent();
     QWidget* parentWidget = qobject_cast<QWidget*>(parentObj);
     bool parentVisible = parentWidget && parentWidget->isVisible();
     LOG_DEBUG("ToolMain", QString("ToolMain父窗口可见性: %1").arg(parentVisible ? "是" : "否"));
-    
+
     for (auto btn : allBtns) {
         QObject* btnParentObj = btn->parent();
         QWidget* btnParentWidget = qobject_cast<QWidget*>(btnParentObj);
@@ -115,13 +108,13 @@ ToolMain::ToolMain(QWidget* parent) : ToolBase(parent) {
                   .arg(btn->isVisible() ? "是" : "否")
                   .arg(btnParentVisible ? "是" : "否"));
     }
-    
+
     // 强制设置ToolMain本身为可见
     if (!this->isVisible()) {
         LOG_DEBUG("ToolMain", "强制设置ToolMain为可见");
         this->setVisible(true);
     }
-    
+
     LOG_INFO("ToolMain", "=== ToolMain构造函数完成 ===");
 }
 
@@ -190,7 +183,7 @@ void ToolMain::confirmPos() {
 
     auto left { br.x() - width() };
     auto top { br.y() + 6 };
-    auto heightSpan { 6 * 3 + height() * 2 }; //三个缝隙，两个高度
+    const auto heightSpan { 6 * 3 + height() * 2 }; //三个缝隙，两个高度
 
     LOG_DEBUG("ToolMain", QString("工具栏尺寸: %1x%2, heightSpan: %3")
               .arg(width()).arg(height()).arg(heightSpan));
@@ -252,7 +245,7 @@ void ToolMain::btnCheckChange(BtnCheck* btn) {
     qDebug() << "ToolMain: this指针:" << this;
     qDebug() << "ToolMain: btn指针:" << btn;
     qDebug() << "ToolMain: parent()指针:" << parent();
-    
+
     LOG_DEBUG("ToolMain", "=== 按钮状态变化开始 ===");
 
     if (!btn) {
@@ -267,7 +260,7 @@ void ToolMain::btnCheckChange(BtnCheck* btn) {
     qDebug() << "ToolMain: 准备转换父窗口指针";
     auto win = dynamic_cast<WinBase*>(parent());
     qDebug() << "ToolMain: dynamic_cast结果:" << win;
-    
+
     if (!win) {
         qDebug() << "ToolMain: 父窗口指针转换失败！parent()类型:" << (parent() ? parent()->metaObject()->className() : "nullptr");
         LOG_ERROR("ToolMain", "父窗口指针为空或类型转换失败");
@@ -343,7 +336,8 @@ void ToolMain::btnCheckChange(BtnCheck* btn) {
     int deactivatedCount = 0;
 
     for (auto& b : btns) {
-        if (b == btn) continue;
+        if (b == btn)
+            continue;
         if (b->isChecked) {
             previousTool = b->name;
             LOG_INFO("ToolMain", QString("从工具 '%1' 切换到工具 '%2'").arg(b->name).arg(btn->name));
@@ -389,8 +383,8 @@ void ToolMain::btnCheckChange(BtnCheck* btn) {
 
     try {
         LOG_DEBUG("ToolMain", "调用 new ToolSub(win)");
-        qDebug() << "ToolMain: 即将创建ToolSub，按钮状态:" << (int)btn->state;
-        
+        qDebug() << "ToolMain: 即将创建ToolSub，按钮状态:" << (int) btn->state;
+
         win->toolSub = new ToolSub(win);
         qDebug() << "ToolMain: ToolSub创建完成";
 
@@ -434,15 +428,15 @@ void ToolMain::btnCheckChange(BtnCheck* btn) {
 
 void ToolMain::btnClick(Btn* btn) {
     qDebug() << "ToolMain: btnClick开始，按钮:" << btn->name;
-    
+
     auto win = dynamic_cast<WinBase*>(parent());
     if (!win) {
         qDebug() << "ToolMain: 父窗口转换失败";
         return;
     }
-    
+
     qDebug() << "ToolMain: 父窗口转换成功，执行按钮操作";
-    
+
     if (btn->name == "clipboard") {
         qDebug() << "ToolMain: 保存到剪贴板";
         win->saveToClipboard();
@@ -477,17 +471,17 @@ void ToolMain::btnClick(Btn* btn) {
     } else {
         qDebug() << "ToolMain: 未知按钮名称:" << btn->name;
     }
-    
+
     qDebug() << "ToolMain: btnClick完成";
 }
 
 void ToolMain::paintEvent(QPaintEvent* event) {
     LOG_DEBUG("ToolMain", "=== ToolMain::paintEvent 开始 ===");
-    
+
     try {
         QPainter painter(this);
         LOG_DEBUG("ToolMain", "QPainter创建成功");
-        
+
         LOG_DEBUG("ToolMain", "开始获取图标字体");
         auto font = Util::getIconFont(15);
         if (font) {
@@ -500,11 +494,11 @@ void ToolMain::paintEvent(QPaintEvent* event) {
             defaultFont.setPixelSize(15);
             painter.setFont(defaultFont);
         }
-        
+
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         LOG_DEBUG("ToolMain", "画笔设置完成");
-        
+
         QPen pen;
         pen.setColor(QColor(22, 118, 255));
         pen.setWidthF(border);
@@ -513,7 +507,7 @@ void ToolMain::paintEvent(QPaintEvent* event) {
         painter.drawRect(rect().toRectF().adjusted(border, border, -border, -border));
         painter.setPen(QColor(190, 190, 190));
         auto y1 { height() - 9 };
-        
+
         LOG_DEBUG("ToolMain", "开始绘制分隔线");
         const auto tools = App::getTool();
         if (tools.isEmpty()) {
@@ -528,7 +522,7 @@ void ToolMain::paintEvent(QPaintEvent* event) {
                 painter.drawLine(x, 9, x, y1);
             }
         }
-        
+
         LOG_DEBUG("ToolMain", "=== ToolMain::paintEvent 完成 ===");
     } catch (const std::exception& e) {
         LOG_ERROR("ToolMain", QString("paintEvent异常: %1").arg(e.what()));
@@ -584,7 +578,7 @@ void ToolMain::initDefaultTool(QHBoxLayout* layout) {
     LOG_DEBUG("ToolMain", QString("initDefaultTool: layout指针: 0x%1, this指针: 0x%2")
               .arg(reinterpret_cast<quintptr>(layout), 0, 16)
               .arg(reinterpret_cast<quintptr>(this), 0, 16));
-    
+
     try {
         LOG_DEBUG("ToolMain", "initDefaultTool: 创建rect按钮");
         auto rectBtn = new BtnCheck("rect", QChar(0xe8e8), this, State::rect);
@@ -592,47 +586,47 @@ void ToolMain::initDefaultTool(QHBoxLayout* layout) {
                   .arg(reinterpret_cast<quintptr>(rectBtn), 0, 16));
         layout->addWidget(rectBtn);
         LOG_DEBUG("ToolMain", "initDefaultTool: rect按钮添加到布局");
-        
+
         qDebug() << "initDefaultTool: 创建ellipse按钮";
         auto ellipseBtn = new BtnCheck("ellipse", QChar(0xe6bc), this, State::ellipse);
         layout->addWidget(ellipseBtn);
-        
+
         qDebug() << "initDefaultTool: 创建arrow按钮";
         layout->addWidget(new BtnCheck("arrow", QChar(0xe603), this, State::arrow));
-        
+
         qDebug() << "initDefaultTool: 创建number按钮";
         layout->addWidget(new BtnCheck("number", QChar(0xe776), this, State::number));
-        
+
         qDebug() << "initDefaultTool: 创建line按钮";
         layout->addWidget(new BtnCheck("line", QChar(0xe601), this, State::line));
-        
+
         qDebug() << "initDefaultTool: 创建text按钮";
         layout->addWidget(new BtnCheck("text", QChar(0xe6ec), this, State::text));
-        
+
         qDebug() << "initDefaultTool: 创建mosaic按钮";
         layout->addWidget(new BtnCheck("mosaic", QChar(0xe82e), this, State::mosaic));
-        
+
         qDebug() << "initDefaultTool: 创建eraser按钮";
         layout->addWidget(new BtnCheck("eraser", QChar(0xe6be), this, State::eraser));
-        
+
         qDebug() << "initDefaultTool: 创建undo按钮";
         layout->addWidget(new Btn("undo", QChar(0xed85), false, this));
-        
+
         qDebug() << "initDefaultTool: 创建redo按钮";
         layout->addWidget(new Btn("redo", QChar(0xed8a), false, this));
-        
+
         qDebug() << "initDefaultTool: 创建pin按钮";
         layout->addWidget(new Btn("pin", QChar(0xe6a3), this));
-        
+
         qDebug() << "initDefaultTool: 创建clipboard按钮";
         layout->addWidget(new Btn("clipboard", QChar(0xe87f), this));
-        
+
         qDebug() << "initDefaultTool: 创建save按钮";
         layout->addWidget(new Btn("save", QChar(0xe6c0), this));
-        
+
         qDebug() << "initDefaultTool: 创建close按钮";
         layout->addWidget(new Btn("close", QChar(0xe6e7), this));
-        
+
         qDebug() << "initDefaultTool: 所有按钮创建完成";
     } catch (const std::exception& e) {
         qDebug() << "initDefaultTool: 异常:" << e.what();
