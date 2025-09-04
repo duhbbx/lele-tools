@@ -1,15 +1,14 @@
 #include "mainwindowtabwidget.h"
 
-MainWindowTabWidget::MainWindowTabWidget(QWidget *parent)
+MainWindowTabWidget::MainWindowTabWidget(QWidget* parent)
     : QTabWidget(parent)
-    , m_customTabBar(new CustomTabBar(this))
-{
+      , m_customTabBar(new CustomTabBar(this)) {
     // 设置自定义TabBar
     setTabBar(m_customTabBar);
-    
+
     // 启用关闭按钮
     setTabsClosable(true);
-    
+
     // 设置基本样式
     setStyleSheet(R"(
         QTabWidget::pane {

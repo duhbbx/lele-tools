@@ -58,15 +58,17 @@ public:
     ~JsonFormatter();
 
 public slots:
-    void onInputTextChanged();
     void onFormatJson();
     void onMinifyJson();
     void onValidateJson();
     void onClearAll();
     void onCopyFormatted();
-    void onExpandAll();
-    void onCollapseAll();
-    void onSearchInTree();
+    void onExpandAll() const;
+    void onCollapseAll() const;
+    void onSearchInTree() const;
+
+private slots:
+    void performValidation();
 
 private:
     void setupUI();

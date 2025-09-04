@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+
+#include <iostream>
 #include <QLabel>
 #include <QListWidget>
 #include <QBoxLayout>
@@ -22,9 +24,17 @@
 #include <QStandardPaths>
 #include "../common/thirdparty/screen-capture/App/App.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false), isLeftPanelCollapsed(false),
-                                          copyTooltip(nullptr) {
+                                          copyTooltip(nullptr)
+#ifdef Q_OS_WIN
+                                          , m_globalHotkeyRegistered(false)
+#endif
+{
     // 初始化设置和翻译器
     m_settings = new QSettings(QSettings::IniFormat, QSettings::UserScope, "LeleTools", "Settings", this);
     m_translator = new QTranslator(this);
@@ -251,13 +261,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
 }
 
 MainWindow::~MainWindow() {
+#ifdef Q_OS_WIN
+    // 取消注册系统级热键
+    if (m_globalHotkeyRegistered) {
+        UnregisterHotKey(reinterpret_cast<HWND>(winId()), HOTKEY_ID);
+        qDebug() << "系统级F1热键已取消注册";
+    }
+#endif
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    QMessageBox::StandardButton resBtn = QMessageBox::question(this, "退出确认",
-                                                               tr("确定要退出乐乐的工具箱吗？"),
-                                                               QMessageBox::Cancel | QMessageBox::Yes,
-                                                               QMessageBox::Yes);
+    const QMessageBox::StandardButton resBtn = QMessageBox::question(this, "退出确认",
+                                                                     tr("确定要退出乐乐的工具箱吗？"),
+                                                                     QMessageBox::Cancel | QMessageBox::Yes,
+                                                                     QMessageBox::Yes);
     if (resBtn != QMessageBox::Yes) {
         event->ignore();
     } else {
@@ -423,8 +440,9 @@ void MainWindow::createMenuBar() {
 
     toolsMenu->addSeparator();
 
-    QAction* screenshotAction = new QAction(tr("截图(&S)"), this);
-    screenshotAction->setShortcut(QKeySequence(Qt::Key_F1));
+    QAction* screenshotAction = new QAction(tr("截图(&S)\tF1"), this);
+    // 快捷键通过全局QShortcut实现，不在菜单中设置
+    // screenshotAction->setShortcut(QKeySequence(Qt::Key_F1));
     screenshotAction->setStatusTip(tr("按F1或点击此处开始截图"));
     screenshotAction->setIcon(this->style()->standardIcon(QStyle::SP_DesktopIcon));
     connect(screenshotAction, &QAction::triggered, this, &MainWindow::startScreenCapture);
@@ -435,7 +453,7 @@ void MainWindow::createMenuBar() {
     helpMenu->setStyleSheet(menuStyle); // 使用相同样式
 
     QAction* helpAction = new QAction(tr("使用说明(&U)"), this);
-    helpAction->setShortcut(QKeySequence::HelpContents);
+    // helpAction->setShortcut(QKeySequence::HelpContents);
     helpAction->setStatusTip(tr("查看使用说明"));
     helpAction->setIcon(this->style()->standardIcon(QStyle::SP_DialogHelpButton));
     connect(helpAction, &QAction::triggered, this, &MainWindow::showHelp);
@@ -627,10 +645,10 @@ void MainWindow::createStatusBar() {
 
 void MainWindow::updateTime() const {
     QDateTime currentTime = QDateTime::currentDateTime();
-    
+
     // 获取当前应用程序的语言环境
     QLocale locale = QLocale::system();
-    
+
     // 如果应用程序设置了翻译器，使用翻译器的语言
     if (m_translator && !m_translator->isEmpty()) {
         // 根据当前语言设置选择合适的语言环境
@@ -641,7 +659,7 @@ void MainWindow::updateTime() const {
             locale = QLocale(QLocale::English, QLocale::UnitedStates);
         }
     }
-    
+
     // 使用语言环境格式化日期时间
     QString dateTimeStr = locale.toString(currentTime, "yyyy-MM-dd hh:mm:ss dddd");
     timeLabel->setText(dateTimeStr);
@@ -754,7 +772,7 @@ void MainWindow::mousePressEvent(QMouseEvent* event) {
     QMainWindow::mousePressEvent(event);
 }
 
-bool MainWindow::isDraggableArea(const QPoint& pos) {
+bool MainWindow::isDraggableArea(const QPoint& pos) const {
     // 检查是否在标题栏区域
     if (titleBar && titleBar->geometry().contains(pos)) {
         // 计算标题栏内的相对位置
@@ -923,6 +941,16 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 #ifdef Q_OS_WIN
 bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result) {
     MSG* msg = static_cast<MSG*>(message);
+
+    // 处理系统级热键
+    if (msg->message == WM_HOTKEY) {
+        if (msg->wParam == HOTKEY_ID) {
+            qDebug() << "系统级F1热键被触发";
+            // 在主线程中调用截图功能
+            QMetaObject::invokeMethod(this, "startScreenCapture", Qt::QueuedConnection);
+            return true;
+        }
+    }
 
     if (msg->message == WM_NCHITTEST) {
         const LONG borderWidth = 8; // 缩放敏感区域宽度
@@ -1182,6 +1210,7 @@ void MainWindow::changeLanguage(const QString& language) {
 }
 
 void MainWindow::setupScreenCapture() {
+    qDebug() << "呵呵";
     // 创建截图API实例
     m_screenCapture = new ScreenCaptureAPI(this);
 
@@ -1189,13 +1218,25 @@ void MainWindow::setupScreenCapture() {
     connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted,
             this, &MainWindow::onCaptureCompleted);
 
-    // 创建F1全局快捷键
+    // 注册系统级全局快捷键F1
+#ifdef Q_OS_WIN
+    // 注册系统级热键 F1
+    if (RegisterHotKey(reinterpret_cast<HWND>(winId()), HOTKEY_ID, 0, VK_F1)) {
+        m_globalHotkeyRegistered = true;
+        qDebug() << "系统级F1热键注册成功";
+    } else {
+        qDebug() << "系统级F1热键注册失败，回退到应用级快捷键";
+        // 回退到应用级快捷键
+        m_screenshotShortcut = new QShortcut(QKeySequence(Qt::Key_F1), this);
+        m_screenshotShortcut->setContext(Qt::ApplicationShortcut);
+        connect(m_screenshotShortcut, &QShortcut::activated, this, &MainWindow::startScreenCapture);
+    }
+#else
+    // 非Windows系统使用应用级快捷键
     m_screenshotShortcut = new QShortcut(QKeySequence(Qt::Key_F1), this);
-    m_screenshotShortcut->setContext(Qt::ApplicationShortcut); // 应用程序级别的快捷键
-
-    // 连接快捷键信号
-    connect(m_screenshotShortcut, &QShortcut::activated,
-            this, &MainWindow::startScreenCapture);
+    m_screenshotShortcut->setContext(Qt::ApplicationShortcut);
+    connect(m_screenshotShortcut, &QShortcut::activated, this, &MainWindow::startScreenCapture);
+#endif
 
     qDebug() << "截图功能已初始化，F1快捷键已设置";
 }
@@ -1254,9 +1295,8 @@ void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, cons
                 defaultPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
             }
 
-            QString fileName = QString("screenshot_%1.png")
-                .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-            QString fullPath = QDir(defaultPath).filePath(fileName);
+            const QString fileName = QString("screenshot_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+            const QString fullPath = QDir(defaultPath).filePath(fileName);
 
             if (image.save(fullPath)) {
                 qDebug() << "截图已保存到：" << fullPath;
@@ -1327,3 +1367,4 @@ void MainWindow::showScreenshotTooltip(const QString& message) {
     // 3秒后自动隐藏并销毁
     QTimer::singleShot(3000, tooltip, &QWidget::deleteLater);
 }
+

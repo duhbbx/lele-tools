@@ -119,7 +119,12 @@ private:
     
     // 截图相关
     ScreenCaptureAPI *m_screenCapture;    // 截图API实例
-    QShortcut *m_screenshotShortcut;      // F1截图快捷键
+    QShortcut *m_screenshotShortcut;      // F1截图应用级快捷键
+    
+#ifdef Q_OS_WIN
+    static constexpr int HOTKEY_ID = 1;   // 系统热键ID
+    bool m_globalHotkeyRegistered;        // 系统热键注册状态
+#endif
     
     void createTitleBar();                // 创建自定义标题栏
     void createMenuBar();                 // 创建菜单栏
@@ -130,7 +135,7 @@ private:
     void toggleLeftPanel();               // 切换左侧面板显示状态
     void setupTabWidget();                // 设置标签页组件
     void closeTab(int index);             // 关闭标签页
-    bool isDraggableArea(const QPoint &pos); // 判断是否为可拖拽区域
+    bool isDraggableArea(const QPoint &pos) const; // 判断是否为可拖拽区域
     int getResizeDirection(const QPoint &pos); // 获取缩放方向
     bool isResizeArea(const QPoint &pos); // 判断是否为缩放区域
     void copyTimeToClipboard();           // 复制时间到剪贴板
