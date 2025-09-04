@@ -20,6 +20,8 @@
 
 {"xxx", "Ping工具", "Ping"},
 
+{"xxx", "局域网扫描", "NetworkScanner"},
+
 {"xxx", "Pdf合并", "PdfMerge"},
 
 {"xxx", "正则测试工具", "RegExTest"},
