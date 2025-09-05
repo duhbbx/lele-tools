@@ -18,6 +18,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
+# Redis 可选支持 (暂时禁用，等待库安装完成)
+option(WITH_REDIS "Enable Redis support" ON)
+
 # OpenCV 可选支持
 option(WITH_OPENCV "Enable OpenCV support" ON)
 
@@ -47,6 +50,65 @@ else()
     message(STATUS "OpenCV support disabled")
     set(HAVE_OPENCV FALSE)
 endif()
+
+option(ENABLE_REDIS "Enable Redis support" ON)
+
+if(ENABLE_REDIS)
+    message(STATUS "Checking for redis-plus-plus ...")
+    
+    # 尝试多种方式查找redis-plus-plus
+    find_package(redis++ QUIET CONFIG)
+    
+    if(redis++_FOUND)
+        message(STATUS "redis-plus-plus found via CONFIG")
+        set(HAVE_REDIS TRUE)
+    else()
+        # 如果CONFIG方式失败，尝试手动查找
+        # 直接指定vcpkg路径
+        set(REDIS_PLUS_PLUS_INCLUDE_DIR "D:/projects/vcpkg/installed/x64-windows/include")
+        set(REDIS_PLUS_PLUS_LIBRARY "D:/projects/vcpkg/installed/x64-windows/lib/redis++.lib")
+        set(HIREDIS_LIBRARY "D:/projects/vcpkg/installed/x64-windows/lib/hiredis.lib")
+        
+        # 检查文件是否存在
+        if(EXISTS "${REDIS_PLUS_PLUS_INCLUDE_DIR}/sw/redis++/redis++.h" AND 
+           EXISTS "${REDIS_PLUS_PLUS_LIBRARY}" AND 
+           EXISTS "${HIREDIS_LIBRARY}")
+            message(STATUS "redis-plus-plus found at: ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
+            message(STATUS "redis++ library: ${REDIS_PLUS_PLUS_LIBRARY}")
+            message(STATUS "hiredis library: ${HIREDIS_LIBRARY}")
+        else()
+            set(REDIS_PLUS_PLUS_INCLUDE_DIR "")
+            set(REDIS_PLUS_PLUS_LIBRARY "")
+            set(HIREDIS_LIBRARY "")
+        endif()
+        
+        if(REDIS_PLUS_PLUS_INCLUDE_DIR AND REDIS_PLUS_PLUS_LIBRARY)
+            message(STATUS "redis-plus-plus found manually")
+            message(STATUS "  Include: ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
+            message(STATUS "  Library: ${REDIS_PLUS_PLUS_LIBRARY}")
+            set(HAVE_REDIS TRUE)
+            
+            # 创建导入目标
+            add_library(redis++::redis++ UNKNOWN IMPORTED)
+            set_target_properties(redis++::redis++ PROPERTIES
+                IMPORTED_LOCATION ${REDIS_PLUS_PLUS_LIBRARY}
+                INTERFACE_INCLUDE_DIRECTORIES ${REDIS_PLUS_PLUS_INCLUDE_DIR}
+                INTERFACE_LINK_LIBRARIES ${HIREDIS_LIBRARY}
+            )
+        else()
+            message(WARNING "redis-plus-plus not found. Building without Redis support.")
+            message(STATUS "To install redis-plus-plus:")
+            message(STATUS "  Windows: vcpkg install redis-plus-plus")
+            message(STATUS "  Linux: sudo apt-get install libhiredis-dev libsw-redis++-dev")
+            message(STATUS "  macOS: brew install redis-plus-plus")
+            set(HAVE_REDIS FALSE)
+        endif()
+    endif()
+else()
+    message(STATUS "Redis support disabled")
+    set(HAVE_REDIS FALSE)
+endif()
+
 
 # 头文件目录
 if(HAVE_OPENCV)
@@ -108,7 +170,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         tool-list/module-meta-data.h
         common/datetime-utils/datetimeutils.h common/datetime-utils/datetimeutils.cpp
         my.qrc
-        resources/index.html
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET lele-tools APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -161,10 +222,26 @@ if(HAVE_OPENCV)
     target_link_libraries(lele-tools PRIVATE ${OpenCV_LIBS})
 endif()
 
-# 添加Windows Socket库
-#if(WIN32)
-#    target_link_libraries(lele-tools PRIVATE ws2_32)
-#endif()
+# Redis库链接 (移到目标定义之后)
+if(HAVE_REDIS)
+    message(STATUS "Linking redis-plus-plus to target")
+    target_compile_definitions(lele-tools PRIVATE WITH_REDIS_PLUS_PLUS)
+    
+    if(TARGET redis++::redis++)
+        target_link_libraries(lele-tools PRIVATE redis++::redis++)
+    elseif(TARGET redis++)
+        target_link_libraries(lele-tools PRIVATE redis++)
+    else()
+        message(WARNING "Redis target not found, linking manually")
+        target_include_directories(lele-tools PRIVATE ${REDIS_PLUS_PLUS_INCLUDE_DIR})
+        target_link_libraries(lele-tools PRIVATE ${REDIS_PLUS_PLUS_LIBRARY} ${HIREDIS_LIBRARY})
+    endif()
+endif()
+
+# 添加Windows Socket库 (Redis需要)
+if(WIN32 AND HAVE_REDIS)
+    target_link_libraries(lele-tools PRIVATE ws2_32 wsock32)
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

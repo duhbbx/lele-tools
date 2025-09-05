@@ -73,43 +73,6 @@ struct HtmlCharacter {
     }
 };
 
-// 字符显示卡片组件
-class CharacterCard : public QFrame
-{
-    Q_OBJECT
-
-public:
-    explicit CharacterCard(const HtmlCharacter &character, QWidget *parent = nullptr);
-    
-    const HtmlCharacter& getCharacter() const { return m_character; }
-    void setHighlighted(bool highlighted);
-
-signals:
-    void characterClicked(const HtmlCharacter &character);
-    void copyRequested(const QString &text, const QString &type);
-
-protected:
-    void paintEvent(QPaintEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void enterEvent(QEnterEvent *event) override;
-    void leaveEvent(QEvent *event) override;
-
-private:
-    void setupUI();
-    
-    HtmlCharacter m_character;
-    bool m_highlighted;
-    bool m_hovered;
-    
-    QVBoxLayout *mainLayout;
-    QLabel *charLabel;
-    QLabel *entityLabel;
-    QLabel *descLabel;
-    QHBoxLayout *buttonLayout;
-    QPushButton *copyCharBtn;
-    QPushButton *copyEntityBtn;
-    QPushButton *copyNumericBtn;
-};
 
 // 主HTML特殊字符表类
 class HtmlSpecialCharacterTable : public QWidget, public DynamicObjectBase
@@ -131,7 +94,6 @@ private slots:
     void onShowFavorites();
     void onAddToFavorites();
     void onRemoveFromFavorites();
-    void onViewModeChanged();
 
 private:
     void setupUI();
@@ -148,6 +110,7 @@ private:
     void updateCharacterDisplay();
     void updateDetailPanel(const HtmlCharacter &character);
     void clearDetailPanel();
+    
     
     // 数据管理
     void loadSettings();
@@ -166,15 +129,8 @@ private:
     QPushButton *clearSearchBtn;
     QComboBox *categoryCombo;
     QCheckBox *favoritesOnlyCheck;
-    QButtonGroup *viewModeGroup;
-    QRadioButton *cardViewRadio;
-    QRadioButton *tableViewRadio;
     
-    // 字符显示区域
-    QWidget *displayWidget;
-    QScrollArea *scrollArea;
-    QWidget *cardContainer;
-    QGridLayout *cardLayout;
+    // 字符显示区域 (只保留表格视图)
     QTableWidget *characterTable;
     
     // 详情面板
@@ -217,16 +173,10 @@ private:
     QString m_currentSearchText;
     QString m_currentCategory;
     bool m_showFavoritesOnly;
-    bool m_cardViewMode;
     
     QTimer *m_searchTimer;
     QTimer *m_statusTimer;
     
-public:
-    // 常量
-    static const int CARD_WIDTH = 180;
-    static const int CARD_HEIGHT = 120;
-    static const int CARDS_PER_ROW = 4;
 };
 
 #endif // HTMLSPECIALCHARACTERTABLE_H

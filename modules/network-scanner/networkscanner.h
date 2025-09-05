@@ -20,6 +20,7 @@
 #include <QMutex>
 #include <QTimer>
 #include <QNetworkInterface>
+#include <QAtomicInt>
 #include <QHostInfo>
 #include <QProcess>
 #include <QRegularExpression>
@@ -36,6 +37,31 @@ struct HostInfo {
     bool isOnline;
     
     HostInfo() : responseTime(-1), isOnline(false) {}
+};
+
+// 单个主机扫描任务
+class HostScanTask : public QObject {
+    Q_OBJECT
+    
+public:
+    explicit HostScanTask(const QString& ip, int timeout, QAtomicInt* stopFlag, QObject* parent = nullptr);
+    
+public slots:
+    void scan();
+    void stop();
+    
+signals:
+    void finished(const HostInfo& hostInfo);
+    
+private:
+    QString getHostName(const QString& ip);
+    QString getMacAddress(const QString& ip);
+    QString getMacVendor(const QString& mac);
+    bool isValidIP(const QString& ip);
+    
+    QString m_ip;
+    int m_timeout;
+    QAtomicInt* m_stopFlag;
 };
 
 // 扫描工作线程
@@ -56,14 +82,10 @@ signals:
     void scanFinished();
 
 private slots:
-    void onPingFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onTaskFinished(const HostInfo& hostInfo);
 
 private:
-    void scanRange();
-    void pingHost(const QString& ip);
-    QString getHostName(const QString& ip);
-    QString getMacAddress(const QString& ip);
-    QString getMacVendor(const QString& mac);
+    void scanNextBatch();
     QStringList generateIPRange(const QString& startIP, const QString& endIP);
     bool isValidIP(const QString& ip);
 
@@ -71,12 +93,12 @@ private:
     QString m_endIP;
     int m_timeout;
     int m_threadCount;
-    bool m_stopRequested;
+    QAtomicInt m_stopRequested;
     QStringList m_ipList;
-    int m_currentIndex;
-    int m_activeProcesses;
+    QAtomicInt m_currentIndex;
+    QAtomicInt m_activeTasks;
     QMutex m_mutex;
-    QMap<QProcess*, QString> m_processMap;
+    QList<QThread*> m_threads;
 };
 
 class NetworkScanner : public QWidget, public DynamicObjectBase {

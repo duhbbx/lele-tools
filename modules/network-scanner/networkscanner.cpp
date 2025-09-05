@@ -16,94 +16,59 @@
 
 REGISTER_DYNAMICOBJECT(NetworkScanner);
 
-// ScanWorker 实现
-ScanWorker::ScanWorker(QObject* parent)
-    : QObject(parent), m_timeout(1000), m_threadCount(50), m_stopRequested(false), 
-      m_currentIndex(0), m_activeProcesses(0) {
+// HostScanTask 实现
+HostScanTask::HostScanTask(const QString& ip, int timeout, QAtomicInt* stopFlag, QObject* parent)
+    : QObject(parent), m_ip(ip), m_timeout(timeout), m_stopFlag(stopFlag) {
 }
 
-void ScanWorker::setScanParams(const QString& startIP, const QString& endIP, int timeout, int threadCount) {
-    m_startIP = startIP;
-    m_endIP = endIP;
-    m_timeout = timeout;
-    m_threadCount = qMax(1, qMin(threadCount, 100)); // 限制线程数在1-100之间
-}
-
-void ScanWorker::stop() {
-    m_stopRequested = true;
-}
-
-void ScanWorker::startScan() {
-    m_stopRequested = false;
-    m_currentIndex = 0;
-    m_activeProcesses = 0;
-    
-    // 生成IP范围
-    m_ipList = generateIPRange(m_startIP, m_endIP);
-    
-    if (m_ipList.isEmpty()) {
-        emit scanFinished();
+void HostScanTask::scan() {
+    // 检查是否已被停止
+    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
         return;
     }
-    
-    // 开始扫描
-    scanRange();
-}
-
-void ScanWorker::scanRange() {
-    // 启动多个并发ping进程
-    while (m_activeProcesses < m_threadCount && m_currentIndex < m_ipList.size() && !m_stopRequested) {
-        QString ip = m_ipList[m_currentIndex];
-        m_currentIndex++;
-        m_activeProcesses++;
-        
-        pingHost(ip);
-        emit scanProgress(m_currentIndex, m_ipList.size());
-    }
-    
-    // 如果没有活动进程且已完成所有IP，结束扫描
-    if (m_activeProcesses == 0) {
-        emit scanFinished();
-    }
-}
-
-void ScanWorker::pingHost(const QString& ip) {
-    QProcess* process = new QProcess(this);
-    m_processMap[process] = ip;
-    
-    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &ScanWorker::onPingFinished);
-    
-    // Windows ping命令
-#ifdef Q_OS_WIN
-    QString program = "ping";
-    QStringList arguments;
-    arguments << "-n" << "1" << "-w" << QString::number(m_timeout) << ip;
-#else
-    QString program = "ping";
-    QStringList arguments;
-    arguments << "-c" << "1" << "-W" << QString::number(m_timeout / 1000) << ip;
-#endif
-    
-    process->start(program, arguments);
-}
-
-void ScanWorker::onPingFinished(int exitCode, QProcess::ExitStatus exitStatus) {
-    QProcess* process = qobject_cast<QProcess*>(sender());
-    if (!process || !m_processMap.contains(process)) {
-        return;
-    }
-    
-    QString ip = m_processMap.take(process);
-    m_activeProcesses--;
     
     HostInfo hostInfo;
-    hostInfo.ipAddress = ip;
-    hostInfo.isOnline = (exitCode == 0 && exitStatus == QProcess::NormalExit);
+    hostInfo.ipAddress = m_ip;
+    hostInfo.isOnline = false;
+    
+    // 执行ping测试
+    QProcess pingProcess;
+    pingProcess.setProcessChannelMode(QProcess::MergedChannels);
+    
+#ifdef Q_OS_WIN
+    pingProcess.start("ping", QStringList() << "-n" << "1" << "-w" << QString::number(m_timeout) << m_ip);
+#else
+    pingProcess.start("ping", QStringList() << "-c" << "1" << "-W" << QString::number(m_timeout / 1000) << m_ip);
+#endif
+    
+    // 等待ping完成，但定期检查停止标志
+    int waitTime = 0;
+    const int checkInterval = 100; // 每100ms检查一次
+    while (waitTime < m_timeout + 1000 && pingProcess.state() == QProcess::Running) {
+        if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
+            pingProcess.kill();
+            pingProcess.waitForFinished(1000);
+            return;
+        }
+        QThread::msleep(checkInterval);
+        waitTime += checkInterval;
+    }
+    
+    if (pingProcess.state() == QProcess::Running) {
+        pingProcess.kill();
+        pingProcess.waitForFinished(1000);
+    }
+    
+    // 再次检查停止标志
+    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
+        return;
+    }
+    
+    hostInfo.isOnline = (pingProcess.exitCode() == 0);
     
     if (hostInfo.isOnline) {
         // 获取响应时间
-        QString output = process->readAllStandardOutput();
+        QString output = pingProcess.readAllStandardOutput();
         QRegularExpression timeRegex(R"(时间[<=](\d+)ms|time[<=](\d+)ms|time=(\d+)ms)");
         QRegularExpressionMatch match = timeRegex.match(output);
         if (match.hasMatch()) {
@@ -115,24 +80,30 @@ void ScanWorker::onPingFinished(int exitCode, QProcess::ExitStatus exitStatus) {
             }
         }
         
-        // 获取主机名和MAC地址
-        hostInfo.hostName = getHostName(ip);
-        hostInfo.macAddress = getMacAddress(ip);
-        hostInfo.vendor = getMacVendor(hostInfo.macAddress);
-        
-        emit hostFound(hostInfo);
+        // 检查停止标志后再获取详细信息
+        if (m_stopFlag && m_stopFlag->loadRelaxed() == 0) {
+            hostInfo.hostName = getHostName(m_ip);
+            hostInfo.macAddress = getMacAddress(m_ip);
+            hostInfo.vendor = getMacVendor(hostInfo.macAddress);
+        }
     }
     
-    process->deleteLater();
-    
-    // 继续扫描下一个IP
-    if (!m_stopRequested) {
-        scanRange();
+    // 只有在未停止的情况下才发出信号
+    if (!m_stopFlag || m_stopFlag->loadRelaxed() == 0) {
+        emit finished(hostInfo);
     }
 }
 
-QString ScanWorker::getHostName(const QString& ip) {
-    // 使用异步查找，避免阻塞
+void HostScanTask::stop() {
+    // 这个方法可以用来处理任务级别的停止逻辑
+}
+
+QString HostScanTask::getHostName(const QString& ip) {
+    // 检查停止标志
+    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
+        return "Unknown";
+    }
+    
     QHostInfo hostInfo = QHostInfo::fromName(ip);
     if (hostInfo.error() == QHostInfo::NoError && !hostInfo.hostName().isEmpty()) {
         return hostInfo.hostName();
@@ -140,75 +111,193 @@ QString ScanWorker::getHostName(const QString& ip) {
     return "Unknown";
 }
 
-QString ScanWorker::getMacAddress(const QString& ip) {
+QString HostScanTask::getMacAddress(const QString& ip) {
+    // 检查停止标志
+    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
+        return "Unknown";
+    }
+    
     QProcess process;
     process.setProcessChannelMode(QProcess::MergedChannels);
     
 #ifdef Q_OS_WIN
-    // Windows使用arp命令
     process.start("arp", QStringList() << "-a" << ip);
 #else
-    // Linux/Mac使用arp命令  
     process.start("arp", QStringList() << "-n" << ip);
 #endif
     
-    if (process.waitForFinished(2000)) { // 减少等待时间
+    // 等待过程中检查停止标志
+    int waitTime = 0;
+    const int checkInterval = 200;
+    while (waitTime < 2000 && process.state() == QProcess::Running) {
+        if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
+            process.kill();
+            process.waitForFinished(500);
+            return "Unknown";
+        }
+        QThread::msleep(checkInterval);
+        waitTime += checkInterval;
+    }
+    
+    if (process.state() == QProcess::Running) {
+        process.kill();
+        process.waitForFinished(500);
+    }
+    
+    if (process.exitCode() == 0) {
         QString output = process.readAllStandardOutput();
-        
-        // 匹配MAC地址格式 (支持 : 和 - 分隔符)
         QRegularExpression macRegex(R"(([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2})");
         QRegularExpressionMatch match = macRegex.match(output);
         if (match.hasMatch()) {
             QString mac = match.captured(0).toUpper().replace('-', ':');
-            // 验证不是全零或全F的无效MAC
             if (mac != "00:00:00:00:00:00" && mac != "FF:FF:FF:FF:FF:FF") {
                 return mac;
             }
         }
     }
-    
     return "Unknown";
 }
 
-QString ScanWorker::getMacVendor(const QString& mac) {
+QString HostScanTask::getMacVendor(const QString& mac) {
     if (mac == "Unknown" || mac.length() < 8) {
         return "Unknown";
     }
     
-    // 简单的MAC地址厂商识别（实际项目中可以使用在线API或本地数据库）
     QString oui = mac.left(8).replace(":", "").toUpper();
     
     static QMap<QString, QString> vendorMap = {
-        {"000C29", "VMware"},
-        {"005056", "VMware"},
-        {"080027", "VirtualBox"},
-        {"001C42", "Parallels"},
-        {"00155D", "Microsoft"},
-        {"0050F2", "Microsoft"},
-        {"001B21", "Intel"},
-        {"0019E3", "Intel"},
-        {"0024E9", "Intel"},
-        {"7085C2", "Intel"},
-        {"001560", "Apple"},
-        {"0017F2", "Apple"},
-        {"001EC2", "Apple"},
-        {"0025BC", "Apple"},
-        {"28E02C", "Apple"},
-        {"A45E60", "Apple"},
-        {"B8E856", "Apple"},
-        {"001377", "Hewlett Packard"},
-        {"002264", "Hewlett Packard"},
-        {"00188B", "Hewlett Packard"},
-        {"001CC0", "Hewlett Packard"},
-        {"002481", "Dell"},
-        {"001E4F", "Dell"},
-        {"0026B9", "Dell"},
-        {"001560", "Lenovo"},
-        {"00214C", "Lenovo"}
+        {"000C29", "VMware"}, {"005056", "VMware"}, {"080027", "VirtualBox"},
+        {"001C42", "Parallels"}, {"00155D", "Microsoft"}, {"0050F2", "Microsoft"},
+        {"001B21", "Intel"}, {"0019E3", "Intel"}, {"0024E9", "Intel"}, {"7085C2", "Intel"},
+        {"001560", "Apple"}, {"0017F2", "Apple"}, {"001EC2", "Apple"}, {"0025BC", "Apple"},
+        {"28E02C", "Apple"}, {"A45E60", "Apple"}, {"B8E856", "Apple"},
+        {"001377", "HP"}, {"002264", "HP"}, {"00188B", "HP"}, {"001CC0", "HP"},
+        {"002481", "Dell"}, {"001E4F", "Dell"}, {"0026B9", "Dell"},
+        {"001560", "Lenovo"}, {"00214C", "Lenovo"}
     };
     
     return vendorMap.value(oui, "Unknown");
 }
+
+bool HostScanTask::isValidIP(const QString& ip) {
+    QHostAddress addr(ip);
+    return addr.protocol() == QAbstractSocket::IPv4Protocol;
+}
+
+// ScanWorker 实现
+ScanWorker::ScanWorker(QObject* parent)
+    : QObject(parent), m_timeout(1000), m_threadCount(50), m_currentIndex(0), m_activeTasks(0) {
+    m_stopRequested = 0;
+}
+
+void ScanWorker::setScanParams(const QString& startIP, const QString& endIP, int timeout, int threadCount) {
+    m_startIP = startIP;
+    m_endIP = endIP;
+    m_timeout = timeout;
+    m_threadCount = qMax(1, qMin(threadCount, 20)); // 限制线程数在1-20之间，避免过多线程
+}
+
+void ScanWorker::stop() {
+    qDebug() << "ScanWorker::stop() 被调用";
+    m_stopRequested.storeRelaxed(1);
+    
+    // 停止所有工作线程
+    for (QThread* thread : m_threads) {
+        if (thread->isRunning()) {
+            qDebug() << "停止线程:" << thread;
+            thread->quit();
+        }
+    }
+    
+    // 等待所有线程结束
+    for (QThread* thread : m_threads) {
+        if (thread->isRunning()) {
+            if (!thread->wait(2000)) {
+                qDebug() << "强制终止线程:" << thread;
+                thread->terminate();
+                thread->wait(1000);
+            }
+        }
+        thread->deleteLater();
+    }
+    m_threads.clear();
+    
+    qDebug() << "所有扫描线程已停止";
+    
+    // 立即发出完成信号
+    emit scanFinished();
+}
+
+void ScanWorker::startScan() {
+    m_stopRequested.storeRelaxed(0);
+    m_currentIndex.storeRelaxed(0);
+    m_activeTasks.storeRelaxed(0);
+    
+    // 清理之前的线程
+    for (QThread* thread : m_threads) {
+        thread->deleteLater();
+    }
+    m_threads.clear();
+    
+    // 生成IP范围
+    m_ipList = generateIPRange(m_startIP, m_endIP);
+    
+    if (m_ipList.isEmpty()) {
+        emit scanFinished();
+        return;
+    }
+    
+    // 开始扫描
+    scanNextBatch();
+}
+
+void ScanWorker::scanNextBatch() {
+    QMutexLocker locker(&m_mutex);
+    
+    // 启动下一批扫描任务
+    while (m_activeTasks.loadRelaxed() < m_threadCount && m_currentIndex.loadRelaxed() < m_ipList.size() && m_stopRequested.loadRelaxed() == 0) {
+        QString ip = m_ipList[m_currentIndex.loadRelaxed()];
+        m_currentIndex.fetchAndAddRelaxed(1);
+        m_activeTasks.fetchAndAddRelaxed(1);
+        
+        // 为每个任务创建独立线程
+        QThread* thread = new QThread();
+        HostScanTask* task = new HostScanTask(ip, m_timeout, &m_stopRequested);
+        
+        task->moveToThread(thread);
+        m_threads.append(thread);
+        
+        // 连接信号
+        connect(thread, &QThread::started, task, &HostScanTask::scan);
+        connect(task, &HostScanTask::finished, this, &ScanWorker::onTaskFinished);
+        connect(thread, &QThread::finished, task, &QObject::deleteLater);
+        connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+        
+        // 启动线程
+        thread->start();
+        
+        emit scanProgress(m_currentIndex.loadRelaxed(), m_ipList.size());
+    }
+    
+    // 如果没有活动任务且已完成所有IP，结束扫描
+    if (m_activeTasks.loadRelaxed() == 0 && m_currentIndex.loadRelaxed() >= m_ipList.size()) {
+        emit scanFinished();
+    }
+}
+
+void ScanWorker::onTaskFinished(const HostInfo& hostInfo) {
+    if (hostInfo.isOnline) {
+        emit hostFound(hostInfo);
+    }
+    
+    m_activeTasks.fetchAndAddRelaxed(-1);
+    
+    // 继续扫描下一批
+    if (m_stopRequested.loadRelaxed() == 0) {
+        scanNextBatch();
+    }
+}
+
 
 QStringList ScanWorker::generateIPRange(const QString& startIP, const QString& endIP) {
     QStringList ipList;
@@ -262,7 +351,9 @@ NetworkScanner::NetworkScanner(QWidget* parent)
     connect(m_statusTimer, &QTimer::timeout, [this]() {
         if (m_isScanning) {
             static int dots = 0;
-            QString status = "正在扫描";
+            QString status = QString("正在扫描 (%1/%2)")
+                           .arg(m_progressBar->value())
+                           .arg(m_progressBar->maximum());
             for (int i = 0; i < (dots % 4); ++i) {
                 status += ".";
             }
@@ -389,8 +480,9 @@ void NetworkScanner::setupScanSettings() {
     // 并发线程数
     settingsLayout->addWidget(new QLabel("并发数:"), 3, 2);
     m_threadSpin = new QSpinBox();
-    m_threadSpin->setRange(1, 100);
-    m_threadSpin->setValue(50);
+    m_threadSpin->setRange(1, 20);
+    m_threadSpin->setValue(10);
+    m_threadSpin->setToolTip("建议设置为5-15，过高可能导致网络拥堵");
     settingsLayout->addWidget(m_threadSpin, 3, 3);
     
     // 控制按钮
@@ -403,7 +495,8 @@ void NetworkScanner::setupScanSettings() {
     m_stopBtn = new QPushButton("⏹️ 停止扫描");
     m_stopBtn->setEnabled(false);
     m_stopBtn->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; }");
-    connect(m_stopBtn, &QPushButton::clicked, this, &NetworkScanner::onStopScan);
+    // 使用DirectConnection确保立即响应
+    connect(m_stopBtn, &QPushButton::clicked, this, &NetworkScanner::onStopScan, Qt::DirectConnection);
     m_buttonLayout->addWidget(m_stopBtn);
     
     m_clearBtn = new QPushButton("🗑️ 清空结果");
@@ -607,19 +700,42 @@ void NetworkScanner::onStartScan() {
 }
 
 void NetworkScanner::onStopScan() {
-    if (m_scanWorker) {
-        m_scanWorker->stop();
-    }
+    qDebug() << "用户点击停止扫描按钮";
     
-    if (m_scanThread && m_scanThread->isRunning()) {
-        m_scanThread->quit();
-        m_scanThread->wait(3000);
-    }
-    
-    onScanFinished();
+    // 立即更新UI状态，给用户即时反馈
+    updateScanButton(false);
+    m_progressBar->setVisible(false);
+    m_statusTimer->stop();
+    m_statusLabel->setText("正在停止扫描...");
     
     m_logText->append(QString("[%1] 用户停止扫描")
                      .arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
+    
+    // 立即停止扫描
+    if (m_scanWorker) {
+        qDebug() << "调用ScanWorker::stop()";
+        m_scanWorker->stop();
+    }
+    
+    // 强制停止主扫描线程
+    if (m_scanThread && m_scanThread->isRunning()) {
+        qDebug() << "停止主扫描线程";
+        m_scanThread->quit();
+        
+        // 异步等待线程结束
+        QTimer::singleShot(100, this, [this]() {
+            if (m_scanThread && m_scanThread->isRunning()) {
+                if (!m_scanThread->wait(2000)) {
+                    qDebug() << "强制终止主扫描线程";
+                    m_scanThread->terminate();
+                    m_scanThread->wait(1000);
+                }
+            }
+            m_statusLabel->setText("扫描已停止");
+        });
+    } else {
+        m_statusLabel->setText("扫描已停止");
+    }
 }
 
 void NetworkScanner::onClearResults() {
@@ -710,33 +826,36 @@ void NetworkScanner::onRefreshInterfaces() {
 }
 
 void NetworkScanner::onHostFound(const HostInfo& hostInfo) {
-    m_foundHosts++;
-    m_foundLabel->setText(QString("发现主机: %1").arg(m_foundHosts));
-    
-    // 添加到表格
-    int row = m_resultsTable->rowCount();
-    m_resultsTable->insertRow(row);
-    
-    m_resultsTable->setItem(row, 0, new QTableWidgetItem(hostInfo.ipAddress));
-    m_resultsTable->setItem(row, 1, new QTableWidgetItem(hostInfo.hostName));
-    m_resultsTable->setItem(row, 2, new QTableWidgetItem(hostInfo.macAddress));
-    m_resultsTable->setItem(row, 3, new QTableWidgetItem(hostInfo.vendor));
-    
-    QString responseTime = hostInfo.responseTime >= 0 ? 
-                          QString::number(hostInfo.responseTime) : "N/A";
-    m_resultsTable->setItem(row, 4, new QTableWidgetItem(responseTime));
-    
-    QTableWidgetItem* statusItem = new QTableWidgetItem("在线");
-    statusItem->setBackground(QBrush(QColor(76, 175, 80, 50))); // 淡绿色背景
-    statusItem->setForeground(QBrush(QColor(27, 94, 32))); // 深绿色文字
-    m_resultsTable->setItem(row, 5, statusItem);
-    
-    // 滚动到最新行
-    m_resultsTable->scrollToBottom();
-    
-    m_logText->append(QString("[%1] 发现主机: %2 (%3)")
-                     .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
-                     .arg(hostInfo.ipAddress, hostInfo.hostName));
+    // 使用队列连接确保在主线程中更新UI
+    QMetaObject::invokeMethod(this, [this, hostInfo]() {
+        m_foundHosts++;
+        m_foundLabel->setText(QString("发现主机: %1").arg(m_foundHosts));
+        
+        // 添加到表格
+        int row = m_resultsTable->rowCount();
+        m_resultsTable->insertRow(row);
+        
+        m_resultsTable->setItem(row, 0, new QTableWidgetItem(hostInfo.ipAddress));
+        m_resultsTable->setItem(row, 1, new QTableWidgetItem(hostInfo.hostName));
+        m_resultsTable->setItem(row, 2, new QTableWidgetItem(hostInfo.macAddress));
+        m_resultsTable->setItem(row, 3, new QTableWidgetItem(hostInfo.vendor));
+        
+        QString responseTime = hostInfo.responseTime >= 0 ? 
+                              QString::number(hostInfo.responseTime) : "N/A";
+        m_resultsTable->setItem(row, 4, new QTableWidgetItem(responseTime));
+        
+        QTableWidgetItem* statusItem = new QTableWidgetItem("在线");
+        statusItem->setBackground(QBrush(QColor(76, 175, 80, 50))); // 淡绿色背景
+        statusItem->setForeground(QBrush(QColor(27, 94, 32))); // 深绿色文字
+        m_resultsTable->setItem(row, 5, statusItem);
+        
+        // 滚动到最新行
+        m_resultsTable->scrollToBottom();
+        
+        m_logText->append(QString("[%1] 发现主机: %2 (%3)")
+                         .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
+                         .arg(hostInfo.ipAddress, hostInfo.hostName));
+    }, Qt::QueuedConnection);
 }
 
 void NetworkScanner::onScanProgress(int current, int total) {
@@ -745,19 +864,25 @@ void NetworkScanner::onScanProgress(int current, int total) {
 }
 
 void NetworkScanner::onScanFinished() {
-    updateScanButton(false);
-    m_progressBar->setVisible(false);
-    m_statusTimer->stop();
-    m_statusLabel->setText(QString("扫描完成 - 发现 %1 台主机").arg(m_foundHosts));
+    qDebug() << "onScanFinished() 被调用";
     
+    // 确保在主线程中执行UI更新
+    QMetaObject::invokeMethod(this, [this]() {
+        updateScanButton(false);
+        m_progressBar->setVisible(false);
+        m_statusTimer->stop();
+        m_statusLabel->setText(QString("扫描完成 - 发现 %1 台主机").arg(m_foundHosts));
+        
+        m_logText->append(QString("[%1] 扫描完成，共发现 %2 台在线主机")
+                         .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
+                         .arg(m_foundHosts));
+    }, Qt::QueuedConnection);
+    
+    // 清理线程
     if (m_scanThread && m_scanThread->isRunning()) {
         m_scanThread->quit();
-        m_scanThread->wait();
+        m_scanThread->wait(1000);
     }
-    
-    m_logText->append(QString("[%1] 扫描完成，共发现 %2 台在线主机")
-                     .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
-                     .arg(m_foundHosts));
 }
 
 void NetworkScanner::onInterfaceChanged() {
