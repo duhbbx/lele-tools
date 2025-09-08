@@ -1,154 +1,203 @@
-# GitHub Actions 工作流说明
+# GitHub Actions Workflows
 
-本项目包含两个GitHub Actions工作流，用于自动化构建和发布Lele Tools。
+This directory contains GitHub Actions workflows for automated building, testing, and releasing of the Lele Tools project with redis-plus-plus integration.
 
-## 🚀 工作流概览
+## Workflows Overview
 
-### 1. `build-and-release.yml` - 主要构建和发布流程
+### 1. `build-and-release.yml` - Main Build and Release Pipeline
+- **Trigger**: Push to main/master branches, tags, pull requests, manual dispatch
+- **Purpose**: Build the application, create installers, and publish releases
+- **Platforms**: Windows (primary), Linux (AppImage)
+- **Dependencies**: Qt 6.9.1, redis-plus-plus (via vcpkg), OpenCV (optional)
+- **Outputs**: 
+  - Windows executable with Qt dependencies
+  - Windows installer package (using Qt Installer Framework)
+  - Windows portable ZIP package
+  - Linux AppImage package
+  - GitHub Release with artifacts
 
-**触发条件:**
-- 推送到 `main` 或 `master` 分支
-- 创建以 `v` 开头的标签 (如 `v1.0.0`)
-- 手动触发 (workflow_dispatch)
-- Pull Request 到主分支
+### 2. `manual-build.yml` - Manual Build Workflow
+- **Trigger**: Manual dispatch only
+- **Purpose**: On-demand builds with customizable parameters
+- **Features**:
+  - Configurable version number
+  - Build type selection (Debug/Release)
+  - Optional installer creation
+  - Optional artifact upload
+  - redis-plus-plus integration via vcpkg
 
-**功能:**
-- ✅ 自动构建Windows版本
-- ✅ 部署Qt依赖
-- ✅ 创建安装包
-- ✅ 上传构建产物
-- ✅ 自动发布Release (仅限标签推送)
+### 3. `ci.yml` - Continuous Integration
+- **Trigger**: Push/PR to main, master, dev, develop branches
+- **Purpose**: Fast feedback on code changes
+- **Features**:
+  - Multi-platform testing (Windows, Linux)
+  - Multiple build types (Debug, Release)
+  - Code quality checks
+  - Dependency validation
 
-### 2. `manual-build.yml` - 手动构建流程
+## Key Features
 
-**触发条件:**
-- 仅手动触发
+### Dependencies Management
+- **Qt Framework**: Automatically installs Qt 6.9.1 with Multimedia modules
+- **redis-plus-plus**: Installed via vcpkg for Redis connectivity
+- **vcpkg**: Package manager for C++ dependencies
+- **Qt Installer Framework**: For creating installation packages
+- **OpenCV**: Optional computer vision library support
+- **MSVC 2022**: Microsoft Visual C++ compiler (Windows)
+- **GCC**: GNU Compiler Collection (Linux)
 
-**功能:**
-- ✅ 可配置版本号和构建类型
-- ✅ 选择是否创建安装包
-- ✅ 选择是否上传产物
-- ✅ 快速测试构建
+### Build Process
+1. **Environment Setup**: Install Qt, vcpkg, CMake, and platform dependencies
+2. **Dependency Installation**: Install redis-plus-plus via vcpkg
+3. **Project Configuration**: Configure CMake with vcpkg toolchain
+4. **Compilation**: Build the project with Redis support enabled
+5. **Deployment**: Bundle Qt and Redis dependencies
+6. **Packaging**: Create platform-specific packages
 
-## 📋 使用方法
+### Caching Strategy
+- **Qt Installation**: Cached across builds for faster setup
+- **vcpkg**: Separate cache for package manager and installed packages
+- **OpenCV**: Cached installation to reduce build time
+- **Multi-level Cache Keys**: Optimized cache invalidation strategy
 
-### 自动发布新版本
+### Multi-Platform Support
 
-1. **创建版本标签:**
-   ```bash
-   git tag v1.2.0
-   git push origin v1.2.0
-   ```
+#### Windows
+- **Build System**: Visual Studio 2022 + vcpkg
+- **Package Format**: ZIP (portable) + EXE (installer)
+- **Dependencies**: Bundled with windeployqt + Redis DLLs
 
-2. **工作流自动执行:**
-   - 构建项目
-   - 创建安装包
-   - 发布GitHub Release
+#### Linux
+- **Build System**: GCC + system packages
+- **Package Format**: AppImage (portable)
+- **Dependencies**: System packages for redis-plus-plus
 
-### 手动构建测试
+## Configuration
 
-1. **进入GitHub仓库的Actions页面**
-
-2. **选择 "Manual Build" 工作流**
-
-3. **点击 "Run workflow" 并配置参数:**
-   - **Version**: 版本号 (如 `1.0.0`)
-   - **Build Type**: `Release` 或 `Debug`
-   - **Create installer**: 是否创建安装包
-   - **Upload artifacts**: 是否上传构建产物
-
-4. **点击 "Run workflow" 开始构建**
-
-## ⚙️ 配置说明
-
-### 环境变量
-
+### Environment Variables
 ```yaml
-env:
-  QT_VERSION: '6.9.1'          # Qt版本
-  CMAKE_VERSION: '3.28'        # CMake版本
-  MSVC_VERSION: '2022'         # Visual Studio版本
+QT_VERSION: '6.9.1'          # Qt version with Multimedia support
+CMAKE_VERSION: '3.28'        # CMake version
+MSVC_VERSION: '2022'         # MSVC version (Windows)
+OPENCV_VERSION: '4.10.0'     # OpenCV version (optional)
 ```
 
-### 构建产物
+### Build Configuration
+- **Redis Support**: Enabled by default via `-DENABLE_REDIS=ON`
+- **OpenCV Support**: Optional via `-DWITH_OPENCV=ON/OFF`
+- **Multimedia**: Qt Multimedia modules for camera functionality
 
-**自动上传的文件:**
-- `lele-tools-build-{version}` - 编译后的可执行文件和DLL
-- `lele-tools-installer-{version}` - Windows安装包
-- `LeleToolsInstaller_v{version}.exe` - 最终安装包
+### vcpkg Configuration
+- **Windows**: Uses vcpkg for redis-plus-plus installation
+- **Linux**: Uses system packages (libhiredis-dev, libsw-redis++-dev)
+- **Caching**: Separate cache for vcpkg installation and packages
 
-### Release自动化
+## Usage
 
-当推送标签时，工作流会自动创建GitHub Release，包含:
+### Automatic Builds
+- **Push to main/master**: Triggers full multi-platform build and creates pre-release
+- **Push tags (v*)**: Triggers build and creates stable release
+- **Pull Requests**: Triggers CI build without release creation
 
-- 📦 Windows安装包
-- 📝 版本说明
-- 🔧 安装和系统要求说明
-- 📋 构建信息
+### Manual Builds
+1. Go to Actions tab in GitHub repository
+2. Select "Manual Build" workflow
+3. Click "Run workflow"
+4. Configure parameters:
+   - Version number (e.g., "1.2.0")
+   - Build type (Release/Debug)
+   - Create installer (true/false)
+   - Upload artifacts (true/false)
 
-## 🔧 本地开发
+### Release Process
+1. **Tag Creation**: Create and push a version tag
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+2. **Multi-Platform Build**: Workflows trigger automatically
+3. **Release Creation**: GitHub release with all platform artifacts
+4. **Artifact Types**:
+   - `LeleTools_vX_X_X_Portable.zip` (Windows portable)
+   - `LeleToolsInstaller_vX_X_X.exe` (Windows installer)
+   - `LeleTools-X.X.X-x86_64.AppImage` (Linux portable)
 
-如果需要在本地复制GitHub Actions的构建过程:
+## Troubleshooting
 
-```powershell
-# 1. 确保安装了必要工具
-# - Qt 6.9.1 with MSVC 2022
-# - CMake 3.28+
-# - Visual Studio 2022
-# - Qt Installer Framework
+### Common Issues
 
-# 2. 运行构建脚本
-.\script\build.ps1 -Version "1.0.0" -BuildType "Release"
-```
+#### vcpkg Installation Failures
+- Check vcpkg cache corruption
+- Verify redis-plus-plus package availability
+- Review vcpkg installation logs
 
-## 🐛 故障排除
+#### Redis Integration Issues
+- Ensure vcpkg toolchain is properly configured
+- Check Redis DLL bundling in Windows builds
+- Verify redis-plus-plus system packages in Linux
 
-### 常见问题
+#### Qt Multimedia Issues
+- Verify Qt modules include qtmultimedia qtmultimediawidgets
+- Check platform-specific multimedia dependencies
+- Test camera functionality on target platforms
 
-1. **Qt路径问题**
-   - 确保Qt安装在标准路径
-   - 检查Qt版本是否匹配
+#### Build Failures
+- Review CMake configuration with vcpkg toolchain
+- Check dependency availability on target platform
+- Verify all required modules are installed
 
-2. **CMake配置失败**
-   - 检查CMakeLists.txt语法
-   - 确保所有依赖都已安装
+### Debug Information
+All workflows include extensive logging:
+- vcpkg installation and package status
+- CMake configuration with toolchain details
+- Dependency bundling verification
+- Multi-platform build status
 
-3. **安装包创建失败**
-   - 检查Qt Installer Framework是否正确安装
-   - 验证配置文件XML语法
+## Platform-Specific Notes
 
-### 调试方法
+### Windows
+- **vcpkg Integration**: Uses vcpkg toolchain for redis-plus-plus
+- **DLL Bundling**: Automatically includes Redis DLLs from vcpkg
+- **Qt Deployment**: Enhanced windeployqt with Redis dependencies
 
-1. **查看构建日志:**
-   - 进入Actions页面
-   - 点击失败的工作流
-   - 展开各个步骤查看详细日志
+### Linux
+- **System Packages**: Uses distribution packages for Redis
+- **AppImage Creation**: Portable Linux packages with linuxdeploy
+- **Dependency Resolution**: Automatic Qt and Redis library bundling
 
-2. **本地测试:**
-   - 在本地运行相同的构建命令
-   - 使用相同的Qt和工具版本
+## Security and Maintenance
 
-3. **手动构建:**
-   - 使用Manual Build工作流进行测试
-   - 逐步启用不同选项排查问题
+### Dependency Security
+- **Pinned Versions**: All major dependencies use specific versions
+- **Regular Updates**: Quarterly updates for Qt and annual for build tools
+- **Vulnerability Scanning**: Monitor dependency security advisories
 
-## 📚 相关文档
+### Cache Management
+- **Multi-tier Caching**: Separate caches for Qt, vcpkg, and OpenCV
+- **Cache Invalidation**: Version-based cache keys for proper invalidation
+- **Storage Optimization**: Efficient cache size management
 
-- [Qt Installer Framework 文档](https://doc.qt.io/qtinstallerframework/)
-- [GitHub Actions 文档](https://docs.github.com/en/actions)
-- [CMake 文档](https://cmake.org/documentation/)
+### Performance Optimization
+- **Parallel Builds**: Multi-core compilation enabled
+- **Smart Caching**: Conditional dependency installation
+- **Artifact Optimization**: Compressed packages with optimal retention
 
-## 🤝 贡献
+## Extending Workflows
 
-如果需要修改工作流配置:
+### Adding New Dependencies
+1. Update vcpkg package list or system packages
+2. Modify CMake configuration flags
+3. Update dependency bundling steps
+4. Test on all target platforms
 
-1. 编辑 `.github/workflows/` 目录下的YAML文件
-2. 测试修改后的工作流
-3. 提交Pull Request并说明修改原因
+### Adding macOS Support
+1. Add macOS job with appropriate Qt installation
+2. Install redis-plus-plus via Homebrew
+3. Create macOS application bundle
+4. Add code signing and notarization
 
-
-
-
-
-
-
+### Custom Deployment Targets
+1. Add deployment steps after successful builds
+2. Configure target-specific credentials
+3. Implement rollback mechanisms
+4. Add deployment status monitoring

@@ -121,7 +121,6 @@ void HostsEditor::setupUI() {
         QLineEdit:focus {
             border-color: #80bdff;
             outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
         }
         QTableWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;

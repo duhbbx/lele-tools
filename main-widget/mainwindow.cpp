@@ -607,7 +607,6 @@ void MainWindow::createStatusBar() {
         "QPushButton:focus {"
         "    outline: none;"
         "    border-color: #2196F3;"
-        "    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);"
         "}"
     );
     leftPanelToggle->setToolTip("收起/展开左侧工具栏");

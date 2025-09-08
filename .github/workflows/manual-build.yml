@@ -50,6 +50,40 @@ jobs:
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@latest
       
+    - name: Cache vcpkg
+      uses: actions/cache@v4
+      id: vcpkg-cache
+      with:
+        path: C:\vcpkg
+        key: ${{ runner.os }}-vcpkg-redis-plus-plus-manual-v1
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-
+          
+    - name: Setup vcpkg and dependencies
+      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+      shell: powershell
+      run: |
+        Write-Host "Setting up vcpkg and dependencies..." -ForegroundColor Green
+        
+        # Install vcpkg
+        Write-Host "Installing vcpkg..." -ForegroundColor Yellow
+        git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+        cd C:\vcpkg
+        .\bootstrap-vcpkg.bat
+        
+        # Install redis-plus-plus and hiredis
+        Write-Host "Installing redis-plus-plus..." -ForegroundColor Yellow
+        .\vcpkg.exe install redis-plus-plus:x64-windows
+        
+        Write-Host "vcpkg and redis-plus-plus installed successfully!" -ForegroundColor Green
+        
+    - name: Set vcpkg environment
+      shell: powershell
+      run: |
+        # Set environment variables
+        echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+        echo "VCPKG_INSTALLED_DIR=C:\vcpkg\installed\x64-windows" >> $env:GITHUB_ENV
+      
     - name: Build project
       shell: powershell
       run: |
@@ -72,9 +106,30 @@ jobs:
         }
         New-Item -ItemType Directory -Path $BuildDir | Out-Null
         
-        # Configure project
+        # Configure project with vcpkg toolchain
         Set-Location $BuildDir
-        cmake $ProjectRoot -G Ninja -DCMAKE_BUILD_TYPE=${{ github.event.inputs.build_type }} -DCMAKE_PREFIX_PATH=$QtPath
+        
+        $CMakeArgs = @(
+            $ProjectRoot,
+            "-G", "Ninja",
+            "-DCMAKE_BUILD_TYPE=${{ github.event.inputs.build_type }}",
+            "-DCMAKE_PREFIX_PATH=$QtPath"
+        )
+        
+        # Add vcpkg toolchain if available
+        $VcpkgPath = $env:VCPKG_ROOT
+        if ($VcpkgPath -and (Test-Path $VcpkgPath)) {
+            $VcpkgToolchain = "$VcpkgPath\scripts\buildsystems\vcpkg.cmake"
+            $CMakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$VcpkgToolchain"
+            $CMakeArgs += "-DENABLE_REDIS=ON"
+            Write-Host "Using vcpkg toolchain: $VcpkgToolchain" -ForegroundColor Green
+        } else {
+            $CMakeArgs += "-DENABLE_REDIS=OFF"
+            Write-Host "Building without Redis support" -ForegroundColor Yellow
+        }
+        
+        Write-Host "Running cmake with args: $($CMakeArgs -join ' ')" -ForegroundColor Yellow
+        & cmake @CMakeArgs
         
         if ($LASTEXITCODE -ne 0) {
             throw "CMake configuration failed"

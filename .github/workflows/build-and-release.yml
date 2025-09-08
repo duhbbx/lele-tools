@@ -133,6 +133,40 @@ jobs:
         cmakeVersion: ${{ env.CMAKE_VERSION }}
         ninjaVersion: latest
         
+    - name: Cache vcpkg
+      uses: actions/cache@v4
+      id: vcpkg-cache
+      with:
+        path: C:\vcpkg
+        key: ${{ runner.os }}-vcpkg-redis-plus-plus-v1
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-
+          
+    - name: Setup vcpkg and dependencies
+      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+      shell: powershell
+      run: |
+        Write-Host "Setting up vcpkg and dependencies..." -ForegroundColor Green
+        
+        # Install vcpkg
+        Write-Host "Installing vcpkg..." -ForegroundColor Yellow
+        git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+        cd C:\vcpkg
+        .\bootstrap-vcpkg.bat
+        
+        # Install redis-plus-plus and hiredis
+        Write-Host "Installing redis-plus-plus..." -ForegroundColor Yellow
+        .\vcpkg.exe install redis-plus-plus:x64-windows
+        
+        Write-Host "vcpkg and redis-plus-plus installed successfully!" -ForegroundColor Green
+        
+    - name: Set vcpkg environment
+      shell: powershell
+      run: |
+        # Set environment variables
+        echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+        echo "VCPKG_INSTALLED_DIR=C:\vcpkg\installed\x64-windows" >> $env:GITHUB_ENV
+        
     - name: Setup OpenCV
       shell: powershell
       run: |
@@ -179,14 +213,15 @@ jobs:
             }
         }
         
-    - name: Cache Qt and tools
+    - name: Cache Qt, vcpkg and tools
       uses: actions/cache@v4
       with:
         path: |
           ${{ runner.workspace }}/Qt
           C:/Qt
           C:/opencv
-        key: ${{ runner.os }}-qt-${{ env.QT_VERSION }}-opencv-${{ env.OPENCV_VERSION }}-cache-v1
+          C:/vcpkg
+        key: ${{ runner.os }}-qt-${{ env.QT_VERSION }}-opencv-${{ env.OPENCV_VERSION }}-vcpkg-cache-v2
         
     - name: Set version
       id: version
@@ -267,7 +302,7 @@ jobs:
         
         Write-Host "Configuring project..." -ForegroundColor Yellow
         
-        # Setup CMAKE_PREFIX_PATH with Qt and OpenCV
+        # Setup CMAKE_PREFIX_PATH with Qt, OpenCV and vcpkg
         $CMakePrefixPath = $QtPath
         if (Test-Path $OpenCVPath) {
             $CMakePrefixPath = "$QtPath;$OpenCVPath"
@@ -276,13 +311,40 @@ jobs:
             Write-Host "OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
         }
         
-        # Configure with or without OpenCV
-        if (Test-Path $OpenCVPath) {
-            & cmake $ProjectRoot -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$CMakePrefixPath" -DWITH_OPENCV=ON
+        # Check for vcpkg installation
+        $VcpkgPath = $env:VCPKG_ROOT
+        $VcpkgToolchain = ""
+        if ($VcpkgPath -and (Test-Path $VcpkgPath)) {
+            $VcpkgToolchain = "$VcpkgPath\scripts\buildsystems\vcpkg.cmake"
+            Write-Host "Using vcpkg: $VcpkgPath" -ForegroundColor Green
+            Write-Host "Vcpkg toolchain: $VcpkgToolchain" -ForegroundColor Green
         } else {
-            Write-Host "Building without OpenCV support" -ForegroundColor Yellow
-            & cmake $ProjectRoot -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$QtPath" -DWITH_OPENCV=OFF
+            Write-Host "vcpkg not found, building without Redis support" -ForegroundColor Yellow
         }
+        
+        # Configure with vcpkg toolchain and dependencies
+        $CMakeArgs = @(
+            $ProjectRoot,
+            "-G", "Visual Studio 17 2022",
+            "-A", "x64",
+            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"
+        )
+        
+        if ($VcpkgToolchain -and (Test-Path $VcpkgToolchain)) {
+            $CMakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$VcpkgToolchain"
+            $CMakeArgs += "-DENABLE_REDIS=ON"
+        } else {
+            $CMakeArgs += "-DENABLE_REDIS=OFF"
+        }
+        
+        if (Test-Path $OpenCVPath) {
+            $CMakeArgs += "-DWITH_OPENCV=ON"
+        } else {
+            $CMakeArgs += "-DWITH_OPENCV=OFF"
+        }
+        
+        Write-Host "Running cmake with args: $($CMakeArgs -join ' ')" -ForegroundColor Yellow
+        & cmake @CMakeArgs
         
         if ($LASTEXITCODE -ne 0) {
             throw "Project configuration failed!"
@@ -474,6 +536,18 @@ jobs:
             Write-Host "  Copied: $($file.Name)" -ForegroundColor Green
         }
         
+        # Copy Redis DLL files if they exist
+        $VcpkgBinPath = "$env:VCPKG_INSTALLED_DIR\bin"
+        if (Test-Path $VcpkgBinPath) {
+            $RedisDlls = Get-ChildItem -Path $VcpkgBinPath -Filter "*.dll" | 
+                Where-Object { $_.Name -like "*redis*" -or $_.Name -like "*hiredis*" }
+            
+            foreach ($dll in $RedisDlls) {
+                Copy-Item -Path $dll.FullName -Destination $DataDir -Force
+                Write-Host "  Copied Redis DLL: $($dll.Name)" -ForegroundColor Green
+            }
+        }
+        
         # Copy Qt directories
         $QtDirs = @('platforms', 'imageformats', 'styles', 'translations', 'iconengines', 'generic', 'networkinformation', 'tls')
         foreach ($qtDir in $QtDirs) {
@@ -653,8 +727,215 @@ jobs:
         files: |
           LeleTools_*_Portable.zip
           LeleToolsInstaller_*.exe
+          LeleTools-*-x86_64.AppImage
         draft: false
         prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          pkg-config \
+          libgl1-mesa-dev \
+          libxkbcommon-dev \
+          libxcb-xinerama0-dev \
+          libxcb-cursor-dev \
+          libfontconfig1-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libx11-xcb-dev \
+          libxext-dev \
+          libxfixes-dev \
+          libxi-dev \
+          libxrender-dev \
+          libxcb1-dev \
+          libxcb-glx0-dev \
+          libxcb-keysyms1-dev \
+          libxcb-image0-dev \
+          libxcb-shm0-dev \
+          libxcb-icccm4-dev \
+          libxcb-sync-dev \
+          libxcb-xfixes0-dev \
+          libxcb-shape0-dev \
+          libxcb-randr0-dev \
+          libxcb-render-util0-dev \
+          libxcb-util-dev \
+          libxcb-xkb-dev \
+          libxkbcommon-x11-dev \
+          libhiredis-dev \
+          libsw-redis++-dev
+          
+    - name: Setup Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: linux
+        target: desktop
+        arch: gcc_64
+        modules: 'qtmultimedia qtmultimediawidgets'
+        cache: true
+        
+    - name: Setup OpenCV
+      run: |
+        echo "Installing OpenCV..."
+        sudo apt-get install -y libopencv-dev libopencv-contrib-dev
+        echo "OpenCV installed successfully!"
+        
+    - name: Set version
+      id: version
+      run: |
+        version="${{ github.event.inputs.version }}"
+        if [ -z "$version" ]; then
+            if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+                version="${{ github.ref_name }}"
+                version="${version#v}"
+            else
+                version="1.0.${{ github.run_number }}"
+            fi
+        fi
+        echo "Version: $version"
+        echo "version=$version" >> $GITHUB_OUTPUT
+        
+    - name: Build project
+      id: build
+      run: |
+        echo "=== Linux Build Started ==="
+        echo "Build Type: Release"
+        
+        PROJECT_ROOT=$(pwd)
+        BUILD_DIR="$PROJECT_ROOT/build"
+        
+        echo "Project Root: $PROJECT_ROOT"
+        echo "Build Directory: $BUILD_DIR"
+        
+        # Clean and create build directory
+        rm -rf "$BUILD_DIR"
+        mkdir -p "$BUILD_DIR"
+        cd "$BUILD_DIR"
+        
+        echo "Configuring project..."
+        cmake "$PROJECT_ROOT" \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_REDIS=ON \
+          -DWITH_OPENCV=ON
+          
+        if [ $? -ne 0 ]; then
+            echo "Project configuration failed!"
+            exit 1
+        fi
+        
+        echo "Compiling project..."
+        cmake --build . --parallel
+        
+        if [ $? -ne 0 ]; then
+            echo "Project compilation failed!"
+            exit 1
+        fi
+        
+        echo "Build successful!"
+        
+        # Find executable
+        EXE_FILE=$(find "$BUILD_DIR" -name "lele-tools" -type f -executable | head -n1)
+        if [ -z "$EXE_FILE" ]; then
+            EXE_FILE=$(find "$BUILD_DIR" -name "*lele*" -type f -executable | head -n1)
+        fi
+        
+        if [ -z "$EXE_FILE" ]; then
+            echo "Executable not found!"
+            exit 1
+        fi
+        
+        echo "Found executable: $EXE_FILE"
+        
+        EXE_DIR=$(dirname "$EXE_FILE")
+        EXE_NAME=$(basename "$EXE_FILE")
+        
+        echo "exe_path=$EXE_FILE" >> $GITHUB_OUTPUT
+        echo "exe_dir=$EXE_DIR" >> $GITHUB_OUTPUT
+        echo "exe_name=$EXE_NAME" >> $GITHUB_OUTPUT
+        echo "build_dir=$BUILD_DIR" >> $GITHUB_OUTPUT
+        
+        cd "$PROJECT_ROOT"
+        
+    - name: Create AppImage
+      id: create_appimage
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "Creating AppImage package..."
+        
+        VERSION="${{ steps.version.outputs.version }}"
+        BUILD_DIR="${{ steps.build.outputs.build_dir }}"
+        EXE_FILE="${{ steps.build.outputs.exe_path }}"
+        
+        # Download linuxdeploy and Qt plugin
+        wget -c -nv "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+        wget -c -nv "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+        
+        chmod +x linuxdeploy*.AppImage
+        
+        # Create AppDir structure
+        mkdir -p AppDir/usr/bin
+        cp "$EXE_FILE" AppDir/usr/bin/
+        
+        # Create desktop file
+        cat > AppDir/lele-tools.desktop << EOF
+        [Desktop Entry]
+        Type=Application
+        Name=Lele Tools
+        Comment=Collection of useful tools
+        Exec=lele-tools
+        Icon=lele-tools
+        Categories=Utility;
+        EOF
+        
+        # Create a simple icon (you should replace this with your actual icon)
+        mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+        # For now, create a placeholder icon
+        convert -size 256x256 xc:blue AppDir/usr/share/icons/hicolor/256x256/apps/lele-tools.png || echo "No icon created"
+        
+        # Deploy Qt dependencies and create AppImage
+        export QMAKE=$Qt6_DIR/bin/qmake
+        ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+        
+        # Find the created AppImage
+        APPIMAGE_FILE=$(find . -name "*.AppImage" | head -n1)
+        if [ -n "$APPIMAGE_FILE" ]; then
+            # Rename to include version
+            NEW_NAME="LeleTools-$VERSION-x86_64.AppImage"
+            mv "$APPIMAGE_FILE" "$NEW_NAME"
+            
+            APPIMAGE_SIZE=$(du -h "$NEW_NAME" | cut -f1)
+            echo "AppImage created: $NEW_NAME ($APPIMAGE_SIZE)"
+            
+            echo "appimage_path=$(pwd)/$NEW_NAME" >> $GITHUB_OUTPUT
+            echo "appimage_name=$NEW_NAME" >> $GITHUB_OUTPUT
+            echo "appimage_size=$APPIMAGE_SIZE" >> $GITHUB_OUTPUT
+        else
+            echo "Failed to create AppImage"
+            echo "appimage_path=" >> $GITHUB_OUTPUT
+            echo "appimage_name=" >> $GITHUB_OUTPUT
+            echo "appimage_size=0" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Upload Linux build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: lele-tools-linux-${{ steps.version.outputs.version }}
+        path: |
+          LeleTools-*.AppImage
+          ${{ steps.build.outputs.exe_path }}
+        retention-days: 90
