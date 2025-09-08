@@ -8,6 +8,9 @@
 #include <QScrollBar>
 #include <QSplitter>
 #include <QRegularExpression>
+#include <QTextCursor>
+#include <QTextCharFormat>
+#include <QMenu>
 
 REGISTER_DYNAMICOBJECT(TerminalTool);
 
@@ -16,146 +19,20 @@ const QStringList TerminalTool::BUILTIN_COMMANDS = {
     "clear", "cls", "exit", "quit", "pwd", "cd", "help", "history"
 };
 
-// TerminalInput 实现
-TerminalInput::TerminalInput(QWidget *parent)
-    : QLineEdit(parent)
+// IntegratedTerminal 实现
+IntegratedTerminal::IntegratedTerminal(QWidget *parent)
+    : QTextEdit(parent)
+    , m_maxLines(1000)
     , m_historyIndex(-1)
+    , m_promptStartPos(0)
+    , m_commandStartPos(0)
     , m_completer(nullptr)
     , m_fileModel(nullptr)
 {
     setupCompleter();
-    setPlaceholderText("输入命令...");
-}
-
-void TerminalInput::setupCompleter()
-{
-    // 设置文件系统自动补全
-    m_fileModel = new QFileSystemModel(this);
-    m_fileModel->setRootPath("");
-    m_fileModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
     
-    m_completer = new QCompleter(this);
-    m_completer->setModel(m_fileModel);
-    m_completer->setCompletionMode(QCompleter::InlineCompletion);
-    m_completer->setCaseSensitivity(Qt::CaseInsensitive);
-    
-    setCompleter(m_completer);
-}
-
-void TerminalInput::keyPressEvent(QKeyEvent *event)
-{
-    switch (event->key()) {
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-        if (!text().trimmed().isEmpty()) {
-            addToHistory(text());
-            emit commandEntered(text());
-            clear();
-        }
-        return;
-        
-    case Qt::Key_Up:
-        navigateHistory(-1);
-        return;
-        
-    case Qt::Key_Down:
-        navigateHistory(1);
-        return;
-        
-    case Qt::Key_L:
-        if (event->modifiers() & Qt::ControlModifier) {
-            emit requestClear();
-            return;
-        }
-        break;
-        
-    case Qt::Key_C:
-        if (event->modifiers() & Qt::ControlModifier) {
-            if (text().isEmpty()) {
-                emit requestInterrupt();
-                return;
-            }
-        }
-        break;
-        
-    case Qt::Key_Tab:
-        // Tab补全由QCompleter处理
-        break;
-    }
-    
-    QLineEdit::keyPressEvent(event);
-}
-
-void TerminalInput::setCommandHistory(const QStringList &history)
-{
-    m_commandHistory = history;
-    m_historyIndex = -1;
-}
-
-void TerminalInput::addToHistory(const QString &command)
-{
-    if (!command.trimmed().isEmpty() && 
-        (m_commandHistory.isEmpty() || m_commandHistory.last() != command)) {
-        m_commandHistory.append(command);
-        
-        // 限制历史记录数量
-        if (m_commandHistory.size() > 1000) {
-            m_commandHistory.removeFirst();
-        }
-    }
-    m_historyIndex = -1;
-}
-
-void TerminalInput::clearHistory()
-{
-    m_commandHistory.clear();
-    m_historyIndex = -1;
-}
-
-void TerminalInput::navigateHistory(int direction)
-{
-    if (m_commandHistory.isEmpty()) {
-        return;
-    }
-    
-    if (m_historyIndex == -1) {
-        m_currentCommand = text();
-    }
-    
-    m_historyIndex += direction;
-    
-    if (m_historyIndex < -1) {
-        m_historyIndex = -1;
-        setText(m_currentCommand);
-    } else if (m_historyIndex >= m_commandHistory.size()) {
-        m_historyIndex = m_commandHistory.size() - 1;
-        setText(m_commandHistory[m_historyIndex]);
-    } else if (m_historyIndex == -1) {
-        setText(m_currentCommand);
-    } else {
-        setText(m_commandHistory[m_historyIndex]);
-    }
-}
-
-// TerminalOutput 实现
-TerminalOutput::TerminalOutput(QWidget *parent)
-    : QTextEdit(parent)
-    , m_maxLines(1000)
-{
-    setReadOnly(true);
-    setUndoRedoEnabled(false);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    
-    // 设置字体
-    QFont font("Consolas", 10);
-    if (!font.exactMatch()) {
-        font.setFamily("Courier New");
-    }
-    font.setFixedPitch(true);
-    setFont(font);
-    
-    // 设置样式
+    // 设置终端样式
+    setFont(QFont("Consolas", 10));
     setStyleSheet(R"(
         QTextEdit {
             background-color: #000000;
@@ -177,9 +54,29 @@ TerminalOutput::TerminalOutput(QWidget *parent)
             background: #666666;
         }
     )");
+    
+    // 设置文本编辑属性
+    setUndoRedoEnabled(false);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setLineWrapMode(QTextEdit::WidgetWidth);
+    setAcceptRichText(true);
 }
 
-void TerminalOutput::appendOutput(const QString &text, const QString &type)
+void IntegratedTerminal::setupCompleter()
+{
+    // 设置文件系统自动补全
+    m_fileModel = new QFileSystemModel(this);
+    m_fileModel->setRootPath("");
+    m_fileModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+    
+    m_completer = new QCompleter(this);
+    m_completer->setModel(m_fileModel);
+    m_completer->setCompletionMode(QCompleter::InlineCompletion);
+    m_completer->setCaseSensitivity(Qt::CaseInsensitive);
+}
+
+void IntegratedTerminal::appendOutput(const QString &text, const QString &type)
 {
     if (text.isEmpty()) {
         return;
@@ -196,6 +93,10 @@ void TerminalOutput::appendOutput(const QString &text, const QString &type)
     // 插入文本
     cursor.insertText(text);
     
+    // 更新位置信息
+    m_promptStartPos = cursor.position();
+    m_commandStartPos = cursor.position();
+    
     // 限制行数
     limitLines();
     
@@ -204,39 +105,219 @@ void TerminalOutput::appendOutput(const QString &text, const QString &type)
     scrollBar->setValue(scrollBar->maximum());
 }
 
-void TerminalOutput::appendPrompt(const QString &prompt)
+void IntegratedTerminal::showPrompt(const QString &prompt)
 {
     m_currentPrompt = prompt;
-    appendOutput(prompt, "prompt");
+    
+    // 移动到文档末尾
+    moveToEndOfDocument();
+    
+    QTextCursor cursor = textCursor();
+    m_promptStartPos = cursor.position();
+    
+    // 插入提示符
+    QTextCharFormat promptFormat;
+    promptFormat.setForeground(QColor(getColorForType("prompt")));
+    cursor.setCharFormat(promptFormat);
+    cursor.insertText(prompt);
+    
+    // 记录命令开始位置
+    m_commandStartPos = cursor.position();
+    
+    // 设置光标位置
+    setTextCursor(cursor);
+    
+    // 滚动到底部
+    QScrollBar *scrollBar = verticalScrollBar();
+    scrollBar->setValue(scrollBar->maximum());
 }
 
-void TerminalOutput::clear()
+void IntegratedTerminal::clear()
 {
     QTextEdit::clear();
+    m_promptStartPos = 0;
+    m_commandStartPos = 0;
 }
 
-void TerminalOutput::setMaxLines(int maxLines)
+void IntegratedTerminal::setMaxLines(int maxLines)
 {
     m_maxLines = maxLines;
     limitLines();
 }
 
-void TerminalOutput::keyPressEvent(QKeyEvent *event)
+void IntegratedTerminal::setCommandHistory(const QStringList &history)
 {
-    // 阻止在输出区域的编辑操作，但允许复制
-    if (event->matches(QKeySequence::Copy)) {
-        QTextEdit::keyPressEvent(event);
+    m_commandHistory = history;
+    m_historyIndex = -1;
+}
+
+void IntegratedTerminal::addToHistory(const QString &command)
+{
+    if (!command.trimmed().isEmpty() && 
+        (m_commandHistory.isEmpty() || m_commandHistory.last() != command)) {
+        m_commandHistory.append(command);
+        
+        // 限制历史记录数量
+        if (m_commandHistory.size() > 1000) {
+            m_commandHistory.removeFirst();
+        }
     }
-    // 其他按键事件忽略，让父级处理
+    m_historyIndex = -1;
 }
 
-void TerminalOutput::mousePressEvent(QMouseEvent *event)
+void IntegratedTerminal::keyPressEvent(QKeyEvent *event)
 {
-    // 允许文本选择
-    QTextEdit::mousePressEvent(event);
+    // 检查是否在可编辑区域
+    if (!isInEditableArea() && event->key() != Qt::Key_C && 
+        !(event->modifiers() & Qt::ControlModifier)) {
+        // 如果不在可编辑区域，移动到末尾
+        moveToEndOfDocument();
+    }
+    
+    switch (event->key()) {
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+        processCurrentCommand();
+        return;
+        
+    case Qt::Key_Up:
+        navigateHistory(-1);
+        return;
+        
+    case Qt::Key_Down:
+        navigateHistory(1);
+        return;
+        
+    case Qt::Key_Left:
+        // 防止光标移动到提示符之前
+        if (textCursor().position() <= m_commandStartPos) {
+            return;
+        }
+        break;
+        
+    case Qt::Key_Home:
+        // Home键移动到命令开始位置
+        {
+            QTextCursor cursor = textCursor();
+            cursor.setPosition(m_commandStartPos);
+            setTextCursor(cursor);
+        }
+        return;
+        
+    case Qt::Key_Backspace:
+        // 防止删除提示符
+        if (textCursor().position() <= m_commandStartPos) {
+            return;
+        }
+        break;
+        
+    case Qt::Key_L:
+        if (event->modifiers() & Qt::ControlModifier) {
+            emit requestClear();
+            return;
+        }
+        break;
+        
+    case Qt::Key_C:
+        if (event->modifiers() & Qt::ControlModifier) {
+            if (getCurrentCommand().isEmpty()) {
+                emit requestInterrupt();
+                return;
+            } else {
+                // 有选中文本时复制
+                if (textCursor().hasSelection()) {
+                    QTextEdit::keyPressEvent(event);
+                    return;
+                }
+            }
+        }
+        break;
+        
+    case Qt::Key_Tab:
+        // Tab补全（简化实现）
+        {
+            QString command = getCurrentCommand();
+            if (!command.isEmpty()) {
+                // 简单的文件名补全
+                QStringList parts = command.split(' ');
+                if (!parts.isEmpty()) {
+                    QString lastPart = parts.last();
+                    if (QFileInfo(lastPart).exists() || lastPart.contains('/') || lastPart.contains('\\')) {
+                        // 触发文件路径补全
+                        QTextEdit::keyPressEvent(event);
+                        return;
+                    }
+                }
+            }
+        }
+        return;
+    }
+    
+    // 默认处理
+    QTextEdit::keyPressEvent(event);
 }
 
-void TerminalOutput::limitLines()
+void IntegratedTerminal::mousePressEvent(QMouseEvent *event)
+{
+    QTextEdit::mousePressEvent(event);
+    
+    // 点击后确保光标在可编辑区域
+    if (event->button() == Qt::LeftButton) {
+        QTextCursor cursor = textCursor();
+        if (cursor.position() < m_commandStartPos) {
+            moveToEndOfDocument();
+        }
+    }
+}
+
+void IntegratedTerminal::mouseReleaseEvent(QMouseEvent *event)
+{
+    QTextEdit::mouseReleaseEvent(event);
+}
+
+void IntegratedTerminal::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu *menu = createStandardContextMenu();
+    
+    // 添加自定义菜单项
+    menu->addSeparator();
+    
+    QAction *clearAction = menu->addAction("清屏");
+    connect(clearAction, &QAction::triggered, this, &IntegratedTerminal::requestClear);
+    
+    QAction *interruptAction = menu->addAction("中断进程");
+    connect(interruptAction, &QAction::triggered, this, &IntegratedTerminal::requestInterrupt);
+    
+    menu->exec(event->globalPos());
+    delete menu;
+}
+
+void IntegratedTerminal::navigateHistory(int direction)
+{
+    if (m_commandHistory.isEmpty()) {
+        return;
+    }
+    
+    if (m_historyIndex == -1) {
+        m_tempCommand = getCurrentCommand();
+    }
+    
+    m_historyIndex += direction;
+    
+    if (m_historyIndex < -1) {
+        m_historyIndex = -1;
+        setCurrentCommand(m_tempCommand);
+    } else if (m_historyIndex >= m_commandHistory.size()) {
+        m_historyIndex = m_commandHistory.size() - 1;
+        setCurrentCommand(m_commandHistory[m_historyIndex]);
+    } else if (m_historyIndex == -1) {
+        setCurrentCommand(m_tempCommand);
+    } else {
+        setCurrentCommand(m_commandHistory[m_historyIndex]);
+    }
+}
+
+void IntegratedTerminal::limitLines()
 {
     if (document()->blockCount() <= m_maxLines) {
         return;
@@ -251,9 +332,13 @@ void TerminalOutput::limitLines()
         cursor.removeSelectedText();
         cursor.deleteChar(); // 删除换行符
     }
+    
+    // 重新计算位置
+    m_promptStartPos = qMax(0, m_promptStartPos - linesToRemove);
+    m_commandStartPos = qMax(0, m_commandStartPos - linesToRemove);
 }
 
-QString TerminalOutput::getColorForType(const QString &type) const
+QString IntegratedTerminal::getColorForType(const QString &type) const
 {
     if (type == "error") {
         return "#ff6b6b";  // 红色
@@ -267,6 +352,60 @@ QString TerminalOutput::getColorForType(const QString &type) const
         return "#a55eea";  // 紫色
     }
     return "#ffffff";      // 白色（默认）
+}
+
+void IntegratedTerminal::processCurrentCommand()
+{
+    QString command = getCurrentCommand().trimmed();
+    
+    // 添加换行
+    QTextCursor cursor = textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText("\n");
+    
+    // 发送命令
+    if (!command.isEmpty()) {
+        addToHistory(command);
+        emit commandEntered(command);
+    } else {
+        // 空命令，直接显示新提示符
+        emit commandEntered("");
+    }
+}
+
+bool IntegratedTerminal::isInEditableArea() const
+{
+    return textCursor().position() >= m_commandStartPos;
+}
+
+void IntegratedTerminal::moveToEndOfDocument()
+{
+    QTextCursor cursor = textCursor();
+    cursor.movePosition(QTextCursor::End);
+    setTextCursor(cursor);
+}
+
+QString IntegratedTerminal::getCurrentCommand() const
+{
+    QTextCursor cursor = textCursor();
+    cursor.setPosition(m_commandStartPos);
+    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+    return cursor.selectedText();
+}
+
+void IntegratedTerminal::setCurrentCommand(const QString &command)
+{
+    QTextCursor cursor = textCursor();
+    cursor.setPosition(m_commandStartPos);
+    cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+    
+    // 设置命令文本格式
+    QTextCharFormat commandFormat;
+    commandFormat.setForeground(QColor("#ffffff"));
+    cursor.setCharFormat(commandFormat);
+    
+    cursor.insertText(command);
+    setTextCursor(cursor);
 }
 
 // TerminalTool 实现
@@ -301,9 +440,9 @@ TerminalTool::TerminalTool(QWidget *parent)
     }
     
     // 显示欢迎信息和初始提示符
-    m_output->appendOutput("终端工具 v1.0\n", "info");
-    m_output->appendOutput("输入 'help' 查看可用命令\n", "info");
-    m_output->appendOutput("使用 Ctrl+C 中断进程，Ctrl+L 清屏\n\n", "info");
+    m_terminal->appendOutput("终端工具 v1.0\n", "info");
+    m_terminal->appendOutput("输入 'help' 查看可用命令\n", "info");
+    m_terminal->appendOutput("使用 Ctrl+C 中断进程，Ctrl+L 清屏\n\n", "info");
     showPrompt();
     
     updateWindowTitle();
@@ -322,58 +461,22 @@ void TerminalTool::setupUI()
 {
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(5, 5, 5, 5);
-    m_mainLayout->setSpacing(5);
+    m_mainLayout->setSpacing(0);
     
-    // 输出区域
-    m_output = new TerminalOutput(this);
-    m_mainLayout->addWidget(m_output);
-    
-    // 输入区域
-    m_inputLayout = new QHBoxLayout();
-    m_inputLayout->setContentsMargins(0, 0, 0, 0);
-    m_inputLayout->setSpacing(5);
-    
-    m_promptLabel = new QLabel(this);
-    m_promptLabel->setStyleSheet(R"(
-        QLabel {
-            color: #0be881;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 10pt;
-            font-weight: bold;
-        }
-    )");
-    
-    m_input = new TerminalInput(this);
-    m_input->setStyleSheet(R"(
-        QLineEdit {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            border: 1px solid #333333;
-            border-radius: 4px;
-            padding: 5px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 10pt;
-        }
-        QLineEdit:focus {
-            border-color: #0be881;
-        }
-    )");
-    
-    m_inputLayout->addWidget(m_promptLabel);
-    m_inputLayout->addWidget(m_input);
-    
-    m_mainLayout->addLayout(m_inputLayout);
-    
-    // 设置焦点
-    m_input->setFocus();
+    // 创建一体化终端
+    m_terminal = new IntegratedTerminal(this);
+    m_mainLayout->addWidget(m_terminal);
     
     // 连接信号
-    connect(m_input, &TerminalInput::commandEntered, 
+    connect(m_terminal, &IntegratedTerminal::commandEntered, 
             this, &TerminalTool::onCommandEntered);
-    connect(m_input, &TerminalInput::requestClear, 
+    connect(m_terminal, &IntegratedTerminal::requestClear, 
             this, &TerminalTool::onRequestClear);
-    connect(m_input, &TerminalInput::requestInterrupt, 
+    connect(m_terminal, &IntegratedTerminal::requestInterrupt, 
             this, &TerminalTool::onRequestInterrupt);
+    
+    // 设置焦点
+    m_terminal->setFocus();
     
     setupTerminalStyle();
 }
@@ -398,17 +501,15 @@ void TerminalTool::setupTerminalStyle()
 void TerminalTool::onCommandEntered(const QString &command)
 {
     QString trimmedCommand = command.trimmed();
+    
     if (trimmedCommand.isEmpty()) {
         showPrompt();
         return;
     }
     
-    // 显示输入的命令
-    m_output->appendOutput(trimmedCommand + "\n", "output");
-    
     // 添加到历史记录
     m_commandHistory.append(trimmedCommand);
-    m_input->setCommandHistory(m_commandHistory);
+    m_terminal->setCommandHistory(m_commandHistory);
     
     // 检查是否是内置命令
     if (isBuiltinCommand(trimmedCommand)) {
@@ -421,7 +522,7 @@ void TerminalTool::onCommandEntered(const QString &command)
 void TerminalTool::executeCommand(const QString &command)
 {
     if (m_processRunning) {
-        m_output->appendOutput("进程正在运行中，请等待完成或使用 Ctrl+C 中断\n", "warning");
+        m_terminal->appendOutput("进程正在运行中，请等待完成或使用 Ctrl+C 中断\n", "warning");
         showPrompt();
         return;
     }
@@ -456,7 +557,7 @@ void TerminalTool::executeCommand(const QString &command)
 #endif
     
     if (!m_process->waitForStarted(3000)) {
-        m_output->appendOutput("无法启动进程: " + m_process->errorString() + "\n", "error");
+        m_terminal->appendOutput("无法启动进程: " + m_process->errorString() + "\n", "error");
         showPrompt();
         return;
     }
@@ -469,9 +570,9 @@ void TerminalTool::onProcessFinished(int exitCode, QProcess::ExitStatus exitStat
     m_processRunning = false;
     
     if (exitStatus == QProcess::CrashExit) {
-        m_output->appendOutput("进程异常终止\n", "error");
+        m_terminal->appendOutput("进程异常终止\n", "error");
     } else if (exitCode != 0) {
-        m_output->appendOutput(QString("进程退出，退出码: %1\n").arg(exitCode), "warning");
+        m_terminal->appendOutput(QString("进程退出，退出码: %1\n").arg(exitCode), "warning");
     }
     
     showPrompt();
@@ -503,7 +604,7 @@ void TerminalTool::onProcessError(QProcess::ProcessError error)
         break;
     }
     
-    m_output->appendOutput("进程错误: " + errorMsg + "\n", "error");
+    m_terminal->appendOutput("进程错误: " + errorMsg + "\n", "error");
     showPrompt();
 }
 
@@ -512,7 +613,7 @@ void TerminalTool::onProcessReadyReadStandardOutput()
     if (m_process) {
         QByteArray data = m_process->readAllStandardOutput();
         QString output = QString::fromLocal8Bit(data);
-        m_output->appendOutput(output, "output");
+        m_terminal->appendOutput(output, "output");
     }
 }
 
@@ -521,20 +622,20 @@ void TerminalTool::onProcessReadyReadStandardError()
     if (m_process) {
         QByteArray data = m_process->readAllStandardError();
         QString output = QString::fromLocal8Bit(data);
-        m_output->appendOutput(output, "error");
+        m_terminal->appendOutput(output, "error");
     }
 }
 
 void TerminalTool::onRequestClear()
 {
-    m_output->clear();
+    m_terminal->clear();
     showPrompt();
 }
 
 void TerminalTool::onRequestInterrupt()
 {
     if (m_processRunning && m_process) {
-        m_output->appendOutput("^C\n", "warning");
+        m_terminal->appendOutput("^C\n", "warning");
         m_process->kill();
         if (!m_process->waitForFinished(3000)) {
             m_process->terminate();
@@ -547,9 +648,7 @@ void TerminalTool::onRequestInterrupt()
 void TerminalTool::showPrompt()
 {
     QString prompt = getCurrentPrompt();
-    m_promptLabel->setText(prompt);
-    m_output->appendPrompt(prompt);
-    m_input->setFocus();
+    m_terminal->showPrompt(prompt);
 }
 
 void TerminalTool::handleBuiltinCommand(const QString &command)
@@ -558,17 +657,17 @@ void TerminalTool::handleBuiltinCommand(const QString &command)
     QString cmd = parts[0].toLower();
     
     if (cmd == "clear" || cmd == "cls") {
-        m_output->clear();
+        m_terminal->clear();
     }
     else if (cmd == "exit" || cmd == "quit") {
-        m_output->appendOutput("再见！\n", "info");
+        m_terminal->appendOutput("再见！\n", "info");
         QTimer::singleShot(500, this, [this]() {
             parentWidget()->close();
         });
         return;
     }
     else if (cmd == "pwd") {
-        m_output->appendOutput(QDir::toNativeSeparators(m_currentDirectory) + "\n", "output");
+        m_terminal->appendOutput(QDir::toNativeSeparators(m_currentDirectory) + "\n", "output");
     }
     else if (cmd == "cd") {
         if (parts.size() > 1) {
@@ -580,22 +679,22 @@ void TerminalTool::handleBuiltinCommand(const QString &command)
         }
     }
     else if (cmd == "help") {
-        m_output->appendOutput("内置命令:\n", "info");
-        m_output->appendOutput("  clear/cls  - 清屏\n", "output");
-        m_output->appendOutput("  cd <path>  - 更改目录\n", "output");
-        m_output->appendOutput("  pwd        - 显示当前目录\n", "output");
-        m_output->appendOutput("  history    - 显示命令历史\n", "output");
-        m_output->appendOutput("  exit/quit  - 退出终端\n", "output");
-        m_output->appendOutput("\n快捷键:\n", "info");
-        m_output->appendOutput("  Ctrl+L     - 清屏\n", "output");
-        m_output->appendOutput("  Ctrl+C     - 中断当前进程\n", "output");
-        m_output->appendOutput("  Up/Down    - 浏览命令历史\n", "output");
-        m_output->appendOutput("  Tab        - 文件名自动补全\n", "output");
+        m_terminal->appendOutput("内置命令:\n", "info");
+        m_terminal->appendOutput("  clear/cls  - 清屏\n", "output");
+        m_terminal->appendOutput("  cd <path>  - 更改目录\n", "output");
+        m_terminal->appendOutput("  pwd        - 显示当前目录\n", "output");
+        m_terminal->appendOutput("  history    - 显示命令历史\n", "output");
+        m_terminal->appendOutput("  exit/quit  - 退出终端\n", "output");
+        m_terminal->appendOutput("\n快捷键:\n", "info");
+        m_terminal->appendOutput("  Ctrl+L     - 清屏\n", "output");
+        m_terminal->appendOutput("  Ctrl+C     - 中断当前进程\n", "output");
+        m_terminal->appendOutput("  Up/Down    - 浏览命令历史\n", "output");
+        m_terminal->appendOutput("  Tab        - 文件名自动补全\n", "output");
     }
     else if (cmd == "history") {
-        m_output->appendOutput("命令历史:\n", "info");
+        m_terminal->appendOutput("命令历史:\n", "info");
         for (int i = 0; i < m_commandHistory.size(); ++i) {
-            m_output->appendOutput(QString("  %1  %2\n")
+            m_terminal->appendOutput(QString("  %1  %2\n")
                                  .arg(i + 1, 3)
                                  .arg(m_commandHistory[i]), "output");
         }
@@ -625,10 +724,9 @@ void TerminalTool::changeDirectory(const QString &path)
     QDir dir(newPath);
     if (dir.exists()) {
         m_currentDirectory = dir.absolutePath();
-        m_output->appendOutput("", "output"); // 空行，表示成功
         updateWindowTitle();
     } else {
-        m_output->appendOutput("目录不存在: " + QDir::toNativeSeparators(newPath) + "\n", "error");
+        m_terminal->appendOutput("目录不存在: " + QDir::toNativeSeparators(newPath) + "\n", "error");
     }
 }
 
@@ -678,11 +776,8 @@ void TerminalTool::loadSettings()
     m_commandHistory = settings.value("TerminalTool/commandHistory", 
                                      QStringList()).toStringList();
     
-    if (m_output) {
-        m_output->setMaxLines(m_maxOutputLines);
-    }
-    
-    if (m_input) {
-        m_input->setCommandHistory(m_commandHistory);
+    if (m_terminal) {
+        m_terminal->setMaxLines(m_maxOutputLines);
+        m_terminal->setCommandHistory(m_commandHistory);
     }
 }

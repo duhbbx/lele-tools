@@ -24,19 +24,20 @@
 
 #include "../../common/dynamicobjectbase.h"
 
-class TerminalOutput;
-
-// 自定义命令行输入框
-class TerminalInput : public QLineEdit
+// 一体化终端文本区域
+class IntegratedTerminal : public QTextEdit
 {
     Q_OBJECT
 
 public:
-    explicit TerminalInput(QWidget *parent = nullptr);
+    explicit IntegratedTerminal(QWidget *parent = nullptr);
     
+    void appendOutput(const QString &text, const QString &type = "output");
+    void showPrompt(const QString &prompt);
+    void clear();
+    void setMaxLines(int maxLines);
     void setCommandHistory(const QStringList &history);
     void addToHistory(const QString &command);
-    void clearHistory();
 
 signals:
     void commandEntered(const QString &command);
@@ -45,41 +46,34 @@ signals:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
-    QStringList m_commandHistory;
-    int m_historyIndex;
-    QString m_currentCommand;
-    QCompleter *m_completer;
-    QFileSystemModel *m_fileModel;
-    
     void setupCompleter();
     void navigateHistory(int direction);
-};
-
-// 自定义输出显示区域
-class TerminalOutput : public QTextEdit
-{
-    Q_OBJECT
-
-public:
-    explicit TerminalOutput(QWidget *parent = nullptr);
-    
-    void appendOutput(const QString &text, const QString &type = "output");
-    void appendPrompt(const QString &prompt);
-    void clear();
-    void setMaxLines(int maxLines);
-
-protected:
-    void keyPressEvent(QKeyEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-
-private:
-    int m_maxLines;
-    QString m_currentPrompt;
-    
     void limitLines();
     QString getColorForType(const QString &type) const;
+    void insertPromptAndMoveCursor(const QString &prompt);
+    void processCurrentCommand();
+    bool isInEditableArea() const;
+    void moveToEndOfDocument();
+    QString getCurrentCommand() const;
+    void setCurrentCommand(const QString &command);
+    
+    // 状态管理
+    int m_maxLines;
+    QString m_currentPrompt;
+    QStringList m_commandHistory;
+    int m_historyIndex;
+    QString m_tempCommand;
+    int m_promptStartPos;
+    int m_commandStartPos;
+    
+    // 自动补全
+    QCompleter *m_completer;
+    QFileSystemModel *m_fileModel;
 };
 
 // 主终端工具类
@@ -117,10 +111,7 @@ private:
     
     // UI组件
     QVBoxLayout *m_mainLayout;
-    TerminalOutput *m_output;
-    QHBoxLayout *m_inputLayout;
-    QLabel *m_promptLabel;
-    TerminalInput *m_input;
+    IntegratedTerminal *m_terminal;
     
     // 进程管理
     QProcess *m_process;
