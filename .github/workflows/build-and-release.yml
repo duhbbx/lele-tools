@@ -45,7 +45,7 @@ jobs:
         target: desktop
         arch: win64_msvc2022_64
         tools: 'tools_ifw'
-        modules: 'qtwebengine'
+        modules: 'qtwebengine qtmultimedia qtmultimediawidgets'
         cache: true
         
     - name: Debug Qt installation
@@ -775,8 +775,7 @@ jobs:
           libxcb-util-dev \
           libxcb-xkb-dev \
           libxkbcommon-x11-dev \
-          libhiredis-dev \
-          libsw-redis++-dev
+          libhiredis-dev
           
     - name: Setup Qt
       uses: jurplel/install-qt-action@v3
@@ -787,6 +786,37 @@ jobs:
         arch: gcc_64
         modules: 'qtmultimedia qtmultimediawidgets'
         cache: true
+        
+    - name: Cache redis-plus-plus
+      uses: actions/cache@v4
+      id: redis-cache
+      with:
+        path: /usr/local/lib/libredis++*
+        key: ${{ runner.os }}-redis-plus-plus-v1
+        
+    - name: Setup redis-plus-plus
+      if: steps.redis-cache.outputs.cache-hit != 'true'
+      run: |
+        echo "Installing redis-plus-plus from source..."
+        
+        # Install dependencies
+        sudo apt-get install -y git cmake build-essential
+        
+        # Clone and build redis-plus-plus
+        cd /tmp
+        git clone https://github.com/sewenew/redis-plus-plus.git
+        cd redis-plus-plus
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+        make -j$(nproc)
+        sudo make install
+        
+        echo "redis-plus-plus installed successfully!"
+        
+    - name: Update library cache
+      run: |
+        sudo ldconfig
         
     - name: Setup OpenCV
       run: |

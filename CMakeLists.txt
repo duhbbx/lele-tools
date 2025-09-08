@@ -136,9 +136,32 @@ SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 
 
 
-# 必需的Qt组件 (包含SQL和多媒体)
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql Multimedia MultimediaWidgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql Multimedia MultimediaWidgets)
+# 必需的Qt组件 (包含SQL)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql)
+
+# 可选的Qt多媒体组件
+option(WITH_QT_MULTIMEDIA "Enable Qt Multimedia support" ON)
+
+if(WITH_QT_MULTIMEDIA)
+    find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Multimedia MultimediaWidgets)
+    
+    if(Qt${QT_VERSION_MAJOR}Multimedia_FOUND AND Qt${QT_VERSION_MAJOR}MultimediaWidgets_FOUND)
+        message(STATUS "Qt Multimedia found: ${Qt${QT_VERSION_MAJOR}Multimedia_VERSION}")
+        add_definitions(-DWITH_QT_MULTIMEDIA)
+        set(HAVE_QT_MULTIMEDIA TRUE)
+        set(QT_MULTIMEDIA_LIBS Qt${QT_VERSION_MAJOR}::Multimedia Qt${QT_VERSION_MAJOR}::MultimediaWidgets)
+    else()
+        message(WARNING "Qt Multimedia not found. Camera tool will be disabled.")
+        message(STATUS "To enable Qt Multimedia, install the qtmultimedia qtmultimediawidgets modules")
+        set(HAVE_QT_MULTIMEDIA FALSE)
+        set(QT_MULTIMEDIA_LIBS "")
+    endif()
+else()
+    message(STATUS "Qt Multimedia support disabled")
+    set(HAVE_QT_MULTIMEDIA FALSE)
+    set(QT_MULTIMEDIA_LIBS "")
+endif()
 
 
 
@@ -215,7 +238,7 @@ else()
     message(WARNING "Qt6 WebEngineWidgets not found - some features may be disabled")
 endif()
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::Multimedia Qt${QT_VERSION_MAJOR}::MultimediaWidgets yaml-cpp ScreenCaptureLib)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql ${QT_MULTIMEDIA_LIBS} yaml-cpp ScreenCaptureLib)
 
 
 # 链接库

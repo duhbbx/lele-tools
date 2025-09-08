@@ -13,15 +13,19 @@ REGISTER_DYNAMICOBJECT(CameraTool);
 
 CameraTool::CameraTool(QWidget *parent)
     : QWidget(parent), DynamicObjectBase()
+#ifdef WITH_QT_MULTIMEDIA
     , m_camera(nullptr)
     , m_captureSession(nullptr)
     , m_imageCapture(nullptr)
+#endif
     , m_cameraActive(false)
     , m_recording(false)
     , m_photoCount(0)
 {
     setupUI();
     loadSettings();
+    
+#ifdef WITH_QT_MULTIMEDIA
     refreshCameraList();
     
     // 创建定时器用于更新状态
@@ -34,13 +38,32 @@ CameraTool::CameraTool(QWidget *parent)
     m_captureSession->setVideoOutput(m_videoWidget);
     
     logMessage("摄像头工具初始化完成");
+#else
+    logMessage("Qt Multimedia模块不可用，摄像头功能已禁用");
+    logMessage("请安装Qt Multimedia模块以启用摄像头功能");
+    
+    // 禁用所有摄像头相关控件
+    m_startBtn->setEnabled(false);
+    m_stopBtn->setEnabled(false);
+    m_takePhotoBtn->setEnabled(false);
+    m_startRecordBtn->setEnabled(false);
+    m_stopRecordBtn->setEnabled(false);
+    m_refreshBtn->setEnabled(false);
+    m_cameraCombo->setEnabled(false);
+    m_resolutionCombo->setEnabled(false);
+    
+    m_cameraStatusLabel->setText("Qt Multimedia不可用");
+    m_cameraStatusLabel->setStyleSheet("color: #ff6b6b; font-weight: bold;");
+#endif
 }
 
 CameraTool::~CameraTool()
 {
+#ifdef WITH_QT_MULTIMEDIA
     if (m_camera && m_camera->isActive()) {
         m_camera->stop();
     }
+#endif
     saveSettings();
 }
 
@@ -240,21 +263,29 @@ void CameraTool::setupPreviewArea()
     m_previewGroup = new QGroupBox("摄像头预览", this);
     QVBoxLayout *layout = new QVBoxLayout(m_previewGroup);
     
+#ifdef WITH_QT_MULTIMEDIA
     m_videoWidget = new QVideoWidget();
     m_videoWidget->setMinimumSize(400, 300);
     m_videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    layout->addWidget(m_videoWidget);
     
     // 创建预览标签（当没有摄像头时显示）
     m_previewLabel = new QLabel("摄像头预览区域\n请选择并启动摄像头");
     m_previewLabel->setAlignment(Qt::AlignCenter);
     m_previewLabel->setStyleSheet("color: #6c757d; font-size: 14px; background-color: #f8f9fa;");
     m_previewLabel->setMinimumSize(400, 300);
-    
-    layout->addWidget(m_videoWidget);
     layout->addWidget(m_previewLabel);
     
     // 初始时隐藏视频widget
     m_videoWidget->hide();
+#else
+    // 创建提示标签
+    m_previewLabel = new QLabel("Qt Multimedia模块不可用\n摄像头功能已禁用\n\n请安装Qt Multimedia模块以启用摄像头功能");
+    m_previewLabel->setAlignment(Qt::AlignCenter);
+    m_previewLabel->setStyleSheet("color: #ff6b6b; font-size: 14px; background-color: #f8f9fa; font-weight: bold;");
+    m_previewLabel->setMinimumSize(400, 300);
+    layout->addWidget(m_previewLabel);
+#endif
 }
 
 void CameraTool::setupCaptureControls()
@@ -381,6 +412,7 @@ void CameraTool::setupStatusArea()
 
 void CameraTool::refreshCameraList()
 {
+#ifdef WITH_QT_MULTIMEDIA
     m_cameraCombo->clear();
     
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
@@ -402,12 +434,21 @@ void CameraTool::refreshCameraList()
     }
     
     updateCameraInfo();
+#else
+    m_cameraCombo->clear();
+    m_cameraCombo->addItem("Qt Multimedia不可用");
+    logMessage("Qt Multimedia模块不可用，无法枚举摄像头设备");
+#endif
 }
 
 void CameraTool::updateCameraInfo()
 {
+#ifdef WITH_QT_MULTIMEDIA
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
     m_deviceCountLabel->setText(QString("检测到摄像头设备: %1 个").arg(cameras.size()));
+#else
+    m_deviceCountLabel->setText("Qt Multimedia不可用");
+#endif
 }
 
 void CameraTool::updateUI()

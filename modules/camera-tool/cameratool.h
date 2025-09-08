@@ -14,12 +14,14 @@
 #include <QSpinBox>
 #include <QCheckBox>
 #include <QTimer>
+#ifdef WITH_QT_MULTIMEDIA
 #include <QCamera>
 #include <QMediaCaptureSession>
 #include <QVideoWidget>
 #include <QImageCapture>
 #include <QMediaDevices>
 #include <QCameraDevice>
+#endif
 #include <QScreen>
 #include <QPixmap>
 #include <QFileDialog>
@@ -90,7 +92,9 @@ private:
     
     // 预览区域
     QGroupBox *m_previewGroup;
+#ifdef WITH_QT_MULTIMEDIA
     QVideoWidget *m_videoWidget;
+#endif
     QLabel *m_previewLabel;
     
     // 拍照控制区域
@@ -118,9 +122,11 @@ private:
     QLabel *m_deviceCountLabel;
     
     // 摄像头相关对象
+#ifdef WITH_QT_MULTIMEDIA
     QCamera *m_camera;
     QMediaCaptureSession *m_captureSession;
     QImageCapture *m_imageCapture;
+#endif
     
     // 设置和状态
     QString m_savePath;
