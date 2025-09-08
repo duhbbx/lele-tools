@@ -24,6 +24,8 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QRegularExpression>
+#include <QFileInfo>
+#include <QStyledItemDelegate>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -44,6 +46,58 @@ struct HostEntry {
     HostEntry() : enabled(true) {}
     HostEntry(const QString& ip, const QString& hostname, const QString& comment = "", bool enabled = true)
         : ip(ip), hostname(hostname), comment(comment), enabled(enabled) {}
+};
+
+// 自定义表格委托，用于控制编辑器样式和大小
+class HostsTableDelegate : public QStyledItemDelegate {
+    Q_OBJECT
+    
+public:
+    explicit HostsTableDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
+    
+    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        Q_UNUSED(option)
+        Q_UNUSED(index)
+        
+        QLineEdit* editor = new QLineEdit(parent);
+        editor->setStyleSheet(
+            "QLineEdit {"
+            "    padding: 2px;"
+            "    font-size: 11pt;"
+            "    border: 2px solid #2196f3;"
+            "    border-radius: 3px;"
+            "    background-color: white;"
+            "    min-height: 20px;"
+            "}"
+        );
+        return editor;
+    }
+    
+    void setEditorData(QWidget* editor, const QModelIndex& index) const override {
+        QString value = index.model()->data(index, Qt::EditRole).toString();
+        QLineEdit* lineEdit = static_cast<QLineEdit*>(editor);
+        lineEdit->setText(value);
+        lineEdit->selectAll(); // 选中所有文本，方便编辑
+    }
+    
+    void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override {
+        QLineEdit* lineEdit = static_cast<QLineEdit*>(editor);
+        QString value = lineEdit->text();
+        model->setData(index, value, Qt::EditRole);
+    }
+    
+    void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        Q_UNUSED(index)
+        QRect rect = option.rect;
+        rect.adjust(2, 2, -2, -2); // 留出一些边距
+        editor->setGeometry(rect);
+    }
+    
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        QSize size = QStyledItemDelegate::sizeHint(option, index);
+        size.setHeight(qMax(35, size.height())); // 确保最小高度35px
+        return size;
+    }
 };
 
 class HostsEditor : public QWidget, public DynamicObjectBase
@@ -93,6 +147,10 @@ private:
     bool checkAdminRights();
     bool requestAdminRights();
     bool saveWithElevation();
+    bool tryPowerShellElevation(const QString& tempFile);
+    bool tryCmdElevation(const QString& tempFile);
+    bool tryRobocopyElevation(const QString& tempFile);
+    void showManualSaveDialog(const QString& tempFile);
     void flushDnsWithAPI();
     QString getHostsFilePath();
     void addHostEntry(const QString& ip, const QString& hostname, const QString& comment = "", bool enabled = true);

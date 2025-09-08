@@ -65,3 +65,5 @@
 {"xxx", "UUID生成器", "UuidGen"},
 
 {"xxx", "OpenCV示例", "OpenCvDemo"},
+
+{"xxx", "摄像头工具", "CameraTool"},

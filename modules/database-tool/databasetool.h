@@ -37,8 +37,11 @@
 
 #include "../../common/dynamicobjectbase.h"
 #include "../../common/connx/Connection.h"
+#include "../../common/sqlite/ConnectionConfigTableManager.h"
 
-using namespace Connx;
+// 不使用全局using namespace以避免命名冲突
+// using namespace Connx;
+// using namespace SqliteWrapper;
 
 // 连接配置对话框
 class ConnectionDialog : public QDialog {
@@ -46,10 +49,10 @@ class ConnectionDialog : public QDialog {
 
 public:
     explicit ConnectionDialog(QWidget* parent = nullptr);
-    explicit ConnectionDialog(const ConnectionConfig& config, QWidget* parent = nullptr);
+    explicit ConnectionDialog(const Connx::ConnectionConfig& config, QWidget* parent = nullptr);
     
-    ConnectionConfig getConnectionConfig() const;
-    void setConnectionConfig(const ConnectionConfig& config);
+    Connx::ConnectionConfig getConnectionConfig() const;
+    void setConnectionConfig(const Connx::ConnectionConfig& config);
 
 private slots:
     void onConnectionTypeChanged();
@@ -113,7 +116,7 @@ class QueryTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit QueryTab(Connection* connection, QWidget* parent = nullptr);
+    explicit QueryTab(Connx::Connection* connection, QWidget* parent = nullptr);
     
     void setQuery(const QString& query);
     QString getQuery() const;
@@ -121,7 +124,7 @@ public:
 
 signals:
     void titleChanged(const QString& title);
-    void queryExecuted(const QueryResult& result);
+    void queryExecuted(const Connx::QueryResult& result);
 
 private slots:
     void onExecuteClicked();
@@ -130,9 +133,9 @@ private slots:
 
 private:
     void setupUI();
-    void updateResults(const QueryResult& result);
+    void updateResults(const Connx::QueryResult& result);
     
-    Connection* m_connection;
+    Connx::Connection* m_connection;
     QVBoxLayout* m_layout;
     
     // 工具栏
@@ -162,9 +165,9 @@ class DatabaseTreeWidget : public QTreeWidget {
 public:
     explicit DatabaseTreeWidget(QWidget* parent = nullptr);
     
-    void setConnection(Connection* connection);
+    void setConnection(Connx::Connection* connection);
     void refreshConnection(const QString& connectionName);
-    void addConnection(const QString& name, Connection* connection);
+    void addConnection(const QString& name, Connx::Connection* connection);
     void removeConnection(const QString& name);
 
 signals:
@@ -180,16 +183,23 @@ private slots:
 
 private:
     void setupContextMenu();
-    void loadDatabases(QTreeWidgetItem* connectionItem, Connection* connection);
-    void loadTables(QTreeWidgetItem* databaseItem, Connection* connection, const QString& database);
+    void loadDatabases(QTreeWidgetItem* connectionItem, Connx::Connection* connection);
+    void loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database);
+    void loadRedisKeys(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database);
+    void refreshDatabase(QTreeWidgetItem* databaseItem);
+    void flushDatabase(QTreeWidgetItem* databaseItem);
+    void deleteKey(QTreeWidgetItem* keyItem);
     
-    QMap<QString, Connection*> m_connections;
+    QMap<QString, Connx::Connection*> m_connections;
     QMap<QTreeWidgetItem*, QString> m_itemConnectionMap;
     
     QMenu* m_contextMenu;
     QAction* m_connectAction;
     QAction* m_disconnectAction;
     QAction* m_refreshAction;
+    QAction* m_refreshDatabaseAction;
+    QAction* m_flushDatabaseAction;
+    QAction* m_deleteKeyAction;
     QAction* m_deleteAction;
     QAction* m_newQueryAction;
 };
@@ -212,7 +222,7 @@ private slots:
     void onNewQuery();
     void onCloseTab(int index);
     void onTabChanged(int index);
-    void onConnectionStateChanged(const QString& name, ConnectionState state);
+    void onConnectionStateChanged(const QString& name, Connx::ConnectionState state);
     void onTableDoubleClicked(const QString& connectionName, const QString& database, const QString& table);
     void onKeyDoubleClicked(const QString& connectionName, const QString& database, const QString& key);
 
@@ -253,9 +263,9 @@ private:
     QLabel* m_connectionCountLabel;
     
     // 数据管理
-    QMap<QString, ConnectionConfig> m_connectionConfigs;
-    QMap<QString, Connection*> m_connections;
-    QSettings* m_settings;
+    QMap<QString, Connx::ConnectionConfig> m_connectionConfigs;
+    QMap<QString, Connx::Connection*> m_connections;
+    SqliteWrapper::ConnectionConfigTableManager* m_configManager;
     
     // 当前选中
     QString m_currentConnection;

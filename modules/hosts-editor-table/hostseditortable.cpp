@@ -1,6 +1,8 @@
 
 #include "hostseditortable.h"
 #include <QDebug>
+#include <string>
+#include <exception>
 #include <QMessageBox>
 #include <QFile>
 #include <QTextStream>
@@ -113,7 +115,7 @@ void HostsEditor::setupUI() {
             padding: 8px;
             border: 2px solid #ced4da;
             border-radius: 0px;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
         }
         QLineEdit:focus {
@@ -125,28 +127,38 @@ void HostsEditor::setupUI() {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             border: 2px solid #dee2e6;
             border-radius: 0px;
-            font-size: 11pt;
+            font-size: 10pt;
             gridline-color: #dee2e6;
             background-color: white;
             alternate-background-color: #f8f9fa;
         }
         QTableWidget::item {
-            padding: 8px;
+            padding: 2px 2px;
             border-bottom: 1px solid #dee2e6;
+            min-height: 20px;
         }
         QTableWidget::item:selected {
             background-color: #007bff;
-            color: white;
+        }
+        QTableWidget::item:focus {
+            border: 2px solid #2196f3;
+        }
+        QLineEdit {
+            padding: 6px;
+            font-size: 11pt;
+            border: 1px solid #2196f3;
+            border-radius: 2px;
         }
         QHeaderView::section {
             background-color: #f8f9fa;
             padding: 8px;
             border: 1px solid #dee2e6;
             font-weight: bold;
+            font-size: 10pt;
         }
         QLabel {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
         }
     )");
 }
@@ -206,6 +218,20 @@ void HostsEditor::setupTableArea() {
     hostsTable->setColumnWidth(0, 80);
     hostsTable->setColumnWidth(1, 150);
     hostsTable->setColumnWidth(2, 200);
+    
+    // 设置行高
+    QHeaderView* verticalHeader = hostsTable->verticalHeader();
+    verticalHeader->setDefaultSectionSize(35); // 设置默认行高为35像素
+    verticalHeader->setMinimumSectionSize(30); // 设置最小行高为30像素
+    
+    // 设置字体和行高
+    QFont tableFont = hostsTable->font();
+    tableFont.setPointSize(11);
+    hostsTable->setFont(tableFont);
+    
+    // 设置自定义委托以控制编辑器样式
+    HostsTableDelegate* delegate = new HostsTableDelegate(this);
+    hostsTable->setItemDelegate(delegate);
 
     tableLayout->addWidget(hostsTable);
     mainLayout->addWidget(tableGroup);
@@ -241,9 +267,8 @@ void HostsEditor::setupQuickAddArea() {
 
     connect(commonHostsCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
         if (index > 0) {
-            QString text = commonHostsCombo->itemText(index);
-            QStringList parts = text.split(" ");
-            if (parts.size() >= 2) {
+            const QString text = commonHostsCombo->itemText(index);
+            if (QStringList parts = text.split(" "); parts.size() >= 2) {
                 ipEdit->setText(parts[0]);
                 hostnameEdit->setText(parts[1]);
             }
@@ -334,11 +359,12 @@ void HostsEditor::loadHostsFile() {
     updateStatus("hosts文件加载完成", false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = false;
+    updateButtonStates();
 
 }
 
 void HostsEditor::parseHostsLine(const QString& line) {
-    QString trimmedLine = line.trimmed();
+    const QString trimmedLine = line.trimmed();
 
     // 跳过空行
     if (trimmedLine.isEmpty()) {
@@ -354,19 +380,18 @@ void HostsEditor::parseHostsLine(const QString& line) {
         workingLine = trimmedLine.mid(1).trimmed();
 
         // 如果是纯注释行（不是被注释的hosts条目），跳过
-        if (workingLine.isEmpty() || !workingLine.contains(QRegularExpression("^\\d+\\.\\d+\\.\\d+\\.\\d+"))) {
+        if (workingLine.isEmpty() || !workingLine.contains(QRegularExpression(R"(^\d+\.\d+\.\d+\.\d+)"))) {
             return;
         }
     }
 
     // 解析IP和主机名
-    QRegularExpression regex("^(\\S+)\\s+(\\S+)(?:\\s*#?\\s*(.*))?$");
-    QRegularExpressionMatch match = regex.match(workingLine);
+    const QRegularExpression regex(R"(^(\S+)\s+(\S+)(?:\s*#?\s*(.*))?$)");
 
-    if (match.hasMatch()) {
-        QString ip = match.captured(1);
-        QString hostname = match.captured(2);
-        QString comment = match.captured(3).trimmed();
+    if (const QRegularExpressionMatch match = regex.match(workingLine); match.hasMatch()) {
+        const QString ip = match.captured(1);
+        const QString hostname = match.captured(2);
+        const QString comment = match.captured(3).trimmed();
 
         // 验证IP格式
         if (isValidIP(ip)) {
@@ -380,80 +405,337 @@ void HostsEditor::onLoadHosts() {
 }
 
 void HostsEditor::onSaveHosts() {
-    if (!hasAdminRights) {
-        // 尝试提升权限保存
-        if (saveWithElevation()) {
-            updateStatus("hosts文件保存成功（已提升权限）", false);
-            hasUnsavedChanges = false;
-        } else {
-            updateStatus("保存失败：无法获取管理员权限", true);
-        }
+    qDebug() << "开始保存hosts文件...";
+    
+    // 安全检查
+    if (hostEntries.isEmpty()) {
+        updateStatus("没有内容需要保存", true);
         return;
     }
+    
+    try {
+        if (!hasAdminRights) {
+            qDebug() << "需要提升权限保存";
+            // 尝试提升权限保存
+            if (saveWithElevation()) {
+                updateStatus("hosts文件保存成功（已提升权限）", false);
+                hasUnsavedChanges = false;
+                updateButtonStates();
+            } else {
+                updateStatus("保存失败：无法获取管理员权限", true);
+            }
+            return;
+        }
 
-    saveHostsFile();
+        qDebug() << "使用管理员权限直接保存";
+        saveHostsFile();
+    } catch (const std::exception& e) {
+        qDebug() << "保存过程中发生异常:" << e.what();
+        updateStatus(QString("保存失败：%1").arg(e.what()), true);
+    } catch (...) {
+        qDebug() << "保存过程中发生未知异常";
+        updateStatus("保存失败：未知错误", true);
+    }
 }
 
 bool HostsEditor::saveWithElevation() {
 #ifdef Q_OS_WIN
-    // 创建临时文件
-    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch());
+    qDebug() << "开始权限提升保存流程";
+    
+    try {
+        // 创建临时文件
+        const QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".txt";
+        
+        qDebug() << "临时文件路径:" << tempFile;
 
-    // 写入临时文件
-    QFile file(tempFile);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        // 写入临时文件
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            updateStatus("无法创建临时文件: " + file.errorString(), true);
+            return false;
+        }
+
+        QTextStream out(&file);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        out.setCodec("UTF-8");
+#else
+        out.setEncoding(QStringConverter::Utf8);
+#endif
+        out << generateHostsContent();
+        file.close();
+        
+        qDebug() << "临时文件写入完成";
+
+        // 方法1: 尝试使用PowerShell
+        qDebug() << "尝试PowerShell方法";
+        bool success = tryPowerShellElevation(tempFile);
+        
+        if (!success) {
+            qDebug() << "PowerShell方法失败，尝试CMD方法";
+            // 方法2: 尝试使用cmd复制
+            success = tryCmdElevation(tempFile);
+        }
+        
+        if (!success) {
+            qDebug() << "CMD方法失败，尝试Robocopy方法";
+            // 方法3: 尝试使用robocopy
+            success = tryRobocopyElevation(tempFile);
+        }
+
+        // 清理临时文件
+        QFile::remove(tempFile);
+        
+        if (!success) {
+            qDebug() << "所有自动方法都失败，显示手动保存对话框";
+            // 保留临时文件以供手动保存
+            QString preservedTempFile = tempFile + "_preserved";
+            if (QFile::copy(tempFile, preservedTempFile)) {
+                showManualSaveDialog(preservedTempFile);
+            }
+        }
+        
+        return success;
+    } catch (const std::exception& e) {
+        qDebug() << "saveWithElevation异常:" << e.what();
+        updateStatus(QString("权限提升失败: %1").arg(e.what()), true);
+        return false;
+    } catch (...) {
+        qDebug() << "saveWithElevation未知异常";
+        updateStatus("权限提升失败: 未知错误", true);
         return false;
     }
-
-    QTextStream out(&file);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    out.setCodec("UTF-8");
-#else
-    out.setEncoding(QStringConverter::Utf8);
-#endif
-    out << generateHostsContent();
-    file.close();
-
-    // 使用ShellExecuteEx提升权限复制文件
-    QString cmdLine = QString("cmd.exe /c copy \"%1\" \"%2\"").arg(tempFile, hostsFilePath);
-
-    SHELLEXECUTEINFOW sei = { 0 };
-    sei.cbSize = sizeof(sei);
-    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
-    sei.lpVerb = L"runas";
-    sei.lpFile = L"cmd.exe";
-    sei.lpParameters = reinterpret_cast<LPCWSTR>(cmdLine.utf16());
-    sei.nShow = SW_HIDE;
-
-    if (ShellExecuteExW(&sei)) {
-        if (sei.hProcess) {
-            WaitForSingleObject(sei.hProcess, INFINITE);
-            DWORD exitCode;
-            GetExitCodeProcess(sei.hProcess, &exitCode);
-            CloseHandle(sei.hProcess);
-
-            // 清理临时文件
-            QFile::remove(tempFile);
-
-            return (exitCode == 0);
-        }
-    }
-
-    // 清理临时文件
-    QFile::remove(tempFile);
-    return false;
 #else
     // Linux/Mac系统使用pkexec或sudo
     return false;
 #endif
 }
 
+bool HostsEditor::tryPowerShellElevation(const QString& tempFile) {
+#ifdef Q_OS_WIN
+    try {
+        qDebug() << "开始PowerShell权限提升";
+        
+        // 创建PowerShell脚本
+        QString psScript = QString(
+            "try {\n"
+            "    Copy-Item -Path \"%1\" -Destination \"%2\" -Force\n"
+            "    Write-Host \"SUCCESS\"\n"
+            "    exit 0\n"
+            "} catch {\n"
+            "    Write-Host \"ERROR: $($_.Exception.Message)\"\n"
+            "    exit 1\n"
+            "}\n"
+        ).arg(tempFile, hostsFilePath);
+    
+        QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString psScriptFile = tempPath + "/copy_hosts_" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".ps1";
+        
+        QFile scriptFile(psScriptFile);
+        if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream scriptOut(&scriptFile);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            scriptOut.setCodec("UTF-8");
+#else
+            scriptOut.setEncoding(QStringConverter::Utf8);
+#endif
+            scriptOut << psScript;
+            scriptFile.close();
+            qDebug() << "PowerShell脚本文件创建成功:" << psScriptFile;
+        } else {
+            qDebug() << "无法创建PowerShell脚本文件";
+            return false;
+        }
+        
+        // 使用ShellExecuteEx提升权限运行PowerShell
+        SHELLEXECUTEINFOW sei = {0};
+        sei.cbSize = sizeof(sei);
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
+        sei.lpVerb = L"runas";
+        sei.lpFile = L"powershell.exe";
+        
+        QString params = QString("-ExecutionPolicy Bypass -File \"%1\"").arg(psScriptFile);
+        std::wstring wParams = params.toStdWString();
+        sei.lpParameters = wParams.c_str();
+        sei.nShow = SW_HIDE;
+        
+        bool success = false;
+        qDebug() << "调用ShellExecuteExW";
+        
+        if (ShellExecuteExW(&sei)) {
+            qDebug() << "ShellExecuteExW调用成功";
+            if (sei.hProcess) {
+                qDebug() << "等待PowerShell进程完成";
+                // 等待进程完成，最多等待30秒
+                DWORD waitResult = WaitForSingleObject(sei.hProcess, 30000);
+                if (waitResult == WAIT_OBJECT_0) {
+                    DWORD exitCode;
+                    if (GetExitCodeProcess(sei.hProcess, &exitCode)) {
+                        qDebug() << "PowerShell进程退出代码:" << exitCode;
+                        success = (exitCode == 0);
+                    }
+                } else if (waitResult == WAIT_TIMEOUT) {
+                    qDebug() << "PowerShell操作超时";
+                    updateStatus("PowerShell操作超时", true);
+                    TerminateProcess(sei.hProcess, 1);
+                }
+                CloseHandle(sei.hProcess);
+            }
+        } else {
+            DWORD error = GetLastError();
+            qDebug() << "ShellExecuteExW失败，错误代码:" << error;
+            if (error == ERROR_CANCELLED) {
+                updateStatus("用户取消了权限提升", true);
+            } else {
+                updateStatus(QString("PowerShell权限提升失败，错误代码: %1").arg(error), true);
+            }
+        }
+        
+        // 清理PowerShell脚本文件
+        QFile::remove(psScriptFile);
+        
+        return success;
+    } catch (const std::exception& e) {
+        qDebug() << "PowerShell权限提升异常:" << e.what();
+        return false;
+    } catch (...) {
+        qDebug() << "PowerShell权限提升未知异常";
+        return false;
+    }
+#else
+    Q_UNUSED(tempFile)
+    return false;
+#endif
+}
+
+bool HostsEditor::tryCmdElevation(const QString& tempFile) {
+#ifdef Q_OS_WIN
+    // 使用cmd复制文件
+    QString cmdLine = QString("/c copy /Y \"%1\" \"%2\"").arg(tempFile, hostsFilePath);
+    
+    SHELLEXECUTEINFOW sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
+    sei.lpVerb = L"runas";
+    sei.lpFile = L"cmd.exe";
+    sei.lpParameters = reinterpret_cast<LPCWSTR>(cmdLine.utf16());
+    sei.nShow = SW_HIDE;
+    
+    bool success = false;
+    if (ShellExecuteExW(&sei)) {
+        if (sei.hProcess) {
+            DWORD waitResult = WaitForSingleObject(sei.hProcess, 15000);
+            if (waitResult == WAIT_OBJECT_0) {
+                DWORD exitCode;
+                if (GetExitCodeProcess(sei.hProcess, &exitCode)) {
+                    success = (exitCode == 0);
+                }
+            } else if (waitResult == WAIT_TIMEOUT) {
+                updateStatus("CMD操作超时", true);
+                TerminateProcess(sei.hProcess, 1);
+            }
+            CloseHandle(sei.hProcess);
+        }
+    } else {
+        DWORD error = GetLastError();
+        if (error == ERROR_CANCELLED) {
+            updateStatus("用户取消了权限提升", true);
+        }
+    }
+    
+    return success;
+#else
+    Q_UNUSED(tempFile)
+    return false;
+#endif
+}
+
+bool HostsEditor::tryRobocopyElevation(const QString& tempFile) {
+#ifdef Q_OS_WIN
+    // 使用robocopy复制文件
+    QFileInfo tempInfo(tempFile);
+    QFileInfo hostsInfo(hostsFilePath);
+    
+    QString cmdLine = QString("/c robocopy \"%1\" \"%2\" \"%3\" /Y").arg(
+        tempInfo.absolutePath(),
+        hostsInfo.absolutePath(), 
+        tempInfo.fileName()
+    );
+    
+    SHELLEXECUTEINFOW sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
+    sei.lpVerb = L"runas";
+    sei.lpFile = L"cmd.exe";
+    sei.lpParameters = reinterpret_cast<LPCWSTR>(cmdLine.utf16());
+    sei.nShow = SW_HIDE;
+    
+    bool success = false;
+    if (ShellExecuteExW(&sei)) {
+        if (sei.hProcess) {
+            DWORD waitResult = WaitForSingleObject(sei.hProcess, 15000);
+            if (waitResult == WAIT_OBJECT_0) {
+                DWORD exitCode;
+                if (GetExitCodeProcess(sei.hProcess, &exitCode)) {
+                    // robocopy的退出代码: 0-7表示成功
+                    success = (exitCode <= 7);
+                    if (success) {
+                        // 重命名复制的文件
+                        QString copiedFile = hostsInfo.absolutePath() + "/" + tempInfo.fileName();
+                        QFile::remove(hostsFilePath);
+                        QFile::rename(copiedFile, hostsFilePath);
+                    }
+                }
+            } else if (waitResult == WAIT_TIMEOUT) {
+                updateStatus("Robocopy操作超时", true);
+                TerminateProcess(sei.hProcess, 1);
+            }
+            CloseHandle(sei.hProcess);
+        }
+    }
+    
+    return success;
+#else
+    Q_UNUSED(tempFile)
+    return false;
+#endif
+}
+
+void HostsEditor::showManualSaveDialog(const QString& tempFile) {
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setWindowTitle("手动保存hosts文件");
+    msgBox.setText("自动权限提升失败，请手动保存hosts文件。");
+    msgBox.setInformativeText(QString(
+        "请按照以下步骤手动保存：\n\n"
+        "1. 以管理员身份运行文件管理器\n"
+        "2. 导航到: %1\n"
+        "3. 复制临时文件: %2\n"
+        "4. 粘贴并替换原hosts文件\n\n"
+        "或者点击'复制路径'按钮将路径复制到剪贴板。"
+    ).arg(hostsFilePath, tempFile));
+    
+    QPushButton* copyPathBtn = msgBox.addButton("复制路径", QMessageBox::ActionRole);
+    QPushButton* openFolderBtn = msgBox.addButton("打开文件夹", QMessageBox::ActionRole);
+    msgBox.addButton("确定", QMessageBox::AcceptRole);
+    
+    msgBox.exec();
+    
+    if (msgBox.clickedButton() == copyPathBtn) {
+        QApplication::clipboard()->setText(QString("临时文件: %1\n目标位置: %2").arg(tempFile, hostsFilePath));
+        updateStatus("路径已复制到剪贴板", false);
+    } else if (msgBox.clickedButton() == openFolderBtn) {
+        // 打开hosts文件所在文件夹
+        QString hostsDir = QFileInfo(hostsFilePath).absolutePath();
+        QProcess::startDetached("explorer.exe", QStringList() << hostsDir);
+    }
+}
+
 void HostsEditor::saveHostsFile() {
     updateStatus("正在保存hosts文件...", false);
 
     // 备份原文件
-    QString backupPath = hostsFilePath + ".backup." + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+    const QString backupPath = hostsFilePath + ".backup." + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
     QFile::copy(hostsFilePath, backupPath);
 
     QFile file(hostsFilePath);
@@ -473,6 +755,7 @@ void HostsEditor::saveHostsFile() {
     file.close();
     updateStatus("hosts文件保存成功", false);
     hasUnsavedChanges = false;
+    updateButtonStates();
 }
 
 QString HostsEditor::generateHostsContent() {
@@ -580,6 +863,7 @@ void HostsEditor::onQuickAdd() {
     updateStatus("已添加新的hosts条目", false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
+    updateButtonStates();
 }
 
 void HostsEditor::onAddEntry() {
@@ -595,6 +879,7 @@ void HostsEditor::onAddEntry() {
     updateStatus("已添加新条目，请编辑", false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
+    updateButtonStates();
 }
 
 void HostsEditor::onRemoveEntry() {
@@ -624,6 +909,7 @@ void HostsEditor::onRemoveEntry() {
     updateStatus(QString("已删除 %1 个条目").arg(selectedRows.size()), false);
     entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
+    updateButtonStates();
 }
 
 void HostsEditor::onToggleEntry() {
@@ -649,6 +935,7 @@ void HostsEditor::onToggleEntry() {
     updateTable();
     updateStatus(QString("已切换 %1 个条目的状态").arg(selectedRows.size()), false);
     hasUnsavedChanges = true;
+    updateButtonStates();
 }
 
 void HostsEditor::onClearAll() {
@@ -669,6 +956,7 @@ void HostsEditor::onClearAll() {
         updateStatus("已清空所有条目", false);
         entriesCountLabel->setText("条目: 0");
         hasUnsavedChanges = true;
+        updateButtonStates();
     }
 }
 

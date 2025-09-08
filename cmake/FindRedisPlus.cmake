@@ -141,3 +141,4 @@ else()
     message(STATUS "  2. Set RedisPlus_ROOT_DIR to installation directory")
     message(STATUS "  3. Build from source: https://github.com/sewenew/redis-plus-plus")
 endif()
+

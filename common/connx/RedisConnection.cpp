@@ -122,7 +122,6 @@ namespace Connx {
             qDebug() << "Redis ping failed:" << e.what();
             return false;
         }
-
     }
 
     QueryResult RedisConnection::execute(const QString& command, const QVariantList& params) {
@@ -140,7 +139,13 @@ namespace Connx {
 
             result.executionTime = QDateTime::currentMSecsSinceEpoch() - startTime;
             result.success = true;
-            result.data.append(response);
+            
+            // 如果response已经是一个列表，直接使用它；否则包装成列表
+            if (response.type() == QVariant::List) {
+                result.data = response.toList();
+            } else {
+                result.data.append(response);
+            }
             updateLastActivity();
         } catch (const sw::redis::Error& e) {
             result.success = false;
@@ -237,7 +242,7 @@ namespace Connx {
         QStringList columns;
 
         if (!isConnected() || !m_redis) {
-            return columns;  // 未连接，直接返回空
+            return columns; // 未连接，直接返回空
         }
 
         try {
@@ -259,7 +264,6 @@ namespace Connx {
 
         return columns;
     }
-
 
 
     QString RedisConnection::escapeString(const QString& str) {
@@ -303,7 +307,7 @@ namespace Connx {
     }
 
     // Redis特有方法实现
-    QStringList RedisConnection::getKeys(const QString &pattern, int limit) {
+    QStringList RedisConnection::getKeys(const QString& pattern, int limit) {
         QStringList keys;
 
         if (!isConnected() || !m_redis) {
@@ -333,7 +337,6 @@ namespace Connx {
 
         return keys;
     }
-
 
 
     RedisKeyInfo RedisConnection::getKeyInfo(const QString& key) {
@@ -448,7 +451,6 @@ namespace Connx {
     }
 
     bool RedisConnection::setValue(const QString& key, const QVariant& value, int ttl) {
-
         if (!isConnected() || !m_redis) {
             return false;
         }
@@ -631,7 +633,8 @@ namespace Connx {
 
     // 私有辅助方法
     QVariant RedisConnection::executeRedisCommand(const QString& command, const QVariantList& params) {
-        if (!m_redis) return QVariant();
+        if (!m_redis)
+            return { };
 
         std::vector<std::string> args;
         args.push_back(command.toStdString());
@@ -641,12 +644,13 @@ namespace Connx {
 
         try {
             auto reply = m_redis->command(args.begin(), args.end());
-            if (!reply) return QVariant();
+            if (!reply)
+                return { };
 
             return parseRedisReply(reply.get());
         } catch (const std::exception& e) {
             qDebug() << "Redis command failed:" << e.what();
-            return QVariant();
+            return { };
         }
     }
 
@@ -671,7 +675,6 @@ namespace Connx {
             return QVariant();
         }
     }
-
 
 
     QVariantList RedisConnection::convertRedisArray(const std::vector<std::string>& values) {

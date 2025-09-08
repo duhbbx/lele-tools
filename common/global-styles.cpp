@@ -5,16 +5,16 @@ QString GlobalStyles::getCheckBoxStyle()
     return R"(
         QCheckBox {
             spacing: 10px;
-            font-size: 10px;
+            font-size: 10pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             padding: 2px;
         }
         QCheckBox::indicator {
-            width: 22px;
-            height: 22px;
+            width: 14px;
+            height: 14px;
             border: 2px solid #bdc3c7;
-            border-radius: 6px;
+            border-radius: 3px;
             background-color: #ffffff;
             margin: 1px;
         }

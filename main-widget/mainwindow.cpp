@@ -1247,29 +1247,29 @@ void MainWindow::startScreenCapture() {
     // 隐藏主窗口，避免影响截图
     this->hide();
 
-    // 短暂延迟，确保窗口完全隐藏
-    QTimer::singleShot(200, [this]() {
-        // 设置截图模式为显示工具栏
-        App::setCustomCap(2); // 2 = 显示工具栏进行编辑
+    // TODO YANGXU 这个已经去掉了短暂延迟，确保窗口完全隐藏
 
-        qDebug() << "开始截图，将显示工具栏";
+    // 设置截图模式为显示工具栏
+    App::setCustomCap(2); // 2 = 显示工具栏进行编辑
 
-        // 配置截图参数
-        ScreenCaptureAPI::CaptureConfig config;
-        config.mode = ScreenCaptureAPI::CaptureMode::SelectArea; // 选择区域模式
-        config.includeDecorations = false; // 不包含窗口装饰
-        config.hideCursor = false; // 显示鼠标光标
-        config.quality = 100; // 最高质量
-        config.format = "PNG"; // PNG格式
-        config.timeoutMs = 0; // 禁用超时，允许用户慢慢编辑
+    qDebug() << "开始截图，将显示工具栏";
 
-        // 开始截图
-        if (!m_screenCapture->startCapture(config)) {
-            qDebug() << "启动截图失败";
-            // 如果截图失败，重新显示主窗口
-            this->show();
-        }
-    });
+    // 配置截图参数
+    ScreenCaptureAPI::CaptureConfig config;
+    config.mode = ScreenCaptureAPI::CaptureMode::SelectArea; // 选择区域模式
+    config.includeDecorations = false; // 不包含窗口装饰
+    config.hideCursor = false; // 显示鼠标光标
+    config.quality = 100; // 最高质量
+    config.format = "PNG"; // PNG格式
+    config.timeoutMs = 0; // 禁用超时，允许用户慢慢编辑
+
+    // 开始截图
+    if (!m_screenCapture->startCapture(config)) {
+        qDebug() << "启动截图失败";
+        // 如果截图失败，重新显示主窗口
+        this->show();
+    }
+
 }
 
 void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image) {

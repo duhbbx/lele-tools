@@ -1,5 +1,7 @@
 #include "hostseditortext.h"
 #include <QDebug>
+#include <string>
+#include <exception>
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QFont>
@@ -238,148 +240,212 @@ void SimpleHostsEditor::onLoadHosts()
 
 void SimpleHostsEditor::onSaveHosts()
 {
+    qDebug() << "开始保存hosts文件...";
+    
+    // 安全检查
     if (!hasUnsavedChanges) {
         updateStatusMessage("没有需要保存的更改", false);
         return;
     }
     
-    if (hasAdminRights) {
-        // 直接保存
-        if (saveHostsFile()) {
-            updateStatusMessage("hosts文件保存成功", false);
-            hasUnsavedChanges = false;
-            saveBtn->setEnabled(false);
-        }
-    } else {
-        // 尝试提升权限保存
-        updateStatusMessage("正在申请管理员权限...", false);
-        if (saveWithElevation()) {
-            updateStatusMessage("hosts文件保存成功（已提升权限）", false);
-            hasUnsavedChanges = false;
-            saveBtn->setEnabled(false);
-            // 重新检查权限状态
-            hasAdminRights = checkAdminRights();
+    // 检查文本内容
+    if (hostsTextEdit->toPlainText().trimmed().isEmpty()) {
+        updateStatusMessage("hosts文件内容为空，无需保存", false);
+        return;
+    }
+    
+    try {
+        if (hasAdminRights) {
+            qDebug() << "使用管理员权限直接保存";
+            // 直接保存
+            if (saveHostsFile()) {
+                updateStatusMessage("hosts文件保存成功", false);
+                hasUnsavedChanges = false;
+                saveBtn->setEnabled(false);
+            } else {
+                updateStatusMessage("保存失败：无法写入hosts文件", true);
+            }
         } else {
-            updateStatusMessage("保存失败：无法获取管理员权限或用户取消操作", true);
+            qDebug() << "需要提升权限保存";
+            // 尝试提升权限保存
+            updateStatusMessage("正在申请管理员权限...", false);
+            if (saveWithElevation()) {
+                updateStatusMessage("hosts文件保存成功（已提升权限）", false);
+                hasUnsavedChanges = false;
+                saveBtn->setEnabled(false);
+                // 重新检查权限状态
+                hasAdminRights = checkAdminRights();
+            } else {
+                updateStatusMessage("保存失败：无法获取管理员权限或用户取消操作", true);
+            }
         }
+    } catch (const std::exception& e) {
+        qDebug() << "保存过程中发生异常:" << e.what();
+        updateStatusMessage(QString("保存失败：%1").arg(e.what()), true);
+    } catch (...) {
+        qDebug() << "保存过程中发生未知异常";
+        updateStatusMessage("保存失败：未知错误", true);
     }
 }
 
 bool SimpleHostsEditor::saveHostsFile()
 {
+    qDebug() << "开始直接保存hosts文件";
     updateStatusMessage("正在保存hosts文件...", false);
     
-    // 创建备份
-    createBackup();
-    
-    QFile file(hostsFilePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        updateStatusMessage("无法写入hosts文件: " + file.errorString(), true);
+    try {
+        // 创建备份
+        createBackup();
+        
+        QFile file(hostsFilePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qDebug() << "无法打开hosts文件进行写入:" << file.errorString();
+            updateStatusMessage("无法写入hosts文件: " + file.errorString(), true);
+            return false;
+        }
+        
+        QTextStream out(&file);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        out.setCodec("UTF-8");
+#else
+        out.setEncoding(QStringConverter::Utf8);
+#endif
+        
+        out << hostsTextEdit->toPlainText();
+        file.close();
+        
+        qDebug() << "hosts文件保存成功";
+        return true;
+    } catch (const std::exception& e) {
+        qDebug() << "saveHostsFile异常:" << e.what();
+        updateStatusMessage(QString("保存文件时发生异常: %1").arg(e.what()), true);
+        return false;
+    } catch (...) {
+        qDebug() << "saveHostsFile未知异常";
+        updateStatusMessage("保存文件时发生未知异常", true);
         return false;
     }
-    
-    QTextStream out(&file);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    out.setCodec("UTF-8");
-#else
-    out.setEncoding(QStringConverter::Utf8);
-#endif
-    
-    out << hostsTextEdit->toPlainText();
-    file.close();
-    
-    return true;
 }
 
 bool SimpleHostsEditor::saveWithElevation()
 {
 #ifdef Q_OS_WIN
-    // 创建临时文件
-    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".txt";
+    qDebug() << "开始权限提升保存流程";
     
-    // 写入临时文件
-    QFile file(tempFile);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        updateStatusMessage("无法创建临时文件", true);
+    try {
+        // 创建临时文件
+        QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".txt";
+        
+        qDebug() << "临时文件路径:" << tempFile;
+        
+        // 写入临时文件
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qDebug() << "无法创建临时文件:" << file.errorString();
+            updateStatusMessage("无法创建临时文件: " + file.errorString(), true);
+            return false;
+        }
+        
+        QTextStream out(&file);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        out.setCodec("UTF-8");
+#else
+        out.setEncoding(QStringConverter::Utf8);
+#endif
+        out << hostsTextEdit->toPlainText();
+        file.close();
+        
+        qDebug() << "临时文件写入完成";
+    
+        // 创建PowerShell脚本来复制文件
+        QString psScript = QString(
+            "try {\n"
+            "    Copy-Item -Path \"%1\" -Destination \"%2\" -Force\n"
+            "    Write-Host \"SUCCESS\"\n"
+            "    exit 0\n"
+            "} catch {\n"
+            "    Write-Host \"ERROR: $($_.Exception.Message)\"\n"
+            "    exit 1\n"
+            "}\n"
+        ).arg(tempFile, hostsFilePath);
+        
+        QString psScriptFile = tempPath + "/copy_hosts_" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".ps1";
+        QFile scriptFile(psScriptFile);
+        if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream scriptOut(&scriptFile);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            scriptOut.setCodec("UTF-8");
+#else
+            scriptOut.setEncoding(QStringConverter::Utf8);
+#endif
+            scriptOut << psScript;
+            scriptFile.close();
+            qDebug() << "PowerShell脚本文件创建成功:" << psScriptFile;
+        } else {
+            qDebug() << "无法创建PowerShell脚本文件";
+            QFile::remove(tempFile);
+            return false;
+        }
+    
+        // 使用ShellExecuteEx提升权限运行PowerShell
+        SHELLEXECUTEINFOW sei = {0};
+        sei.cbSize = sizeof(sei);
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
+        sei.lpVerb = L"runas";
+        sei.lpFile = L"powershell.exe";
+        
+        QString params = QString("-ExecutionPolicy Bypass -File \"%1\"").arg(psScriptFile);
+        std::wstring wParams = params.toStdWString();
+        sei.lpParameters = wParams.c_str();
+        sei.nShow = SW_HIDE;
+        
+        bool success = false;
+        qDebug() << "调用ShellExecuteExW";
+        
+        if (ShellExecuteExW(&sei)) {
+            qDebug() << "ShellExecuteExW调用成功";
+            if (sei.hProcess) {
+                qDebug() << "等待PowerShell进程完成";
+                // 等待进程完成，最多等待30秒
+                DWORD waitResult = WaitForSingleObject(sei.hProcess, 30000);
+                if (waitResult == WAIT_OBJECT_0) {
+                    DWORD exitCode;
+                    if (GetExitCodeProcess(sei.hProcess, &exitCode)) {
+                        qDebug() << "PowerShell进程退出代码:" << exitCode;
+                        success = (exitCode == 0);
+                    }
+                } else if (waitResult == WAIT_TIMEOUT) {
+                    qDebug() << "PowerShell操作超时";
+                    updateStatusMessage("操作超时", true);
+                    TerminateProcess(sei.hProcess, 1);
+                }
+                CloseHandle(sei.hProcess);
+            }
+        } else {
+            DWORD error = GetLastError();
+            qDebug() << "ShellExecuteExW失败，错误代码:" << error;
+            if (error == ERROR_CANCELLED) {
+                updateStatusMessage("用户取消了权限提升", true);
+            } else {
+                updateStatusMessage(QString("权限提升失败，错误代码: %1").arg(error), true);
+            }
+        }
+        
+        // 清理临时文件
+        QFile::remove(tempFile);
+        QFile::remove(psScriptFile);
+        
+        return success;
+    } catch (const std::exception& e) {
+        qDebug() << "saveWithElevation异常:" << e.what();
+        updateStatusMessage(QString("权限提升失败: %1").arg(e.what()), true);
+        return false;
+    } catch (...) {
+        qDebug() << "saveWithElevation未知异常";
+        updateStatusMessage("权限提升失败: 未知错误", true);
         return false;
     }
-    
-    QTextStream out(&file);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    out.setCodec("UTF-8");
-#else
-    out.setEncoding(QStringConverter::Utf8);
-#endif
-    out << hostsTextEdit->toPlainText();
-    file.close();
-    
-    // 创建PowerShell脚本来复制文件
-    QString psScript = QString(
-        "try {\n"
-        "    Copy-Item -Path \"%1\" -Destination \"%2\" -Force\n"
-        "    Write-Host \"SUCCESS\"\n"
-        "    exit 0\n"
-        "} catch {\n"
-        "    Write-Host \"ERROR: $($_.Exception.Message)\"\n"
-        "    exit 1\n"
-        "}\n"
-    ).arg(tempFile, hostsFilePath);
-    
-    QString psScriptFile = tempPath + "/copy_hosts_" + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".ps1";
-    QFile scriptFile(psScriptFile);
-    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream scriptOut(&scriptFile);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        scriptOut.setCodec("UTF-8");
-#else
-        scriptOut.setEncoding(QStringConverter::Utf8);
-#endif
-        scriptOut << psScript;
-        scriptFile.close();
-    }
-    
-    // 使用ShellExecuteEx提升权限运行PowerShell
-    QString cmdLine = QString("powershell.exe -ExecutionPolicy Bypass -File \"%1\"").arg(psScriptFile);
-    
-    SHELLEXECUTEINFOW sei = {0};
-    sei.cbSize = sizeof(sei);
-    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC;
-    sei.lpVerb = L"runas";
-    sei.lpFile = L"powershell.exe";
-    sei.lpParameters = reinterpret_cast<LPCWSTR>(QString("-ExecutionPolicy Bypass -File \"%1\"").arg(psScriptFile).utf16());
-    sei.nShow = SW_HIDE;
-    
-    bool success = false;
-    if (ShellExecuteExW(&sei)) {
-        if (sei.hProcess) {
-            // 等待进程完成，最多等待30秒
-            DWORD waitResult = WaitForSingleObject(sei.hProcess, 30000);
-            if (waitResult == WAIT_OBJECT_0) {
-                DWORD exitCode;
-                if (GetExitCodeProcess(sei.hProcess, &exitCode)) {
-                    success = (exitCode == 0);
-                }
-            } else if (waitResult == WAIT_TIMEOUT) {
-                updateStatusMessage("操作超时", true);
-                TerminateProcess(sei.hProcess, 1);
-            }
-            CloseHandle(sei.hProcess);
-        }
-    } else {
-        DWORD error = GetLastError();
-        if (error == ERROR_CANCELLED) {
-            updateStatusMessage("用户取消了权限提升", true);
-        } else {
-            updateStatusMessage(QString("权限提升失败，错误代码: %1").arg(error), true);
-        }
-    }
-    
-    // 清理临时文件
-    QFile::remove(tempFile);
-    QFile::remove(psScriptFile);
-    
-    return success;
 #else
     // Linux/Mac系统使用pkexec或sudo
     updateStatusMessage("Linux/Mac系统暂不支持权限提升", true);

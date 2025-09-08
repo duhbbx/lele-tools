@@ -11,6 +11,9 @@
 #include <QStandardPaths>
 #include <QDir>
 
+// 移除全局using namespace以避免命名冲突
+// using namespace SqliteWrapper;
+
 REGISTER_DYNAMICOBJECT(DatabaseTool);
 
 // ConnectionDialog 实现
@@ -19,7 +22,7 @@ ConnectionDialog::ConnectionDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle("新建连接");
 }
 
-ConnectionDialog::ConnectionDialog(const ConnectionConfig& config, QWidget* parent) : QDialog(parent) {
+ConnectionDialog::ConnectionDialog(const Connx::ConnectionConfig& config, QWidget* parent) : QDialog(parent) {
     setupUI();
     setConnectionConfig(config);
     setWindowTitle("编辑连接");
@@ -88,8 +91,8 @@ void ConnectionDialog::setupUI() {
     )");
 }
 
-ConnectionConfig ConnectionDialog::getConnectionConfig() const {
-    ConnectionConfig config;
+Connx::ConnectionConfig ConnectionDialog::getConnectionConfig() const {
+    Connx::ConnectionConfig config;
     config.name = m_nameEdit->text().trimmed();
     config.host = m_hostEdit->text().trimmed();
     config.port = m_portSpin->value();
@@ -132,7 +135,7 @@ void ConnectionDialog::setupLeftPanel() {
     m_typeList->setFixedWidth(150);
     
     // 添加数据库类型项
-    QStringList types = ConnectionFactory::getSupportedTypes();
+    QStringList types = Connx::ConnectionFactory::getSupportedTypes();
     for (const QString& type : types) {
         QListWidgetItem* item = new QListWidgetItem(type);
         
@@ -256,7 +259,7 @@ void ConnectionDialog::createFormControls() {
     m_charsetCombo->setCurrentText("utf8mb4");
 }
 
-void ConnectionDialog::setConnectionConfig(const ConnectionConfig& config) {
+void ConnectionDialog::setConnectionConfig(const Connx::ConnectionConfig& config) {
     m_nameEdit->setText(config.name);
     
     // 根据配置确定类型并选择
@@ -294,8 +297,8 @@ void ConnectionDialog::updateFormForType(const QString& type) {
     }
     
     // 获取默认配置
-    ConnectionType connType = ConnectionFactory::getTypeFromString(type);
-    ConnectionConfig defaultConfig = ConnectionFactory::getDefaultConfig(connType);
+    Connx::ConnectionType connType = Connx::ConnectionFactory::getTypeFromString(type);
+    Connx::ConnectionConfig defaultConfig = Connx::ConnectionFactory::getDefaultConfig(connType);
     
     // 更新默认值
     m_portSpin->setValue(defaultConfig.port);
@@ -383,10 +386,10 @@ void ConnectionDialog::onTestConnection() {
     m_testBtn->setEnabled(false);
     m_statusLabel->setText("正在测试连接...");
     
-    ConnectionConfig config = getConnectionConfig();
-    ConnectionType type = ConnectionFactory::getTypeFromString(m_currentType);
+    Connx::ConnectionConfig config = getConnectionConfig();
+    Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(m_currentType);
     
-    Connection* testConn = ConnectionFactory::createConnection(type, config);
+    Connx::Connection* testConn = Connx::ConnectionFactory::createConnection(type, config);
     if (!testConn) {
         m_statusLabel->setText("❌ 不支持的数据库类型");
         m_testBtn->setEnabled(true);
@@ -447,7 +450,10 @@ void DatabaseTreeWidget::setupContextMenu() {
     
     m_connectAction = new QAction("🔌 连接", this);
     m_disconnectAction = new QAction("🔌 断开连接", this);
-    m_refreshAction = new QAction("🔄 刷新", this);
+    m_refreshAction = new QAction("🔄 刷新连接", this);
+    m_refreshDatabaseAction = new QAction("🔄 刷新数据库", this);
+    m_flushDatabaseAction = new QAction("🗑️ 清空数据库", this);
+    m_deleteKeyAction = new QAction("❌ 删除键", this);
     m_deleteAction = new QAction("🗑️ 删除连接", this);
     m_newQueryAction = new QAction("📝 新建查询", this);
     
@@ -455,12 +461,15 @@ void DatabaseTreeWidget::setupContextMenu() {
     m_contextMenu->addAction(m_disconnectAction);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_refreshAction);
+    m_contextMenu->addAction(m_refreshDatabaseAction);
+    m_contextMenu->addAction(m_flushDatabaseAction);
+    m_contextMenu->addAction(m_deleteKeyAction);
     m_contextMenu->addAction(m_newQueryAction);
     m_contextMenu->addSeparator();
     m_contextMenu->addAction(m_deleteAction);
 }
 
-void DatabaseTreeWidget::addConnection(const QString& name, Connection* connection) {
+void DatabaseTreeWidget::addConnection(const QString& name, Connx::Connection* connection) {
     m_connections[name] = connection;
     
     QTreeWidgetItem* connectionItem = new QTreeWidgetItem(this);
@@ -506,7 +515,7 @@ void DatabaseTreeWidget::onItemExpanded(QTreeWidgetItem* item) {
         qDeleteAll(item->takeChildren());
         
         // 加载数据库列表
-        Connection* conn = m_connections[connectionName];
+        Connx::Connection* conn = m_connections[connectionName];
         loadDatabases(item, conn);
     } else if (itemType == "database") {
         // 清除占位符
@@ -516,14 +525,14 @@ void DatabaseTreeWidget::onItemExpanded(QTreeWidgetItem* item) {
         QTreeWidgetItem* connectionItem = item->parent();
         QString connName = m_itemConnectionMap.value(connectionItem, "");
         if (m_connections.contains(connName)) {
-            Connection* conn = m_connections[connName];
+            Connx::Connection* conn = m_connections[connName];
             QString database = item->text(0);
             loadTables(item, conn, database);
         }
     }
 }
 
-void DatabaseTreeWidget::loadDatabases(QTreeWidgetItem* connectionItem, Connection* connection) {
+void DatabaseTreeWidget::loadDatabases(QTreeWidgetItem* connectionItem, Connx::Connection* connection) {
     if (!connection->isConnected()) {
         QTreeWidgetItem* errorItem = new QTreeWidgetItem(connectionItem);
         errorItem->setText(0, "未连接");
@@ -547,15 +556,10 @@ void DatabaseTreeWidget::loadDatabases(QTreeWidgetItem* connectionItem, Connecti
     }
 }
 
-void DatabaseTreeWidget::loadTables(QTreeWidgetItem* databaseItem, Connection* connection, const QString& database) {
-    // 对于Redis，这里加载键列表
-    if (connection->getType() == ConnectionType::Redis) {
-        // 简化实现：直接显示占位符，实际键通过查询获取
-        QTreeWidgetItem* keysItem = new QTreeWidgetItem(databaseItem);
-        keysItem->setText(0, "Keys (请使用查询获取)");
-        keysItem->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
-        keysItem->setData(0, Qt::UserRole, "keys_placeholder");
-        keysItem->setData(0, Qt::UserRole + 1, m_itemConnectionMap[databaseItem->parent()]);
+void DatabaseTreeWidget::loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
+    // 对于Redis，加载键列表
+    if (connection->getType() == Connx::ConnectionType::Redis) {
+        loadRedisKeys(databaseItem, connection, database);
     } else {
         // 其他数据库类型加载表列表
         QStringList tables = connection->getTables(database);
@@ -580,12 +584,248 @@ void DatabaseTreeWidget::onCustomContextMenuRequested(const QPoint& pos) {
     m_connectAction->setVisible(itemType == "connection");
     m_disconnectAction->setVisible(itemType == "connection");
     m_deleteAction->setVisible(itemType == "connection");
+    m_refreshAction->setVisible(itemType == "connection");
+    m_refreshDatabaseAction->setVisible(itemType == "database");
+    m_flushDatabaseAction->setVisible(itemType == "database");
+    m_deleteKeyAction->setVisible(itemType == "key");
     m_newQueryAction->setVisible(itemType == "connection" || itemType == "database");
+    
+    // 连接信号槽
+    QObject::disconnect(m_refreshDatabaseAction, nullptr, nullptr, nullptr);
+    QObject::disconnect(m_flushDatabaseAction, nullptr, nullptr, nullptr);
+    QObject::disconnect(m_deleteKeyAction, nullptr, nullptr, nullptr);
+    
+    if (itemType == "database") {
+        QObject::connect(m_refreshDatabaseAction, &QAction::triggered, [this, item]() {
+            refreshDatabase(item);
+        });
+        QObject::connect(m_flushDatabaseAction, &QAction::triggered, [this, item]() {
+            flushDatabase(item);
+        });
+    } else if (itemType == "key") {
+        QObject::connect(m_deleteKeyAction, &QAction::triggered, [this, item]() {
+            deleteKey(item);
+        });
+    }
     
     m_contextMenu->exec(mapToGlobal(pos));
 }
 
-void DatabaseTreeWidget::setConnection(Connection* connection) {
+void DatabaseTreeWidget::loadRedisKeys(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
+    if (!connection || !connection->isConnected()) {
+        return;
+    }
+    
+    try {
+        // 从数据库显示名称中提取数据库编号 (如 "DB0" -> "0")
+        QString dbNumber = database;
+        if (database.startsWith("DB")) {
+            dbNumber = database.mid(2); // 去掉前面的 "DB"
+        }
+        
+        // 切换到指定的数据库
+        QVariantList selectParams;
+        selectParams.append(dbNumber);
+        connection->execute("SELECT", selectParams);
+        
+        // 使用SCAN命令获取所有键，避免KEYS *可能造成的阻塞
+        QStringList allKeys;
+        QString cursor = "0";
+        
+        do {
+            QVariantList scanParams;
+            scanParams.append(cursor);
+            scanParams.append("MATCH");
+            scanParams.append("*");
+            scanParams.append("COUNT");
+            scanParams.append(100); // 每次扫描100个键
+            
+            Connx::QueryResult result = connection->execute("SCAN", scanParams);
+            if (result.success && result.data.size() >= 2) {
+                cursor = result.data[0].toString();
+                QVariantList keys = result.data[1].toList();
+                
+                for (const QVariant& key : keys) {
+                    allKeys.append(key.toString());
+                }
+            } else {
+                break;
+            }
+        } while (cursor != "0" && allKeys.size() < 1000); // 限制最多显示1000个键
+        
+        // 创建键节点
+        for (const QString& key : allKeys) {
+            QTreeWidgetItem* keyItem = new QTreeWidgetItem(databaseItem);
+            keyItem->setText(0, key);
+            keyItem->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
+            keyItem->setData(0, Qt::UserRole, "key");
+            keyItem->setData(0, Qt::UserRole + 1, m_itemConnectionMap[databaseItem->parent()]);
+            keyItem->setData(0, Qt::UserRole + 2, database);
+            keyItem->setData(0, Qt::UserRole + 3, key);
+        }
+        
+        // 如果键太多，添加提示
+        if (allKeys.size() >= 1000) {
+            QTreeWidgetItem* moreItem = new QTreeWidgetItem(databaseItem);
+            moreItem->setText(0, "... (更多键，请使用查询)");
+            moreItem->setIcon(0, style()->standardIcon(QStyle::SP_MessageBoxInformation));
+            moreItem->setData(0, Qt::UserRole, "more_keys");
+        }
+        
+    } catch (...) {
+        // 如果出错，显示错误提示
+        QTreeWidgetItem* errorItem = new QTreeWidgetItem(databaseItem);
+        errorItem->setText(0, "加载键失败");
+        errorItem->setIcon(0, style()->standardIcon(QStyle::SP_MessageBoxCritical));
+        errorItem->setData(0, Qt::UserRole, "error");
+    }
+}
+
+void DatabaseTreeWidget::refreshDatabase(QTreeWidgetItem* databaseItem) {
+    if (!databaseItem) return;
+    
+    // 获取连接信息
+    QTreeWidgetItem* connectionItem = databaseItem->parent();
+    if (!connectionItem) return;
+    
+    QString connectionName = m_itemConnectionMap.value(connectionItem, "");
+    if (connectionName.isEmpty() || !m_connections.contains(connectionName)) return;
+    
+    Connx::Connection* connection = m_connections[connectionName];
+    if (!connection || !connection->isConnected()) return;
+    
+    QString database = databaseItem->text(0);
+    
+    // 清除所有子项
+    qDeleteAll(databaseItem->takeChildren());
+    
+    // 重新加载
+    if (connection->getType() == Connx::ConnectionType::Redis) {
+        loadRedisKeys(databaseItem, connection, database);
+    } else {
+        loadTables(databaseItem, connection, database);
+    }
+    
+    // 展开节点以显示新内容
+    databaseItem->setExpanded(true);
+}
+
+void DatabaseTreeWidget::flushDatabase(QTreeWidgetItem* databaseItem) {
+    if (!databaseItem) return;
+    
+    // 获取连接信息
+    QTreeWidgetItem* connectionItem = databaseItem->parent();
+    if (!connectionItem) return;
+    
+    QString connectionName = m_itemConnectionMap.value(connectionItem, "");
+    if (connectionName.isEmpty() || !m_connections.contains(connectionName)) return;
+    
+    Connx::Connection* connection = m_connections[connectionName];
+    if (!connection || !connection->isConnected()) return;
+    
+    QString database = databaseItem->text(0);
+    
+    // 确认对话框
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setWindowTitle("确认清空数据库");
+    msgBox.setText(QString("您确定要清空数据库 %1 吗？").arg(database));
+    msgBox.setInformativeText("此操作将删除该数据库中的所有键，且不可恢复！");
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+    
+    if (msgBox.exec() != QMessageBox::Yes) {
+        return;
+    }
+    
+    try {
+        // 从数据库显示名称中提取数据库编号
+        QString dbNumber = database;
+        if (database.startsWith("DB")) {
+            dbNumber = database.mid(2);
+        }
+        
+        // 切换到指定的数据库
+        QVariantList selectParams;
+        selectParams.append(dbNumber);
+        connection->execute("SELECT", selectParams);
+        
+        // 执行FLUSHDB命令清空当前数据库
+        Connx::QueryResult result = connection->execute("FLUSHDB");
+        if (result.success) {
+            // 清空成功，刷新显示
+            qDeleteAll(databaseItem->takeChildren());
+            QMessageBox::information(this, "成功", QString("数据库 %1 已清空").arg(database));
+        } else {
+            QMessageBox::critical(this, "错误", QString("清空数据库失败：%1").arg(result.errorMessage));
+        }
+        
+    } catch (...) {
+        QMessageBox::critical(this, "错误", "清空数据库时发生未知错误");
+    }
+}
+
+void DatabaseTreeWidget::deleteKey(QTreeWidgetItem* keyItem) {
+    if (!keyItem) return;
+    
+    // 获取键信息
+    QString keyName = keyItem->data(0, Qt::UserRole + 3).toString();
+    QString database = keyItem->data(0, Qt::UserRole + 2).toString();
+    QString connectionName = keyItem->data(0, Qt::UserRole + 1).toString();
+    
+    if (keyName.isEmpty() || connectionName.isEmpty() || !m_connections.contains(connectionName)) return;
+    
+    Connx::Connection* connection = m_connections[connectionName];
+    if (!connection || !connection->isConnected()) return;
+    
+    // 确认对话框
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setWindowTitle("确认删除键");
+    msgBox.setText(QString("您确定要删除键 '%1' 吗？").arg(keyName));
+    msgBox.setInformativeText("此操作不可恢复！");
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+    
+    if (msgBox.exec() != QMessageBox::Yes) {
+        return;
+    }
+    
+    try {
+        // 从数据库显示名称中提取数据库编号
+        QString dbNumber = database;
+        if (database.startsWith("DB")) {
+            dbNumber = database.mid(2);
+        }
+        
+        // 切换到指定的数据库
+        QVariantList selectParams;
+        selectParams.append(dbNumber);
+        connection->execute("SELECT", selectParams);
+        
+        // 执行DEL命令删除键
+        QVariantList delParams;
+        delParams.append(keyName);
+        Connx::QueryResult result = connection->execute("DEL", delParams);
+        
+        if (result.success) {
+            // 删除成功，从树中移除该项
+            QTreeWidgetItem* parent = keyItem->parent();
+            if (parent) {
+                parent->removeChild(keyItem);
+                delete keyItem;
+            }
+            QMessageBox::information(this, "成功", QString("键 '%1' 已删除").arg(keyName));
+        } else {
+            QMessageBox::critical(this, "错误", QString("删除键失败：%1").arg(result.errorMessage));
+        }
+        
+    } catch (...) {
+        QMessageBox::critical(this, "错误", "删除键时发生未知错误");
+    }
+}
+
+void DatabaseTreeWidget::setConnection(Connx::Connection* connection) {
     // 简化实现
     Q_UNUSED(connection)
 }
@@ -599,7 +839,7 @@ void DatabaseTreeWidget::refreshConnection(const QString& connectionName) {
             qDeleteAll(item->takeChildren());
             
             if (m_connections.contains(connectionName)) {
-                Connection* conn = m_connections[connectionName];
+                Connx::Connection* conn = m_connections[connectionName];
                 if (conn->isConnected()) {
                     loadDatabases(item, conn);
                 }
@@ -623,7 +863,7 @@ void DatabaseTreeWidget::removeConnection(const QString& name) {
 }
 
 // QueryTab 实现
-QueryTab::QueryTab(Connection* connection, QWidget* parent)
+QueryTab::QueryTab(Connx::Connection* connection, QWidget* parent)
     : QWidget(parent), m_connection(connection) {
     setupUI();
 }
@@ -732,7 +972,7 @@ void QueryTab::onExecuteClicked() {
         params.append(part);
     }
     
-    QueryResult result = m_connection->execute(command, params);
+    Connx::QueryResult result = m_connection->execute(command, params);
     updateResults(result);
     
     emit queryExecuted(result);
@@ -761,7 +1001,7 @@ void QueryTab::onFormatClicked() {
     }
 }
 
-void QueryTab::updateResults(const QueryResult& result) {
+void QueryTab::updateResults(const Connx::QueryResult& result) {
     m_timeLabel->setText(QString("执行时间: %1ms").arg(result.executionTime));
     
     if (result.success) {
@@ -821,8 +1061,8 @@ void QueryTab::updateResults(const QueryResult& result) {
 DatabaseTool::DatabaseTool(QWidget* parent)
     : QWidget(parent), DynamicObjectBase(), m_currentItem(nullptr) {
     
-    m_settings = new QSettings(QSettings::IniFormat, QSettings::UserScope, 
-                              "LeleTools", "DatabaseTool", this);
+    // 初始化连接配置表管理器
+    m_configManager = new SqliteWrapper::ConnectionConfigTableManager(this);
     
     setupUI();
     loadConnections();
@@ -971,7 +1211,7 @@ void DatabaseTool::setupStatusBar() {
 void DatabaseTool::onNewConnection() {
     ConnectionDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
-        ConnectionConfig config = dialog.getConnectionConfig();
+        Connx::ConnectionConfig config = dialog.getConnectionConfig();
         
         if (m_connectionConfigs.contains(config.name)) {
             QMessageBox::warning(this, "连接已存在", "已存在同名连接，请使用不同的名称");
@@ -979,22 +1219,42 @@ void DatabaseTool::onNewConnection() {
         }
         
         m_connectionConfigs[config.name] = config;
-        saveConnections();
         
-        // 根据配置确定连接类型
-        ConnectionType type = ConnectionType::Redis; // 目前只支持Redis
-        Connection* connection = ConnectionFactory::createConnection(type, config);
+        // 保存到SQLite数据库
+        SqliteWrapper::ConnectionConfigEntity configEntity;
+        configEntity.name = config.name;
+        configEntity.type = "Redis"; // 目前只支持Redis
+        configEntity.host = config.host;
+        configEntity.port = config.port;
+        configEntity.username = config.username;
+        configEntity.password = config.password;
+        configEntity.databaseName = config.database;
+        configEntity.timeout = config.timeout;
+        configEntity.useSSL = config.useSSL;
+        configEntity.extraParams = config.extraParams;
+        configEntity.createdAt = QDateTime::currentDateTime();
+        configEntity.updatedAt = QDateTime::currentDateTime();
+        
+        bool saved = m_configManager->saveConfig(configEntity);
+        if (!saved) {
+            QMessageBox::warning(this, "保存失败", "无法保存连接配置到数据库");
+            return;
+        }
+        
+        // 创建连接对象
+        Connx::ConnectionType type = Connx::ConnectionType::Redis; // 目前只支持Redis
+        Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
         if (connection) {
             m_connections[config.name] = connection;
             m_treeWidget->addConnection(config.name, connection);
             
-            QObject::connect(connection, &Connection::stateChanged, [this, config](ConnectionState state) {
+            QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](Connx::ConnectionState state) {
                 onConnectionStateChanged(config.name, state);
             });
         }
         
         updateConnectionStatus();
-        m_statusLabel->setText("连接已添加: " + config.name);
+        m_statusLabel->setText("连接已保存: " + config.name);
     }
 }
 
@@ -1027,7 +1287,7 @@ void DatabaseTool::onNewQuery() {
 }
 
 QueryTab* DatabaseTool::createQueryTab(const QString& connectionName) {
-    Connection* connection = m_connections.value(connectionName, nullptr);
+    Connx::Connection* connection = m_connections.value(connectionName, nullptr);
     
     QueryTab* tab = new QueryTab(connection);
     
@@ -1048,11 +1308,43 @@ void DatabaseTool::onCloseTab(int index) {
 }
 
 void DatabaseTool::loadConnections() {
-    // 简化实现，后续可以从配置文件加载
+    // 从SQLite加载所有连接配置
+    QList<SqliteWrapper::ConnectionConfigEntity> configs = m_configManager->getAllConfigs();
+    
+    for (const SqliteWrapper::ConnectionConfigEntity& configEntity : configs) {
+        Connx::ConnectionConfig config;
+        config.name = configEntity.name;
+        config.host = configEntity.host;
+        config.port = configEntity.port;
+        config.username = configEntity.username;
+        config.password = configEntity.password;
+        config.database = configEntity.databaseName;
+        config.timeout = configEntity.timeout;
+        config.useSSL = configEntity.useSSL;
+        config.extraParams = configEntity.extraParams;
+        
+        m_connectionConfigs[config.name] = config;
+        
+        // 创建连接对象
+        Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(configEntity.type);
+        Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
+        if (connection) {
+            m_connections[config.name] = connection;
+            m_treeWidget->addConnection(config.name, connection);
+            
+            QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](Connx::ConnectionState state) {
+                onConnectionStateChanged(config.name, state);
+            });
+        }
+    }
+    
+    updateConnectionStatus();
+    m_statusLabel->setText(QString("已加载 %1 个连接配置").arg(configs.size()));
 }
 
 void DatabaseTool::saveConnections() {
-    // 简化实现，后续可以保存到配置文件
+    // 连接配置已经实时保存到SQLite，这里不需要额外操作
+    qDebug() << "连接配置已持久化到SQLite数据库";
 }
 
 void DatabaseTool::updateConnectionStatus() {
@@ -1069,7 +1361,7 @@ void DatabaseTool::onConnectToDatabase() {
     QString connectionName = current->text(0);
     if (!m_connections.contains(connectionName)) return;
     
-    Connection* connection = m_connections[connectionName];
+    Connx::Connection* connection = m_connections[connectionName];
     if (connection->isConnected()) {
         m_statusLabel->setText("已连接到: " + connectionName);
         return;
@@ -1106,18 +1398,139 @@ void DatabaseTool::onKeyDoubleClicked(const QString& connectionName, const QStri
     }
 }
 
-void DatabaseTool::onConnectionStateChanged(const QString& name, ConnectionState state) {
+void DatabaseTool::onConnectionStateChanged(const QString& name, Connx::ConnectionState state) {
     Q_UNUSED(name)
     Q_UNUSED(state)
     updateConnectionStatus();
 }
 
-// 其他槽函数的简化实现
-void DatabaseTool::onEditConnection() {}
-void DatabaseTool::onDeleteConnection() {}
-void DatabaseTool::onDisconnectFromDatabase() {}
-void DatabaseTool::onRefreshConnections() {}
-void DatabaseTool::onTabChanged(int index) { Q_UNUSED(index) }
+// 其他槽函数实现
+void DatabaseTool::onEditConnection() {
+    QTreeWidgetItem* current = m_treeWidget->currentItem();
+    if (!current) return;
+    
+    QString itemType = current->data(0, Qt::UserRole).toString();
+    if (itemType != "connection") return;
+    
+    QString connectionName = current->text(0);
+    if (!m_connectionConfigs.contains(connectionName)) return;
+    
+    Connx::ConnectionConfig config = m_connectionConfigs[connectionName];
+    
+    ConnectionDialog dialog(config, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        Connx::ConnectionConfig newConfig = dialog.getConnectionConfig();
+        
+        // 更新配置
+        m_connectionConfigs[connectionName] = newConfig;
+        
+        // 保存到SQLite
+        QVariantMap configMap;
+        configMap["name"] = newConfig.name;
+        configMap["type"] = "Redis";
+        configMap["host"] = newConfig.host;
+        configMap["port"] = newConfig.port;
+        configMap["username"] = newConfig.username;
+        configMap["password"] = newConfig.password;
+        configMap["database"] = newConfig.database;
+        configMap["timeout"] = newConfig.timeout;
+        configMap["useSSL"] = newConfig.useSSL;
+        configMap["extraParams"] = QVariant::fromValue(newConfig.extraParams);
+        
+        // 将configMap转换为ConnectionConfigEntity
+        SqliteWrapper::ConnectionConfigEntity entity;
+        entity.name = connectionName;
+        entity.type = configMap["type"].toString();
+        entity.host = configMap["host"].toString();
+        entity.port = configMap["port"].toInt();
+        entity.username = configMap["username"].toString();
+        entity.password = configMap["password"].toString();
+        entity.databaseName = configMap["database"].toString();
+        entity.timeout = configMap["timeout"].toInt();
+        entity.useSSL = configMap["useSSL"].toBool();
+        entity.extraParams = configMap["extraParams"].toMap();
+        
+        m_configManager->updateConfig(connectionName, entity);
+        m_statusLabel->setText("连接已更新: " + connectionName);
+    }
+}
+
+void DatabaseTool::onDeleteConnection() {
+    QTreeWidgetItem* current = m_treeWidget->currentItem();
+    if (!current) return;
+    
+    QString itemType = current->data(0, Qt::UserRole).toString();
+    if (itemType != "connection") return;
+    
+    QString connectionName = current->text(0);
+    
+    int ret = QMessageBox::question(this, "删除连接", 
+                                   QString("确定要删除连接 '%1' 吗？").arg(connectionName),
+                                   QMessageBox::Yes | QMessageBox::No);
+    
+    if (ret == QMessageBox::Yes) {
+        // 从SQLite删除
+        if (m_configManager->deleteConfigByName(connectionName)) {
+            // 断开并删除连接
+            if (m_connections.contains(connectionName)) {
+                m_connections[connectionName]->disconnectFromServer();
+                m_connections[connectionName]->deleteLater();
+                m_connections.remove(connectionName);
+            }
+            
+            m_connectionConfigs.remove(connectionName);
+            m_treeWidget->removeConnection(connectionName);
+            
+            updateConnectionStatus();
+            m_statusLabel->setText("连接已删除: " + connectionName);
+        } else {
+            QMessageBox::warning(this, "删除失败", "无法从数据库删除连接配置");
+        }
+    }
+}
+
+void DatabaseTool::onDisconnectFromDatabase() {
+    QTreeWidgetItem* current = m_treeWidget->currentItem();
+    if (!current) return;
+    
+    QString itemType = current->data(0, Qt::UserRole).toString();
+    if (itemType != "connection") return;
+    
+    QString connectionName = current->text(0);
+    if (!m_connections.contains(connectionName)) return;
+    
+    Connx::Connection* connection = m_connections[connectionName];
+    if (connection->isConnected()) {
+        connection->disconnectFromServer();
+        m_statusLabel->setText("已断开连接: " + connectionName);
+        m_treeWidget->refreshConnection(connectionName);
+    }
+}
+
+void DatabaseTool::onRefreshConnections() {
+    // 重新加载所有连接配置
+    m_connectionConfigs.clear();
+    
+    // 清理现有连接
+    for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+        it.value()->disconnectFromServer();
+        it.value()->deleteLater();
+    }
+    m_connections.clear();
+    
+    // 清空树
+    m_treeWidget->clear();
+    
+    // 重新加载
+    loadConnections();
+    
+    m_statusLabel->setText("连接列表已刷新");
+}
+
+void DatabaseTool::onTabChanged(int index) { 
+    Q_UNUSED(index)
+    // 可以在这里添加标签页切换的逻辑
+}
 
 QueryTab* DatabaseTool::getCurrentQueryTab() {
     return qobject_cast<QueryTab*>(m_tabWidget->currentWidget());
