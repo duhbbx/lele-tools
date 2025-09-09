@@ -35,10 +35,11 @@ permissions:
 # 全局环境变量
 # 统一管理版本号，便于维护和升级
 env:
-  QT_VERSION: '6.9.1'          # Qt框架版本
-  CMAKE_VERSION: '3.28'        # CMake构建工具版本
-  MSVC_VERSION: '2022'         # Visual Studio编译器版本
-  OPENCV_VERSION: '4.10.0'     # OpenCV计算机视觉库版本（可选）
+  QT_VERSION_WINDOWS: '6.9.1'   # Windows平台Qt版本
+  QT_VERSION_LINUX: '6.7.2'     # Linux平台Qt版本（更稳定）
+  CMAKE_VERSION: '3.28'          # CMake构建工具版本
+  MSVC_VERSION: '2022'           # Visual Studio编译器版本
+  OPENCV_VERSION: '4.10.0'       # OpenCV计算机视觉库版本（可选）
 
 jobs:
   # Windows构建任务
@@ -57,7 +58,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v3    # 使用第三方Action安装Qt
       with:
-        version: ${{ env.QT_VERSION }}       # Qt版本（6.9.1）
+        version: ${{ env.QT_VERSION_WINDOWS }} # Windows Qt版本（6.9.1）
         host: windows                        # 主机系统
         target: desktop                      # 目标平台（桌面应用）
         arch: win64_msvc2022_64             # 架构（64位Windows + MSVC2022）
@@ -818,16 +819,16 @@ jobs:
     # 在安装前检查架构和模块的可用性，避免安装失败
     - name: Check Qt availability (Linux)
       run: |
-        echo "检查Qt ${{ env.QT_VERSION }} 在Linux平台的可用性..."
+        echo "检查Qt ${{ env.QT_VERSION_LINUX }} 在Linux平台的可用性..."
         pip install aqtinstall
         
         # 检查可用架构
         echo "=== 可用架构 ==="
-        python -m aqt list-qt linux desktop --arch ${{ env.QT_VERSION }} || echo "无法获取架构列表"
+        python -m aqt list-qt linux desktop --arch ${{ env.QT_VERSION_LINUX }} || echo "无法获取架构列表"
         
         # 检查可用模块
         echo "=== 可用模块 ==="
-        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION }} gcc_64 || echo "无法获取模块列表"
+        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION_LINUX }} gcc_64 || echo "无法获取模块列表"
         
     # 步骤3: 安装Qt框架（Linux版本）
     # 使用渐进式安装策略确保Qt能够成功安装
@@ -835,7 +836,7 @@ jobs:
       id: qt-install-base
       uses: jurplel/install-qt-action@v3
       with:
-        version: ${{ env.QT_VERSION }}     # Qt版本 6.9.1
+        version: ${{ env.QT_VERSION_LINUX }} # Linux Qt版本 6.7.2
         host: linux                        # Linux主机
         target: desktop                    # 桌面应用
         arch: gcc_64                       # GCC 64位架构
@@ -849,7 +850,7 @@ jobs:
       run: |
         echo "尝试安装Qt Multimedia模块..."
         pip install aqtinstall
-        python -m aqt install-qt linux desktop ${{ env.QT_VERSION }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
+        python -m aqt install-qt linux desktop ${{ env.QT_VERSION_LINUX }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
         
     - name: Cache redis-plus-plus
       uses: actions/cache@v4
