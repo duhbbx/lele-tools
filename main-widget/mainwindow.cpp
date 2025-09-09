@@ -1209,13 +1209,16 @@ void MainWindow::changeLanguage(const QString& language) {
 }
 
 void MainWindow::setupScreenCapture() {
-    qDebug() << "呵呵";
+    qDebug() << "设置截图功能...";
+    
+#ifdef WITH_SCREEN_CAPTURE
     // 创建截图API实例
     m_screenCapture = new ScreenCaptureAPI(this);
 
     // 连接截图完成信号
     connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted,
             this, &MainWindow::onCaptureCompleted);
+#endif
 
     // 注册系统级全局快捷键F1
 #ifdef Q_OS_WIN
@@ -1243,6 +1246,7 @@ void MainWindow::setupScreenCapture() {
 void MainWindow::startScreenCapture() {
     qDebug() << "F1快捷键被触发，开始截图...";
 
+#ifdef WITH_SCREEN_CAPTURE
     // 隐藏主窗口，避免影响截图
     this->hide();
 
@@ -1268,9 +1272,13 @@ void MainWindow::startScreenCapture() {
         // 如果截图失败，重新显示主窗口
         this->show();
     }
-
+#else
+    qDebug() << "截图功能在此平台不可用";
+    showScreenshotTooltip("截图功能仅在Windows平台可用");
+#endif
 }
 
+#ifdef WITH_SCREEN_CAPTURE
 void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image) {
     qDebug() << "截图完成，结果：" << static_cast<int>(result);
 
@@ -1328,6 +1336,7 @@ void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, cons
         break;
     }
 }
+#endif
 
 void MainWindow::showScreenshotTooltip(const QString& message) {
     // 创建截图提示框

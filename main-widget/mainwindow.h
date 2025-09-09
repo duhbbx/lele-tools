@@ -29,7 +29,10 @@
 #include <QActionGroup>
 #include <QShortcut>
 #include "../common/global-styles.h"
+
+#ifdef WITH_SCREEN_CAPTURE
 #include "../common/thirdparty/screen-capture/ScreenCaptureAPI.h"
+#endif
 
 #ifdef Q_OS_WIN
 #ifndef WIN32_LEAN_AND_MEAN
@@ -118,7 +121,9 @@ private:
     QActionGroup *m_languageActionGroup;  // 语言选项组
     
     // 截图相关
+#ifdef WITH_SCREEN_CAPTURE
     ScreenCaptureAPI *m_screenCapture;    // 截图API实例
+#endif
     QShortcut *m_screenshotShortcut;      // F1截图应用级快捷键
     
 #ifdef Q_OS_WIN
@@ -145,7 +150,9 @@ private:
     void switchToTab(int index);          // 切换到指定标签页
     void loadLanguage(const QString &language); // 加载语言
     void setupScreenCapture();            // 设置截图功能
+#ifdef WITH_SCREEN_CAPTURE
     void onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image); // 截图完成处理
+#endif
     void showScreenshotTooltip(const QString& message); // 显示截图提示
 
 public:
