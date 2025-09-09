@@ -1,49 +1,58 @@
+# 手动构建工作流
+# 功能：提供可自定义参数的按需构建，适用于测试和特殊需求
 name: Manual Build
 
+# 触发条件：仅支持手动触发
+# 提供丰富的自定义选项，便于开发和测试
 on:
-  workflow_dispatch:
+  workflow_dispatch:              # 仅手动触发
     inputs:
       version:
-        description: 'Version number (e.g., 1.2.0)'
+        description: 'Version number (e.g., 1.2.0)'    # 版本号输入
         required: true
         default: '1.0.0'
       build_type:
-        description: 'Build type'
+        description: 'Build type'                       # 构建类型选择
         required: true
         default: 'Release'
         type: choice
         options:
-        - Release
-        - Debug
+        - Release    # 发布版本（优化编译）
+        - Debug      # 调试版本（包含调试信息）
       create_installer:
-        description: 'Create installer package'
+        description: 'Create installer package'         # 是否创建安装包
         required: true
         default: true
         type: boolean
       upload_artifacts:
-        description: 'Upload build artifacts'
+        description: 'Upload build artifacts'           # 是否上传构建产物
         required: true
         default: true
         type: boolean
 
 jobs:
+  # 手动构建任务
+  # 根据用户输入的参数执行自定义构建
   manual-build:
-    runs-on: windows-latest
+    runs-on: windows-latest    # 使用Windows最新版本虚拟机
     
     steps:
+    # 步骤1: 检出代码仓库
     - name: Checkout repository
       uses: actions/checkout@v4
       
+    # 步骤2: 安装Qt框架
+    # 配置与主构建流水线相同，确保环境一致性
     - name: Setup Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.9.1'
-        host: windows
-        target: desktop
-        arch: win64_msvc2022_64
-        tools: 'tools_ifw'
-        modules: 'qtmultimedia qtmultimediawidgets'
-        cache: true
+        version: '6.9.1'                # 固定Qt版本，确保构建稳定性
+        host: windows                    # Windows主机
+        target: desktop                  # 桌面应用目标
+        arch: win64_msvc2022_64         # 64位架构 + MSVC2022编译器
+        tools: 'tools_ifw'              # Qt安装框架（创建安装包必需）
+        modules: 'qtmultimedia'          # 多媒体模块（摄像头功能）
+        cache: true                      # 启用缓存提升构建速度
         
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v2
