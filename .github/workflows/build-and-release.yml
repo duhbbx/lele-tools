@@ -828,7 +828,7 @@ jobs:
         
         # 检查可用模块
         echo "=== 可用模块 ==="
-        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION_LINUX }} gcc_64 || echo "无法获取模块列表"
+        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION_LINUX }} clang_64 || echo "无法获取模块列表"
         
     # 步骤3: 安装Qt框架（Linux版本）
     # 使用渐进式安装策略确保Qt能够成功安装
@@ -839,7 +839,7 @@ jobs:
         version: ${{ env.QT_VERSION_LINUX }} # Linux Qt版本 6.7.2
         host: linux                        # Linux主机
         target: desktop                    # 桌面应用
-        arch: gcc_64                       # GCC 64位架构
+        arch: clang_64                       # GCC 64位架构
         cache: true                        # 启用缓存
         # 不安装额外模块，先确保基础Qt可用
         
@@ -850,7 +850,7 @@ jobs:
       run: |
         echo "尝试安装Qt Multimedia模块..."
         pip install aqtinstall
-        python -m aqt install-qt linux desktop ${{ env.QT_VERSION_LINUX }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
+        python -m aqt install-qt linux desktop ${{ env.QT_VERSION_LINUX }} clang_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
         
     - name: Cache redis-plus-plus
       uses: actions/cache@v4
