@@ -812,8 +812,7 @@ jobs:
           libxcb-render-util0-dev \
           libxcb-util-dev \
           libxcb-xkb-dev \
-          libxkbcommon-x11-dev \
-          libhiredis-dev
+          libxkbcommon-x11-dev
           
     # 步骤2: 检查Linux平台Qt可用性
     # 在安装前检查架构和模块的可用性，避免安装失败
@@ -856,18 +855,34 @@ jobs:
       uses: actions/cache@v4
       id: redis-cache
       with:
-        path: /usr/local/lib/libredis++*
-        key: ${{ runner.os }}-redis-plus-plus-v1
+        path: |
+          /usr/local/lib/libredis++*
+          /usr/local/lib/libhiredis*
+          /usr/local/include/hiredis
+          /usr/local/include/sw
+        key: ${{ runner.os }}-hiredis-redis-plus-plus-v2
         
     - name: Setup redis-plus-plus
       if: steps.redis-cache.outputs.cache-hit != 'true'
       run: |
-        echo "Installing redis-plus-plus from source..."
+        echo "Installing hiredis and redis-plus-plus from source..."
         
         # Install dependencies
         sudo apt-get install -y git cmake build-essential
         
-        # Clone and build redis-plus-plus
+        # First install hiredis with CMake support
+        echo "Installing hiredis..."
+        cd /tmp
+        git clone https://github.com/redis/hiredis.git
+        cd hiredis
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SSL=OFF
+        make -j$(nproc)
+        sudo make install
+        
+        # Then install redis-plus-plus
+        echo "Installing redis-plus-plus..."
         cd /tmp
         git clone https://github.com/sewenew/redis-plus-plus.git
         cd redis-plus-plus
@@ -877,7 +892,7 @@ jobs:
         make -j$(nproc)
         sudo make install
         
-        echo "redis-plus-plus installed successfully!"
+        echo "hiredis and redis-plus-plus installed successfully!"
         
     - name: Update library cache
       run: |
