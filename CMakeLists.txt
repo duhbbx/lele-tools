@@ -118,7 +118,18 @@ endif()
 
 # 第三方的代码
 add_subdirectory(common/thirdparty/yaml-cpp)
-add_subdirectory(common/thirdparty/screen-capture)
+
+# 截图功能仅在Windows平台可用
+if(WIN32)
+    add_subdirectory(common/thirdparty/screen-capture)
+    set(HAVE_SCREEN_CAPTURE TRUE)
+    add_definitions(-DWITH_SCREEN_CAPTURE)
+else()
+    message(STATUS "Screen capture disabled on non-Windows platforms")
+    set(HAVE_SCREEN_CAPTURE FALSE)
+    # 创建一个空的ScreenCaptureLib目标以避免链接错误
+    add_library(ScreenCaptureLib INTERFACE)
+endif()
 
 
 

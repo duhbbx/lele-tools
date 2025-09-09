@@ -6,8 +6,10 @@
 #include <QDebug>
 #include <QMessageBox>
 
+#ifdef WITH_SCREEN_CAPTURE
 // 包含ScreenCapture库的头文件
 #include "../../common/thirdparty/screen-capture/App/App.h"
+#endif
 
 REGISTER_DYNAMICOBJECT(ScreenCapture);
 
@@ -16,6 +18,7 @@ ScreenCapture::ScreenCapture(QWidget *parent)
 {
     setupUI();
     
+#ifdef WITH_SCREEN_CAPTURE
     // 读取保存的设置
     QSettings settings;
     lastSavePath = settings.value("ScreenCapture/savePath", 
@@ -25,6 +28,20 @@ ScreenCapture::ScreenCapture(QWidget *parent)
     saveToClipboardCheck->setChecked(settings.value("ScreenCapture/saveToClipboard", true).toBool());
     compressCheck->setChecked(settings.value("ScreenCapture/compress", false).toBool());
     languageCombo->setCurrentText(settings.value("ScreenCapture/language", "中文").toString());
+#else
+    // 在非Windows平台显示提示信息
+    if (statusText) {
+        statusText->append("截图功能仅在Windows平台可用");
+        statusText->append("当前平台不支持高级截图功能");
+    }
+    
+    // 禁用相关按钮
+    if (quickBtn) quickBtn->setEnabled(false);
+    if (customBtn) customBtn->setEnabled(false);
+    if (fullScreenBtn) fullScreenBtn->setEnabled(false);
+    if (longScreenBtn) longScreenBtn->setEnabled(false);
+    if (areaScreenBtn) areaScreenBtn->setEnabled(false);
+#endif
 }
 
 ScreenCapture::~ScreenCapture()
@@ -247,6 +264,7 @@ void ScreenCapture::setupStatusArea()
 
 void ScreenCapture::executeScreenCapture(const QString &mode)
 {
+#ifdef WITH_SCREEN_CAPTURE
     statusLabel->setText("🚀 正在启动截图工具...");
     statusLabel->setStyleSheet("color: #007bff; font-weight: bold;");
     statusText->append("🚀 使用集成的ScreenCapture库进行截图");
@@ -264,11 +282,18 @@ void ScreenCapture::executeScreenCapture(const QString &mode)
         statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
         statusText->append("❌ 截图操作失败");
     }
+#else
+    statusLabel->setText("❌ 截图功能不可用");
+    statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
+    statusText->append("❌ 截图功能仅在Windows平台可用");
+    statusText->append("📝 请求的模式: " + mode);
+#endif
 }
 
 // 静态方法，供F1快捷键调用
 void ScreenCapture::quickScreenshot()
 {
+#ifdef WITH_SCREEN_CAPTURE
     // 直接调用ScreenCapture库进行快捷截图
     // 这里需要根据实际的库API实现
     try {
@@ -277,6 +302,9 @@ void ScreenCapture::quickScreenshot()
     } catch (...) {
         qDebug() << "Quick screenshot failed";
     }
+#else
+    qDebug() << "Screenshot not available on this platform";
+#endif
 }
 
 // 槽函数实现
