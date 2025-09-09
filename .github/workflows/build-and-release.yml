@@ -814,15 +814,42 @@ jobs:
           libxkbcommon-x11-dev \
           libhiredis-dev
           
-    - name: Setup Qt
+    # 步骤2: 检查Linux平台Qt可用性
+    # 在安装前检查架构和模块的可用性，避免安装失败
+    - name: Check Qt availability (Linux)
+      run: |
+        echo "检查Qt ${{ env.QT_VERSION }} 在Linux平台的可用性..."
+        pip install aqtinstall
+        
+        # 检查可用架构
+        echo "=== 可用架构 ==="
+        python -m aqt list-qt linux desktop --arch ${{ env.QT_VERSION }} || echo "无法获取架构列表"
+        
+        # 检查可用模块
+        echo "=== 可用模块 ==="
+        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION }} gcc_64 || echo "无法获取模块列表"
+        
+    # 步骤3: 安装Qt框架（Linux版本）
+    # 使用渐进式安装策略确保Qt能够成功安装
+    - name: Setup Qt (Base)
+      id: qt-install-base
       uses: jurplel/install-qt-action@v3
       with:
-        version: ${{ env.QT_VERSION }}
-        host: linux
-        target: desktop
-        arch: gcc_64
-        modules: 'qtmultimedia qtmultimediawidgets'
-        cache: true
+        version: ${{ env.QT_VERSION }}     # Qt版本 6.9.1
+        host: linux                        # Linux主机
+        target: desktop                    # 桌面应用
+        arch: gcc_64                       # GCC 64位架构
+        cache: true                        # 启用缓存
+        # 不安装额外模块，先确保基础Qt可用
+        
+    # 尝试安装多媒体模块（可选）
+    - name: Setup Qt Multimedia (Optional)
+      id: qt-multimedia
+      continue-on-error: true              # 允许失败，不影响整体构建
+      run: |
+        echo "尝试安装Qt Multimedia模块..."
+        pip install aqtinstall
+        python -m aqt install-qt linux desktop ${{ env.QT_VERSION }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
         
     - name: Cache redis-plus-plus
       uses: actions/cache@v4
@@ -894,11 +921,21 @@ jobs:
         cd "$BUILD_DIR"
         
         echo "Configuring project..."
-        cmake "$PROJECT_ROOT" \
-          -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DENABLE_REDIS=ON \
-          -DWITH_OPENCV=ON
+        
+        # 根据Qt Multimedia可用性配置构建选项
+        CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_REDIS=ON -DWITH_OPENCV=ON"
+        
+        # 检查Qt Multimedia是否可用
+        if [ -d "$Qt6_DIR/lib/cmake/Qt6Multimedia" ]; then
+            echo "Qt Multimedia可用，启用摄像头功能"
+            CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=ON"
+        else
+            echo "Qt Multimedia不可用，禁用摄像头功能"
+            CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=OFF"
+        fi
+        
+        echo "CMake配置参数: $CMAKE_ARGS"
+        cmake $PROJECT_ROOT $CMAKE_ARGS
           
         if [ $? -ne 0 ]; then
             echo "Project configuration failed!"
