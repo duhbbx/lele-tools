@@ -69,3 +69,9 @@
 {"xxx", "摄像头工具", "CameraTool"},
 
 {"xxx", "终端工具", "TerminalTool"},
+
+{"xxx", "路由追踪", "TracerouteTool"},
+
+{"xxx", "回程路由测试", "RouteTestTool"},
+
+{"xxx", "系统基本信息", "SystemInfoTool"},

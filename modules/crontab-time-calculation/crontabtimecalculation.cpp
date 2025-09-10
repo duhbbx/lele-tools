@@ -141,7 +141,6 @@ void CrontabTimeCalculation::setupUI()
         "}"
         "QLineEdit, QTextEdit, QComboBox, QSpinBox {"
         "    border: 1px solid #ced4da;"
-        "    border-radius: 4px;"
         "    padding: 6px;"
         "    background-color: #ffffff;"
         "}"

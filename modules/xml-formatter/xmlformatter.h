@@ -18,8 +18,7 @@
 #include "../../common/dynamicobjectbase.h"
 
 // XML语法高亮器
-class XmlHighlighter : public QSyntaxHighlighter
-{
+class XmlHighlighter final : public QSyntaxHighlighter {
     Q_OBJECT
 
 public:
@@ -30,7 +29,7 @@ protected:
 
 private:
     void setupFormats();
-    
+
     QTextCharFormat xmlElementFormat;
     QTextCharFormat xmlAttributeFormat;
     QTextCharFormat xmlValueFormat;
@@ -38,13 +37,12 @@ private:
     QTextCharFormat xmlKeywordFormat;
 };
 
-class XmlFormatter : public QWidget, public DynamicObjectBase
-{
+class XmlFormatter final : public QWidget, public DynamicObjectBase {
     Q_OBJECT
 
 public:
     explicit XmlFormatter();
-    ~XmlFormatter();
+    ~XmlFormatter() override;
 
 public slots:
     void onInputTextChanged();
@@ -62,11 +60,11 @@ private:
     QString minifyXmlString(const QString& xml);
     bool validateXmlString(const QString& xml, QString& errorMessage);
     void updateStatus(const QString& message, bool isError = false);
-    
+
     // UI组件
     QVBoxLayout* mainLayout;
     QSplitter* mainSplitter;
-    
+
     // 工具栏
     QWidget* toolbarWidget;
     QHBoxLayout* toolbarLayout;
@@ -76,19 +74,19 @@ private:
     QPushButton* clearBtn;
     QPushButton* copyBtn;
     QLabel* statusLabel;
-    
+
     // 输入输出区域
     QWidget* inputWidget;
     QWidget* outputWidget;
     QVBoxLayout* inputLayout;
     QVBoxLayout* outputLayout;
-    
+
     QLabel* inputLabel;
     QLabel* outputLabel;
     QTextEdit* inputTextEdit;
     QPlainTextEdit* outputTextEdit;
     XmlHighlighter* highlighter;
-    
+
     // 状态
     bool isValidXml;
 };

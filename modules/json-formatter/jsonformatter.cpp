@@ -266,7 +266,7 @@ void JsonFormatter::setupToolbar() {
     // 创建紧凑的按钮
     formatBtn = new QPushButton("🎨 格式化");
     formatBtn->setToolTip("格式化JSON并添加缩进");
-    formatBtn->setFixedSize(90, 32);
+    formatBtn->setFixedSize(85, 32);
 
     minifyBtn = new QPushButton("📦 压缩");
     minifyBtn->setToolTip("移除空白字符，压缩JSON");

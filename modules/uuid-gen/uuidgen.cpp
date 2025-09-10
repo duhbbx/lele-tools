@@ -177,7 +177,6 @@ void UuidGen::setupGeneratorTab()
         "    font-size: 13px;"
         "    background-color: #f8f9fa;"
         "    border: 1px solid #dee2e6;"
-        "    border-radius: 4px;"
         "    padding: 10px;"
         "    line-height: 1.4;"
         "}"
@@ -298,7 +297,6 @@ void UuidGen::setupValidatorTab()
         "    font-size: 12px;"
         "    background-color: #f8f9fa;"
         "    border: 1px solid #dee2e6;"
-        "    border-radius: 4px;"
         "    padding: 10px;"
         "}"
     );
@@ -380,7 +378,6 @@ void UuidGen::setupConverterTab()
         "    font-size: 14px;"
         "    background-color: #f8f9fa;"
         "    border: 1px solid #dee2e6;"
-        "    border-radius: 4px;"
         "    padding: 10px;"
         "}"
     );

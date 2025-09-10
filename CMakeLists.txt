@@ -287,6 +287,107 @@ if(WIN32 AND HAVE_REDIS)
     target_link_libraries(lele-tools PRIVATE ws2_32 wsock32)
 endif()
 
+# Npcap/libpcap支持 (Traceroute工具需要)
+option(WITH_PCAP "Enable pcap support for network tools" ON)
+
+if(WITH_PCAP)
+    if(WIN32)
+        # Windows平台查找Npcap
+        find_path(PCAP_INCLUDE_DIR
+            NAMES pcap.h
+            PATHS
+                "C:/npcap-sdk-1.15/Include"
+                "C:/Program Files/Npcap/Include"
+                "C:/Program Files (x86)/Npcap/Include"
+                "C:/npcap/Include"
+                "${CMAKE_PREFIX_PATH}/include"
+            DOC "Npcap include directory"
+            NO_DEFAULT_PATH
+        )
+        
+        find_library(PCAP_LIBRARY
+            NAMES wpcap pcap
+            PATHS
+                "C:/npcap-sdk-1.15/Lib/x64"
+                "C:/Program Files/Npcap/Lib/x64"
+                "C:/Program Files (x86)/Npcap/Lib/x64"
+                "C:/npcap/Lib/x64"
+                "${CMAKE_PREFIX_PATH}/lib"
+            DOC "Npcap library"
+            NO_DEFAULT_PATH
+        )
+        
+        find_library(PACKET_LIBRARY
+            NAMES packet
+            PATHS
+                "C:/npcap-sdk-1.15/Lib/x64"
+                "C:/Program Files/Npcap/Lib/x64"
+                "C:/Program Files (x86)/Npcap/Lib/x64"
+                "C:/npcap/Lib/x64"
+                "${CMAKE_PREFIX_PATH}/lib"
+            DOC "Packet library"
+            NO_DEFAULT_PATH
+        )
+        
+        if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
+            message(STATUS "Npcap found:")
+            message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
+            message(STATUS "  Library: ${PCAP_LIBRARY}")
+            set(HAVE_PCAP TRUE)
+            add_definitions(-DWITH_PCAP)
+            target_include_directories(lele-tools PRIVATE ${PCAP_INCLUDE_DIR})
+            target_link_libraries(lele-tools PRIVATE ${PCAP_LIBRARY})
+            if(PACKET_LIBRARY)
+                target_link_libraries(lele-tools PRIVATE ${PACKET_LIBRARY})
+            endif()
+        else()
+            message(WARNING "Npcap SDK not found. Traceroute tool will use Windows API fallback.")
+            message(STATUS "To enable full pcap functionality:")
+            message(STATUS "  1. Download Npcap from: https://npcap.com/")
+            message(STATUS "  2. Install with 'Install Npcap SDK' option checked")
+            message(STATUS "  3. Or download SDK separately from GitHub releases")
+            
+            # 使用Windows系统API作为备用方案
+            message(STATUS "Using Windows ICMP API fallback")
+            set(HAVE_PCAP FALSE)
+            add_definitions(-DWITH_WINDOWS_ICMP)
+        endif()
+    else()
+        # Linux/macOS平台查找libpcap
+        find_path(PCAP_INCLUDE_DIR
+            NAMES pcap/pcap.h pcap.h
+            PATHS /usr/include /usr/local/include
+            DOC "libpcap include directory"
+        )
+        
+        find_library(PCAP_LIBRARY
+            NAMES pcap
+            PATHS /usr/lib /usr/local/lib
+            DOC "libpcap library"
+        )
+        
+        if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
+            message(STATUS "libpcap found:")
+            message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
+            message(STATUS "  Library: ${PCAP_LIBRARY}")
+            set(HAVE_PCAP TRUE)
+            add_definitions(-DWITH_PCAP)
+            target_include_directories(lele-tools PRIVATE ${PCAP_INCLUDE_DIR})
+            target_link_libraries(lele-tools PRIVATE ${PCAP_LIBRARY})
+        else()
+            message(WARNING "libpcap not found. Traceroute tool will be disabled.")
+            message(STATUS "To install libpcap:")
+            message(STATUS "  Ubuntu/Debian: sudo apt-get install libpcap-dev")
+            message(STATUS "  CentOS/RHEL: sudo yum install libpcap-devel")
+            message(STATUS "  macOS: brew install libpcap")
+            set(HAVE_PCAP FALSE)
+        endif()
+    endif()
+else()
+    message(STATUS "pcap support disabled")
+    set(HAVE_PCAP FALSE)
+endif()
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.

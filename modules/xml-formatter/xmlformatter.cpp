@@ -10,34 +10,31 @@ REGISTER_DYNAMICOBJECT(XmlFormatter);
 
 // XML语法高亮器实现
 XmlHighlighter::XmlHighlighter(QTextDocument* parent)
-    : QSyntaxHighlighter(parent)
-{
+    : QSyntaxHighlighter(parent) {
     setupFormats();
 }
 
-void XmlHighlighter::setupFormats()
-{
+void XmlHighlighter::setupFormats() {
     // XML元素格式 - 蓝色
     xmlElementFormat.setForeground(QColor(0, 102, 204));
     xmlElementFormat.setFontWeight(QFont::Bold);
-    
+
     // XML属性格式 - 绿色
     xmlAttributeFormat.setForeground(QColor(0, 153, 0));
-    
+
     // XML值格式 - 红色
     xmlValueFormat.setForeground(QColor(204, 0, 0));
-    
+
     // XML注释格式 - 灰色
     xmlCommentFormat.setForeground(QColor(128, 128, 128));
     xmlCommentFormat.setFontItalic(true);
-    
+
     // XML关键字格式 - 紫色
     xmlKeywordFormat.setForeground(QColor(153, 0, 153));
     xmlKeywordFormat.setFontWeight(QFont::Bold);
 }
 
-void XmlHighlighter::highlightBlock(const QString& text)
-{
+void XmlHighlighter::highlightBlock(const QString& text) {
     // 高亮XML注释
     QRegularExpression commentRegex("<!--[^>]*-->");
     QRegularExpressionMatchIterator commentIterator = commentRegex.globalMatch(text);
@@ -45,7 +42,7 @@ void XmlHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = commentIterator.next();
         setFormat(match.capturedStart(), match.capturedLength(), xmlCommentFormat);
     }
-    
+
     // 高亮XML元素
     QRegularExpression elementRegex("<[!?/]?\\b[A-Za-z][A-Za-z0-9-]*\\b[^>]*>");
     QRegularExpressionMatchIterator elementIterator = elementRegex.globalMatch(text);
@@ -53,7 +50,7 @@ void XmlHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = elementIterator.next();
         setFormat(match.capturedStart(), match.capturedLength(), xmlElementFormat);
     }
-    
+
     // 高亮XML属性
     QRegularExpression attributeRegex("\\b[A-Za-z][A-Za-z0-9-]*(?=\\s*=)");
     QRegularExpressionMatchIterator attributeIterator = attributeRegex.globalMatch(text);
@@ -61,7 +58,7 @@ void XmlHighlighter::highlightBlock(const QString& text)
         QRegularExpressionMatch match = attributeIterator.next();
         setFormat(match.capturedStart(), match.capturedLength(), xmlAttributeFormat);
     }
-    
+
     // 高亮XML属性值
     QRegularExpression valueRegex("\"[^\"]*\"|'[^']*'");
     QRegularExpressionMatchIterator valueIterator = valueRegex.globalMatch(text);
@@ -72,10 +69,9 @@ void XmlHighlighter::highlightBlock(const QString& text)
 }
 
 // XmlFormatter实现
-XmlFormatter::XmlFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidXml(false)
-{
+XmlFormatter::XmlFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidXml(false) {
     setupUI();
-    
+
     // 连接信号槽
     connect(inputTextEdit, &QTextEdit::textChanged, this, &XmlFormatter::onInputTextChanged);
     connect(formatBtn, &QPushButton::clicked, this, &XmlFormatter::onFormatXml);
@@ -83,7 +79,7 @@ XmlFormatter::XmlFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidXml
     connect(validateBtn, &QPushButton::clicked, this, &XmlFormatter::onValidateXml);
     connect(clearBtn, &QPushButton::clicked, this, &XmlFormatter::onClearAll);
     connect(copyBtn, &QPushButton::clicked, this, &XmlFormatter::onCopyFormatted);
-    
+
     // 设置默认示例
     QString sampleXml = R"(<?xml version="1.0" encoding="UTF-8"?>
 <bookstore>
@@ -94,32 +90,29 @@ XmlFormatter::XmlFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidXml
         <price>10.99</price>
     </book>
 </bookstore>)";
-    
+
     inputTextEdit->setPlainText(sampleXml);
     onFormatXml();
 }
 
-XmlFormatter::~XmlFormatter()
-{
-}
+XmlFormatter::~XmlFormatter() = default;
 
-void XmlFormatter::setupUI()
-{
+void XmlFormatter::setupUI() {
     // 主布局
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(10, 10, 10, 10);
     mainLayout->setSpacing(10);
-    
+
     // 设置工具栏
     setupToolbar();
-    
+
     // 设置输入输出区域
     setupInputOutput();
-    
+
     // 添加到主布局
     mainLayout->addWidget(toolbarWidget);
     mainLayout->addWidget(mainSplitter);
-    
+
     // 设置样式
     setStyleSheet(R"(
         QWidget {
@@ -152,33 +145,32 @@ void XmlFormatter::setupUI()
     )");
 }
 
-void XmlFormatter::setupToolbar()
-{
+void XmlFormatter::setupToolbar() {
     toolbarWidget = new QWidget();
     toolbarWidget->setFixedHeight(45);
     toolbarLayout = new QHBoxLayout(toolbarWidget);
     toolbarLayout->setContentsMargins(5, 5, 5, 5);
     toolbarLayout->setSpacing(8);
-    
+
     formatBtn = new QPushButton("🎨 格式化");
     formatBtn->setFixedSize(85, 32);
-    
+
     minifyBtn = new QPushButton("📦 压缩");
     minifyBtn->setFixedSize(75, 32);
-    
+
     validateBtn = new QPushButton("✅ 验证");
     validateBtn->setFixedSize(75, 32);
-    
+
     clearBtn = new QPushButton("🗑️ 清空");
     clearBtn->setFixedSize(75, 32);
-    
+
     copyBtn = new QPushButton("📋 复制");
     copyBtn->setFixedSize(75, 32);
-    
+
     statusLabel = new QLabel("就绪");
     statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet("color: #666; font-weight: bold; font-size: 10pt; padding: 6px 12px; background: #f9f9f9; border: 1px solid #ddd;");
-    
+
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
     toolbarLayout->addWidget(validateBtn);
@@ -188,61 +180,59 @@ void XmlFormatter::setupToolbar()
     toolbarLayout->addWidget(statusLabel);
 }
 
-void XmlFormatter::setupInputOutput()
-{
+void XmlFormatter::setupInputOutput() {
     mainSplitter = new QSplitter(Qt::Horizontal);
-    
+
     // 输入区域
     inputWidget = new QWidget();
     inputLayout = new QVBoxLayout(inputWidget);
-    
+
     inputLabel = new QLabel("📝 XML输入");
-    inputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
-    
+    inputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
+
     inputTextEdit = new QTextEdit();
     inputTextEdit->setPlaceholderText("请输入要格式化的XML数据...");
-    
+
     inputLayout->addWidget(inputLabel);
     inputLayout->addWidget(inputTextEdit);
-    
+
     // 输出区域
     outputWidget = new QWidget();
     outputLayout = new QVBoxLayout(outputWidget);
-    
+
     outputLabel = new QLabel("📄 格式化结果");
-    outputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
-    
+    outputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
+
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);
     outputTextEdit->setFont(QFont("Consolas", 11));
-    
+
     highlighter = new XmlHighlighter(outputTextEdit->document());
-    
+
     outputLayout->addWidget(outputLabel);
     outputLayout->addWidget(outputTextEdit);
-    
+
     mainSplitter->addWidget(inputWidget);
     mainSplitter->addWidget(outputWidget);
 }
 
-void XmlFormatter::onInputTextChanged()
-{
+void XmlFormatter::onInputTextChanged() {
     QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
         updateStatus("输入为空", false);
         return;
     }
-    
+
     QString errorMessage;
     isValidXml = validateXmlString(text, errorMessage);
     updateStatus(isValidXml ? "XML格式正确" : QString("XML格式错误: %1").arg(errorMessage), !isValidXml);
 }
 
-void XmlFormatter::onFormatXml()
-{
-    QString text = inputTextEdit->toPlainText().trimmed();
-    if (text.isEmpty()) return;
-    
+void XmlFormatter::onFormatXml() {
+    const QString text = inputTextEdit->toPlainText().trimmed();
+    if (text.isEmpty())
+        return;
+
     QString formatted = formatXmlString(text);
     if (!formatted.isEmpty()) {
         outputTextEdit->setPlainText(formatted);
@@ -250,35 +240,33 @@ void XmlFormatter::onFormatXml()
     }
 }
 
-void XmlFormatter::onMinifyXml()
-{
-    QString text = inputTextEdit->toPlainText().trimmed();
-    if (text.isEmpty()) return;
-    
+void XmlFormatter::onMinifyXml() {
+    const QString text = inputTextEdit->toPlainText().trimmed();
+    if (text.isEmpty())
+        return;
+
     QString minified = minifyXmlString(text);
     outputTextEdit->setPlainText(minified);
     updateStatus("XML压缩完成", false);
 }
 
-void XmlFormatter::onValidateXml()
-{
+void XmlFormatter::onValidateXml() {
     QString text = inputTextEdit->toPlainText().trimmed();
-    if (text.isEmpty()) return;
-    
+    if (text.isEmpty())
+        return;
+
     QString errorMessage;
     bool isValid = validateXmlString(text, errorMessage);
     QMessageBox::information(this, "验证结果", isValid ? "✅ XML格式正确！" : QString("❌ XML格式错误:\n%1").arg(errorMessage));
 }
 
-void XmlFormatter::onClearAll()
-{
+void XmlFormatter::onClearAll() {
     inputTextEdit->clear();
     outputTextEdit->clear();
     updateStatus("已清空所有内容", false);
 }
 
-void XmlFormatter::onCopyFormatted()
-{
+void XmlFormatter::onCopyFormatted() {
     QString text = outputTextEdit->toPlainText();
     if (!text.isEmpty()) {
         QApplication::clipboard()->setText(text);
@@ -286,34 +274,31 @@ void XmlFormatter::onCopyFormatted()
     }
 }
 
-QString XmlFormatter::formatXmlString(const QString& xml)
-{
+QString XmlFormatter::formatXmlString(const QString& xml) {
     QString result;
     QXmlStreamReader reader(xml);
     QXmlStreamWriter writer(&result);
     writer.setAutoFormatting(true);
     writer.setAutoFormattingIndent(2);
-    
+
     while (!reader.atEnd()) {
         reader.readNext();
         if (!reader.isWhitespace()) {
             writer.writeCurrentToken(reader);
         }
     }
-    
+
     return reader.hasError() ? QString() : result;
 }
 
-QString XmlFormatter::minifyXmlString(const QString& xml)
-{
+QString XmlFormatter::minifyXmlString(const QString& xml) {
     QString result = xml;
     result.replace(QRegularExpression(">\\s+<"), "><");
     result.replace(QRegularExpression("\\s+"), " ");
     return result.trimmed();
 }
 
-bool XmlFormatter::validateXmlString(const QString& xml, QString& errorMessage)
-{
+bool XmlFormatter::validateXmlString(const QString& xml, QString& errorMessage) {
     QXmlStreamReader reader(xml);
     while (!reader.atEnd()) {
         reader.readNext();
@@ -325,8 +310,7 @@ bool XmlFormatter::validateXmlString(const QString& xml, QString& errorMessage)
     return true;
 }
 
-void XmlFormatter::updateStatus(const QString& message, bool isError)
-{
+void XmlFormatter::updateStatus(const QString& message, bool isError) {
     statusLabel->setText(message);
     QString color = isError ? "#d32f2f" : "#2e7d32";
     QString bg = isError ? "#ffebee" : "#e8f5e8";

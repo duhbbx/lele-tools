@@ -188,7 +188,6 @@ void CameraTool::setupUI()
         }
         QTextEdit {
             border: 2px solid #e1e5e9;
-            border-radius: 6px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 9px;
         }
