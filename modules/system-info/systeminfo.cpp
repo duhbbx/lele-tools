@@ -247,9 +247,6 @@ SystemInfoTool::SystemInfoTool(QWidget *parent)
     : QWidget(parent), DynamicObjectBase()
     , m_workerThread(nullptr)
     , m_worker(nullptr)
-    , m_updateTimer(nullptr)
-    , m_autoRefresh(true)
-    , m_refreshInterval(5)
 {
     setupUI();
     loadSettings();
@@ -269,13 +266,6 @@ SystemInfoTool::SystemInfoTool(QWidget *parent)
     
     // 启动工作线程
     m_workerThread->start();
-    
-    // 创建定时器
-    m_updateTimer = new QTimer(this);
-    connect(m_updateTimer, &QTimer::timeout, this, &SystemInfoTool::updateRealTimeInfo);
-    if (m_autoRefresh) {
-        m_updateTimer->start(m_refreshInterval * 1000);
-    }
     
     // 初始加载
     refreshSystemInfo();
@@ -716,16 +706,12 @@ void SystemInfoTool::refreshSystemInfo()
 
 void SystemInfoTool::saveSettings()
 {
-    QSettings settings;
-    settings.setValue("SystemInfo/autoRefresh", m_autoRefresh);
-    settings.setValue("SystemInfo/refreshInterval", m_refreshInterval);
+    // 暂无需要保存的设置
 }
 
 void SystemInfoTool::loadSettings()
 {
-    QSettings settings;
-    m_autoRefresh = settings.value("SystemInfo/autoRefresh", true).toBool();
-    m_refreshInterval = settings.value("SystemInfo/refreshInterval", 5).toInt();
+    // 暂无需要加载的设置
 }
 
 // 槽函数实现
@@ -813,10 +799,4 @@ void SystemInfoTool::onDiskInfoReady(const QList<DiskInfo> &disks)
 void SystemInfoTool::onErrorOccurred(const QString &error)
 {
     QMessageBox::warning(this, "错误", error);
-}
-
-void SystemInfoTool::updateRealTimeInfo()
-{
-    // 定时刷新系统信息
-    refreshSystemInfo();
 }

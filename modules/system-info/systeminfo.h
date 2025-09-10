@@ -164,7 +164,6 @@ private slots:
     void onSystemInfoReady(const ::SystemInfo &info);
     void onDiskInfoReady(const QList<DiskInfo> &disks);
     void onErrorOccurred(const QString &error);
-    void updateRealTimeInfo();
 
 private:
     void setupUI();
@@ -227,16 +226,9 @@ private:
     QThread *m_workerThread;
     SystemInfoWorker *m_worker;
     
-    // 定时器
-    QTimer *m_updateTimer;
-    
     // 数据
     ::SystemInfo m_currentSystemInfo;
     QList<DiskInfo> m_currentDiskInfo;
-    
-    // 设置
-    bool m_autoRefresh;
-    int m_refreshInterval; // 秒
 };
 
 #endif // SYSTEMINFO_H

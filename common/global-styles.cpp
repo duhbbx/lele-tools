@@ -105,7 +105,7 @@ QString GlobalStyles::getInputStyle()
     return R"(
         QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
             border: 2px solid #e1e5e9;
-            padding: 4px 8px;
+            padding: 4px 4px;
             font-size: 10pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             background-color: white;
@@ -143,6 +143,7 @@ QString GlobalStyles::getGlobalStyle()
             left: 8px;
             padding: 0 4px 0 4px;
             color: #495057;
+            font-size: 12pt;
         }
         QProgressBar {
             border: 1px solid #dee2e6;
@@ -173,7 +174,7 @@ QString GlobalStyles::getGlobalStyle()
             border: 1px solid #dee2e6;
             padding: 4px 8px;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 10pt;
         }
     )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle();
 }
