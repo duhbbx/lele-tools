@@ -2,6 +2,106 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN" sourcelanguage="en">
 <context>
+    <name>Base64EncodeDecode</name>
+    <message>
+        <source>Hello, 乐乐的工具箱！
+这是一个Base64编码解码工具。</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🔒 编码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>将文本编码为Base64格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🔓 解码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>将Base64解码为原始文本</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🗑️ 清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>清空所有内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>就绪</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📝 输入文本</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请输入要编码或解码的文本...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📄 输出结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>编码或解码结果将显示在这里...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入为空，请输入要编码的文本</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📄 Base64编码结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>编码完成，输入%1字符，输出%2字符</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>编码失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入为空，请输入要解码的Base64文本</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解码失败，输入的Base64格式可能不正确</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📄 Base64解码结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解码完成，输入%1字符，输出%2字符</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解码失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已清空所有内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入为空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入文本长度: %1 字符</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DateTimeUtil</name>
     <message>
         <source>🕐 当前时间</source>

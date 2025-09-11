@@ -2,6 +2,108 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US" sourcelanguage="en">
 <context>
+    <name>Base64EncodeDecode</name>
+    <message>
+        <source>Hello, 乐乐的工具箱！
+这是一个Base64编码解码工具。</source>
+        <translation>Hello, Lele's Toolbox!
+This is a Base64 encoding and decoding tool.</translation>
+    </message>
+    <message>
+        <source>🔒 编码</source>
+        <translation>🔒 Encode</translation>
+    </message>
+    <message>
+        <source>将文本编码为Base64格式</source>
+        <translation>Encode text into Base64 format</translation>
+    </message>
+    <message>
+        <source>🔓 解码</source>
+        <translation>🔓 Decode</translation>
+    </message>
+    <message>
+        <source>将Base64解码为原始文本</source>
+        <translation>Decode Base64 into original text</translation>
+    </message>
+    <message>
+        <source>🗑️ 清空</source>
+        <translation>🗑️ Clear</translation>
+    </message>
+    <message>
+        <source>清空所有内容</source>
+        <translation>Clear all content</translation>
+    </message>
+    <message>
+        <source>就绪</source>
+        <translation>Ready</translation>
+    </message>
+    <message>
+        <source>📝 输入文本</source>
+        <translation>📝 Input Text</translation>
+    </message>
+    <message>
+        <source>请输入要编码或解码的文本...</source>
+        <translation>Please enter the text to encode or decode...</translation>
+    </message>
+    <message>
+        <source>📄 输出结果</source>
+        <translation>📄 Output Result</translation>
+    </message>
+    <message>
+        <source>编码或解码结果将显示在这里...</source>
+        <translation>The encoding or decoding result will be displayed here...</translation>
+    </message>
+    <message>
+        <source>输入为空，请输入要编码的文本</source>
+        <translation>Input is empty, please enter the text to encode</translation>
+    </message>
+    <message>
+        <source>📄 Base64编码结果</source>
+        <translation>📄 Base64 Encoding Result</translation>
+    </message>
+    <message>
+        <source>编码完成，输入%1字符，输出%2字符</source>
+        <translation>Encoding completed: input %1 characters, output %2 characters</translation>
+    </message>
+    <message>
+        <source>编码失败: %1</source>
+        <translation>Encoding failed: %1</translation>
+    </message>
+    <message>
+        <source>输入为空，请输入要解码的Base64文本</source>
+        <translation>Input is empty, please enter the Base64 text to decode</translation>
+    </message>
+    <message>
+        <source>解码失败，输入的Base64格式可能不正确</source>
+        <translation>Decoding failed, the input Base64 format may be incorrect</translation>
+    </message>
+    <message>
+        <source>📄 Base64解码结果</source>
+        <translation>📄 Base64 Decoding Result</translation>
+    </message>
+    <message>
+        <source>解码完成，输入%1字符，输出%2字符</source>
+        <translation>Decoding completed: input %1 characters, output %2 characters</translation>
+    </message>
+    <message>
+        <source>解码失败: %1</source>
+        <translation>Decoding failed: %1</translation>
+    </message>
+    <message>
+        <source>已清空所有内容</source>
+        <translation>All content cleared</translation>
+    </message>
+    <message>
+        <source>输入为空</source>
+        <translation>Input is empty</translation>
+    </message>
+    <message>
+        <source>输入文本长度: %1 字符</source>
+        <translation>Input text length: %1 characters</translation>
+    </message>
+</context>
+
+<context>
     <name>DateTimeUtil</name>
     <message>
         <source>🕐 当前时间</source>
@@ -252,7 +354,6 @@ For example:
         <translation>Copied conversion result</translation>
     </message>
 </context>
-
 <context>
     <name>JsonFormatter</name>
     <message>
