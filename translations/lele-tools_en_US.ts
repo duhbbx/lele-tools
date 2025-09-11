@@ -1119,6 +1119,145 @@ Strength: %3</translation>
         <translation>Regex import functionality to be implemented</translation>
     </message>
 </context>
+<context>
+    <name>Telnet</name>
+    <message>
+        <source>就绪</source>
+        <translation type="unfinished">Ready</translation>
+    </message>
+    <message>
+        <source>🌐 连接设置</source>
+        <translation type="unfinished">🌐 Connection Settings</translation>
+    </message>
+    <message>
+        <source>主机地址:</source>
+        <translation type="unfinished">Host Address:</translation>
+    </message>
+    <message>
+        <source>输入IP地址或域名</source>
+        <translation type="unfinished">Enter IP address or domain name</translation>
+    </message>
+    <message>
+        <source>端口:</source>
+        <translation type="unfinished">Port:</translation>
+    </message>
+    <message>
+        <source>超时(秒):</source>
+        <translation type="unfinished">Timeout (seconds):</translation>
+    </message>
+    <message>
+        <source>自动重连</source>
+        <translation type="unfinished">Auto Reconnect</translation>
+    </message>
+    <message>
+        <source>🔗 连接</source>
+        <translation type="unfinished">🔗 Connect</translation>
+    </message>
+    <message>
+        <source>❌ 断开</source>
+        <translation type="unfinished">❌ Disconnect</translation>
+    </message>
+    <message>
+        <source>⌨️ 命令输入</source>
+        <translation type="unfinished">⌨️ Command Input</translation>
+    </message>
+    <message>
+        <source>选择常用命令...</source>
+        <translation type="unfinished">Select common commands...</translation>
+    </message>
+    <message>
+        <source>输入Telnet命令...</source>
+        <translation type="unfinished">Enter Telnet command...</translation>
+    </message>
+    <message>
+        <source>📤 发送</source>
+        <translation type="unfinished">📤 Send</translation>
+    </message>
+    <message>
+        <source>🗑️ 清空</source>
+        <translation type="unfinished">🗑️ Clear</translation>
+    </message>
+    <message>
+        <source>💾 保存日志</source>
+        <translation type="unfinished">💾 Save Log</translation>
+    </message>
+    <message>
+        <source>📺 输出显示</source>
+        <translation type="unfinished">📺 Output Display</translation>
+    </message>
+    <message>
+        <source>自动滚动</source>
+        <translation type="unfinished">Auto Scroll</translation>
+    </message>
+    <message>
+        <source>显示时间戳</source>
+        <translation type="unfinished">Show Timestamp</translation>
+    </message>
+    <message>
+        <source>自动换行</source>
+        <translation type="unfinished">Word Wrap</translation>
+    </message>
+    <message>
+        <source>未连接</source>
+        <translation type="unfinished">Not Connected</translation>
+    </message>
+    <message>
+        <source>发送: 0B | 接收: 0B</source>
+        <translation type="unfinished">Sent: 0B | Received: 0B</translation>
+    </message>
+    <message>
+        <source>错误</source>
+        <translation type="unfinished">Error</translation>
+    </message>
+    <message>
+        <source>请输入主机地址</source>
+        <translation type="unfinished">Please enter host address</translation>
+    </message>
+    <message>
+        <source>输出已清空</source>
+        <translation type="unfinished">Output cleared</translation>
+    </message>
+    <message>
+        <source>保存Telnet日志</source>
+        <translation type="unfinished">Save Telnet Log</translation>
+    </message>
+    <message>
+        <source>文本文件 (*.txt)</source>
+        <translation type="unfinished">Text Files (*.txt)</translation>
+    </message>
+    <message>
+        <source>日志已保存</source>
+        <translation type="unfinished">Log saved</translation>
+    </message>
+    <message>
+        <source>已连接</source>
+        <translation type="unfinished">Connected</translation>
+    </message>
+    <message>
+        <source>成功连接到 %1:%2</source>
+        <translation type="unfinished">Successfully connected to %1:%2</translation>
+    </message>
+    <message>
+        <source>连接已断开</source>
+        <translation type="unfinished">Connection disconnected</translation>
+    </message>
+    <message>
+        <source>连接错误: %1</source>
+        <translation type="unfinished">Connection error: %1</translation>
+    </message>
+    <message>
+        <source>发送: %1B | 接收: %2B</source>
+        <translation type="unfinished">Sent: %1B | Received: %2B</translation>
+    </message>
+    <message>
+        <source>连接超时</source>
+        <translation type="unfinished">Connection timeout</translation>
+    </message>
+    <message>
+        <source>正在连接到 %1:%2...</source>
+        <translation type="unfinished">Connecting to %1:%2...</translation>
+    </message>
+</context>
 
 <context>
     <name>UuidGen</name>
