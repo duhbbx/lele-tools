@@ -629,6 +629,446 @@
     </message>
 </context>
 <context>
+    <name>RandomPasswordGen</name>
+    <message>
+        <source>🎲 生成密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成随机密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📋 复制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>复制选中的密码到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🗑️ 清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>清空所有生成的密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>就绪</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🔤 字符集选项</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>数字 (0-9)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>小写字母 (a-z)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>大写字母 (A-Z)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>特殊字符 (!@#$%^&amp;*...)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>自定义字符:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入自定义字符...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>⚙️ 密码设置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码长度:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成数量:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🔧 高级选项</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>避免易混淆字符 (0OIl1)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>必须包含所有选中类型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>不重复字符</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>💪 密码强度</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>强度: 未知</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请选择字符集并设置密码长度</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🔐 生成的密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>👁️ 密码预览</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>点击密码列表中的项目查看详细信息...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请至少选择一种字符类型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>长度: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功生成 %1 个密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>第一个密码已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已清空所有密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>将生成 %1 个密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码: %1
+长度: %2 字符
+强度: %3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>弱</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>中等</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>强</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>非常强</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>强度: 无</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请选择至少一种字符类型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>强度: %1 (%2/100)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码强度较弱，建议增加长度或字符类型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码强度中等，可以考虑添加特殊字符</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码强度良好，适合大多数用途</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码强度非常好，安全性很高</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RegExContentGen</name>
+    <message>
+        <source>🎯 正则表达式输入</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入正则表达式:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>例如: [a-zA-Z]{3,8}@[a-z]{2,6}\.[a-z]{2,3}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请输入正则表达式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>⚙️ 生成选项</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成数量:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> 个</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>最大长度:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> 字符</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成唯一结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>区分大小写</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🎲 生成内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🧹 清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📋 生成结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成的内容将显示在这里...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📋 复制结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>💾 导出结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📚 预设模式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>选择预设模式...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📁 导入正则</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>快速选择:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>常用模式:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已生成: 0 个</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>邮箱地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成邮箱地址格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>手机号码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成中国手机号码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>身份证号</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成身份证号码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>IPv4地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成IPv4地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MAC地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成MAC地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>URL链接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成URL链接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>用户名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成用户名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成强密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>日期格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成YYYY-MM-DD格式日期</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>时间格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成HH:MM:SS格式时间</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>颜色代码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成十六进制颜色代码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>中文姓名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成中文姓名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已加载预设: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>正在生成内容...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无法从该正则表达式生成内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已生成: %1 个</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功生成 %1 个结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已清空结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>结果已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>正则表达式有效，可以生成内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>正则表达式语法错误: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成大量数据可能需要较长时间</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导出结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>将导出 %1 个结果到文件: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入正则</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入正则表达式功能待实现</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>UuidGen</name>
     <message>
         <source>UUID生成器</source>

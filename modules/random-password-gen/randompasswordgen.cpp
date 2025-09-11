@@ -92,20 +92,20 @@ void RandomPasswordGen::setupToolbar()
     toolbarLayout->setContentsMargins(5, 5, 5, 5);
     toolbarLayout->setSpacing(8);
     
-    generateBtn = new QPushButton("🎲 生成密码");
-    generateBtn->setToolTip("生成随机密码");
+    generateBtn = new QPushButton(tr("🎲 生成密码"));
+    generateBtn->setToolTip(tr("生成随机密码"));
     generateBtn->setFixedSize(110, 32);
     
-    copyBtn = new QPushButton("📋 复制");
-    copyBtn->setToolTip("复制选中的密码到剪贴板");
+    copyBtn = new QPushButton(tr("📋 复制"));
+    copyBtn->setToolTip(tr("复制选中的密码到剪贴板"));
     copyBtn->setFixedSize(75, 32);
     copyBtn->setEnabled(false);
     
-    clearBtn = new QPushButton("🗑️ 清空");
-    clearBtn->setToolTip("清空所有生成的密码");
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
+    clearBtn->setToolTip(tr("清空所有生成的密码"));
     clearBtn->setFixedSize(75, 32);
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet(R"(
         QLabel {
@@ -133,18 +133,18 @@ void RandomPasswordGen::setupCharsetOptions()
     settingsLayout->setSpacing(15);
     
     // 字符集选项组
-    charsetGroup = new QGroupBox("🔤 字符集选项");
+    charsetGroup = new QGroupBox(tr("🔤 字符集选项"));
     QVBoxLayout* charsetLayout = new QVBoxLayout(charsetGroup);
     charsetLayout->setSpacing(8);
     
-    includeDigits = new QCheckBox("数字 (0-9)");
-    includeLowercase = new QCheckBox("小写字母 (a-z)");
-    includeUppercase = new QCheckBox("大写字母 (A-Z)");
-    includeSpecialChars = new QCheckBox("特殊字符 (!@#$%^&*...)");
-    includeCustomChars = new QCheckBox("自定义字符:");
+    includeDigits = new QCheckBox(tr("数字 (0-9)"));
+    includeLowercase = new QCheckBox(tr("小写字母 (a-z)"));
+    includeUppercase = new QCheckBox(tr("大写字母 (A-Z)"));
+    includeSpecialChars = new QCheckBox(tr("特殊字符 (!@#$%^&*...)"));
+    includeCustomChars = new QCheckBox(tr("自定义字符:"));
     
     customCharsEdit = new QLineEdit();
-    customCharsEdit->setPlaceholderText("输入自定义字符...");
+    customCharsEdit->setPlaceholderText(tr("输入自定义字符..."));
     customCharsEdit->setEnabled(false);
     
     connect(includeCustomChars, &QCheckBox::toggled, customCharsEdit, &QLineEdit::setEnabled);
@@ -162,13 +162,13 @@ void RandomPasswordGen::setupCharsetOptions()
 void RandomPasswordGen::setupPasswordSettings()
 {
     // 密码设置组
-    passwordGroup = new QGroupBox("⚙️ 密码设置");
+    passwordGroup = new QGroupBox(tr("⚙️ 密码设置"));
     QVBoxLayout* passwordLayout = new QVBoxLayout(passwordGroup);
     passwordLayout->setSpacing(12);
     
     // 密码长度
     QHBoxLayout* lengthLayout = new QHBoxLayout();
-    lengthLabel = new QLabel("密码长度:");
+    lengthLabel = new QLabel(tr("密码长度:"));
     lengthSlider = new QSlider(Qt::Horizontal);
     lengthSlider->setRange(4, 128);
     lengthSlider->setValue(12);
@@ -183,7 +183,7 @@ void RandomPasswordGen::setupPasswordSettings()
     
     // 生成数量
     QHBoxLayout* countLayout = new QHBoxLayout();
-    countLabel = new QLabel("生成数量:");
+    countLabel = new QLabel(tr("生成数量:"));
     countSpinBox = new QSpinBox();
     countSpinBox->setRange(1, 100);
     countSpinBox->setValue(5);
@@ -197,19 +197,19 @@ void RandomPasswordGen::setupPasswordSettings()
     passwordLayout->addLayout(countLayout);
     
     // 高级选项组
-    advancedGroup = new QGroupBox("🔧 高级选项");
+    advancedGroup = new QGroupBox(tr("🔧 高级选项"));
     QVBoxLayout* advancedLayout = new QVBoxLayout(advancedGroup);
     
-    avoidAmbiguous = new QCheckBox("避免易混淆字符 (0OIl1)");
-    requireAllTypes = new QCheckBox("必须包含所有选中类型");
-    noRepeatingChars = new QCheckBox("不重复字符");
+    avoidAmbiguous = new QCheckBox(tr("避免易混淆字符 (0OIl1)"));
+    requireAllTypes = new QCheckBox(tr("必须包含所有选中类型"));
+    noRepeatingChars = new QCheckBox(tr("不重复字符"));
     
     advancedLayout->addWidget(avoidAmbiguous);
     advancedLayout->addWidget(requireAllTypes);
     advancedLayout->addWidget(noRepeatingChars);
     
     // 密码强度显示组
-    strengthGroup = new QGroupBox("💪 密码强度");
+    strengthGroup = new QGroupBox(tr("💪 密码强度"));
     QVBoxLayout* strengthLayout = new QVBoxLayout(strengthGroup);
     
     strengthBar = new QProgressBar();
@@ -217,11 +217,11 @@ void RandomPasswordGen::setupPasswordSettings()
     strengthBar->setValue(0);
     strengthBar->setFixedHeight(20);
     
-    strengthLabel = new QLabel("强度: 未知");
+    strengthLabel = new QLabel(tr("强度: 未知"));
     strengthLabel->setAlignment(Qt::AlignCenter);
     strengthLabel->setStyleSheet("font-weight: bold;");
     
-    strengthDescription = new QLabel("请选择字符集并设置密码长度");
+    strengthDescription = new QLabel(tr("请选择字符集并设置密码长度"));
     strengthDescription->setAlignment(Qt::AlignCenter);
     strengthDescription->setStyleSheet("color: #666; font-size: 11pt;");
     strengthDescription->setWordWrap(true);
@@ -251,7 +251,7 @@ void RandomPasswordGen::setupPasswordDisplay()
     displayLayout->setContentsMargins(0, 0, 0, 0);
     displayLayout->setSpacing(10);
     
-    displayLabel = new QLabel("🔐 生成的密码");
+    displayLabel = new QLabel(tr("🔐 生成的密码"));
     displayLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
     
     passwordList = new QListWidget();
@@ -259,13 +259,13 @@ void RandomPasswordGen::setupPasswordDisplay()
     passwordList->setSelectionMode(QAbstractItemView::SingleSelection);
     
     // 预览区域
-    previewGroup = new QGroupBox("👁️ 密码预览");
+    previewGroup = new QGroupBox(tr("👁️ 密码预览"));
     QVBoxLayout* previewLayout = new QVBoxLayout(previewGroup);
     
     previewEdit = new QPlainTextEdit();
     previewEdit->setReadOnly(true);
     previewEdit->setMaximumHeight(100);
-    previewEdit->setPlaceholderText("点击密码列表中的项目查看详细信息...");
+    previewEdit->setPlaceholderText(tr("点击密码列表中的项目查看详细信息..."));
     
     previewLayout->addWidget(previewEdit);
     
@@ -278,7 +278,7 @@ void RandomPasswordGen::onGenerateClicked()
 {
     QString charset = getCharacterSet();
     if (charset.isEmpty()) {
-        updateStatus("请至少选择一种字符类型", true);
+        updateStatus(tr("请至少选择一种字符类型"), true);
         return;
     }
     
@@ -294,12 +294,12 @@ void RandomPasswordGen::onGenerateClicked()
         generatedPasswords.append(password);
         
         QListWidgetItem* item = new QListWidgetItem(password);
-        item->setToolTip(QString("长度: %1").arg(length));
+        item->setToolTip(tr("长度: %1").arg(length));
         passwordList->addItem(item);
     }
     
     copyBtn->setEnabled(!generatedPasswords.isEmpty());
-    updateStatus(QString("成功生成 %1 个密码").arg(count), false);
+    updateStatus(tr("成功生成 %1 个密码").arg(count), false);
 }
 
 void RandomPasswordGen::onCopyClicked()
@@ -308,10 +308,10 @@ void RandomPasswordGen::onCopyClicked()
     if (currentItem) {
         QString password = currentItem->text();
         QApplication::clipboard()->setText(password);
-        updateStatus("密码已复制到剪贴板", false);
+        updateStatus(tr("密码已复制到剪贴板"), false);
     } else if (!generatedPasswords.isEmpty()) {
         QApplication::clipboard()->setText(generatedPasswords.first());
-        updateStatus("第一个密码已复制到剪贴板", false);
+        updateStatus(tr("第一个密码已复制到剪贴板"), false);
     }
 }
 
@@ -321,7 +321,7 @@ void RandomPasswordGen::onClearClicked()
     passwordList->clear();
     previewEdit->clear();
     copyBtn->setEnabled(false);
-    updateStatus("已清空所有密码", false);
+    updateStatus(tr("已清空所有密码"), false);
 }
 
 void RandomPasswordGen::onLengthChanged()
@@ -338,7 +338,7 @@ void RandomPasswordGen::onCharsetChanged()
 void RandomPasswordGen::onPasswordCountChanged()
 {
     int count = countSpinBox->value();
-    updateStatus(QString("将生成 %1 个密码").arg(count), false);
+    updateStatus(tr("将生成 %1 个密码").arg(count), false);
 }
 
 void RandomPasswordGen::onPasswordItemClicked()
@@ -348,7 +348,7 @@ void RandomPasswordGen::onPasswordItemClicked()
         QString password = currentItem->text();
         int strength = calculatePasswordStrength(password);
         
-        QString info = QString("密码: %1\n长度: %2 字符\n强度: %3")
+        QString info = tr("密码: %1\n长度: %2 字符\n强度: %3")
                       .arg(password)
                       .arg(password.length())
                       .arg(getStrengthText(strength));
@@ -448,10 +448,10 @@ int RandomPasswordGen::calculatePasswordStrength(const QString& password)
 
 QString RandomPasswordGen::getStrengthText(int strength)
 {
-    if (strength < 30) return "弱";
-    else if (strength < 60) return "中等";
-    else if (strength < 80) return "强";
-    else return "非常强";
+    if (strength < 30) return tr("弱");
+    else if (strength < 60) return tr("中等");
+    else if (strength < 80) return tr("强");
+    else return tr("非常强");
 }
 
 QColor RandomPasswordGen::getStrengthColor(int strength)
@@ -469,8 +469,8 @@ void RandomPasswordGen::updatePasswordStrength()
     
     if (charset.isEmpty()) {
         strengthBar->setValue(0);
-        strengthLabel->setText("强度: 无");
-        strengthDescription->setText("请选择至少一种字符类型");
+        strengthLabel->setText(tr("强度: 无"));
+        strengthDescription->setText(tr("请选择至少一种字符类型"));
         strengthBar->setStyleSheet("QProgressBar::chunk { background-color: #cccccc; }");
         return;
     }
@@ -485,20 +485,20 @@ void RandomPasswordGen::updatePasswordStrength()
     strength = qMin(strength, 100);
     
     strengthBar->setValue(strength);
-    strengthLabel->setText(QString("强度: %1 (%2/100)").arg(getStrengthText(strength)).arg(strength));
+    strengthLabel->setText(tr("强度: %1 (%2/100)").arg(getStrengthText(strength)).arg(strength));
     
     QColor color = getStrengthColor(strength);
     strengthBar->setStyleSheet(QString("QProgressBar::chunk { background-color: %1; }").arg(color.name()));
     
     QString description;
     if (strength < 30) {
-        description = "密码强度较弱，建议增加长度或字符类型";
+        description = tr("密码强度较弱，建议增加长度或字符类型");
     } else if (strength < 60) {
-        description = "密码强度中等，可以考虑添加特殊字符";
+        description = tr("密码强度中等，可以考虑添加特殊字符");
     } else if (strength < 80) {
-        description = "密码强度良好，适合大多数用途";
+        description = tr("密码强度良好，适合大多数用途");
     } else {
-        description = "密码强度非常好，安全性很高";
+        description = tr("密码强度非常好，安全性很高");
     }
     
     strengthDescription->setText(description);

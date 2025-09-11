@@ -6,7 +6,7 @@
     <message>
         <source>Hello, 乐乐的工具箱！
 这是一个Base64编码解码工具。</source>
-        <translation>Hello, Lele's Toolbox!
+        <translation>Hello, Lele&apos;s Toolbox!
 This is a Base64 encoding and decoding tool.</translation>
     </message>
     <message>
@@ -102,7 +102,6 @@ This is a Base64 encoding and decoding tool.</translation>
         <translation>Input text length: %1 characters</translation>
     </message>
 </context>
-
 <context>
     <name>DateTimeUtil</name>
     <message>
@@ -678,6 +677,449 @@ Error message: %2</translation>
         <translation type="unfinished"></translation>
     </message>
 </context>
+<context>
+    <name>RandomPasswordGen</name>
+    <message>
+        <source>🎲 生成密码</source>
+        <translation>🎲 Generate Password</translation>
+    </message>
+    <message>
+        <source>生成随机密码</source>
+        <translation>Generate a random password</translation>
+    </message>
+    <message>
+        <source>📋 复制</source>
+        <translation>📋 Copy</translation>
+    </message>
+    <message>
+        <source>复制选中的密码到剪贴板</source>
+        <translation>Copy the selected password to clipboard</translation>
+    </message>
+    <message>
+        <source>🗑️ 清空</source>
+        <translation>🗑️ Clear</translation>
+    </message>
+    <message>
+        <source>清空所有生成的密码</source>
+        <translation>Clear all generated passwords</translation>
+    </message>
+    <message>
+        <source>就绪</source>
+        <translation>Ready</translation>
+    </message>
+    <message>
+        <source>🔤 字符集选项</source>
+        <translation>🔤 Character Set Options</translation>
+    </message>
+    <message>
+        <source>数字 (0-9)</source>
+        <translation>Numbers (0-9)</translation>
+    </message>
+    <message>
+        <source>小写字母 (a-z)</source>
+        <translation>Lowercase letters (a-z)</translation>
+    </message>
+    <message>
+        <source>大写字母 (A-Z)</source>
+        <translation>Uppercase letters (A-Z)</translation>
+    </message>
+    <message>
+        <source>特殊字符 (!@#$%^&amp;*...)</source>
+        <translation>Special characters (!@#$%^&amp;*...)</translation>
+    </message>
+    <message>
+        <source>自定义字符:</source>
+        <translation>Custom characters:</translation>
+    </message>
+    <message>
+        <source>输入自定义字符...</source>
+        <translation>Enter custom characters...</translation>
+    </message>
+    <message>
+        <source>⚙️ 密码设置</source>
+        <translation>⚙️ Password Settings</translation>
+    </message>
+    <message>
+        <source>密码长度:</source>
+        <translation>Password length:</translation>
+    </message>
+    <message>
+        <source>生成数量:</source>
+        <translation>Number to generate:</translation>
+    </message>
+    <message>
+        <source>🔧 高级选项</source>
+        <translation>🔧 Advanced Options</translation>
+    </message>
+    <message>
+        <source>避免易混淆字符 (0OIl1)</source>
+        <translation>Avoid confusing characters (0OIl1)</translation>
+    </message>
+    <message>
+        <source>必须包含所有选中类型</source>
+        <translation>Must include all selected types</translation>
+    </message>
+    <message>
+        <source>不重复字符</source>
+        <translation>No repeated characters</translation>
+    </message>
+    <message>
+        <source>💪 密码强度</source>
+        <translation>💪 Password Strength</translation>
+    </message>
+    <message>
+        <source>强度: 未知</source>
+        <translation>Strength: Unknown</translation>
+    </message>
+    <message>
+        <source>请选择字符集并设置密码长度</source>
+        <translation>Please select a character set and set the password length</translation>
+    </message>
+    <message>
+        <source>🔐 生成的密码</source>
+        <translation>🔐 Generated Passwords</translation>
+    </message>
+    <message>
+        <source>👁️ 密码预览</source>
+        <translation>👁️ Password Preview</translation>
+    </message>
+    <message>
+        <source>点击密码列表中的项目查看详细信息...</source>
+        <translation>Click an item in the password list to view details...</translation>
+    </message>
+    <message>
+        <source>请至少选择一种字符类型</source>
+        <translation>Please select at least one character type</translation>
+    </message>
+    <message>
+        <source>长度: %1</source>
+        <translation>Length: %1</translation>
+    </message>
+    <message>
+        <source>成功生成 %1 个密码</source>
+        <translation>Successfully generated %1 passwords</translation>
+    </message>
+    <message>
+        <source>密码已复制到剪贴板</source>
+        <translation>Password has been copied to clipboard</translation>
+    </message>
+    <message>
+        <source>第一个密码已复制到剪贴板</source>
+        <translation>The first password has been copied to clipboard</translation>
+    </message>
+    <message>
+        <source>已清空所有密码</source>
+        <translation>All passwords cleared</translation>
+    </message>
+    <message>
+        <source>将生成 %1 个密码</source>
+        <translation>%1 passwords will be generated</translation>
+    </message>
+    <message>
+        <source>密码: %1
+长度: %2 字符
+强度: %3</source>
+        <translation>Password: %1
+Length: %2 characters
+Strength: %3</translation>
+    </message>
+    <message>
+        <source>弱</source>
+        <translation>Weak</translation>
+    </message>
+    <message>
+        <source>中等</source>
+        <translation>Medium</translation>
+    </message>
+    <message>
+        <source>强</source>
+        <translation>Strong</translation>
+    </message>
+    <message>
+        <source>非常强</source>
+        <translation>Very Strong</translation>
+    </message>
+    <message>
+        <source>强度: 无</source>
+        <translation>Strength: None</translation>
+    </message>
+    <message>
+        <source>请选择至少一种字符类型</source>
+        <translation>Please select at least one character type</translation>
+    </message>
+    <message>
+        <source>强度: %1 (%2/100)</source>
+        <translation>Strength: %1 (%2/100)</translation>
+    </message>
+    <message>
+        <source>密码强度较弱，建议增加长度或字符类型</source>
+        <translation>Password strength is weak, consider increasing length or character types</translation>
+    </message>
+    <message>
+        <source>密码强度中等，可以考虑添加特殊字符</source>
+        <translation>Password strength is medium, consider adding special characters</translation>
+    </message>
+    <message>
+        <source>密码强度良好，适合大多数用途</source>
+        <translation>Password strength is good, suitable for most purposes</translation>
+    </message>
+    <message>
+        <source>密码强度非常好，安全性很高</source>
+        <translation>Password strength is excellent, highly secure</translation>
+    </message>
+</context>
+<context>
+    <name>RegExContentGen</name>
+    <message>
+        <source>🎯 正则表达式输入</source>
+        <translation>🎯 Regular Expression Input</translation>
+    </message>
+    <message>
+        <source>输入正则表达式:</source>
+        <translation>Enter regular expression:</translation>
+    </message>
+    <message>
+        <source>例如: [a-zA-Z]{3,8}@[a-z]{2,6}\.[a-z]{2,3}</source>
+        <translation>Example: [a-zA-Z]{3,8}@[a-z]{2,6}\.[a-z]{2,3}</translation>
+    </message>
+    <message>
+        <source>请输入正则表达式</source>
+        <translation>Please enter a regular expression</translation>
+    </message>
+    <message>
+        <source>⚙️ 生成选项</source>
+        <translation>⚙️ Generation Options</translation>
+    </message>
+    <message>
+        <source>生成数量:</source>
+        <translation>Number to generate:</translation>
+    </message>
+    <message>
+        <source> 个</source>
+        <translation> items</translation>
+    </message>
+    <message>
+        <source>最大长度:</source>
+        <translation>Maximum length:</translation>
+    </message>
+    <message>
+        <source> 字符</source>
+        <translation> characters</translation>
+    </message>
+    <message>
+        <source>生成唯一结果</source>
+        <translation>Generate unique results</translation>
+    </message>
+    <message>
+        <source>区分大小写</source>
+        <translation>Case sensitive</translation>
+    </message>
+    <message>
+        <source>🎲 生成内容</source>
+        <translation>🎲 Generate Content</translation>
+    </message>
+    <message>
+        <source>🧹 清空</source>
+        <translation>🧹 Clear</translation>
+    </message>
+    <message>
+        <source>📋 生成结果</source>
+        <translation>📋 Generated Results</translation>
+    </message>
+    <message>
+        <source>生成的内容将显示在这里...</source>
+        <translation>Generated content will be displayed here...</translation>
+    </message>
+    <message>
+        <source>📋 复制结果</source>
+        <translation>📋 Copy Results</translation>
+    </message>
+    <message>
+        <source>💾 导出结果</source>
+        <translation>💾 Export Results</translation>
+    </message>
+    <message>
+        <source>📚 预设模式</source>
+        <translation>📚 Preset Patterns</translation>
+    </message>
+    <message>
+        <source>选择预设模式...</source>
+        <translation>Select a preset pattern...</translation>
+    </message>
+    <message>
+        <source>📁 导入正则</source>
+        <translation>📁 Import Regex</translation>
+    </message>
+    <message>
+        <source>快速选择:</source>
+        <translation>Quick Select:</translation>
+    </message>
+    <message>
+        <source>常用模式:</source>
+        <translation>Common Patterns:</translation>
+    </message>
+    <message>
+        <source>已生成: 0 个</source>
+        <translation>Generated: 0 items</translation>
+    </message>
+    <message>
+        <source>邮箱地址</source>
+        <translation>Email Address</translation>
+    </message>
+    <message>
+        <source>生成邮箱地址格式</source>
+        <translation>Generate email address format</translation>
+    </message>
+    <message>
+        <source>手机号码</source>
+        <translation>Phone Number</translation>
+    </message>
+    <message>
+        <source>生成中国手机号码</source>
+        <translation>Generate Chinese phone number</translation>
+    </message>
+    <message>
+        <source>身份证号</source>
+        <translation>ID Card Number</translation>
+    </message>
+    <message>
+        <source>生成身份证号码</source>
+        <translation>Generate ID card number</translation>
+    </message>
+    <message>
+        <source>IPv4地址</source>
+        <translation>IPv4 Address</translation>
+    </message>
+    <message>
+        <source>生成IPv4地址</source>
+        <translation>Generate IPv4 address</translation>
+    </message>
+    <message>
+        <source>MAC地址</source>
+        <translation>MAC Address</translation>
+    </message>
+    <message>
+        <source>生成MAC地址</source>
+        <translation>Generate MAC address</translation>
+    </message>
+    <message>
+        <source>URL链接</source>
+        <translation>URL Link</translation>
+    </message>
+    <message>
+        <source>生成URL链接</source>
+        <translation>Generate URL link</translation>
+    </message>
+    <message>
+        <source>用户名</source>
+        <translation>Username</translation>
+    </message>
+    <message>
+        <source>生成用户名</source>
+        <translation>Generate username</translation>
+    </message>
+    <message>
+        <source>密码</source>
+        <translation>Password</translation>
+    </message>
+    <message>
+        <source>生成强密码</source>
+        <translation>Generate strong password</translation>
+    </message>
+    <message>
+        <source>日期格式</source>
+        <translation>Date Format</translation>
+    </message>
+    <message>
+        <source>生成YYYY-MM-DD格式日期</source>
+        <translation>Generate YYYY-MM-DD formatted date</translation>
+    </message>
+    <message>
+        <source>时间格式</source>
+        <translation>Time Format</translation>
+    </message>
+    <message>
+        <source>生成HH:MM:SS格式时间</source>
+        <translation>Generate HH:MM:SS formatted time</translation>
+    </message>
+    <message>
+        <source>颜色代码</source>
+        <translation>Color Code</translation>
+    </message>
+    <message>
+        <source>生成十六进制颜色代码</source>
+        <translation>Generate hexadecimal color code</translation>
+    </message>
+    <message>
+        <source>中文姓名</source>
+        <translation>Chinese Name</translation>
+    </message>
+    <message>
+        <source>生成中文姓名</source>
+        <translation>Generate Chinese name</translation>
+    </message>
+    <message>
+        <source>已加载预设: %1</source>
+        <translation>Preset loaded: %1</translation>
+    </message>
+    <message>
+        <source>正在生成内容...</source>
+        <translation>Generating content...</translation>
+    </message>
+    <message>
+        <source>无法从该正则表达式生成内容</source>
+        <translation>Unable to generate content from this regular expression</translation>
+    </message>
+    <message>
+        <source>已生成: %1 个</source>
+        <translation>Generated: %1 items</translation>
+    </message>
+    <message>
+        <source>成功生成 %1 个结果</source>
+        <translation>Successfully generated %1 results</translation>
+    </message>
+    <message>
+        <source>生成失败: %1</source>
+        <translation>Generation failed: %1</translation>
+    </message>
+    <message>
+        <source>已清空结果</source>
+        <translation>Results cleared</translation>
+    </message>
+    <message>
+        <source>结果已复制到剪贴板</source>
+        <translation>Results copied to clipboard</translation>
+    </message>
+    <message>
+        <source>正则表达式有效，可以生成内容</source>
+        <translation>Regular expression is valid, content can be generated</translation>
+    </message>
+    <message>
+        <source>正则表达式语法错误: %1</source>
+        <translation>Regular expression syntax error: %1</translation>
+    </message>
+    <message>
+        <source>生成大量数据可能需要较长时间</source>
+        <translation>Generating large amounts of data may take a long time</translation>
+    </message>
+    <message>
+        <source>导出结果</source>
+        <translation>Export Results</translation>
+    </message>
+    <message>
+        <source>将导出 %1 个结果到文件: %2</source>
+        <translation>Exporting %1 results to file: %2</translation>
+    </message>
+    <message>
+        <source>导入正则</source>
+        <translation>Import Regex</translation>
+    </message>
+    <message>
+        <source>导入正则表达式功能待实现</source>
+        <translation>Regex import functionality to be implemented</translation>
+    </message>
+</context>
+
 <context>
     <name>UuidGen</name>
     <message>
