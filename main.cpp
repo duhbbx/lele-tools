@@ -111,6 +111,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    translator.load("qtbase_en.qm", ":/translations"); // Qt 自带的 qm
+
+
     if (translationLoaded) {
         QApplication::installTranslator(&translator);
         qDebug() << "Translator installed successfully";

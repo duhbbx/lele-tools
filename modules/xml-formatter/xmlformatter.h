@@ -46,8 +46,8 @@ public:
 
 public slots:
     void onInputTextChanged();
-    void onFormatXml();
-    void onMinifyXml();
+    void onFormatXml() const;
+    void onMinifyXml() const;
     void onValidateXml();
     void onClearAll();
     void onCopyFormatted();
@@ -56,10 +56,10 @@ private:
     void setupUI();
     void setupToolbar();
     void setupInputOutput();
-    QString formatXmlString(const QString& xml);
-    QString minifyXmlString(const QString& xml);
-    bool validateXmlString(const QString& xml, QString& errorMessage);
-    void updateStatus(const QString& message, bool isError = false);
+    static QString formatXmlString(const QString& xml);
+    static QString minifyXmlString(const QString& xml);
+    static bool validateXmlString(const QString& xml, QString& errorMessage);
+    void updateStatus(const QString& message, bool isError = false) const;
 
     // UI组件
     QVBoxLayout* mainLayout;

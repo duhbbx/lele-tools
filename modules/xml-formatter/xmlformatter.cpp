@@ -182,7 +182,7 @@ void XmlFormatter::onInputTextChanged() {
     updateStatus(isValidXml ? tr("XML格式正确") : QString(tr("XML格式错误: %1")).arg(errorMessage), !isValidXml);
 }
 
-void XmlFormatter::onFormatXml() {
+void XmlFormatter::onFormatXml() const {
     const QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty())
         return;
@@ -193,37 +193,36 @@ void XmlFormatter::onFormatXml() {
     }
 }
 
-void XmlFormatter::onMinifyXml() {
+void XmlFormatter::onMinifyXml() const {
     const QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty())
         return;
 
-    QString minified = minifyXmlString(text);
+    const QString minified = minifyXmlString(text);
     outputTextEdit->setPlainText(minified);
     updateStatus(tr("XML压缩完成"), false);
 }
 
 void XmlFormatter::onValidateXml() {
-    QString text = inputTextEdit->toPlainText().trimmed();
+    const QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty())
         return;
 
     QString errorMessage;
-    bool isValid = validateXmlString(text, errorMessage);
+    const bool isValid = validateXmlString(text, errorMessage);
     QMessageBox::information(this, tr("验证结果"), isValid ? tr("✅ XML格式正确！") : QString(tr("❌ XML格式错误:\n%1")).arg(errorMessage));
 }
 
 void XmlFormatter::onClearAll() {
     inputTextEdit->clear();
     outputTextEdit->clear();
-    updateStatus("已清空所有内容", false);
+    updateStatus(tr("已清空所有内容"), false);
 }
 
 void XmlFormatter::onCopyFormatted() {
-    QString text = outputTextEdit->toPlainText();
-    if (!text.isEmpty()) {
+    if (const QString text = outputTextEdit->toPlainText(); !text.isEmpty()) {
         QApplication::clipboard()->setText(text);
-        updateStatus("已复制到剪贴板", false);
+        updateStatus(tr("已复制到剪贴板"), false);
     }
 }
 
@@ -263,7 +262,7 @@ bool XmlFormatter::validateXmlString(const QString& xml, QString& errorMessage) 
     return true;
 }
 
-void XmlFormatter::updateStatus(const QString& message, bool isError) {
+void XmlFormatter::updateStatus(const QString& message, const bool isError) const {
     statusLabel->setText(message);
     QString color = isError ? "#d32f2f" : "#2e7d32";
     QString bg = isError ? "#ffebee" : "#e8f5e8";

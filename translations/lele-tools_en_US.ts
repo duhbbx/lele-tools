@@ -2,10 +2,420 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US" sourcelanguage="en">
 <context>
+    <name>DateTimeUtil</name>
+    <message>
+        <source>🕐 当前时间</source>
+        <translation>🕐 Current Time</translation>
+    </message>
+    <message>
+        <source>🔄 时间转换</source>
+        <translation>🔄 Time Conversion</translation>
+    </message>
+    <message>
+        <source>📋 批量转换</source>
+        <translation>📋 Batch Conversion</translation>
+    </message>
+    <message>
+        <source>🧮 时间计算</source>
+        <translation>🧮 Time Calculation</translation>
+    </message>
+    <message>
+        <source>📝 格式示例</source>
+        <translation>📝 Format Examples</translation>
+    </message>
+    <message>
+        <source>时区:</source>
+        <translation>Timezone:</translation>
+    </message>
+    <message>
+        <source>复制时间戳</source>
+        <translation>Copy Timestamp</translation>
+    </message>
+    <message>
+        <source>复制日期时间</source>
+        <translation>Copy DateTime</translation>
+    </message>
+    <message>
+        <source>刷新时间</source>
+        <translation>Refresh Time</translation>
+    </message>
+    <message>
+        <source>时间戳转日期时间</source>
+        <translation>Timestamp to DateTime</translation>
+    </message>
+    <message>
+        <source>时间戳:</source>
+        <translation>Timestamp:</translation>
+    </message>
+    <message>
+        <source>输入时间戳...</source>
+        <translation>Enter timestamp...</translation>
+    </message>
+    <message>
+        <source>秒</source>
+        <translation>Seconds</translation>
+    </message>
+    <message>
+        <source>毫秒</source>
+        <translation>Milliseconds</translation>
+    </message>
+    <message>
+        <source>微秒</source>
+        <translation>Microseconds</translation>
+    </message>
+    <message>
+        <source>插入当前</source>
+        <translation>Insert Current</translation>
+    </message>
+    <message>
+        <source>复制结果</source>
+        <translation>Copy Result</translation>
+    </message>
+    <message>
+        <source>转换结果:</source>
+        <translation>Conversion Result:</translation>
+    </message>
+    <message>
+        <source>日期时间转时间戳</source>
+        <translation>DateTime to Timestamp</translation>
+    </message>
+    <message>
+        <source>日期时间:</source>
+        <translation>DateTime:</translation>
+    </message>
+    <message>
+        <source>批量时间转换</source>
+        <translation>Batch Time Conversion</translation>
+    </message>
+    <message>
+        <source>转换模式:</source>
+        <translation>Conversion Mode:</translation>
+    </message>
+    <message>
+        <source>时间戳转日期</source>
+        <translation>Timestamp to Date</translation>
+    </message>
+    <message>
+        <source>日期转时间戳</source>
+        <translation>Date to Timestamp</translation>
+    </message>
+    <message>
+        <source>批量转换</source>
+        <translation>Batch Conversion</translation>
+    </message>
+    <message>
+        <source>输入 (每行一个):</source>
+        <translation>Input (one per line):</translation>
+    </message>
+    <message>
+        <source>输入要转换的时间戳或日期时间...
+例如:
+1640995200
+1640995260
+1640995320</source>
+        <translation>Enter timestamps or datetimes to convert...
+For example:
+1640995200
+1640995260
+1640995320</translation>
+    </message>
+    <message>
+        <source>输出结果:</source>
+        <translation>Output Result:</translation>
+    </message>
+    <message>
+        <source>时间差计算</source>
+        <translation>Time Difference Calculation</translation>
+    </message>
+    <message>
+        <source>开始时间:</source>
+        <translation>Start Time:</translation>
+    </message>
+    <message>
+        <source>结束时间:</source>
+        <translation>End Time:</translation>
+    </message>
+    <message>
+        <source>计算时间差</source>
+        <translation>Calculate Time Difference</translation>
+    </message>
+    <message>
+        <source>计算结果:</source>
+        <translation>Calculation Result:</translation>
+    </message>
+    <message>
+        <source>常用时间格式示例</source>
+        <translation>Common Time Format Examples</translation>
+    </message>
+    <message>
+        <source>本地时区</source>
+        <translation>Local Timezone</translation>
+    </message>
+    <message>
+        <source>📅 当前日期时间: %1</source>
+        <translation>📅 Current DateTime: %1</translation>
+    </message>
+    <message>
+        <source>⏰ 当前时间戳: %1 (秒) | %2 (毫秒)</source>
+        <translation>⏰ Current Timestamp: %1 (seconds) | %2 (milliseconds)</translation>
+    </message>
+    <message>
+        <source>❌ 无效的时间戳格式</source>
+        <translation>❌ Invalid timestamp format</translation>
+    </message>
+    <message>
+        <source>❌ 时间戳超出有效范围</source>
+        <translation>❌ Timestamp out of valid range</translation>
+    </message>
+    <message>
+        <source>❌ 请输入要转换的内容</source>
+        <translation>❌ Please enter content to convert</translation>
+    </message>
+    <message>
+        <source>%1 → %2</source>
+        <translation>%1 → %2</translation>
+    </message>
+    <message>
+        <source>%1 → ❌ 无效时间戳</source>
+        <translation>%1 → ❌ Invalid Timestamp</translation>
+    </message>
+    <message>
+        <source>%1 → ❌ 无效日期格式</source>
+        <translation>%1 → ❌ Invalid Date Format</translation>
+    </message>
+    <message>
+        <source>❌ 结束时间必须大于开始时间</source>
+        <translation>❌ End time must be later than start time</translation>
+    </message>
+    <message>
+        <source>📊 时间差统计:</source>
+        <translation>📊 Time Difference Statistics:</translation>
+    </message>
+    <message>
+        <source>总秒数: %1 秒</source>
+        <translation>Total Seconds: %1 s</translation>
+    </message>
+    <message>
+        <source>总毫秒数: %1 毫秒</source>
+        <translation>Total Milliseconds: %1 ms</translation>
+    </message>
+    <message>
+        <source>详细时间: %1天 %2小时 %3分钟 %4秒</source>
+        <translation>Detailed Time: %1 days %2 hours %3 minutes %4 seconds</translation>
+    </message>
+    <message>
+        <source>总小时数: %1 小时</source>
+        <translation>Total Hours: %1 h</translation>
+    </message>
+    <message>
+        <source>总天数: %1 天</source>
+        <translation>Total Days: %1 d</translation>
+    </message>
+    <message>
+        <source>🗓️  标准格式: %1</source>
+        <translation>🗓️  Standard Format: %1</translation>
+    </message>
+    <message>
+        <source>📅 ISO 8601: %1</source>
+        <translation>📅 ISO 8601: %1</translation>
+    </message>
+    <message>
+        <source>🇺🇸 美式格式: %1</source>
+        <translation>🇺🇸 US Format: %1</translation>
+    </message>
+    <message>
+        <source>🇪🇺 欧式格式: %1</source>
+        <translation>🇪🇺 EU Format: %1</translation>
+    </message>
+    <message>
+        <source>📝 中文格式: %1</source>
+        <translation>📝 Chinese Format: %1</translation>
+    </message>
+    <message>
+        <source>⏰ 时间戳(秒): %1</source>
+        <translation>⏰ Timestamp (seconds): %1</translation>
+    </message>
+    <message>
+        <source>⚡ 时间戳(毫秒): %1</source>
+        <translation>⚡ Timestamp (milliseconds): %1</translation>
+    </message>
+    <message>
+        <source>已复制当前时间戳</source>
+        <translation>Copied current timestamp</translation>
+    </message>
+    <message>
+        <source>已复制当前日期时间</source>
+        <translation>Copied current DateTime</translation>
+    </message>
+    <message>
+        <source>已复制转换结果</source>
+        <translation>Copied conversion result</translation>
+    </message>
+</context>
+
+<context>
     <name>JsonFormatter</name>
     <message>
         <source>🎨 格式化</source>
         <translation>🎨 Format</translation>
+    </message>
+    <message>
+        <source>请输入JSON数据或点击按钮进行操作</source>
+        <translation>Please enter JSON data or click a button to proceed</translation>
+    </message>
+    <message>
+        <source>格式化JSON并添加缩进</source>
+        <translation>Format JSON with indentation</translation>
+    </message>
+    <message>
+        <source>📦 压缩</source>
+        <translation>📦 Minify</translation>
+    </message>
+    <message>
+        <source>移除空白字符，压缩JSON</source>
+        <translation>Remove whitespace and minify JSON</translation>
+    </message>
+    <message>
+        <source>✅ 验证</source>
+        <translation>✅ Validate</translation>
+    </message>
+    <message>
+        <source>验证JSON格式是否正确</source>
+        <translation>Validate whether the JSON format is correct</translation>
+    </message>
+    <message>
+        <source>🗑️ 清空</source>
+        <translation>🗑️ Clear</translation>
+    </message>
+    <message>
+        <source>清空所有内容</source>
+        <translation>Clear all content</translation>
+    </message>
+    <message>
+        <source>📋 复制</source>
+        <translation>📋 Copy</translation>
+    </message>
+    <message>
+        <source>复制格式化后的JSON到剪贴板</source>
+        <translation>Copy the formatted JSON to the clipboard</translation>
+    </message>
+    <message>
+        <source>就绪</source>
+        <translation>Ready</translation>
+    </message>
+    <message>
+        <source>📝 JSON输入</source>
+        <translation>📝 JSON Input</translation>
+    </message>
+    <message>
+        <source>请输入要格式化的JSON数据...</source>
+        <translation>Please enter the JSON data to format...</translation>
+    </message>
+    <message>
+        <source>格式化后的JSON将显示在这里...</source>
+        <translation>The formatted JSON will be displayed here...</translation>
+    </message>
+    <message>
+        <source>📄 格式化视图</source>
+        <translation>📄 Formatted View</translation>
+    </message>
+    <message>
+        <source>🌳 树形结构</source>
+        <translation>🌳 Tree Structure</translation>
+    </message>
+    <message>
+        <source>🔍 搜索节点...</source>
+        <translation>🔍 Search nodes...</translation>
+    </message>
+    <message>
+        <source>展开全部</source>
+        <translation>Expand All</translation>
+    </message>
+    <message>
+        <source>折叠全部</source>
+        <translation>Collapse All</translation>
+    </message>
+    <message>
+        <source>键/索引</source>
+        <translation>Key / Index</translation>
+    </message>
+    <message>
+        <source>值</source>
+        <translation>Value</translation>
+    </message>
+    <message>
+        <source>类型</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <source>输入为空</source>
+        <translation>Input is empty</translation>
+    </message>
+    <message>
+        <source>JSON格式错误: %1</source>
+        <translation>JSON format error: %1</translation>
+    </message>
+    <message>
+        <source>JSON格式正确</source>
+        <translation>JSON format is valid</translation>
+    </message>
+    <message>
+        <source>格式化失败</source>
+        <translation>Formatting failed</translation>
+    </message>
+    <message>
+        <source>请先输入有效的JSON数据</source>
+        <translation>Please enter valid JSON data first</translation>
+    </message>
+    <message>
+        <source>压缩失败</source>
+        <translation>Minification failed</translation>
+    </message>
+    <message>
+        <source>JSON压缩完成</source>
+        <translation>JSON minification completed</translation>
+    </message>
+    <message>
+        <source>验证结果</source>
+        <translation>Validation Result</translation>
+    </message>
+    <message>
+        <source>输入为空，请输入JSON数据</source>
+        <translation>Input is empty, please enter JSON data</translation>
+    </message>
+    <message>
+        <source>✅ JSON格式正确！</source>
+        <translation>✅ JSON format is correct!</translation>
+    </message>
+    <message>
+        <source>❌ JSON格式错误:
+
+错误位置: 第%1个字符
+错误信息: %2</source>
+        <translation>❌ JSON format error:
+
+Error position: character %1
+Error message: %2</translation>
+    </message>
+    <message>
+        <source>已清空所有内容</source>
+        <translation>All content cleared</translation>
+    </message>
+    <message>
+        <source>复制失败</source>
+        <translation>Copy failed</translation>
+    </message>
+    <message>
+        <source>没有可复制的内容，请先格式化JSON</source>
+        <translation>No content to copy, please format JSON first</translation>
+    </message>
+    <message>
+        <source>已复制到剪贴板</source>
+        <translation>Copied to clipboard</translation>
+    </message>
+    <message>
+        <source>JSON格式化完成</source>
+        <translation>JSON formatting completed</translation>
     </message>
 </context>
 <context>
@@ -257,6 +667,14 @@
 %1</source>
         <translation>❌ XML format error:
 %1</translation>
+    </message>
+    <message>
+        <source>已清空所有内容</source>
+        <translation>All content cleared</translation>
+    </message>
+    <message>
+        <source>已复制到剪贴板</source>
+        <translation>Copied to clipboard</translation>
     </message>
 </context>
 </TS>

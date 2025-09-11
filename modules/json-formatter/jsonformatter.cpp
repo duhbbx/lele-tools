@@ -133,7 +133,7 @@ JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidJ
 
     inputTextEdit->setPlainText(sampleJson);
     // 初始化时设置默认状态
-    updateStatusBar("请输入JSON数据或点击按钮进行操作", false);
+    updateStatusBar(tr("请输入JSON数据或点击按钮进行操作"), false);
     onFormatJson();
 }
 
@@ -177,18 +177,18 @@ void JsonFormatter::setupToolbar() {
     toolbarLayout->setSpacing(8);
     // 创建紧凑的按钮
     formatBtn = new QPushButton(tr("🎨 格式化"));
-    formatBtn->setToolTip("格式化JSON并添加缩进");
-    minifyBtn = new QPushButton("📦 压缩");
-    minifyBtn->setToolTip("移除空白字符，压缩JSON");
-    validateBtn = new QPushButton("✅ 验证");
-    validateBtn->setToolTip("验证JSON格式是否正确");
-    clearBtn = new QPushButton("🗑️ 清空");
-    clearBtn->setToolTip("清空所有内容");
-    copyBtn = new QPushButton("📋 复制");
-    copyBtn->setToolTip("复制格式化后的JSON到剪贴板");
+    formatBtn->setToolTip(tr("格式化JSON并添加缩进"));
+    minifyBtn = new QPushButton(tr("📦 压缩"));
+    minifyBtn->setToolTip(tr("移除空白字符，压缩JSON"));
+    validateBtn = new QPushButton(tr("✅ 验证"));
+    validateBtn->setToolTip(tr("验证JSON格式是否正确"));
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
+    clearBtn->setToolTip(tr("清空所有内容"));
+    copyBtn = new QPushButton(tr("📋 复制"));
+    copyBtn->setToolTip(tr("复制格式化后的JSON到剪贴板"));
 
     // 状态标签也设置固定高度
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet(R"(
         QLabel {
             color: #666;
@@ -214,11 +214,11 @@ void JsonFormatter::setupInputArea() {
     inputLayout->setContentsMargins(0, 0, 0, 0);
     inputLayout->setSpacing(8);
 
-    inputLabel = new QLabel("📝 JSON输入");
+    inputLabel = new QLabel(tr("📝 JSON输入"));
     inputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
 
     inputTextEdit = new QTextEdit();
-    inputTextEdit->setPlaceholderText("请输入要格式化的JSON数据...");
+    inputTextEdit->setPlaceholderText(tr("请输入要格式化的JSON数据..."));
     
     // 设置为纯文本模式，禁用富文本格式
     inputTextEdit->setAcceptRichText(false);
@@ -240,18 +240,15 @@ void JsonFormatter::setupOutputArea() {
 
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);
-    outputTextEdit->setPlaceholderText("格式化后的JSON将显示在这里...");
-
-    const QFont monoFont("Consolas", 10);
-    outputTextEdit->setFont(monoFont);
+    outputTextEdit->setPlaceholderText(tr("格式化后的JSON将显示在这里..."));
 
     highlighter = new JsonHighlighter(outputTextEdit->document());
     formattedLayout->addWidget(outputTextEdit);
 
     setupTreeView();
 
-    outputTabWidget->addTab(formattedTab, "📄 格式化视图");
-    outputTabWidget->addTab(treeTab, "🌳 树形结构");
+    outputTabWidget->addTab(formattedTab, tr("📄 格式化视图"));
+    outputTabWidget->addTab(treeTab, tr("🌳 树形结构"));
 }
 
 void JsonFormatter::setupTreeView() {
@@ -268,16 +265,12 @@ void JsonFormatter::setupTreeView() {
     treeToolbarLayout->setSpacing(8);
 
     searchLineEdit = new QLineEdit();
-    searchLineEdit->setPlaceholderText("🔍 搜索节点...");
+    searchLineEdit->setPlaceholderText(tr("🔍 搜索节点..."));
     searchLineEdit->setFixedSize(180, 28);
 
-    expandAllBtn = new QPushButton("展开全部");
-    expandAllBtn->setFixedSize(80, 28);
-    expandAllBtn->setStyleSheet("font-size: 11pt;");
+    expandAllBtn = new QPushButton(tr("展开全部"));
+    collapseAllBtn = new QPushButton(tr("折叠全部"));
 
-    collapseAllBtn = new QPushButton("折叠全部");
-    collapseAllBtn->setFixedSize(80, 28);
-    collapseAllBtn->setStyleSheet("font-size: 11pt;");
 
     treeToolbarLayout->addWidget(searchLineEdit);
     treeToolbarLayout->addStretch();
@@ -285,7 +278,7 @@ void JsonFormatter::setupTreeView() {
     treeToolbarLayout->addWidget(collapseAllBtn);
 
     jsonTreeWidget = new QTreeWidget();
-    jsonTreeWidget->setHeaderLabels(QStringList() << "键/索引" << "值" << "类型");
+    jsonTreeWidget->setHeaderLabels(QStringList() << tr("键/索引") << tr("值") << tr("类型"));
     jsonTreeWidget->setAlternatingRowColors(true);
     jsonTreeWidget->setRootIsDecorated(true);
 
@@ -301,7 +294,7 @@ void JsonFormatter::setupTreeView() {
 void JsonFormatter::performValidation() {
     const QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        updateStatusBar("输入为空", false);
+        updateStatusBar(tr("输入为空"), false);
         isValidJson = false;
         return;
     }
@@ -310,10 +303,10 @@ void JsonFormatter::performValidation() {
     QJsonDocument doc = QJsonDocument::fromJson(text.toUtf8(), &error);
 
     if (error.error != QJsonParseError::NoError) {
-        updateStatusBar(QString("JSON格式错误: %1").arg(error.errorString()), true);
+        updateStatusBar(QString(tr("JSON格式错误: %1")).arg(error.errorString()), true);
         isValidJson = false;
     } else {
-        updateStatusBar("JSON格式正确", false);
+        updateStatusBar(tr("JSON格式正确"), false);
         isValidJson = true;
         currentJsonDoc = doc;
     }
@@ -324,14 +317,14 @@ void JsonFormatter::onFormatJson() {
     performValidation();
     
     if (!isValidJson) {
-        QMessageBox::warning(this, "格式化失败", "请先输入有效的JSON数据");
+        QMessageBox::warning(this, tr("格式化失败"), tr("请先输入有效的JSON数据"));
         return;
     }
 
     const QString formatted = QString::fromUtf8(currentJsonDoc.toJson(QJsonDocument::Indented));
     outputTextEdit->setPlainText(formatted);
     updateJsonTree(currentJsonDoc);
-    updateStatusBar("JSON格式化完成", false);
+    updateStatusBar(tr("JSON格式化完成"), false);
 }
 
 void JsonFormatter::onMinifyJson() {
@@ -339,19 +332,19 @@ void JsonFormatter::onMinifyJson() {
     performValidation();
     
     if (!isValidJson) {
-        QMessageBox::warning(this, "压缩失败", "请先输入有效的JSON数据");
+        QMessageBox::warning(this, tr("压缩失败"), tr("请先输入有效的JSON数据"));
         return;
     }
 
     const QString minified = QString::fromUtf8(currentJsonDoc.toJson(QJsonDocument::Compact));
     outputTextEdit->setPlainText(minified);
-    updateStatusBar("JSON压缩完成", false);
+    updateStatusBar(tr("JSON压缩完成"), false);
 }
 
 void JsonFormatter::onValidateJson() {
     const QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        QMessageBox::information(this, "验证结果", "输入为空，请输入JSON数据");
+        QMessageBox::information(this, tr("验证结果"), tr("输入为空，请输入JSON数据"));
         return;
     }
 
@@ -359,15 +352,15 @@ void JsonFormatter::onValidateJson() {
     performValidation();
 
     if (isValidJson) {
-        QMessageBox::information(this, "验证结果", "✅ JSON格式正确！");
+        QMessageBox::information(this, tr("验证结果"), tr("✅ JSON格式正确！"));
     } else {
         // 再次解析以获取详细错误信息用于显示
         QJsonParseError error;
         QJsonDocument::fromJson(text.toUtf8(), &error);
-        const QString errorMsg = QString("❌ JSON格式错误:\n\n错误位置: 第%1个字符\n错误信息: %2")
+        const QString errorMsg = QString(tr("❌ JSON格式错误:\n\n错误位置: 第%1个字符\n错误信息: %2"))
                            .arg(error.offset)
                            .arg(error.errorString());
-        QMessageBox::warning(this, "验证结果", errorMsg);
+        QMessageBox::warning(this, tr("验证结果"), errorMsg);
     }
 }
 
@@ -375,18 +368,18 @@ void JsonFormatter::onClearAll() {
     inputTextEdit->clear();
     outputTextEdit->clear();
     jsonTreeWidget->clear();
-    updateStatusBar("已清空所有内容", false);
+    updateStatusBar(tr("已清空所有内容"), false);
 }
 
 void JsonFormatter::onCopyFormatted() {
     const QString text = outputTextEdit->toPlainText();
     if (text.isEmpty()) {
-        QMessageBox::information(this, "复制失败", "没有可复制的内容，请先格式化JSON");
+        QMessageBox::information(this, tr("复制失败"), tr("没有可复制的内容，请先格式化JSON"));
         return;
     }
 
     QApplication::clipboard()->setText(text);
-    updateStatusBar("已复制到剪贴板", false);
+    updateStatusBar(tr("已复制到剪贴板"), false);
 }
 
 void JsonFormatter::onExpandAll() const {

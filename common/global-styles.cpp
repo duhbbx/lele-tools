@@ -1,7 +1,6 @@
 #include "global-styles.h"
 
-QString GlobalStyles::getCheckBoxStyle()
-{
+QString GlobalStyles::getCheckBoxStyle() {
     return R"(
         QCheckBox {
             spacing: 10px;
@@ -59,8 +58,7 @@ QString GlobalStyles::getCheckBoxStyle()
     )";
 }
 
-QString GlobalStyles::getButtonStyle()
-{
+QString GlobalStyles::getButtonStyle() {
     return R"(
         QPushButton {
             background-color: #f8f9fa;
@@ -84,11 +82,6 @@ QString GlobalStyles::getButtonStyle()
             color: #999999;
             border-color: #e0e0e0;
         }
-        QPushButton:default {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-            color: white;
-        }
         QPushButton:default:hover {
             background-color: #45a049;
             border-color: #45a049;
@@ -100,8 +93,7 @@ QString GlobalStyles::getButtonStyle()
     )";
 }
 
-QString GlobalStyles::getInputStyle()
-{
+QString GlobalStyles::getInputStyle() {
     return R"(
         QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
             border: 2px solid #e1e5e9;
@@ -131,12 +123,11 @@ QString GlobalStyles::getInputStyle()
     )";
 }
 
-QString GlobalStyles::getGlobalStyle()
-{
+QString GlobalStyles::getGlobalStyle() {
     return QString(R"(
         QWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 12px;
+            font-size: 11pt;
             color: #333333;
         }
         QGroupBox {
