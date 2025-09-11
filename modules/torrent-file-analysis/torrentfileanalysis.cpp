@@ -302,7 +302,7 @@ void TorrentFileAnalysis::setupUI()
             font-family: 'Consolas', 'Monaco', monospace;
             border: 2px solid #dee2e6;
             border-radius: 4px;
-            font-size: 10pt;
+            font-size: 11pt;
             background-color: white;
         }
         QTreeWidget, QTableWidget {

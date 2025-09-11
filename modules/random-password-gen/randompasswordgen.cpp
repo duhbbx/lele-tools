@@ -82,124 +82,6 @@ void RandomPasswordGen::setupUI()
     // 添加到主布局
     mainLayout->addWidget(toolbarWidget);
     mainLayout->addWidget(mainSplitter, 1); // 添加stretch factor，让splitter占据剩余空间
-    
-    // 设置样式
-    setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 0px;
-            padding: 4px 8px;
-            font-size: 10pt;
-        }
-        QPushButton:hover {
-            background-color: #e0e0e0;
-            border-color: #999999;
-        }
-        QPushButton:pressed {
-            background-color: #d0d0d0;
-        }
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #cccccc;
-            border-radius: 0px;
-            margin-top: 1ex;
-            padding-top: 10px;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QCheckBox {
-            spacing: 8px;
-            font-size: 11pt;
-        }
-        QCheckBox::indicator {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #cccccc;
-            border-radius: 3px;
-            background-color: white;
-        }
-        QCheckBox::indicator:hover {
-            border-color: #4CAF50;
-            background-color: #f8f8f8;
-        }
-        QCheckBox::indicator:checked {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDNMNC41IDguNUwyIDYiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=);
-        }
-        QCheckBox::indicator:checked:hover {
-            background-color: #45a049;
-            border-color: #45a049;
-        }
-        QCheckBox::indicator:disabled {
-            background-color: #f5f5f5;
-            border-color: #e0e0e0;
-        }
-        QLineEdit, QSpinBox {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 4px 8px;
-            font-size: 11pt;
-        }
-        QLineEdit:focus, QSpinBox:focus {
-            border-color: #4CAF50;
-        }
-        QSlider::groove:horizontal {
-            border: 1px solid #999999;
-            height: 8px;
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4);
-            margin: 2px 0;
-            border-radius: 0px;
-        }
-        QSlider::handle:horizontal {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-            border: 1px solid #5c5c5c;
-            width: 18px;
-            margin: -2px 0;
-            border-radius: 0px;
-        }
-        QSlider::handle:horizontal:hover {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #d4d4d4, stop:1 #afafaf);
-        }
-        QListWidget {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            alternate-background-color: #f9f9f9;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 11pt;
-        }
-        QListWidget::item {
-            padding: 8px;
-            border-bottom: 1px solid #eeeeee;
-        }
-        QListWidget::item:selected {
-            background-color: #4CAF50;
-            color: white;
-        }
-        QPlainTextEdit {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 8px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 11pt;
-        }
-        QProgressBar {
-            border: 2px solid #cccccc;
-            border-radius: 0px;
-            text-align: center;
-            font-weight: bold;
-        }
-        QProgressBar::chunk {
-            border-radius: 0px;
-        }
-    )");
 }
 
 void RandomPasswordGen::setupToolbar()
@@ -341,7 +223,7 @@ void RandomPasswordGen::setupPasswordSettings()
     
     strengthDescription = new QLabel("请选择字符集并设置密码长度");
     strengthDescription->setAlignment(Qt::AlignCenter);
-    strengthDescription->setStyleSheet("color: #666; font-size: 10pt;");
+    strengthDescription->setStyleSheet("color: #666; font-size: 11pt;");
     strengthDescription->setWordWrap(true);
     
     strengthLayout->addWidget(strengthBar);

@@ -10,7 +10,7 @@ struct ModuleMeta {
 };
 
 
-ModuleMeta moduleMetaArray[] = {
+inline ModuleMeta moduleMetaArray[] = {
 #include "module-meta-data.h"
 };
 

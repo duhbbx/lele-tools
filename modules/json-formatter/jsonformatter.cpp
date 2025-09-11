@@ -167,93 +167,6 @@ void JsonFormatter::setupUI() {
     // 添加到主布局
     mainLayout->addWidget(toolbarWidget);
     mainLayout->addWidget(mainSplitter);
-
-    // 设置样式
-    setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 0px;
-            padding: 4px 8px;
-            font-size: 10pt;
-        }
-        QPushButton:hover {
-            background-color: #e0e0e0;
-            border-color: #999999;
-        }
-        QPushButton:pressed {
-            background-color: #d0d0d0;
-        }
-        QTextEdit, QPlainTextEdit {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 8px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 10pt;
-        }
-        QTextEdit:focus, QPlainTextEdit:focus {
-            border-color: #4CAF50;
-        }
-        QTreeWidget {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            alternate-background-color: #f9f9f9;
-        }
-        QTreeWidget::item {
-            padding: 4px;
-        }
-        QTreeWidget::item:selected {
-            background-color: #4CAF50;
-            color: white;
-        }
-        QTabWidget::pane {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            background-color: white;
-        }
-        QTabBar::tab {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            padding: 8px 16px;
-            margin-right: 2px;
-        }
-        QTabBar::tab:selected {
-            background-color: white;
-            border-bottom-color: white;
-        }
-        QTabBar::close-button {
-            subcontrol-position: right;
-            border: none;
-            width: 16px;
-            height: 16px;
-            margin: 1px;
-            background-color: transparent;
-            border-radius: 8px;
-            image: none;
-        }
-        QTabBar::tab:hover QTabBar::close-button {
-            image: url(:/resources/close.svg);
-        }
-        QTabBar::close-button:hover {
-            background-color: rgba(220, 53, 69, 0.1);
-            border: 1px solid #dc3545;
-        }
-        QTabBar::close-button:pressed {
-            background-color: rgba(200, 35, 51, 0.2);
-            border: 1px solid #c82333;
-        }
-        QLineEdit {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 6px;
-        }
-        QLineEdit:focus {
-            border-color: #4CAF50;
-        }
-    )");
 }
 
 void JsonFormatter::setupToolbar() {
@@ -325,7 +238,7 @@ void JsonFormatter::setupInputArea() {
     inputTextEdit->setUndoRedoEnabled(true); // 保持撤销重做功能
     inputTextEdit->setLineWrapMode(QTextEdit::NoWrap); // 禁用自动换行，提高性能
     
-    // 设置等宽字体，大小为10pt
+    // 设置等宽字体，大小为11pt
     QFont inputFont("Consolas", 10);
     if (!inputFont.exactMatch()) {
         inputFont.setFamily("Monaco");
@@ -382,11 +295,11 @@ void JsonFormatter::setupTreeView() {
 
     expandAllBtn = new QPushButton("展开全部");
     expandAllBtn->setFixedSize(80, 28);
-    expandAllBtn->setStyleSheet("font-size: 10pt;");
+    expandAllBtn->setStyleSheet("font-size: 11pt;");
 
     collapseAllBtn = new QPushButton("折叠全部");
     collapseAllBtn->setFixedSize(80, 28);
-    collapseAllBtn->setStyleSheet("font-size: 10pt;");
+    collapseAllBtn->setStyleSheet("font-size: 11pt;");
 
     treeToolbarLayout->addWidget(searchLineEdit);
     treeToolbarLayout->addStretch();

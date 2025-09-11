@@ -55,7 +55,7 @@ void Base64EncodeDecode::setupUI()
             border: 1px solid #cccccc;
             border-radius: 0px;
             padding: 4px 8px;
-            font-size: 10pt;
+            font-size: 11pt;
         }
         QPushButton:hover {
             background-color: #e0e0e0;

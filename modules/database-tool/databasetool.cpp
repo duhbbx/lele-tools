@@ -63,7 +63,6 @@ void ConnectionDialog::setupUI() {
         }
         QListWidget::item:selected {
             background: #007acc;
-            color: white;
         }
         QLineEdit, QSpinBox, QComboBox {
             padding: 8px;

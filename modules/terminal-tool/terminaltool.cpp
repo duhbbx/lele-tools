@@ -66,7 +66,7 @@ IntegratedTerminal::IntegratedTerminal(QWidget *parent)
             border: 1px solid #333333;
             selection-background-color: #444444;
             font-family: '%1', 'Consolas', 'Source Code Pro', 'Monaco', monospace;
-            font-size: 10pt;
+            font-size: 11pt;
             font-weight: normal;
         }
         QScrollBar:vertical {
@@ -625,7 +625,7 @@ void TerminalTool::setupTerminalStyle()
         format.setFont(m_terminalFont);
         m_terminal->setCurrentCharFormat(format);
         
-        qDebug() << "终端字体已设置为:" << m_terminalFont.family() << "10pt";
+        qDebug() << "终端字体已设置为:" << m_terminalFont.family() << "11pt";
     }
 }
 

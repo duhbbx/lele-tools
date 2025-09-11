@@ -73,7 +73,7 @@ void UuidGen::setupUI()
         "    border-radius: 4px;"
         "    padding: 4px;"
         "    background-color: #ffffff;"
-        "    font-size: 10pt;"
+        "    font-size: 11pt;"
         "}"
         "QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QSpinBox:focus {"
         "    border-color: #80bdff;"

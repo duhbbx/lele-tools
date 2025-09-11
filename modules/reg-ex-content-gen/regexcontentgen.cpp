@@ -130,85 +130,6 @@ void RegExContentGen::setupUI()
     
     mainLayout->addWidget(mainSplitter);
     mainLayout->addLayout(statusLayout);
-    
-    // 应用样式
-    setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 11pt;
-            font-weight: normal;
-            min-width: 80px;
-            background-color: #f8f9fa;
-        }
-        QPushButton:hover { 
-            background-color: #e9ecef; 
-            border-color: #adb5bd;
-        }
-        QPushButton:pressed {
-            background-color: #dee2e6;
-        }
-        QPushButton:disabled {
-            background-color: #e9ecef;
-            color: #6c757d;
-            border-color: #dee2e6;
-        }
-        QGroupBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-weight: bold;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            margin-top: 1ex;
-            padding-top: 10px;
-            font-size: 12pt;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QLineEdit, QTextEdit, QPlainTextEdit {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px;
-            border: 2px solid #ced4da;
-            border-radius: 4px;
-            font-size: 11pt;
-            background-color: white;
-        }
-        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
-            border-color: #80bdff;
-            outline: 0;
-        }
-        QSpinBox, QComboBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 6px;
-            border: 2px solid #ced4da;
-            border-radius: 4px;
-            font-size: 11pt;
-            background-color: white;
-            min-width: 80px;
-        }
-        QLabel {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
-        }
-        QCheckBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
-        }
-        QListWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            border: 2px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 10pt;
-            background-color: white;
-        }
-    )");
 }
 
 void RegExContentGen::setupInputArea()
@@ -224,7 +145,7 @@ void RegExContentGen::setupInputArea()
     regexInput->setMinimumHeight(40);
     
     statusLabel = new QLabel("请输入正则表达式");
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt; padding: 4px;");
+    statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt; padding: 4px;");
     
     inputLayout->addWidget(regexLabel);
     inputLayout->addWidget(regexInput);
@@ -717,7 +638,7 @@ void RegExContentGen::onClearAll()
     copyBtn->setEnabled(false);
     exportBtn->setEnabled(false);
     statusLabel->setText("已清空结果");
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
+    statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
 }
 
 void RegExContentGen::onCopyResults()
@@ -750,7 +671,7 @@ void RegExContentGen::onRegexChanged()
     QString regex = regexInput->text().trimmed();
     if (regex.isEmpty()) {
         statusLabel->setText("请输入正则表达式");
-        statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
+        statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
         generateBtn->setEnabled(false);
     } else {
         // 简单验证正则表达式

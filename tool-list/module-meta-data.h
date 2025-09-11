@@ -8,7 +8,7 @@
 
 {"xxx", "Base64编码解码", "Base64EncodeDecode"},
 
-{"xxx", "根据正则表达式生成内容", "RegExContentGen"},
+{"xxx", "正则表达式生成内容", "RegExContentGen"},
 
 {"xxx", "随机密码生成", "RandomPasswordGen"},
 

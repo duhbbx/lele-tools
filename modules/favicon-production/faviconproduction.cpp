@@ -50,24 +50,6 @@ void FaviconProduction::setupUI()
     mainSplitter->addWidget(leftWidget);
     mainSplitter->addWidget(rightWidget);
     mainLayout->addWidget(mainSplitter);
-    
-    setStyleSheet(R"(
-        QPushButton {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 0px;
-            padding: 6px 12px;
-            font-weight: bold;
-        }
-        QPushButton:hover { background-color: #e0e0e0; }
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #cccccc;
-            border-radius: 0px;
-            margin-top: 1ex;
-            padding-top: 10px;
-        }
-    )");
 }
 
 void FaviconProduction::setupInputArea()
@@ -106,7 +88,7 @@ void FaviconProduction::setupSizeSelection()
     sizeListWidget->setMaximumHeight(200);
     
     for (const FaviconSize& size : faviconSizes) {
-        QListWidgetItem* item = new QListWidgetItem(
+        auto* item = new QListWidgetItem(
             QString("%1x%2 - %3").arg(size.width).arg(size.height).arg(size.description)
         );
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
@@ -143,7 +125,7 @@ void FaviconProduction::setupSizeSelection()
 void FaviconProduction::setupPreviewArea()
 {
     previewGroup = new QGroupBox("👁️ 预览效果");
-    QVBoxLayout* previewMainLayout = new QVBoxLayout(previewGroup);
+    auto* previewMainLayout = new QVBoxLayout(previewGroup);
     
     previewScrollArea = new QScrollArea();
     previewScrollArea->setMinimumHeight(150);
@@ -160,7 +142,7 @@ void FaviconProduction::setupOutputArea()
     outputLayout = new QVBoxLayout(outputGroup);
     
     outputPathLayout = new QHBoxLayout();
-    QLabel* pathLabel = new QLabel("输出目录:");
+    auto* pathLabel = new QLabel("输出目录:");
     outputPathEdit = new QLineEdit();
     selectOutputBtn = new QPushButton("📁 浏览");
     
@@ -240,9 +222,8 @@ void FaviconProduction::onGenerateFavicons()
         QMessageBox::warning(this, "错误", "请至少选择一个尺寸");
         return;
     }
-    
-    QDir dir;
-    if (!dir.exists(outputDirectory)) {
+
+    if (const QDir dir; !dir.exists(outputDirectory)) {
         dir.mkpath(outputDirectory);
     }
     
@@ -263,8 +244,7 @@ void FaviconProduction::onGenerateFavicons()
 
 void FaviconProduction::onSelectOutputDir()
 {
-    QString dir = QFileDialog::getExistingDirectory(this, "选择输出目录", outputDirectory);
-    if (!dir.isEmpty()) {
+    if (const QString dir = QFileDialog::getExistingDirectory(this, "选择输出目录", outputDirectory); !dir.isEmpty()) {
         outputDirectory = dir;
         outputPathEdit->setText(dir);
     }
@@ -307,7 +287,7 @@ void FaviconProduction::onGenerateHtml()
 
 void FaviconProduction::loadImage(const QString& filePath)
 {
-    QPixmap pixmap(filePath);
+    const QPixmap pixmap(filePath);
     if (pixmap.isNull()) {
         QMessageBox::warning(this, "错误", "无法加载图片文件");
         return;
@@ -318,8 +298,8 @@ void FaviconProduction::loadImage(const QString& filePath)
     
     imagePathLabel->setText(QFileInfo(filePath).fileName());
     imageSizeLabel->setText(QString("图片尺寸: %1 x %2").arg(pixmap.width()).arg(pixmap.height()));
-    
-    QPixmap preview = pixmap.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    const QPixmap preview = pixmap.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     imagePreviewLabel->setPixmap(preview);
     
     generateBtn->setEnabled(true);

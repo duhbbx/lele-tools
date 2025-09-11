@@ -58,7 +58,7 @@ void Ping::setupUI() {
     buttonLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     startBtn = new QPushButton("🚀 开始Ping");
-    startBtn->setFixedSize(100, 32);
+    startBtn->setFixedSize(110, 32);
 
     stopBtn = new QPushButton("⏹️ 停止");
     stopBtn->setFixedSize(80, 32);
@@ -162,7 +162,7 @@ void Ping::setupResultsArea() {
     resultsLayout = new QVBoxLayout(resultsWidget);
 
     resultsLabel = new QLabel("📊 Ping结果");
-    resultsLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
+    resultsLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
 
     resultsTable = new QTableWidget();
     resultsTable->setColumnCount(6);

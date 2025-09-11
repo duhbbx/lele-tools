@@ -15,6 +15,8 @@
 #endif
 
 int main(int argc, char* argv[]) {
+
+
 #ifdef Q_OS_WIN
     // 尝试附加到父进程的控制台（如果从命令行启动）
     if (AttachConsole(ATTACH_PARENT_PROCESS)) {

@@ -188,61 +188,6 @@ void YamlFormatter::setupUI()
     mainLayout->addWidget(toolbarWidget);
     mainLayout->addWidget(optionsGroup);
     mainLayout->addWidget(mainSplitter);
-    
-    // 设置样式
-    setStyleSheet(R"(
-        QWidget {
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-        QPushButton {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 0px;
-            padding: 4px 8px;
-            font-size: 10pt;
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton:hover {
-            background-color: #e0e0e0;
-            border-color: #999999;
-        }
-        QPushButton:pressed {
-            background-color: #d0d0d0;
-        }
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #cccccc;
-            border-radius: 0px;
-            margin-top: 1ex;
-            padding-top: 10px;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-            font-size: 11px;
-        }
-        QTextEdit, QPlainTextEdit {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 8px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 11pt;
-        }
-        QTextEdit:focus, QPlainTextEdit:focus {
-            border-color: #4CAF50;
-        }
-        QSpinBox {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 2px 4px;
-            font-size: 10pt;
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QSpinBox:focus {
-            border-color: #4CAF50;
-        }
-    )");
 }
 
 void YamlFormatter::setupToolbar()
@@ -270,7 +215,7 @@ void YamlFormatter::setupToolbar()
     
     statusLabel = new QLabel("就绪");
     statusLabel->setFixedHeight(32);
-    statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 10pt;");
+    statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 11pt;");
     
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
@@ -284,7 +229,8 @@ void YamlFormatter::setupToolbar()
 void YamlFormatter::setupOptions()
 {
     optionsGroup = new QGroupBox("⚙️ 格式选项");
-    optionsGroup->setFixedHeight(60);
+    // optionsGroup->setFixedHeight(60);
+    optionsGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
     optionsLayout = new QHBoxLayout(optionsGroup);
     optionsLayout->setContentsMargins(10, 10, 10, 10);
     optionsLayout->setSpacing(15);
@@ -331,7 +277,6 @@ void YamlFormatter::setupInputOutput()
     
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);
-    outputTextEdit->setFont(QFont("Consolas", 11));
     
     highlighter = new YamlHighlighter(outputTextEdit->document());
     

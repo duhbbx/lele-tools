@@ -98,7 +98,7 @@ void Telnet::setupUI()
             border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', monospace;
-            font-size: 10pt;
+            font-size: 11pt;
             background-color: #1e1e1e;
             color: #ffffff;
         }
@@ -211,7 +211,7 @@ void Telnet::setupStatusArea()
     connectionStatusLabel->setStyleSheet("color: #f44336; font-weight: bold;");
     
     bytesLabel = new QLabel("发送: 0B | 接收: 0B");
-    bytesLabel->setStyleSheet("color: #666; font-size: 10pt;");
+    bytesLabel->setStyleSheet("color: #666; font-size: 11pt;");
     
     statusLayout->addWidget(statusLabel);
     statusLayout->addWidget(connectionStatusLabel);

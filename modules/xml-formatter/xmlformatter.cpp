@@ -112,37 +112,6 @@ void XmlFormatter::setupUI() {
     // 添加到主布局
     mainLayout->addWidget(toolbarWidget);
     mainLayout->addWidget(mainSplitter);
-
-    // 设置样式
-    setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            padding: 4px 8px;
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-weight: normal;
-            font-size: 10pt;
-        }
-        QPushButton:hover {
-            background-color: #e0e0e0;
-            border-color: #999999;
-        }
-        QPushButton:pressed {
-            background-color: #d0d0d0;
-        }
-        QTextEdit, QPlainTextEdit {
-            border: 2px solid #dddddd;
-            padding: 2px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 10pt;
-        }
-        QTextEdit:focus, QPlainTextEdit:focus {
-            border-color: #4CAF50;
-        }
-    )");
 }
 
 void XmlFormatter::setupToolbar() {
@@ -169,7 +138,7 @@ void XmlFormatter::setupToolbar() {
 
     statusLabel = new QLabel("就绪");
     statusLabel->setFixedHeight(32);
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; font-size: 10pt; padding: 6px 12px; background: #f9f9f9; border: 1px solid #ddd;");
+    statusLabel->setStyleSheet("color: #666; font-weight: bold; font-size: 11pt; padding: 6px 12px; background: #f9f9f9; border: 1px solid #ddd;");
 
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
@@ -188,7 +157,7 @@ void XmlFormatter::setupInputOutput() {
     inputLayout = new QVBoxLayout(inputWidget);
 
     inputLabel = new QLabel("📝 XML输入");
-    inputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
+    inputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
 
     inputTextEdit = new QTextEdit();
     inputTextEdit->setPlaceholderText("请输入要格式化的XML数据...");
@@ -201,7 +170,7 @@ void XmlFormatter::setupInputOutput() {
     outputLayout = new QVBoxLayout(outputWidget);
 
     outputLabel = new QLabel("📄 格式化结果");
-    outputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
+    outputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
 
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);

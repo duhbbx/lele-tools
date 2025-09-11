@@ -44,7 +44,7 @@ void DateTimeUtil::setupUI()
         "    border-top-left-radius: 6px;"
         "    border-top-right-radius: 6px;"
         "    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;"
-        "    font-size: 10pt;"
+        "    font-size: 11pt;"
         "}"
         "QTabBar::tab:selected {"
         "    background-color: #3498db;"
