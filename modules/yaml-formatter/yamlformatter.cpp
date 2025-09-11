@@ -199,22 +199,16 @@ void YamlFormatter::setupToolbar()
     toolbarLayout->setSpacing(8);
     
     formatBtn = new QPushButton("🎨 格式化");
-    formatBtn->setFixedSize(90, 32);
-    
+
     minifyBtn = new QPushButton("📦 压缩");
-    minifyBtn->setFixedSize(75, 32);
-    
+
     validateBtn = new QPushButton("✅ 验证");
-    validateBtn->setFixedSize(75, 32);
-    
+
     clearBtn = new QPushButton("🗑️ 清空");
-    clearBtn->setFixedSize(75, 32);
-    
+
     copyBtn = new QPushButton("📋 复制");
-    copyBtn->setFixedSize(75, 32);
-    
+
     statusLabel = new QLabel("就绪");
-    statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 11pt;");
     
     toolbarLayout->addWidget(formatBtn);
@@ -285,6 +279,9 @@ void YamlFormatter::setupInputOutput()
     
     mainSplitter->addWidget(inputWidget);
     mainSplitter->addWidget(outputWidget);
+
+    mainSplitter->setStretchFactor(0, 1);
+    mainSplitter->setStretchFactor(1, 2);
 }
 
 void YamlFormatter::onInputTextChanged()

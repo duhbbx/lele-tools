@@ -40,7 +40,7 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
         "    border: none;"
         "    background-color: transparent;"
         "    outline: none;"
-        "    font-size: 11pt;"
+        "    font-size: 10pt;"
         "}"
         "QListWidget::item {"
         "    padding: 8px;"

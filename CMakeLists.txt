@@ -183,7 +183,7 @@ else()
     set(QT_MULTIMEDIA_LIBS "")
 endif()
 
-
+qt_standard_project_setup() # Qt6 推荐做法
 
 set(TS_FILES 
     translations/lele-tools_zh_CN.ts

@@ -37,11 +37,7 @@ IntegratedTerminal::IntegratedTerminal(QWidget *parent)
         "Consolas",
         "Source Code Pro", 
         "Monaco",
-        "Menlo",
-        "Ubuntu Mono",
-        "DejaVu Sans Mono",
-        "Liberation Mono",
-        "Courier New"
+        "Menlo"
     };
     
     // 尝试找到可用的编程字体

@@ -110,7 +110,7 @@ JsonFormatter::JsonFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidJ
     connect(searchLineEdit, &QLineEdit::textChanged, this, &JsonFormatter::onSearchInTree);
 
     // 设置默认示例
-    QString sampleJson = R"({
+    const QString sampleJson = R"({
   "name": "乐乐的工具箱",
   "version": "1.0.0",
   "features": [
@@ -175,31 +175,20 @@ void JsonFormatter::setupToolbar() {
     toolbarLayout = new QHBoxLayout(toolbarWidget);
     toolbarLayout->setContentsMargins(5, 5, 5, 5);
     toolbarLayout->setSpacing(8);
-
     // 创建紧凑的按钮
-    formatBtn = new QPushButton("🎨 格式化");
+    formatBtn = new QPushButton(tr("🎨 格式化"));
     formatBtn->setToolTip("格式化JSON并添加缩进");
-    formatBtn->setFixedSize(85, 32);
-
     minifyBtn = new QPushButton("📦 压缩");
     minifyBtn->setToolTip("移除空白字符，压缩JSON");
-    minifyBtn->setFixedSize(75, 32);
-
     validateBtn = new QPushButton("✅ 验证");
     validateBtn->setToolTip("验证JSON格式是否正确");
-    validateBtn->setFixedSize(75, 32);
-
     clearBtn = new QPushButton("🗑️ 清空");
     clearBtn->setToolTip("清空所有内容");
-    clearBtn->setFixedSize(75, 32);
-
     copyBtn = new QPushButton("📋 复制");
     copyBtn->setToolTip("复制格式化后的JSON到剪贴板");
-    copyBtn->setFixedSize(75, 32);
 
     // 状态标签也设置固定高度
     statusLabel = new QLabel("就绪");
-    statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet(R"(
         QLabel {
             color: #666;
@@ -237,17 +226,6 @@ void JsonFormatter::setupInputArea() {
     // 性能优化设置
     inputTextEdit->setUndoRedoEnabled(true); // 保持撤销重做功能
     inputTextEdit->setLineWrapMode(QTextEdit::NoWrap); // 禁用自动换行，提高性能
-    
-    // 设置等宽字体，大小为11pt
-    QFont inputFont("Consolas", 10);
-    if (!inputFont.exactMatch()) {
-        inputFont.setFamily("Monaco");
-        if (!inputFont.exactMatch()) {
-            inputFont.setFamily("Courier New");
-        }
-    }
-    inputTextEdit->setFont(inputFont);
-
     inputLayout->addWidget(inputLabel);
     inputLayout->addWidget(inputTextEdit);
 }

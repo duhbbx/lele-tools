@@ -37,7 +37,7 @@ CustomTabBar::CustomTabBar(QWidget *parent)
 
 void CustomTabBar::mouseMoveEvent(QMouseEvent *event)
 {
-    int index = tabAt(event->pos());
+    const int index = tabAt(event->pos());
     int hoveredCloseButton = -1;
     
     // 检查是否悬停在关闭按钮上
