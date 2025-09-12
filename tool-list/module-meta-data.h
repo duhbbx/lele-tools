@@ -75,3 +75,7 @@
 {"xxx", "回程路由测试", "RouteTestTool"},
 
 {"xxx", "系统基本信息", "SystemInfoTool"},
+
+{"xxx", "富文本记事本", "Notepad"},
+
+{"xxx", "媒体文件管理", "MediaManager"},
