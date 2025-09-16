@@ -60,8 +60,19 @@ jobs:
         $url = "https://npcap.com/dist/npcap-sdk-1.15.zip"
         $zipFile = "$env:GITHUB_WORKSPACE\npcap-sdk.zip"
         $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
+    
+        Write-Host "Downloading Npcap SDK from $url ..."
         Invoke-WebRequest -Uri $url -OutFile $zipFile
+    
+        Write-Host "Downloaded file size: $(Get-Item $zipFile).Length bytes"
+    
+        Write-Host "Expanding archive to $destDir ..."
         Expand-Archive $zipFile -DestinationPath $destDir
+    
+        Write-Host "Listing extracted files:"
+        Get-ChildItem -Recurse $destDir | ForEach-Object { Write-Host $_.FullName }
+    
+        Write-Host "Npcap SDK download and extraction complete."
       
       
     # 步骤2: 安装Qt开发框架
@@ -368,6 +379,13 @@ jobs:
             Write-Host "vcpkg not found, building without Redis support" -ForegroundColor Yellow
         }
         $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk\npcap-sdk-1.15"
+        # 打印$npcapDir是否存在
+        if (Test-Path $npcapDir -PathType Container) {
+            Write-Host "Npcap SDK directory exists: $npcapDir"
+        } else {
+            Write-Error "Npcap SDK directory NOT found: $npcapDir"
+            exit 1
+        }
         
         # 打印日志
         Write-Host "CMAKE_PREFIX_PATH: $CMakePrefixPath" -ForegroundColor Cyan
