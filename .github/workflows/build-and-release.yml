@@ -52,6 +52,15 @@ jobs:
     # 获取仓库的最新代码到构建环境
     - name: Checkout code
       uses: actions/checkout@v4
+
+    # 下载 Npcap SDK（也可以换成 WinPcap SDK）
+    - name: Download Npcap SDK
+      shell: powershell
+      run: |
+        $url = "https://npcap.com/dist/npcap-sdk-1.15.zip"
+        Invoke-WebRequest -Uri $url -OutFile npcap-sdk.zip
+        Expand-Archive npcap-sdk.zip -DestinationPath $env:GITHUB_WORKSPACE
+      
       
     # 步骤2: 安装Qt开发框架
     # Qt是GUI应用程序的核心依赖，包含界面组件和多媒体功能
@@ -360,10 +369,11 @@ jobs:
         # 构建步骤3: 配置CMake构建系统
         # 根据可用依赖动态配置编译选项
         $CMakeArgs = @(
-            $ProjectRoot,                                    # 项目源码路径
-            "-G", "Visual Studio 17 2022",                 # 使用VS2022生成器
-            "-A", "x64",                                    # 64位架构
-            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"          # Qt和OpenCV路径
+            $ProjectRoot,                                                         # 项目源码路径
+            "-G", "Visual Studio 17 2022",                                        # 使用VS2022生成器
+            "-A", "x64",                                                          # 64位架构
+            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"                                # Qt和OpenCV路径
+            "-DCMAKE_PREFIX_PATH=$env:GITHUB_WORKSPACE/npcap-sdk-1.15/WpdPack"    # npcap 的路径
         )
         
         # 配置Redis支持（如果vcpkg可用）

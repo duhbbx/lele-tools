@@ -59,12 +59,11 @@
 #include "../../common/sqlite/SqliteManager.h"
 
 
-class NoteItemDelegate : public QStyledItemDelegate {
+class NoteItemDelegate final : public QStyledItemDelegate {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
 
-    void paint(QPainter* painter, const QStyleOptionViewItem& option,
-               const QModelIndex& index) const override {
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         painter->save();
 
         const QString title = index.data(Qt::DisplayRole).toString();
@@ -74,20 +73,20 @@ public:
 
         // 背景
         if (option.state & QStyle::State_Selected) {
-            painter->fillRect(rect, QColor("#0078d7"));
+            painter->fillRect(rect, QColor(0x0078d7));
         } else if (option.state & QStyle::State_MouseOver) {
-            painter->fillRect(rect, QColor("#e0e0e0"));
+            painter->fillRect(rect, QColor(0xe0e0e0));
         } else {
-            painter->fillRect(rect, QColor("#f8f9fa"));
+            painter->fillRect(rect, QColor(0xf8f9fa));
         }
 
         // 标题
-        painter->setPen(option.state & QStyle::State_Selected ? Qt::white : QColor("#333"));
+        painter->setPen(option.state & QStyle::State_Selected ? Qt::white : QColor(0x333333));
         painter->setFont(QFont("Microsoft YaHei", 9, QFont::Bold));
         painter->drawText(rect.adjusted(8, 4, -8, -10), title);
 
         // 日期
-        painter->setPen(option.state & QStyle::State_Selected ? Qt::white : QColor("#666"));
+        painter->setPen(option.state & QStyle::State_Selected ? Qt::white : QColor(0x666666));
         painter->setFont(QFont("Microsoft YaHei", 8));
         painter->drawText(rect.adjusted(8, 34, -8, -4), Qt::AlignRight, date);
 
@@ -95,6 +94,7 @@ public:
         painter->restore();
     }
 
+    [[nodiscard]]
     QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override {
         return {200, 50}; // 每项的高度
     }
