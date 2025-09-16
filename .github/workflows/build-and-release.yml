@@ -366,6 +366,11 @@ jobs:
             Write-Host "vcpkg not found, building without Redis support" -ForegroundColor Yellow
         }
         
+        
+        $CMakePrefixPath = "$CMakePrefixPath;$env:GITHUB_WORKSPACE/npcap-sdk-1.15"
+        
+        # 打印日志
+        Write-Host "CMAKE_PREFIX_PATH: $CMakePrefixPath" -ForegroundColor Cyan
         # 构建步骤3: 配置CMake构建系统
         # 根据可用依赖动态配置编译选项
         $CMakeArgs = @(
