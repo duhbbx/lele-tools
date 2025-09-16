@@ -1,9 +1,27 @@
 cmake_minimum_required(VERSION 3.5)
-
 project(lele-tools VERSION 0.1 LANGUAGES CXX)
 
-# 告诉 CMake 去哪里找 Qt，使用-DCMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64/lib/cmake这个指定避免代码中硬编码
-# set(CMAKE_PREFIX_PATH "C:/Qt/6.9.1/msvc2022_64/lib/cmake/Qt6")
+
+
+# 默认环境
+#set(ENVIRONMENT "联想笔记本")
+
+
+# 构建 .env 文件路径
+set(ENV_FILE "${CMAKE_SOURCE_DIR}/.env.${ENVIRONMENT}")
+
+# 从环境配置中加载变量，实现nodejs的效果
+if(EXISTS "${ENV_FILE}")
+    file(READ "${ENV_FILE}" ENV_CONTENTS)
+    foreach(line IN LISTS ENV_CONTENTS)
+        if(line MATCHES "^\\s*([^=]+)=(.+)$")
+            set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+        endif()
+    endforeach()
+    message(STATUS "Loaded environment: ${ENVIRONMENT}")
+else()
+    message(WARNING "Environment file ${ENV_FILE} not found")
+endif()
 
 set(CMAKE_AUTOMOC ON)   # 自动处理 moc (信号与槽)
 set(CMAKE_AUTORCC ON)   # 自动处理 qrc 资源文件
@@ -13,9 +31,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-# Redis 可选支持 (暂时禁用，等待库安装完成)
+# Redis 可选支持
 option(WITH_REDIS "Enable Redis support" ON)
-
 # OpenCV 可选支持
 option(WITH_OPENCV "Enable OpenCV support" ON)
 
@@ -60,14 +77,8 @@ if(ENABLE_REDIS)
     else()
         # 如果CONFIG方式失败，尝试手动查找
         # 直接指定vcpkg路径
-        set(REDIS_PLUS_PLUS_INCLUDE_DIR "D:/projects/vcpkg/installed/x64-windows/include")
-        set(REDIS_PLUS_PLUS_LIBRARY "D:/projects/vcpkg/installed/x64-windows/lib/redis++.lib")
-        set(HIREDIS_LIBRARY "D:/projects/vcpkg/installed/x64-windows/lib/hiredis.lib")
-        
         # 检查文件是否存在
-        if(EXISTS "${REDIS_PLUS_PLUS_INCLUDE_DIR}/sw/redis++/redis++.h" AND 
-           EXISTS "${REDIS_PLUS_PLUS_LIBRARY}" AND 
-           EXISTS "${HIREDIS_LIBRARY}")
+        if(EXISTS "${REDIS_PLUS_PLUS_INCLUDE_DIR}/sw/redis++/redis++.h" AND EXISTS "${REDIS_PLUS_PLUS_LIBRARY}" AND EXISTS "${HIREDIS_LIBRARY}")
             message(STATUS "redis-plus-plus found at: ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
             message(STATUS "redis++ library: ${REDIS_PLUS_PLUS_LIBRARY}")
             message(STATUS "hiredis library: ${HIREDIS_LIBRARY}")
@@ -292,46 +303,6 @@ if(WITH_PCAP)
         set(PCAP_INCLUDE_DIR "" CACHE PATH "Npcap include directory (pcap.h)")
         set(PCAP_LIBRARY "" CACHE FILEPATH "Npcap library (wpcap.lib)")
         set(PACKET_LIBRARY "" CACHE FILEPATH "Packet library (packet.lib)")
-
-        # --- 如果未指定，才使用 find_path/find_library 搜索 ---
-        if(NOT PCAP_INCLUDE_DIR)
-            find_path(PCAP_INCLUDE_DIR
-                NAMES pcap.h
-                PATHS
-                    "C:/npcap-sdk-1.15/Include"
-                    "C:/Program Files/Npcap/Include"
-                    "C:/Program Files (x86)/Npcap/Include"
-                    "${CMAKE_PREFIX_PATH}/include"
-                DOC "Npcap include directory"
-                NO_DEFAULT_PATH
-            )
-        endif()
-
-        if(NOT PCAP_LIBRARY)
-            find_library(PCAP_LIBRARY
-                NAMES wpcap pcap
-                PATHS
-                    "C:/npcap-sdk-1.15/Lib/x64"
-                    "C:/Program Files/Npcap/Lib/x64"
-                    "C:/Program Files (x86)/Npcap/Lib/x64"
-                    "${CMAKE_PREFIX_PATH}/lib"
-                DOC "Npcap library"
-                NO_DEFAULT_PATH
-            )
-        endif()
-
-        if(NOT PACKET_LIBRARY)
-            find_library(PACKET_LIBRARY
-                NAMES packet
-                PATHS
-                    "C:/npcap-sdk-1.15/Lib/x64"
-                    "C:/Program Files/Npcap/Lib/x64"
-                    "C:/Program Files (x86)/Npcap/Lib/x64"
-                    "${CMAKE_PREFIX_PATH}/lib"
-                DOC "Packet library"
-                NO_DEFAULT_PATH
-            )
-        endif()
 
         # --- 配置目标 ---
         if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
