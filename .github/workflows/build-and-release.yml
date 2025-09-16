@@ -378,7 +378,9 @@ jobs:
         } else {
             Write-Host "vcpkg not found, building without Redis support" -ForegroundColor Yellow
         }
-        $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk\npcap-sdk-1.15"
+        # $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk\npcap-sdk-1.15"
+        # 不带npcap-sdk-1.15才是对的目录
+        $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
         # 打印$npcapDir是否存在
         if (Test-Path $npcapDir -PathType Container) {
             Write-Host "Npcap SDK directory exists: $npcapDir"
