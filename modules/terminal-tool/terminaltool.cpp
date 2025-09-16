@@ -31,14 +31,39 @@ IntegratedTerminal::IntegratedTerminal(QWidget *parent)
 {
     setupCompleter();
     
-    // 设置终端样式
-    setFont(QFont("Consolas", 10));
-    setStyleSheet(R"(
+    // 设置终端字体 - 尝试多种编程字体
+    QFont terminalFont;
+    QStringList fontFamilies = {
+        "Consolas",
+        "Source Code Pro", 
+        "Monaco",
+        "Menlo"
+    };
+    
+    // 尝试找到可用的编程字体
+    for (const QString& fontFamily : fontFamilies) {
+        terminalFont.setFamily(fontFamily);
+        terminalFont.setPointSize(10);
+        terminalFont.setFixedPitch(true);
+        if (terminalFont.exactMatch()) {
+            qDebug() << "使用字体:" << fontFamily;
+            break;
+        }
+    }
+    
+    setFont(terminalFont);
+    
+    // 在样式表中也强制指定字体，确保生效
+    QString fontFamily = terminalFont.family();
+    QString styleSheet = QString(R"(
         QTextEdit {
             background-color: #000000;
             color: #ffffff;
             border: 1px solid #333333;
             selection-background-color: #444444;
+            font-family: '%1', 'Consolas', 'Source Code Pro', 'Monaco', monospace;
+            font-size: 11pt;
+            font-weight: normal;
         }
         QScrollBar:vertical {
             background: #2b2b2b;
@@ -53,7 +78,17 @@ IntegratedTerminal::IntegratedTerminal(QWidget *parent)
         QScrollBar::handle:vertical:hover {
             background: #666666;
         }
-    )");
+    )").arg(fontFamily);
+    
+    setStyleSheet(styleSheet);
+    
+    // 强制设置字体
+    setCurrentFont(terminalFont);
+    
+    // 设置默认字符格式
+    QTextCharFormat format;
+    format.setFont(terminalFont);
+    setCurrentCharFormat(format);
     
     // 设置文本编辑属性
     setUndoRedoEnabled(false);
@@ -61,6 +96,8 @@ IntegratedTerminal::IntegratedTerminal(QWidget *parent)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     setLineWrapMode(QTextEdit::WidgetWidth);
     setAcceptRichText(true);
+    
+    qDebug() << "IntegratedTerminal 字体设置完成:" << terminalFont.family();
 }
 
 void IntegratedTerminal::setupCompleter()
@@ -167,11 +204,33 @@ void IntegratedTerminal::addToHistory(const QString &command)
 
 void IntegratedTerminal::keyPressEvent(QKeyEvent *event)
 {
-    // 检查是否在可编辑区域
-    if (!isInEditableArea() && event->key() != Qt::Key_C && 
-        !(event->modifiers() & Qt::ControlModifier)) {
-        // 如果不在可编辑区域，移动到末尾
-        moveToEndOfDocument();
+    // 处理文本选择相关的快捷键（优先处理）
+    if (event->modifiers() & Qt::ControlModifier) {
+        switch (event->key()) {
+        case Qt::Key_C:
+            if (textCursor().hasSelection()) {
+                copy();  // 有选中文本时复制
+                return;
+            }
+            // 没有选中文本时，继续到后面的中断处理
+            break;
+        case Qt::Key_A:
+            selectAll();  // 全选
+            return;
+        case Qt::Key_V:
+            if (!isInEditableArea()) {
+                moveToEndOfDocument();
+            }
+            paste();  // 粘贴
+            return;
+        }
+    }
+    
+    // 处理Shift+方向键等文本选择操作
+    if (event->modifiers() & Qt::ShiftModifier) {
+        // 允许所有Shift+键的组合用于文本选择
+        QTextEdit::keyPressEvent(event);
+        return;
     }
     
     switch (event->key()) {
@@ -189,9 +248,11 @@ void IntegratedTerminal::keyPressEvent(QKeyEvent *event)
         return;
         
     case Qt::Key_Left:
-        // 防止光标移动到提示符之前
-        if (textCursor().position() <= m_commandStartPos) {
-            return;
+        // 只有在没有修饰键时才限制光标移动
+        if (!(event->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier))) {
+            if (textCursor().position() <= m_commandStartPos) {
+                return;
+            }
         }
         break;
         
@@ -205,8 +266,8 @@ void IntegratedTerminal::keyPressEvent(QKeyEvent *event)
         return;
         
     case Qt::Key_Backspace:
-        // 防止删除提示符
-        if (textCursor().position() <= m_commandStartPos) {
+        // 只有在当前命令区域才允许删除
+        if (!textCursor().hasSelection() && textCursor().position() <= m_commandStartPos) {
             return;
         }
         break;
@@ -220,15 +281,10 @@ void IntegratedTerminal::keyPressEvent(QKeyEvent *event)
         
     case Qt::Key_C:
         if (event->modifiers() & Qt::ControlModifier) {
+            // 如果当前命令为空，发送中断信号
             if (getCurrentCommand().isEmpty()) {
                 emit requestInterrupt();
                 return;
-            } else {
-                // 有选中文本时复制
-                if (textCursor().hasSelection()) {
-                    QTextEdit::keyPressEvent(event);
-                    return;
-                }
             }
         }
         break;
@@ -259,33 +315,67 @@ void IntegratedTerminal::keyPressEvent(QKeyEvent *event)
 
 void IntegratedTerminal::mousePressEvent(QMouseEvent *event)
 {
+    // 完全允许正常的鼠标事件处理，不干预文本选择
     QTextEdit::mousePressEvent(event);
-    
-    // 点击后确保光标在可编辑区域
-    if (event->button() == Qt::LeftButton) {
-        QTextCursor cursor = textCursor();
-        if (cursor.position() < m_commandStartPos) {
-            moveToEndOfDocument();
-        }
-    }
 }
 
 void IntegratedTerminal::mouseReleaseEvent(QMouseEvent *event)
 {
     QTextEdit::mouseReleaseEvent(event);
+    
+    // 延迟检查，确保选择操作完成
+    QTimer::singleShot(0, this, [this, event]() {
+        // 如果没有选中文本且点击在历史区域，自动跳转到输入位置
+        if (!textCursor().hasSelection() && event->button() == Qt::LeftButton) {
+            QTextCursor cursor = textCursor();
+            if (cursor.position() < m_commandStartPos) {
+                moveToEndOfDocument();
+            }
+        }
+    });
 }
 
 void IntegratedTerminal::contextMenuEvent(QContextMenuEvent *event)
 {
-    QMenu *menu = createStandardContextMenu();
+    QMenu *menu = new QMenu(this);
     
-    // 添加自定义菜单项
+    // 复制相关菜单
+    if (textCursor().hasSelection()) {
+        QAction *copyAction = menu->addAction("复制");
+        copyAction->setShortcut(QKeySequence::Copy);
+        connect(copyAction, &QAction::triggered, this, &QTextEdit::copy);
+        menu->addSeparator();
+    }
+    
+    // 粘贴菜单（如果剪贴板有内容）
+    QClipboard *clipboard = QApplication::clipboard();
+    if (!clipboard->text().isEmpty()) {
+        QAction *pasteAction = menu->addAction("粘贴");
+        pasteAction->setShortcut(QKeySequence::Paste);
+        connect(pasteAction, &QAction::triggered, [this]() {
+            // 确保粘贴在当前命令位置
+            if (!isInEditableArea()) {
+                moveToEndOfDocument();
+            }
+            paste();
+        });
+        menu->addSeparator();
+    }
+    
+    // 全选菜单
+    QAction *selectAllAction = menu->addAction("全选");
+    selectAllAction->setShortcut(QKeySequence::SelectAll);
+    connect(selectAllAction, &QAction::triggered, this, &QTextEdit::selectAll);
+    
     menu->addSeparator();
     
+    // 终端操作菜单
     QAction *clearAction = menu->addAction("清屏");
+    clearAction->setShortcut(QKeySequence("Ctrl+L"));
     connect(clearAction, &QAction::triggered, this, &IntegratedTerminal::requestClear);
     
     QAction *interruptAction = menu->addAction("中断进程");
+    interruptAction->setShortcut(QKeySequence("Ctrl+C"));
     connect(interruptAction, &QAction::triggered, this, &IntegratedTerminal::requestInterrupt);
     
     menu->exec(event->globalPos());
@@ -479,6 +569,14 @@ void TerminalTool::setupUI()
     m_terminal->setFocus();
     
     setupTerminalStyle();
+    
+    // 强制应用字体设置
+    QTimer::singleShot(0, this, [this]() {
+        if (m_terminal) {
+            m_terminal->setFont(m_terminalFont);
+            qDebug() << "延迟设置终端字体:" << m_terminalFont.family();
+        }
+    });
 }
 
 void TerminalTool::setupTerminalStyle()
@@ -490,12 +588,41 @@ void TerminalTool::setupTerminalStyle()
         }
     )");
     
-    // 设置终端字体
-    m_terminalFont = QFont("Consolas", 10);
-    if (!m_terminalFont.exactMatch()) {
-        m_terminalFont.setFamily("Courier New");
+    // 设置终端字体 - 尝试多种编程字体
+    QStringList fontFamilies = {
+        "Consolas",
+        "Source Code Pro", 
+        "Monaco",
+        "Menlo",
+        "Ubuntu Mono",
+        "DejaVu Sans Mono",
+        "Liberation Mono",
+        "Courier New"
+    };
+    
+    // 尝试找到可用的编程字体
+    for (const QString& fontFamily : fontFamilies) {
+        m_terminalFont.setFamily(fontFamily);
+        m_terminalFont.setPointSize(10);
+        m_terminalFont.setFixedPitch(true);
+        if (m_terminalFont.exactMatch()) {
+            qDebug() << "终端使用字体:" << fontFamily;
+            break;
+        }
     }
-    m_terminalFont.setFixedPitch(true);
+    
+    // 强制应用字体到终端
+    if (m_terminal) {
+        m_terminal->setFont(m_terminalFont);
+        
+        // 强制设置字体属性
+        QTextCursor cursor = m_terminal->textCursor();
+        QTextCharFormat format = cursor.charFormat();
+        format.setFont(m_terminalFont);
+        m_terminal->setCurrentCharFormat(format);
+        
+        qDebug() << "终端字体已设置为:" << m_terminalFont.family() << "11pt";
+    }
 }
 
 void TerminalTool::onCommandEntered(const QString &command)

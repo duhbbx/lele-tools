@@ -9,11 +9,6 @@ DateTimeUtil::DateTimeUtil() : QWidget(nullptr), DynamicObjectBase()
 {
     setupUI();
     
-    // 启动定时器更新当前时间
-    updateTimer = new QTimer(this);
-    connect(updateTimer, &QTimer::timeout, this, &DateTimeUtil::updateCurrentTime);
-    updateTimer->start(1000); // 每秒更新
-    
     // 初始更新
     updateCurrentTime();
     populateTimezones();
@@ -27,59 +22,31 @@ void DateTimeUtil::setupUI()
 
     // 创建选项卡widget
     QTabWidget *tabWidget = new QTabWidget;
-    tabWidget->setStyleSheet(
-        "QTabWidget::pane {"
-        "    border: 2px solid #3498db;"
-        "    border-radius: 0px;"
-        "    margin-top: 5px;"
-        "}"
-        "QTabWidget::tab-bar {"
-        "    alignment: left;"
-        "}"
-        "QTabBar::tab {"
-        "    background-color: #ecf0f1;"
-        "    color: #2c3e50;"
-        "    padding: 8px 16px;"
-        "    margin-right: 2px;"
-        "    border-top-left-radius: 6px;"
-        "    border-top-right-radius: 6px;"
-        "    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;"
-        "    font-size: 10pt;"
-        "}"
-        "QTabBar::tab:selected {"
-        "    background-color: #3498db;"
-        "    color: white;"
-        "}"
-        "QTabBar::tab:hover {"
-        "    background-color: #5dade2;"
-        "    color: white;"
-        "}"
-    );
 
     // 当前时间页
     QWidget *currentTimeTab = new QWidget;
     setupCurrentTimeSection(currentTimeTab);
-    tabWidget->addTab(currentTimeTab, "🕐 当前时间");
+    tabWidget->addTab(currentTimeTab, tr("🕐 当前时间"));
 
     // 转换页
     QWidget *conversionTab = new QWidget;
     setupConversionSection(conversionTab);
-    tabWidget->addTab(conversionTab, "🔄 时间转换");
+    tabWidget->addTab(conversionTab, tr("🔄 时间转换"));
 
     // 批量转换页
     QWidget *batchTab = new QWidget;
     setupBatchSection(batchTab);
-    tabWidget->addTab(batchTab, "📋 批量转换");
+    tabWidget->addTab(batchTab, tr("📋 批量转换"));
 
     // 时间计算页
     QWidget *calculationTab = new QWidget;
     setupCalculationSection(calculationTab);
-    tabWidget->addTab(calculationTab, "🧮 时间计算");
+    tabWidget->addTab(calculationTab, tr("🧮 时间计算"));
 
     // 格式示例页
     QWidget *formatTab = new QWidget;
     setupFormatSection(formatTab);
-    tabWidget->addTab(formatTab, "📝 格式示例");
+    tabWidget->addTab(formatTab, tr("📝 格式示例"));
 
     mainLayout->addWidget(tabWidget);
 }
@@ -113,7 +80,7 @@ void DateTimeUtil::setupCurrentTimeSection(QWidget *parent)
     
     // 时区选择
     QHBoxLayout *timezoneLayout = new QHBoxLayout;
-    QLabel *tzLabel = new QLabel("时区:");
+    QLabel *tzLabel = new QLabel(tr("时区:"));
     tzLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     timezoneCombo = new QComboBox;
     timezoneCombo->setStyleSheet(
@@ -128,8 +95,9 @@ void DateTimeUtil::setupCurrentTimeSection(QWidget *parent)
         "}"
     );
     
-    QPushButton *copyTsBtn = new QPushButton("复制时间戳");
-    QPushButton *copyDtBtn = new QPushButton("复制日期时间");
+    QPushButton *copyTsBtn = new QPushButton(tr("复制时间戳"));
+    QPushButton *copyDtBtn = new QPushButton(tr("复制日期时间"));
+    QPushButton *refreshBtn = new QPushButton(tr("刷新时间"));
     
     QString buttonStyle = 
         "QPushButton {"
@@ -150,13 +118,17 @@ void DateTimeUtil::setupCurrentTimeSection(QWidget *parent)
     copyTsBtn->setStyleSheet(buttonStyle);
     copyDtBtn->setStyleSheet(buttonStyle);
     
+    refreshBtn->setStyleSheet(buttonStyle);
+    
     connect(copyTsBtn, &QPushButton::clicked, this, &DateTimeUtil::copyCurrentTimestamp);
     connect(copyDtBtn, &QPushButton::clicked, this, &DateTimeUtil::copyCurrentDateTime);
+    connect(refreshBtn, &QPushButton::clicked, this, &DateTimeUtil::updateCurrentTime);
     connect(timezoneCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &DateTimeUtil::onTimezoneChanged);
     
     timezoneLayout->addWidget(tzLabel);
     timezoneLayout->addWidget(timezoneCombo);
     timezoneLayout->addStretch();
+    timezoneLayout->addWidget(refreshBtn);
     timezoneLayout->addWidget(copyTsBtn);
     timezoneLayout->addWidget(copyDtBtn);
     
@@ -169,7 +141,7 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     QVBoxLayout *conversionLayout = new QVBoxLayout(parent);
     
     // 时间戳转日期
-    QGroupBox *tsToDateGroup = new QGroupBox("时间戳转日期时间");
+    QGroupBox *tsToDateGroup = new QGroupBox(tr("时间戳转日期时间"));
     tsToDateGroup->setStyleSheet(
         "QGroupBox {"
         "    font-weight: bold;"
@@ -188,11 +160,11 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     
     QGridLayout *tsLayout = new QGridLayout(tsToDateGroup);
     
-    QLabel *tsInputLabel = new QLabel("时间戳:");
+    QLabel *tsInputLabel = new QLabel(tr("时间戳:"));
     tsInputLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     timestampInput = new QLineEdit;
-    timestampInput->setPlaceholderText("输入时间戳...");
+    timestampInput->setPlaceholderText(tr("输入时间戳..."));
     timestampInput->setStyleSheet(
         "QLineEdit {"
         "    padding: 8px;"
@@ -207,9 +179,9 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     );
     
     timestampUnitCombo = new QComboBox;
-    timestampUnitCombo->addItems({"秒", "毫秒", "微秒"});
+    timestampUnitCombo->addItems({tr("秒"), tr("毫秒"), tr("微秒")});
     
-    insertCurrentTsBtn = new QPushButton("插入当前");
+    insertCurrentTsBtn = new QPushButton(tr("插入当前"));
     insertCurrentTsBtn->setStyleSheet(
         "QPushButton {"
         "    background-color: #f39c12;"
@@ -238,7 +210,7 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     );
     timestampResult->setReadOnly(true);
     
-    copyTimestampBtn = new QPushButton("复制结果");
+    copyTimestampBtn = new QPushButton(tr("复制结果"));
     copyTimestampBtn->setStyleSheet(
         "QPushButton {"
         "    background-color: #27ae60;"
@@ -257,12 +229,12 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     tsLayout->addWidget(timestampInput, 0, 1);
     tsLayout->addWidget(timestampUnitCombo, 0, 2);
     tsLayout->addWidget(insertCurrentTsBtn, 0, 3);
-    tsLayout->addWidget(new QLabel("转换结果:"), 1, 0);
+    tsLayout->addWidget(new QLabel(tr("转换结果:")), 1, 0);
     tsLayout->addWidget(timestampResult, 1, 1, 1, 2);
     tsLayout->addWidget(copyTimestampBtn, 1, 3);
     
     // 日期转时间戳
-    QGroupBox *dateToTsGroup = new QGroupBox("日期时间转时间戳");
+    QGroupBox *dateToTsGroup = new QGroupBox(tr("日期时间转时间戳"));
     dateToTsGroup->setStyleSheet(
         "QGroupBox {"
         "    font-weight: bold;"
@@ -281,7 +253,7 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     
     QGridLayout *dateLayout = new QGridLayout(dateToTsGroup);
     
-    QLabel *dateInputLabel = new QLabel("日期时间:");
+    QLabel *dateInputLabel = new QLabel(tr("日期时间:"));
     dateInputLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     dateTimeInput = new QDateTimeEdit;
@@ -301,9 +273,9 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     );
     
     dateTimeUnitCombo = new QComboBox;
-    dateTimeUnitCombo->addItems({"秒", "毫秒", "微秒"});
+    dateTimeUnitCombo->addItems({tr("秒"), tr("毫秒"), tr("微秒")});
     
-    insertCurrentDtBtn = new QPushButton("插入当前");
+    insertCurrentDtBtn = new QPushButton(tr("插入当前"));
     insertCurrentDtBtn->setStyleSheet(
         "QPushButton {"
         "    background-color: #f39c12;"
@@ -331,7 +303,7 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
         "}"
     );
     
-    copyDateTimeBtn = new QPushButton("复制结果");
+    copyDateTimeBtn = new QPushButton(tr("复制结果"));
     copyDateTimeBtn->setStyleSheet(
         "QPushButton {"
         "    background-color: #27ae60;"
@@ -350,7 +322,7 @@ void DateTimeUtil::setupConversionSection(QWidget *parent)
     dateLayout->addWidget(dateTimeInput, 0, 1);
     dateLayout->addWidget(dateTimeUnitCombo, 0, 2);
     dateLayout->addWidget(insertCurrentDtBtn, 0, 3);
-    dateLayout->addWidget(new QLabel("转换结果:"), 1, 0);
+    dateLayout->addWidget(new QLabel(tr("转换结果:")), 1, 0);
     dateLayout->addWidget(dateTimeResult, 1, 1, 1, 2);
     dateLayout->addWidget(copyDateTimeBtn, 1, 3);
     
@@ -373,7 +345,7 @@ void DateTimeUtil::setupBatchSection(QWidget *parent)
 {
     QVBoxLayout *batchLayout = new QVBoxLayout(parent);
     
-    QGroupBox *batchGroup = new QGroupBox("批量时间转换");
+    QGroupBox *batchGroup = new QGroupBox(tr("批量时间转换"));
     batchGroup->setStyleSheet(
         "QGroupBox {"
         "    font-weight: bold;"
@@ -394,13 +366,13 @@ void DateTimeUtil::setupBatchSection(QWidget *parent)
     
     // 模式选择
     QHBoxLayout *modeLayout = new QHBoxLayout;
-    QLabel *modeLabel = new QLabel("转换模式:");
+    QLabel *modeLabel = new QLabel(tr("转换模式:"));
     modeLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     batchModeCombo = new QComboBox;
-    batchModeCombo->addItems({"时间戳转日期", "日期转时间戳"});
+    batchModeCombo->addItems({tr("时间戳转日期"), tr("日期转时间戳")});
     
-    QPushButton *processBatchBtn = new QPushButton("批量转换");
+    QPushButton *processBatchBtn = new QPushButton(tr("批量转换"));
     processBatchBtn->setStyleSheet(
         "QPushButton {"
         "    background-color: #9b59b6;"
@@ -424,11 +396,11 @@ void DateTimeUtil::setupBatchSection(QWidget *parent)
     QHBoxLayout *ioLayout = new QHBoxLayout;
     
     QVBoxLayout *inputLayout = new QVBoxLayout;
-    QLabel *inputLabel = new QLabel("输入 (每行一个):");
+    QLabel *inputLabel = new QLabel(tr("输入 (每行一个):"));
     inputLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     batchInput = new QTextEdit;
-    batchInput->setPlaceholderText("输入要转换的时间戳或日期时间...\n例如:\n1640995200\n1640995260\n1640995320");
+    batchInput->setPlaceholderText(tr("输入要转换的时间戳或日期时间...\n例如:\n1640995200\n1640995260\n1640995320"));
     batchInput->setStyleSheet(
         "QTextEdit {"
         "    font-family: 'Consolas', monospace;"
@@ -443,7 +415,7 @@ void DateTimeUtil::setupBatchSection(QWidget *parent)
     inputLayout->addWidget(batchInput);
     
     QVBoxLayout *outputLayout = new QVBoxLayout;
-    QLabel *outputLabel = new QLabel("输出结果:");
+    QLabel *outputLabel = new QLabel(tr("输出结果:"));
     outputLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     batchOutput = new QTextEdit;
@@ -477,7 +449,7 @@ void DateTimeUtil::setupCalculationSection(QWidget *parent)
 {
     QVBoxLayout *calcLayout = new QVBoxLayout(parent);
     
-    QGroupBox *calcGroup = new QGroupBox("时间差计算");
+    QGroupBox *calcGroup = new QGroupBox(tr("时间差计算"));
     calcGroup->setStyleSheet(
         "QGroupBox {"
         "    font-weight: bold;"
@@ -496,21 +468,21 @@ void DateTimeUtil::setupCalculationSection(QWidget *parent)
     
     QGridLayout *calcGridLayout = new QGridLayout(calcGroup);
     
-    QLabel *startLabel = new QLabel("开始时间:");
+    QLabel *startLabel = new QLabel(tr("开始时间:"));
     startLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     startDateTime = new QDateTimeEdit;
     startDateTime->setDateTime(QDateTime::currentDateTime());
     startDateTime->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
     
-    QLabel *endLabel = new QLabel("结束时间:");
+    QLabel *endLabel = new QLabel(tr("结束时间:"));
     endLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     endDateTime = new QDateTimeEdit;
     endDateTime->setDateTime(QDateTime::currentDateTime().addSecs(3600));
     endDateTime->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
     
-    QPushButton *calcBtn = new QPushButton("计算时间差");
+    QPushButton *calcBtn = new QPushButton(tr("计算时间差"));
     calcBtn->setStyleSheet(
         "QPushButton {"
         "    background-color: #f39c12;"
@@ -525,7 +497,7 @@ void DateTimeUtil::setupCalculationSection(QWidget *parent)
         "}"
     );
     
-    QLabel *resultLabel = new QLabel("计算结果:");
+    QLabel *resultLabel = new QLabel(tr("计算结果:"));
     resultLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     
     timeDiffResult = new QTextEdit;
@@ -560,7 +532,7 @@ void DateTimeUtil::setupFormatSection(QWidget *parent)
 {
     QVBoxLayout *formatLayout = new QVBoxLayout(parent);
     
-    QGroupBox *formatGroup = new QGroupBox("常用时间格式示例");
+    QGroupBox *formatGroup = new QGroupBox(tr("常用时间格式示例"));
     formatGroup->setStyleSheet(
         "QGroupBox {"
         "    font-weight: bold;"
@@ -617,7 +589,7 @@ void DateTimeUtil::populateTimezones()
         "America/Los_Angeles"
     };
     
-    timezoneCombo->addItem("本地时区", "Local");
+    timezoneCombo->addItem(tr("本地时区"), "Local");
     
     for (const QString &tzId : commonTimezones) {
         if (tzId != "Local") {
@@ -647,8 +619,8 @@ void DateTimeUtil::updateCurrentTime()
     qint64 timestamp = currentTime.toSecsSinceEpoch();
     qint64 timestampMs = currentTime.toMSecsSinceEpoch();
     
-    QString timeStr = QString("📅 当前日期时间: %1").arg(currentTime.toString("yyyy-MM-dd hh:mm:ss dddd"));
-    QString timestampStr = QString("⏰ 当前时间戳: %1 (秒) | %2 (毫秒)").arg(timestamp).arg(timestampMs);
+    QString timeStr = tr("📅 当前日期时间: %1").arg(currentTime.toString("yyyy-MM-dd hh:mm:ss dddd"));
+    QString timestampStr = tr("⏰ 当前时间戳: %1 (秒) | %2 (毫秒)").arg(timestamp).arg(timestampMs);
     
     currentTimeLabel->setText(timeStr);
     currentTimestampLabel->setText(timestampStr);
@@ -675,7 +647,7 @@ void DateTimeUtil::updateTimestampConversion()
     bool ok;
     qint64 timestamp = timestampStr.toLongLong(&ok);
     if (!ok) {
-        timestampResult->setText("❌ 无效的时间戳格式");
+        timestampResult->setText(tr("❌ 无效的时间戳格式"));
         return;
     }
     
@@ -692,7 +664,7 @@ void DateTimeUtil::updateTimestampConversion()
     }
     
     if (!dateTime.isValid()) {
-        timestampResult->setText("❌ 时间戳超出有效范围");
+        timestampResult->setText(tr("❌ 时间戳超出有效范围"));
         return;
     }
     
@@ -721,7 +693,7 @@ void DateTimeUtil::processBatchConversion()
 {
     QString input = batchInput->toPlainText().trimmed();
     if (input.isEmpty()) {
-        batchOutput->setText("❌ 请输入要转换的内容");
+        batchOutput->setText(tr("❌ 请输入要转换的内容"));
         return;
     }
     
@@ -739,16 +711,16 @@ void DateTimeUtil::processBatchConversion()
             qint64 timestamp = trimmedLine.toLongLong(&ok);
             if (ok) {
                 QDateTime dateTime = QDateTime::fromSecsSinceEpoch(timestamp);
-                results.append(QString("%1 → %2").arg(trimmedLine).arg(dateTime.toString("yyyy-MM-dd hh:mm:ss")));
+                results.append(tr("%1 → %2").arg(trimmedLine).arg(dateTime.toString("yyyy-MM-dd hh:mm:ss")));
             } else {
-                results.append(QString("%1 → ❌ 无效时间戳").arg(trimmedLine));
+                results.append(tr("%1 → ❌ 无效时间戳").arg(trimmedLine));
             }
         } else {
             QDateTime dateTime = QDateTime::fromString(trimmedLine, "yyyy-MM-dd hh:mm:ss");
             if (dateTime.isValid()) {
-                results.append(QString("%1 → %2").arg(trimmedLine).arg(dateTime.toSecsSinceEpoch()));
+                results.append(tr("%1 → %2").arg(trimmedLine).arg(dateTime.toSecsSinceEpoch()));
             } else {
-                results.append(QString("%1 → ❌ 无效日期格式").arg(trimmedLine));
+                results.append(tr("%1 → ❌ 无效日期格式").arg(trimmedLine));
             }
         }
     }
@@ -762,7 +734,7 @@ void DateTimeUtil::calculateTimeDifference()
     QDateTime end = endDateTime->dateTime();
     
     if (start >= end) {
-        timeDiffResult->setText("❌ 结束时间必须大于开始时间");
+        timeDiffResult->setText(tr("❌ 结束时间必须大于开始时间"));
         return;
     }
     
@@ -776,12 +748,12 @@ void DateTimeUtil::calculateTimeDifference()
     qint64 seconds = diffSecs % 60;
     
     QStringList results;
-    results << QString("📊 时间差统计:");
-    results << QString("总秒数: %1 秒").arg(diffSecs);
-    results << QString("总毫秒数: %1 毫秒").arg(diffMs);
-    results << QString("详细时间: %1天 %2小时 %3分钟 %4秒").arg(days).arg(hours).arg(minutes).arg(seconds);
-    results << QString("总小时数: %1 小时").arg(QString::number(diffSecs / 3600.0, 'f', 2));
-    results << QString("总天数: %1 天").arg(QString::number(diffSecs / 86400.0, 'f', 2));
+    results << tr("📊 时间差统计:");
+    results << tr("总秒数: %1 秒").arg(diffSecs);
+    results << tr("总毫秒数: %1 毫秒").arg(diffMs);
+    results << tr("详细时间: %1天 %2小时 %3分钟 %4秒").arg(days).arg(hours).arg(minutes).arg(seconds);
+    results << tr("总小时数: %1 小时").arg(QString::number(diffSecs / 3600.0, 'f', 2));
+    results << tr("总天数: %1 天").arg(QString::number(diffSecs / 86400.0, 'f', 2));
     
     timeDiffResult->setText(results.join("\n"));
 }
@@ -789,13 +761,13 @@ void DateTimeUtil::calculateTimeDifference()
 QStringList DateTimeUtil::getCommonFormats(const QDateTime &dateTime)
 {
     QStringList formats;
-    formats << QString("🗓️  标准格式: %1").arg(dateTime.toString("yyyy-MM-dd hh:mm:ss"));
-    formats << QString("📅 ISO 8601: %1").arg(dateTime.toString(Qt::ISODate));
-    formats << QString("🇺🇸 美式格式: %1").arg(dateTime.toString("MM/dd/yyyy hh:mm:ss AP"));
-    formats << QString("🇪🇺 欧式格式: %1").arg(dateTime.toString("dd.MM.yyyy hh:mm:ss"));
-    formats << QString("📝 中文格式: %1").arg(dateTime.toString("yyyy年MM月dd日 hh时mm分ss秒"));
-    formats << QString("⏰ 时间戳(秒): %1").arg(dateTime.toSecsSinceEpoch());
-    formats << QString("⚡ 时间戳(毫秒): %1").arg(dateTime.toMSecsSinceEpoch());
+    formats << tr("🗓️  标准格式: %1").arg(dateTime.toString("yyyy-MM-dd hh:mm:ss"));
+    formats << tr("📅 ISO 8601: %1").arg(dateTime.toString(Qt::ISODate));
+    formats << tr("🇺🇸 美式格式: %1").arg(dateTime.toString("MM/dd/yyyy hh:mm:ss AP"));
+    formats << tr("🇪🇺 欧式格式: %1").arg(dateTime.toString("dd.MM.yyyy hh:mm:ss"));
+    formats << tr("📝 中文格式: %1").arg(dateTime.toString("yyyy年MM月dd日 hh时mm分ss秒"));
+    formats << tr("⏰ 时间戳(秒): %1").arg(dateTime.toSecsSinceEpoch());
+    formats << tr("⚡ 时间戳(毫秒): %1").arg(dateTime.toMSecsSinceEpoch());
     return formats;
 }
 
@@ -805,7 +777,7 @@ void DateTimeUtil::copyCurrentTimestamp()
     QDateTime current = QDateTime::currentDateTime();
     QString timestamp = QString::number(current.toSecsSinceEpoch());
     QApplication::clipboard()->setText(timestamp);
-    showMessage("已复制当前时间戳");
+    showMessage(tr("已复制当前时间戳"));
 }
 
 void DateTimeUtil::copyCurrentDateTime()
@@ -813,7 +785,7 @@ void DateTimeUtil::copyCurrentDateTime()
     QDateTime current = QDateTime::currentDateTime();
     QString dateTimeStr = current.toString("yyyy-MM-dd hh:mm:ss");
     QApplication::clipboard()->setText(dateTimeStr);
-    showMessage("已复制当前日期时间");
+    showMessage(tr("已复制当前日期时间"));
 }
 
 void DateTimeUtil::copyTimestampResult()
@@ -821,7 +793,7 @@ void DateTimeUtil::copyTimestampResult()
     QString result = timestampResult->toPlainText();
     if (!result.isEmpty()) {
         QApplication::clipboard()->setText(result);
-        showMessage("已复制转换结果");
+        showMessage(tr("已复制转换结果"));
     }
 }
 
@@ -830,7 +802,7 @@ void DateTimeUtil::copyDateTimeResult()
     QString result = dateTimeResult->text();
     if (!result.isEmpty()) {
         QApplication::clipboard()->setText(result);
-        showMessage("已复制转换结果");
+        showMessage(tr("已复制转换结果"));
     }
 }
 

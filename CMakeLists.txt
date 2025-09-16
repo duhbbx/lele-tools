@@ -1,14 +1,27 @@
 cmake_minimum_required(VERSION 3.5)
-
-
-
-
 project(lele-tools VERSION 0.1 LANGUAGES CXX)
 
 
 
-# 告诉 CMake 去哪里找 Qt，使用-DCMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64/lib/cmake这个指定避免代码中硬编码
-# set(CMAKE_PREFIX_PATH "C:/Qt/6.9.1/msvc2022_64/lib/cmake/Qt6")
+# 默认环境
+#set(ENVIRONMENT "联想笔记本")
+
+
+# 构建 .env 文件路径
+set(ENV_FILE "${CMAKE_SOURCE_DIR}/.env.${ENVIRONMENT}")
+
+# 从环境配置中加载变量，实现nodejs的效果
+if(EXISTS "${ENV_FILE}")
+    file(READ "${ENV_FILE}" ENV_CONTENTS)
+    foreach(line IN LISTS ENV_CONTENTS)
+        if(line MATCHES "^\\s*([^=]+)=(.+)$")
+            set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+        endif()
+    endforeach()
+    message(STATUS "Loaded environment: ${ENVIRONMENT}")
+else()
+    message(WARNING "Environment file ${ENV_FILE} not found")
+endif()
 
 set(CMAKE_AUTOMOC ON)   # 自动处理 moc (信号与槽)
 set(CMAKE_AUTORCC ON)   # 自动处理 qrc 资源文件
@@ -18,9 +31,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-# Redis 可选支持 (暂时禁用，等待库安装完成)
+# Redis 可选支持
 option(WITH_REDIS "Enable Redis support" ON)
-
 # OpenCV 可选支持
 option(WITH_OPENCV "Enable OpenCV support" ON)
 
@@ -65,14 +77,8 @@ if(ENABLE_REDIS)
     else()
         # 如果CONFIG方式失败，尝试手动查找
         # 直接指定vcpkg路径
-        set(REDIS_PLUS_PLUS_INCLUDE_DIR "D:/projects/vcpkg/installed/x64-windows/include")
-        set(REDIS_PLUS_PLUS_LIBRARY "D:/projects/vcpkg/installed/x64-windows/lib/redis++.lib")
-        set(HIREDIS_LIBRARY "D:/projects/vcpkg/installed/x64-windows/lib/hiredis.lib")
-        
         # 检查文件是否存在
-        if(EXISTS "${REDIS_PLUS_PLUS_INCLUDE_DIR}/sw/redis++/redis++.h" AND 
-           EXISTS "${REDIS_PLUS_PLUS_LIBRARY}" AND 
-           EXISTS "${HIREDIS_LIBRARY}")
+        if(EXISTS "${REDIS_PLUS_PLUS_INCLUDE_DIR}/sw/redis++/redis++.h" AND EXISTS "${REDIS_PLUS_PLUS_LIBRARY}" AND EXISTS "${HIREDIS_LIBRARY}")
             message(STATUS "redis-plus-plus found at: ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
             message(STATUS "redis++ library: ${REDIS_PLUS_PLUS_LIBRARY}")
             message(STATUS "hiredis library: ${HIREDIS_LIBRARY}")
@@ -118,7 +124,18 @@ endif()
 
 # 第三方的代码
 add_subdirectory(common/thirdparty/yaml-cpp)
-add_subdirectory(common/thirdparty/screen-capture)
+
+# 截图功能仅在Windows平台可用
+if(WIN32)
+    add_subdirectory(common/thirdparty/screen-capture)
+    set(HAVE_SCREEN_CAPTURE TRUE)
+    add_definitions(-DWITH_SCREEN_CAPTURE)
+else()
+    message(STATUS "Screen capture disabled on non-Windows platforms")
+    set(HAVE_SCREEN_CAPTURE FALSE)
+    # 创建一个空的ScreenCaptureLib目标以避免链接错误
+    add_library(ScreenCaptureLib INTERFACE)
+endif()
 
 
 
@@ -172,7 +189,7 @@ else()
     set(QT_MULTIMEDIA_LIBS "")
 endif()
 
-
+qt_standard_project_setup() # Qt6 推荐做法
 
 set(TS_FILES 
     translations/lele-tools_zh_CN.ts
@@ -274,6 +291,77 @@ endif()
 # 添加Windows Socket库 (Redis需要)
 if(WIN32 AND HAVE_REDIS)
     target_link_libraries(lele-tools PRIVATE ws2_32 wsock32)
+endif()
+
+# Npcap/libpcap支持 (Traceroute工具需要)
+option(WITH_PCAP "Enable pcap support for network tools" ON)
+
+if(WITH_PCAP)
+    if(WIN32)
+        # Windows平台查找Npcap
+        # --- 允许用户手动指定路径 ---
+        set(PCAP_INCLUDE_DIR "" CACHE PATH "Npcap include directory (pcap.h)")
+        set(PCAP_LIBRARY "" CACHE FILEPATH "Npcap library (wpcap.lib)")
+        set(PACKET_LIBRARY "" CACHE FILEPATH "Packet library (packet.lib)")
+
+        # --- 配置目标 ---
+        if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
+            message(STATUS "Npcap found:")
+            message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
+            message(STATUS "  Library: ${PCAP_LIBRARY}")
+            set(HAVE_PCAP TRUE)
+            add_definitions(-DWITH_PCAP)
+            target_include_directories(lele-tools PRIVATE ${PCAP_INCLUDE_DIR})
+            target_link_libraries(lele-tools PRIVATE ${PCAP_LIBRARY})
+            if(PACKET_LIBRARY)
+                target_link_libraries(lele-tools PRIVATE ${PACKET_LIBRARY})
+            endif()
+        else()
+            message(WARNING "Npcap SDK not found. Traceroute tool will use Windows API fallback.")
+            message(STATUS "To enable full pcap functionality:")
+            message(STATUS "  1. Download Npcap from: https://npcap.com/")
+            message(STATUS "  2. Install with 'Install Npcap SDK' option checked")
+            message(STATUS "  3. Or download SDK separately from GitHub releases")
+
+            # 使用Windows系统API作为备用方案
+            message(STATUS "Using Windows ICMP API fallback")
+            set(HAVE_PCAP FALSE)
+            add_definitions(-DWITH_WINDOWS_ICMP)
+        endif()
+    else()
+        # Linux/macOS平台查找libpcap
+        find_path(PCAP_INCLUDE_DIR
+            NAMES pcap/pcap.h pcap.h
+            PATHS /usr/include /usr/local/include
+            DOC "libpcap include directory"
+        )
+        
+        find_library(PCAP_LIBRARY
+            NAMES pcap
+            PATHS /usr/lib /usr/local/lib
+            DOC "libpcap library"
+        )
+        
+        if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
+            message(STATUS "libpcap found:")
+            message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
+            message(STATUS "  Library: ${PCAP_LIBRARY}")
+            set(HAVE_PCAP TRUE)
+            add_definitions(-DWITH_PCAP)
+            target_include_directories(lele-tools PRIVATE ${PCAP_INCLUDE_DIR})
+            target_link_libraries(lele-tools PRIVATE ${PCAP_LIBRARY})
+        else()
+            message(WARNING "libpcap not found. Traceroute tool will be disabled.")
+            message(STATUS "To install libpcap:")
+            message(STATUS "  Ubuntu/Debian: sudo apt-get install libpcap-dev")
+            message(STATUS "  CentOS/RHEL: sudo yum install libpcap-devel")
+            message(STATUS "  macOS: brew install libpcap")
+            set(HAVE_PCAP FALSE)
+        endif()
+    endif()
+else()
+    message(STATUS "pcap support disabled")
+    set(HAVE_PCAP FALSE)
 endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

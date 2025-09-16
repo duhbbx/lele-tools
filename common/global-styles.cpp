@@ -1,11 +1,10 @@
 #include "global-styles.h"
 
-QString GlobalStyles::getCheckBoxStyle()
-{
+QString GlobalStyles::getCheckBoxStyle() {
     return R"(
         QCheckBox {
             spacing: 10px;
-            font-size: 10pt;
+            font-size: 11pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             padding: 2px;
@@ -59,15 +58,13 @@ QString GlobalStyles::getCheckBoxStyle()
     )";
 }
 
-QString GlobalStyles::getButtonStyle()
-{
+QString GlobalStyles::getButtonStyle() {
     return R"(
         QPushButton {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
             padding: 4px 8px;
-            font-size: 12px;
+            font-size: 11pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             min-height: 16px;
@@ -85,11 +82,6 @@ QString GlobalStyles::getButtonStyle()
             color: #999999;
             border-color: #e0e0e0;
         }
-        QPushButton:default {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-            color: white;
-        }
         QPushButton:default:hover {
             background-color: #45a049;
             border-color: #45a049;
@@ -101,15 +93,21 @@ QString GlobalStyles::getButtonStyle()
     )";
 }
 
-QString GlobalStyles::getInputStyle()
-{
+QString GlobalStyles::getInputStyle() {
     return R"(
-        QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
             border: 2px solid #e1e5e9;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 10px;
+            padding: 2px 2px;
+            font-size: 11pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            background-color: white;
+            color: #333333;
+        }
+        QTextEdit, QPlainTextEdit {
+            border: 2px solid #e1e5e9;
+            padding: 4px 4px;
+            font-size: 11pt;
+            font-family: Consolas;
             background-color: white;
             color: #333333;
         }
@@ -125,27 +123,26 @@ QString GlobalStyles::getInputStyle()
     )";
 }
 
-QString GlobalStyles::getGlobalStyle()
-{
+QString GlobalStyles::getGlobalStyle() {
     return QString(R"(
         QWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 12px;
+            font-size: 11pt;
             color: #333333;
         }
         QGroupBox {
             font-weight: bold;
             border: 2px solid #dee2e6;
-            border-radius: 8px;
             margin-top: 1ex;
             padding-top: 8px;
-            font-size: 10px;
+            font-size: 12pt;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
             left: 8px;
             padding: 0 4px 0 4px;
             color: #495057;
+            font-size: 12pt;
         }
         QProgressBar {
             border: 1px solid #dee2e6;
@@ -159,13 +156,13 @@ QString GlobalStyles::getGlobalStyle()
         }
         QTableWidget {
             border: 1px solid #dee2e6;
-            border-radius: 6px;
             gridline-color: #e9ecef;
-            font-size: 10px;
+            font-size: 11pt;
             background-color: white;
         }
         QTableWidget::item {
             padding: 4px 8px;
+            font-size: 11pt;
             border-bottom: 1px solid #e9ecef;
         }
         QTableWidget::item:selected {
@@ -177,7 +174,10 @@ QString GlobalStyles::getGlobalStyle()
             border: 1px solid #dee2e6;
             padding: 4px 8px;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 11pt;
+        }
+        QLabel {
+            font-size: 11pt;
         }
     )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle();
 }

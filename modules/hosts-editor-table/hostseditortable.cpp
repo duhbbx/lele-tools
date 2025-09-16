@@ -73,106 +73,19 @@ void HostsEditor::setupUI() {
     setupTableArea();
     setupQuickAddArea();
     setupStatusArea();
-
-    // 应用全局样式
-    setStyleSheet(R"(
-        QPushButton {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px 16px;
-            border-radius: 0px;
-            border: 1px solid #ccc;
-            font-size: 10pt;
-            min-width: 80px;
-            background-color: #f8f9fa;
-        }
-        QPushButton:hover {
-            background-color: #e9ecef;
-            border-color: #adb5bd;
-        }
-        QPushButton:pressed {
-            background-color: #dee2e6;
-        }
-        QPushButton:disabled {
-            background-color: #e9ecef;
-            color: #6c757d;
-            border-color: #dee2e6;
-        }
-        QGroupBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            border: 2px solid #dee2e6;
-            border-radius: 0px;
-            margin-top: 1ex;
-            padding-top: 10px;
-            font-size: 12pt;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QLineEdit {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px;
-            border: 2px solid #ced4da;
-            border-radius: 0px;
-            font-size: 10pt;
-            background-color: white;
-        }
-        QLineEdit:focus {
-            border-color: #80bdff;
-            outline: 0;
-        }
-        QTableWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            border: 2px solid #dee2e6;
-            border-radius: 0px;
-            font-size: 10pt;
-            gridline-color: #dee2e6;
-            background-color: white;
-            alternate-background-color: #f8f9fa;
-        }
-        QTableWidget::item {
-            padding: 2px 2px;
-            border-bottom: 1px solid #dee2e6;
-            min-height: 20px;
-        }
-        QTableWidget::item:selected {
-            background-color: #007bff;
-        }
-        QTableWidget::item:focus {
-            border: 2px solid #2196f3;
-        }
-        QLineEdit {
-            padding: 6px;
-            font-size: 11pt;
-            border: 1px solid #2196f3;
-            border-radius: 2px;
-        }
-        QHeaderView::section {
-            background-color: #f8f9fa;
-            padding: 8px;
-            border: 1px solid #dee2e6;
-            font-weight: bold;
-            font-size: 10pt;
-        }
-        QLabel {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 10pt;
-        }
-    )");
 }
 
 void HostsEditor::setupToolbar() {
-    toolbarGroup = new QGroupBox("🛠️ Hosts文件编辑器");
+    toolbarGroup = new QGroupBox(tr("🛠️ Hosts文件编辑器"));
     toolbarLayout = new QHBoxLayout(toolbarGroup);
 
-    loadBtn = new QPushButton("📂 重新加载");
-    saveBtn = new QPushButton("💾 保存文件");
-    addBtn = new QPushButton("➕ 添加条目");
-    removeBtn = new QPushButton("🗑️ 删除条目");
-    toggleBtn = new QPushButton("🔄 启用/禁用");
-    clearBtn = new QPushButton("🧹 清空全部");
-    flushDnsBtn = new QPushButton("🔄 刷新DNS");
+    loadBtn = new QPushButton(tr("📂 重新加载"));
+    saveBtn = new QPushButton(tr("💾 保存文件"));
+    addBtn = new QPushButton(tr("➕ 添加条目"));
+    removeBtn = new QPushButton(tr("🗑️ 删除条目"));
+    toggleBtn = new QPushButton(tr("🔄 启用/禁用"));
+    clearBtn = new QPushButton(tr("🧹 清空全部"));
+    flushDnsBtn = new QPushButton(tr("🔄 刷新DNS"));
 
     // 设置按钮样式
     saveBtn->setStyleSheet(
@@ -197,12 +110,12 @@ void HostsEditor::setupToolbar() {
 }
 
 void HostsEditor::setupTableArea() {
-    tableGroup = new QGroupBox("📋 Hosts条目列表");
+    tableGroup = new QGroupBox(tr("📋 Hosts条目列表"));
     tableLayout = new QVBoxLayout(tableGroup);
 
     hostsTable = new QTableWidget();
     hostsTable->setColumnCount(4);
-    hostsTable->setHorizontalHeaderLabels(QStringList() << "状态" << "IP地址" << "主机名" << "注释");
+    hostsTable->setHorizontalHeaderLabels(QStringList() << tr("状态") << tr("IP地址") << tr("主机名") << tr("注释"));
 
     // 设置表格属性
     hostsTable->setAlternatingRowColors(true);
@@ -237,28 +150,28 @@ void HostsEditor::setupTableArea() {
 }
 
 void HostsEditor::setupQuickAddArea() {
-    quickAddGroup = new QGroupBox("⚡ 快速添加Hosts条目");
+    quickAddGroup = new QGroupBox(tr("⚡ 快速添加Hosts条目"));
     quickAddLayout = new QGridLayout(quickAddGroup);
 
     ipEdit = new QLineEdit();
-    ipEdit->setPlaceholderText("输入IP地址 (例: 127.0.0.1)");
+    ipEdit->setPlaceholderText(tr("输入IP地址 (例: 127.0.0.1)"));
 
     hostnameEdit = new QLineEdit();
-    hostnameEdit->setPlaceholderText("输入主机名 (例: example.com)");
+    hostnameEdit->setPlaceholderText(tr("输入主机名 (例: example.com)"));
 
     commentEdit = new QLineEdit();
-    commentEdit->setPlaceholderText("输入注释 (可选)");
+    commentEdit->setPlaceholderText(tr("输入注释 (可选)"));
 
-    enabledCheck = new QCheckBox("启用此条目");
+    enabledCheck = new QCheckBox(tr("启用此条目"));
     enabledCheck->setChecked(true);
 
-    quickAddBtn = new QPushButton("➕ 添加到Hosts");
+    quickAddBtn = new QPushButton(tr("➕ 添加到Hosts"));
     quickAddBtn->setStyleSheet(
         "QPushButton { background-color: #28a745; color: white; min-width: 120px; } QPushButton:hover { background-color: #218838; }");
 
     // 常用hosts下拉框
     commonHostsCombo = new QComboBox();
-    commonHostsCombo->addItem("选择常用hosts...");
+    commonHostsCombo->addItem(tr("选择常用hosts..."));
     commonHostsCombo->addItem("127.0.0.1 localhost");
     commonHostsCombo->addItem("0.0.0.0 ads.google.com");
     commonHostsCombo->addItem("0.0.0.0 facebook.com");
@@ -275,15 +188,15 @@ void HostsEditor::setupQuickAddArea() {
         }
     });
 
-    quickAddLayout->addWidget(new QLabel("IP地址:"), 0, 0);
+    quickAddLayout->addWidget(new QLabel(tr("IP地址:")), 0, 0);
     quickAddLayout->addWidget(ipEdit, 0, 1);
-    quickAddLayout->addWidget(new QLabel("主机名:"), 0, 2);
+    quickAddLayout->addWidget(new QLabel(tr("主机名:")), 0, 2);
     quickAddLayout->addWidget(hostnameEdit, 0, 3);
-    quickAddLayout->addWidget(new QLabel("注释:"), 1, 0);
+    quickAddLayout->addWidget(new QLabel(tr("注释:")), 1, 0);
     quickAddLayout->addWidget(commentEdit, 1, 1);
     quickAddLayout->addWidget(enabledCheck, 1, 2);
     quickAddLayout->addWidget(quickAddBtn, 1, 3);
-    quickAddLayout->addWidget(new QLabel("常用:"), 2, 0);
+    quickAddLayout->addWidget(new QLabel(tr("常用:")), 2, 0);
     quickAddLayout->addWidget(commonHostsCombo, 2, 1, 1, 3);
 
     mainLayout->addWidget(quickAddGroup);
@@ -292,13 +205,13 @@ void HostsEditor::setupQuickAddArea() {
 void HostsEditor::setupStatusArea() {
     statusLayout = new QHBoxLayout();
 
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
 
-    entriesCountLabel = new QLabel("条目: 0");
+    entriesCountLabel = new QLabel(tr("条目: 0"));
     entriesCountLabel->setStyleSheet("color: #6c757d;");
 
-    adminStatusLabel = new QLabel("权限检查中...");
+    adminStatusLabel = new QLabel(tr("权限检查中..."));
 
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
@@ -315,26 +228,26 @@ void HostsEditor::setupStatusArea() {
 
 void HostsEditor::loadHostsFile() {
     isLoading = true;
-    updateStatus("正在加载hosts文件...", false);
+    updateStatus(tr("正在加载hosts文件..."), false);
 
     // 检查文件是否存在
     const QFileInfo fileInfo(hostsFilePath);
     if (!fileInfo.exists()) {
-        updateStatus("hosts文件不存在: " + hostsFilePath, true);
+        updateStatus(tr("hosts文件不存在: %1").arg(hostsFilePath), true);
         isLoading = false;
         return;
     }
 
     // 检查文件是否可读
     if (!fileInfo.isReadable()) {
-        updateStatus("hosts文件不可读，可能需要管理员权限", true);
+        updateStatus(tr("hosts文件不可读，可能需要管理员权限"), true);
         isLoading = false;
         return;
     }
 
     QFile file(hostsFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        updateStatus("无法读取hosts文件: " + file.errorString(), true);
+        updateStatus(tr("无法读取hosts文件: %1").arg(file.errorString()), true);
         isLoading = false;
         return;
     }
@@ -355,8 +268,8 @@ void HostsEditor::loadHostsFile() {
     file.close();
     isLoading = false;
     updateTable();
-    updateStatus("hosts文件加载完成", false);
-    entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
+    updateStatus(tr("hosts文件加载完成"), false);
+    entriesCountLabel->setText(tr("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = false;
     updateButtonStates();
 
@@ -408,7 +321,7 @@ void HostsEditor::onSaveHosts() {
     
     // 安全检查
     if (hostEntries.isEmpty()) {
-        updateStatus("没有内容需要保存", true);
+        updateStatus(tr("没有内容需要保存"), true);
         return;
     }
     
@@ -417,11 +330,11 @@ void HostsEditor::onSaveHosts() {
             qDebug() << "需要提升权限保存";
             // 尝试提升权限保存
             if (saveWithElevation()) {
-                updateStatus("hosts文件保存成功（已提升权限）", false);
+                updateStatus(tr("hosts文件保存成功（已提升权限）"), false);
                 hasUnsavedChanges = false;
                 updateButtonStates();
             } else {
-                updateStatus("保存失败：无法获取管理员权限", true);
+                updateStatus(tr("保存失败：无法获取管理员权限"), true);
             }
             return;
         }
@@ -430,10 +343,10 @@ void HostsEditor::onSaveHosts() {
         saveHostsFile();
     } catch (const std::exception& e) {
         qDebug() << "保存过程中发生异常:" << e.what();
-        updateStatus(QString("保存失败：%1").arg(e.what()), true);
+        updateStatus(tr("保存失败：%1").arg(e.what()), true);
     } catch (...) {
         qDebug() << "保存过程中发生未知异常";
-        updateStatus("保存失败：未知错误", true);
+        updateStatus(tr("保存失败：未知错误"), true);
     }
 }
 
@@ -451,7 +364,7 @@ bool HostsEditor::saveWithElevation() {
         // 写入临时文件
         QFile file(tempFile);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            updateStatus("无法创建临时文件: " + file.errorString(), true);
+            updateStatus(tr("无法创建临时文件: %1").arg(file.errorString()), true);
             return false;
         }
 
@@ -575,7 +488,7 @@ bool HostsEditor::tryPowerShellElevation(const QString& tempFile) {
                     }
                 } else if (waitResult == WAIT_TIMEOUT) {
                     qDebug() << "PowerShell操作超时";
-                    updateStatus("PowerShell操作超时", true);
+                    updateStatus(tr("PowerShell操作超时"), true);
                     TerminateProcess(sei.hProcess, 1);
                 }
                 CloseHandle(sei.hProcess);
@@ -584,9 +497,9 @@ bool HostsEditor::tryPowerShellElevation(const QString& tempFile) {
             DWORD error = GetLastError();
             qDebug() << "ShellExecuteExW失败，错误代码:" << error;
             if (error == ERROR_CANCELLED) {
-                updateStatus("用户取消了权限提升", true);
+                updateStatus(tr("用户取消了权限提升"), true);
             } else {
-                updateStatus(QString("PowerShell权限提升失败，错误代码: %1").arg(error), true);
+                updateStatus(tr("PowerShell权限提升失败，错误代码: %1").arg(error), true);
             }
         }
         
@@ -630,7 +543,7 @@ bool HostsEditor::tryCmdElevation(const QString& tempFile) {
                     success = (exitCode == 0);
                 }
             } else if (waitResult == WAIT_TIMEOUT) {
-                updateStatus("CMD操作超时", true);
+                updateStatus(tr("CMD操作超时"), true);
                 TerminateProcess(sei.hProcess, 1);
             }
             CloseHandle(sei.hProcess);
@@ -638,7 +551,7 @@ bool HostsEditor::tryCmdElevation(const QString& tempFile) {
     } else {
         DWORD error = GetLastError();
         if (error == ERROR_CANCELLED) {
-            updateStatus("用户取消了权限提升", true);
+            updateStatus(tr("用户取消了权限提升"), true);
         }
     }
     
@@ -686,7 +599,7 @@ bool HostsEditor::tryRobocopyElevation(const QString& tempFile) {
                     }
                 }
             } else if (waitResult == WAIT_TIMEOUT) {
-                updateStatus("Robocopy操作超时", true);
+                updateStatus(tr("Robocopy操作超时"), true);
                 TerminateProcess(sei.hProcess, 1);
             }
             CloseHandle(sei.hProcess);
@@ -788,7 +701,7 @@ QString HostsEditor::generateHostsContent() {
 }
 
 void HostsEditor::onFlushDns() {
-    updateStatus("正在刷新DNS缓存...", false);
+    updateStatus(tr("正在刷新DNS缓存..."), false);
     flushDnsWithAPI();
 }
 
@@ -803,21 +716,21 @@ void HostsEditor::flushDnsWithAPI() {
 
         if (DnsFlushResolverCache) {
             if (DnsFlushResolverCache()) {
-                updateStatus("DNS缓存刷新成功", false);
+                updateStatus(tr("DNS缓存刷新成功"), false);
             } else {
-                updateStatus("DNS缓存刷新失败", true);
+                updateStatus(tr("DNS缓存刷新失败"), true);
             }
         } else {
-            updateStatus("无法找到DNS刷新函数", true);
+            updateStatus(tr("无法找到DNS刷新函数"), true);
         }
 
         FreeLibrary(hDnsApi);
     } else {
-        updateStatus("无法加载DNS API", true);
+        updateStatus(tr("无法加载DNS API"), true);
     }
 #else
     // Linux/Mac系统
-    updateStatus("DNS缓存刷新功能仅支持Windows系统", true);
+    updateStatus(tr("DNS缓存刷新功能仅支持Windows系统"), true);
 #endif
 }
 
@@ -828,24 +741,24 @@ void HostsEditor::onQuickAdd() {
     bool enabled = enabledCheck->isChecked();
 
     if (ip.isEmpty() || hostname.isEmpty()) {
-        updateStatus("IP地址和主机名不能为空", true);
+        updateStatus(tr("IP地址和主机名不能为空"), true);
         return;
     }
 
     if (!isValidIP(ip)) {
-        updateStatus("IP地址格式不正确", true);
+        updateStatus(tr("IP地址格式不正确"), true);
         return;
     }
 
     if (!isValidHostname(hostname)) {
-        updateStatus("主机名格式不正确", true);
+        updateStatus(tr("主机名格式不正确"), true);
         return;
     }
 
     // 检查是否已存在
     for (const HostEntry& entry : hostEntries) {
         if (entry.hostname == hostname) {
-            updateStatus("主机名已存在", true);
+            updateStatus(tr("主机名已存在"), true);
             return;
         }
     }
@@ -859,8 +772,8 @@ void HostsEditor::onQuickAdd() {
     commentEdit->clear();
     enabledCheck->setChecked(true);
 
-    updateStatus("已添加新的hosts条目", false);
-    entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
+    updateStatus(tr("已添加新的hosts条目"), false);
+    entriesCountLabel->setText(tr("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
     updateButtonStates();
 }
@@ -875,8 +788,8 @@ void HostsEditor::onAddEntry() {
     hostsTable->selectRow(newRow);
     hostsTable->scrollToItem(hostsTable->item(newRow, 0));
 
-    updateStatus("已添加新条目，请编辑", false);
-    entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
+    updateStatus(tr("已添加新条目，请编辑"), false);
+    entriesCountLabel->setText(tr("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
     updateButtonStates();
 }
@@ -891,7 +804,7 @@ void HostsEditor::onRemoveEntry() {
     }
 
     if (selectedRows.isEmpty()) {
-        updateStatus("请先选择要删除的条目", true);
+        updateStatus(tr("请先选择要删除的条目"), true);
         return;
     }
 
@@ -905,8 +818,8 @@ void HostsEditor::onRemoveEntry() {
     }
 
     updateTable();
-    updateStatus(QString("已删除 %1 个条目").arg(selectedRows.size()), false);
-    entriesCountLabel->setText(QString("条目: %1").arg(hostEntries.size()));
+    updateStatus(tr("已删除 %1 个条目").arg(selectedRows.size()), false);
+    entriesCountLabel->setText(tr("条目: %1").arg(hostEntries.size()));
     hasUnsavedChanges = true;
     updateButtonStates();
 }
@@ -921,7 +834,7 @@ void HostsEditor::onToggleEntry() {
     }
 
     if (selectedRows.isEmpty()) {
-        updateStatus("请先选择要启用/禁用的条目", true);
+        updateStatus(tr("请先选择要启用/禁用的条目"), true);
         return;
     }
 
@@ -932,14 +845,14 @@ void HostsEditor::onToggleEntry() {
     }
 
     updateTable();
-    updateStatus(QString("已切换 %1 个条目的状态").arg(selectedRows.size()), false);
+    updateStatus(tr("已切换 %1 个条目的状态").arg(selectedRows.size()), false);
     hasUnsavedChanges = true;
     updateButtonStates();
 }
 
 void HostsEditor::onClearAll() {
     if (hostEntries.isEmpty()) {
-        updateStatus("没有条目可清空", true);
+        updateStatus(tr("没有条目可清空"), true);
         return;
     }
 
@@ -952,8 +865,8 @@ void HostsEditor::onClearAll() {
     if (reply == QMessageBox::Yes) {
         hostEntries.clear();
         updateTable();
-        updateStatus("已清空所有条目", false);
-        entriesCountLabel->setText("条目: 0");
+        updateStatus(tr("已清空所有条目"), false);
+        entriesCountLabel->setText(tr("条目: 0"));
         hasUnsavedChanges = true;
         updateButtonStates();
     }
@@ -969,7 +882,7 @@ void HostsEditor::updateTable() {
         const HostEntry& entry = hostEntries[i];
 
         // 状态列
-        QTableWidgetItem* statusItem = new QTableWidgetItem(entry.enabled ? "✅ 启用" : "❌ 禁用");
+        QTableWidgetItem* statusItem = new QTableWidgetItem(entry.enabled ? tr("✅ 启用") : tr("❌ 禁用"));
         statusItem->setFlags(statusItem->flags() & ~Qt::ItemIsEditable);
         if (!entry.enabled) {
             statusItem->setForeground(QBrush(QColor("#6c757d")));
@@ -1036,7 +949,7 @@ bool HostsEditor::checkAdminRights() {
         FreeSid(adminGroup);
     }
 
-    adminStatusLabel->setText(isAdmin ? "✅ 管理员权限" : "⚠️ 普通用户权限");
+    adminStatusLabel->setText(isAdmin ? tr("✅ 管理员权限") : tr("⚠️ 普通用户权限"));
     adminStatusLabel->setStyleSheet(isAdmin
                                         ? "color: #28a745; font-weight: bold;"
                                         : "color: #ffc107; font-weight: bold;");
@@ -1044,7 +957,7 @@ bool HostsEditor::checkAdminRights() {
     return isAdmin;
 #else
     bool isRoot = (getuid() == 0);
-    adminStatusLabel->setText(isRoot ? "✅ Root权限" : "⚠️ 普通用户权限");
+    adminStatusLabel->setText(isRoot ? tr("✅ Root权限") : tr("⚠️ 普通用户权限"));
     adminStatusLabel->setStyleSheet(
         isRoot ? "color: #28a745; font-weight: bold;" : "color: #ffc107; font-weight: bold;");
     return isRoot;
@@ -1083,7 +996,7 @@ void HostsEditor::onTableItemChanged(QTableWidgetItem* item) {
                 hostEntries[row].ip = newValue;
                 hasUnsavedChanges = true;
             } else {
-                updateStatus("IP地址格式不正确", true);
+                updateStatus(tr("IP地址格式不正确"), true);
                 item->setText(hostEntries[row].ip); // 恢复原值
             }
             break;
@@ -1092,7 +1005,7 @@ void HostsEditor::onTableItemChanged(QTableWidgetItem* item) {
                 hostEntries[row].hostname = newValue;
                 hasUnsavedChanges = true;
             } else {
-                updateStatus("主机名格式不正确", true);
+                updateStatus(tr("主机名格式不正确"), true);
                 item->setText(hostEntries[row].hostname); // 恢复原值
             }
             break;

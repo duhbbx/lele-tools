@@ -62,102 +62,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     this->setAttribute(Qt::WA_StaticContents);
     this->setAttribute(Qt::WA_PaintOnScreen, false);
     // 设置全局样式
-    const QString globalStyle = GlobalStyles::getGlobalStyle() +
-        "QMainWindow { background-color: #000000; }"
-
-        // 美化所有文本编辑框
-        "QTextEdit {"
-        "    border: 2px solid #dee2e6;"
-        "    padding: 2px;"
-        "    background-color: #ffffff;"
-        "    color: #495057;"
-        "    font-size: 12px;"
-        "    selection-background-color: #007bff;"
-        "    selection-color: white;"
-        "}"
-        "QTextEdit:focus {"
-        "    border-color: #007bff;"
-        "    background-color: #ffffff;"
-        "}"
-        "QTextEdit:hover {"
-        "    border-color: #6c757d;"
-        "}"
-
-        // 美化所有纯文本编辑框
-        "QPlainTextEdit {"
-        "    border: 2px solid #dee2e6;"
-        "    padding: 2px;"
-        "    background-color: #ffffff;"
-        "    color: #495057;"
-        "    font-size: 13px;"
-        "    selection-background-color: #007bff;"
-        "    selection-color: white;"
-        "}"
-        "QPlainTextEdit:focus {"
-        "    border-color: #007bff;"
-        "    background-color: #ffffff;"
-        "}"
-        "QPlainTextEdit:hover {"
-        "    border-color: #6c757d;"
-        "}"
-
-        // 美化所有单行输入框
-        "QLineEdit {"
-        "    border: 2px solid #dee2e6;"
-        "    padding: 8px 12px;"
-        "    background-color: #ffffff;"
-        "    color: #495057;"
-        "    font-size: 13px;"
-        "    selection-background-color: #007bff;"
-        "    selection-color: white;"
-        "}"
-        "QLineEdit:focus {"
-        "    border-color: #007bff;"
-        "    background-color: #ffffff;"
-        "}"
-        "QLineEdit:hover {"
-        "    border-color: #6c757d;"
-        "}"
-
-        // 美化组合框
-        "QComboBox {"
-        "    border: 2px solid #dee2e6;"
-        "    padding: 8px 12px;"
-        "    background-color: #ffffff;"
-        "    color: #495057;"
-        "    font-size: 13px;"
-        "}"
-        "QComboBox:focus {"
-        "    border-color: #007bff;"
-        "}"
-        "QComboBox:hover {"
-        "    border-color: #6c757d;"
-        "}"
-        "QComboBox::drop-down {"
-        "    border: none;"
-        "    width: 30px;"
-        "}"
-        "QComboBox::down-arrow {"
-        "    image: none;"
-        "    border: none;"
-        "    width: 12px;"
-        "    height: 12px;"
-        "}"
-
-        // 美化数字输入框
-        "QSpinBox, QDoubleSpinBox {"
-        "    border: 2px solid #dee2e6;"
-        "    padding: 8px 12px;"
-        "    background-color: #ffffff;"
-        "    color: #495057;"
-        "    font-size: 13px;"
-        "}"
-        "QSpinBox:focus, QDoubleSpinBox:focus {"
-        "    border-color: #007bff;"
-        "}"
-        "QSpinBox:hover, QDoubleSpinBox:hover {"
-        "    border-color: #6c757d;"
-        "}";
+    const QString globalStyle = GlobalStyles::getGlobalStyle();
 
     this->setStyleSheet(globalStyle);
 
@@ -216,14 +121,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     setupTabDropdown();
 
     // 设置右侧面板布局
-    QVBoxLayout* rightLayout = new QVBoxLayout(rightPanel);
+    auto* rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setContentsMargins(0, 0, 0, 0); // 无边距
     rightLayout->setSpacing(0);
     rightLayout->addWidget(rightTabWidget, 1); // 设置拉伸因子为1，让标签页填满右侧面板
 
     // 创建工具列表并添加到左侧面板
-    ToolList* toolList = new ToolList(this, nullptr);
-    QVBoxLayout* leftLayout = new QVBoxLayout(leftPanel);
+    auto* toolList = new ToolList(this, nullptr);
+    auto* leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setContentsMargins(5, 5, 5, 5); // 保持适当边距用于美观
     leftLayout->setSpacing(0);
     leftLayout->addWidget(toolList, 1); // 设置拉伸因子为1，让ToolList填满整个左侧面板
@@ -1209,13 +1114,15 @@ void MainWindow::changeLanguage(const QString& language) {
 }
 
 void MainWindow::setupScreenCapture() {
-    qDebug() << "呵呵";
+    qDebug() << "设置截图功能...";
+    
+#ifdef WITH_SCREEN_CAPTURE
     // 创建截图API实例
     m_screenCapture = new ScreenCaptureAPI(this);
 
     // 连接截图完成信号
-    connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted,
-            this, &MainWindow::onCaptureCompleted);
+    connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted, this, &MainWindow::onCaptureCompleted);
+#endif
 
     // 注册系统级全局快捷键F1
 #ifdef Q_OS_WIN
@@ -1243,6 +1150,7 @@ void MainWindow::setupScreenCapture() {
 void MainWindow::startScreenCapture() {
     qDebug() << "F1快捷键被触发，开始截图...";
 
+#ifdef WITH_SCREEN_CAPTURE
     // 隐藏主窗口，避免影响截图
     this->hide();
 
@@ -1268,16 +1176,21 @@ void MainWindow::startScreenCapture() {
         // 如果截图失败，重新显示主窗口
         this->show();
     }
-
+#else
+    qDebug() << "截图功能在此平台不可用";
+    showScreenshotTooltip("截图功能仅在Windows平台可用");
+#endif
 }
 
+#ifdef WITH_SCREEN_CAPTURE
 void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image) {
     qDebug() << "截图完成，结果：" << static_cast<int>(result);
 
-    // 重新显示主窗口
-    this->show();
-    this->raise();
-    this->activateWindow();
+    // 重新显示主窗口,截图完成不显示主窗口
+    this->show();          // 确保窗口显示出来
+    this->showMinimized();
+    // this->raise();         // 把窗口放到最上层（防止被自己其他窗口挡住）
+    // this->activateWindow();// 请求获得焦点，成为当前活动窗口
 
     switch (result) {
     case ScreenCaptureAPI::CaptureResult::Success:
@@ -1328,6 +1241,7 @@ void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, cons
         break;
     }
 }
+#endif
 
 void MainWindow::showScreenshotTooltip(const QString& message) {
     // 创建截图提示框

@@ -120,14 +120,14 @@ void SimpleHostsEditor::setupUI()
 
 void SimpleHostsEditor::setupToolbar()
 {
-    toolbarGroup = new QGroupBox("📝 Hosts文本编辑器");
+    toolbarGroup = new QGroupBox(tr("📝 Hosts文本编辑器"));
     toolbarLayout = new QHBoxLayout(toolbarGroup);
     
-    loadBtn = new QPushButton("📂 重新加载");
-    saveBtn = new QPushButton("💾 保存文件");
-    flushDnsBtn = new QPushButton("🔄 刷新DNS");
-    resetBtn = new QPushButton("🔄 重置为默认");
-    backupBtn = new QPushButton("📋 创建备份");
+    loadBtn = new QPushButton(tr("📂 重新加载"));
+    saveBtn = new QPushButton(tr("💾 保存文件"));
+    flushDnsBtn = new QPushButton(tr("🔄 刷新DNS"));
+    resetBtn = new QPushButton(tr("🔄 重置为默认"));
+    backupBtn = new QPushButton(tr("📋 创建备份"));
     
     // 设置按钮样式
     saveBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; } QPushButton:disabled { background-color: #6c757d; }");
@@ -147,18 +147,18 @@ void SimpleHostsEditor::setupToolbar()
 
 void SimpleHostsEditor::setupEditorArea()
 {
-    editorGroup = new QGroupBox("📄 Hosts文件内容");
+    editorGroup = new QGroupBox(tr("📄 Hosts文件内容"));
     editorLayout = new QVBoxLayout(editorGroup);
     
     // 信息标签
-    infoLabel = new QLabel("💡 提示：直接编辑hosts文件内容，格式为：IP地址 主机名 # 注释");
+    infoLabel = new QLabel(tr("💡 提示：直接编辑hosts文件内容，格式为：IP地址 主机名 # 注释"));
     infoLabel->setStyleSheet("color: #6c757d; font-style: italic; padding: 5px; background-color: #f8f9fa; border-radius: 0px;");
     infoLabel->setWordWrap(true);
     
     // 文本编辑器
     hostsTextEdit = new QTextEdit();
     hostsTextEdit->setMinimumHeight(400);
-    hostsTextEdit->setPlaceholderText("# Hosts文件内容将在这里显示\n# 格式示例：\n# 127.0.0.1    localhost\n# 0.0.0.0      example.com    # 阻止访问example.com");
+    hostsTextEdit->setPlaceholderText(tr("# Hosts文件内容将在这里显示\n# 格式示例：\n# 127.0.0.1    localhost\n# 0.0.0.0      example.com    # 阻止访问example.com"));
     
     // 设置等宽字体
     QFont font("Consolas", 11);
@@ -175,13 +175,13 @@ void SimpleHostsEditor::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     
-    lineCountLabel = new QLabel("行数: 0");
+    lineCountLabel = new QLabel(tr("行数: 0"));
     lineCountLabel->setStyleSheet("color: #6c757d;");
     
-    adminStatusLabel = new QLabel("权限检查中...");
+    adminStatusLabel = new QLabel(tr("权限检查中..."));
     
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
@@ -198,11 +198,11 @@ void SimpleHostsEditor::setupStatusArea()
 
 void SimpleHostsEditor::loadHostsFile()
 {
-    updateStatusMessage("正在加载hosts文件...", false);
+    updateStatusMessage(tr("正在加载hosts文件..."), false);
     
     QFile file(hostsFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        updateStatusMessage("无法读取hosts文件: " + file.errorString(), true);
+        updateStatusMessage(tr("无法读取hosts文件: %1").arg(file.errorString()), true);
         return;
     }
     
@@ -217,7 +217,7 @@ void SimpleHostsEditor::loadHostsFile()
     file.close();
     
     hostsTextEdit->setPlainText(content);
-    updateStatusMessage("hosts文件加载完成", false);
+    updateStatusMessage(tr("hosts文件加载完成"), false);
     hasUnsavedChanges = false;
     saveBtn->setEnabled(false);
 }
@@ -226,8 +226,8 @@ void SimpleHostsEditor::onLoadHosts()
 {
     if (hasUnsavedChanges) {
         QMessageBox::StandardButton reply = QMessageBox::question(this, 
-            "未保存的更改", 
-            "当前有未保存的更改，重新加载将丢失这些更改。\n确定要继续吗？",
+            tr("未保存的更改"), 
+            tr("当前有未保存的更改，重新加载将丢失这些更改。\n确定要继续吗？"),
             QMessageBox::Yes | QMessageBox::No);
             
         if (reply != QMessageBox::Yes) {
@@ -244,13 +244,13 @@ void SimpleHostsEditor::onSaveHosts()
     
     // 安全检查
     if (!hasUnsavedChanges) {
-        updateStatusMessage("没有需要保存的更改", false);
+        updateStatusMessage(tr("没有需要保存的更改"), false);
         return;
     }
     
     // 检查文本内容
     if (hostsTextEdit->toPlainText().trimmed().isEmpty()) {
-        updateStatusMessage("hosts文件内容为空，无需保存", false);
+        updateStatusMessage(tr("hosts文件内容为空，无需保存"), false);
         return;
     }
     
@@ -259,39 +259,39 @@ void SimpleHostsEditor::onSaveHosts()
             qDebug() << "使用管理员权限直接保存";
             // 直接保存
             if (saveHostsFile()) {
-                updateStatusMessage("hosts文件保存成功", false);
+                updateStatusMessage(tr("hosts文件保存成功"), false);
                 hasUnsavedChanges = false;
                 saveBtn->setEnabled(false);
             } else {
-                updateStatusMessage("保存失败：无法写入hosts文件", true);
+                updateStatusMessage(tr("保存失败：无法写入hosts文件"), true);
             }
         } else {
             qDebug() << "需要提升权限保存";
             // 尝试提升权限保存
-            updateStatusMessage("正在申请管理员权限...", false);
+            updateStatusMessage(tr("正在申请管理员权限..."), false);
             if (saveWithElevation()) {
-                updateStatusMessage("hosts文件保存成功（已提升权限）", false);
+                updateStatusMessage(tr("hosts文件保存成功（已提升权限）"), false);
                 hasUnsavedChanges = false;
                 saveBtn->setEnabled(false);
                 // 重新检查权限状态
                 hasAdminRights = checkAdminRights();
             } else {
-                updateStatusMessage("保存失败：无法获取管理员权限或用户取消操作", true);
+                updateStatusMessage(tr("保存失败：无法获取管理员权限或用户取消操作"), true);
             }
         }
     } catch (const std::exception& e) {
         qDebug() << "保存过程中发生异常:" << e.what();
-        updateStatusMessage(QString("保存失败：%1").arg(e.what()), true);
+        updateStatusMessage(tr("保存失败：%1").arg(e.what()), true);
     } catch (...) {
         qDebug() << "保存过程中发生未知异常";
-        updateStatusMessage("保存失败：未知错误", true);
+        updateStatusMessage(tr("保存失败：未知错误"), true);
     }
 }
 
 bool SimpleHostsEditor::saveHostsFile()
 {
     qDebug() << "开始直接保存hosts文件";
-    updateStatusMessage("正在保存hosts文件...", false);
+    updateStatusMessage(tr("正在保存hosts文件..."), false);
     
     try {
         // 创建备份
@@ -300,7 +300,7 @@ bool SimpleHostsEditor::saveHostsFile()
         QFile file(hostsFilePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             qDebug() << "无法打开hosts文件进行写入:" << file.errorString();
-            updateStatusMessage("无法写入hosts文件: " + file.errorString(), true);
+            updateStatusMessage(tr("无法写入hosts文件: %1").arg(file.errorString()), true);
             return false;
         }
         
@@ -318,11 +318,11 @@ bool SimpleHostsEditor::saveHostsFile()
         return true;
     } catch (const std::exception& e) {
         qDebug() << "saveHostsFile异常:" << e.what();
-        updateStatusMessage(QString("保存文件时发生异常: %1").arg(e.what()), true);
+        updateStatusMessage(tr("保存文件时发生异常: %1").arg(e.what()), true);
         return false;
     } catch (...) {
         qDebug() << "saveHostsFile未知异常";
-        updateStatusMessage("保存文件时发生未知异常", true);
+        updateStatusMessage(tr("保存文件时发生未知异常"), true);
         return false;
     }
 }
@@ -343,7 +343,7 @@ bool SimpleHostsEditor::saveWithElevation()
         QFile file(tempFile);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             qDebug() << "无法创建临时文件:" << file.errorString();
-            updateStatusMessage("无法创建临时文件: " + file.errorString(), true);
+            updateStatusMessage(tr("无法创建临时文件: %1").arg(file.errorString()), true);
             return false;
         }
         
@@ -417,7 +417,7 @@ bool SimpleHostsEditor::saveWithElevation()
                     }
                 } else if (waitResult == WAIT_TIMEOUT) {
                     qDebug() << "PowerShell操作超时";
-                    updateStatusMessage("操作超时", true);
+                    updateStatusMessage(tr("操作超时"), true);
                     TerminateProcess(sei.hProcess, 1);
                 }
                 CloseHandle(sei.hProcess);
@@ -426,9 +426,9 @@ bool SimpleHostsEditor::saveWithElevation()
             DWORD error = GetLastError();
             qDebug() << "ShellExecuteExW失败，错误代码:" << error;
             if (error == ERROR_CANCELLED) {
-                updateStatusMessage("用户取消了权限提升", true);
+                updateStatusMessage(tr("用户取消了权限提升"), true);
             } else {
-                updateStatusMessage(QString("权限提升失败，错误代码: %1").arg(error), true);
+                updateStatusMessage(tr("权限提升失败，错误代码: %1").arg(error), true);
             }
         }
         
@@ -439,23 +439,23 @@ bool SimpleHostsEditor::saveWithElevation()
         return success;
     } catch (const std::exception& e) {
         qDebug() << "saveWithElevation异常:" << e.what();
-        updateStatusMessage(QString("权限提升失败: %1").arg(e.what()), true);
+        updateStatusMessage(tr("权限提升失败: %1").arg(e.what()), true);
         return false;
     } catch (...) {
         qDebug() << "saveWithElevation未知异常";
-        updateStatusMessage("权限提升失败: 未知错误", true);
+        updateStatusMessage(tr("权限提升失败: 未知错误"), true);
         return false;
     }
 #else
     // Linux/Mac系统使用pkexec或sudo
-    updateStatusMessage("Linux/Mac系统暂不支持权限提升", true);
+    updateStatusMessage(tr("Linux/Mac系统暂不支持权限提升"), true);
     return false;
 #endif
 }
 
 void SimpleHostsEditor::onFlushDns()
 {
-    updateStatusMessage("正在刷新DNS缓存...", false);
+    updateStatusMessage(tr("正在刷新DNS缓存..."), false);
     flushDnsWithAPI();
 }
 
@@ -471,29 +471,29 @@ void SimpleHostsEditor::flushDnsWithAPI()
         
         if (DnsFlushResolverCache) {
             if (DnsFlushResolverCache()) {
-                updateStatusMessage("DNS缓存刷新成功", false);
+                updateStatusMessage(tr("DNS缓存刷新成功"), false);
             } else {
-                updateStatusMessage("DNS缓存刷新失败", true);
+                updateStatusMessage(tr("DNS缓存刷新失败"), true);
             }
         } else {
-            updateStatusMessage("无法找到DNS刷新函数", true);
+            updateStatusMessage(tr("无法找到DNS刷新函数"), true);
         }
         
         FreeLibrary(hDnsApi);
     } else {
-        updateStatusMessage("无法加载DNS API", true);
+        updateStatusMessage(tr("无法加载DNS API"), true);
     }
 #else
     // Linux/Mac系统
-    updateStatusMessage("DNS缓存刷新功能仅支持Windows系统", true);
+    updateStatusMessage(tr("DNS缓存刷新功能仅支持Windows系统"), true);
 #endif
 }
 
 void SimpleHostsEditor::onResetHosts()
 {
     QMessageBox::StandardButton reply = QMessageBox::question(this, 
-        "重置hosts文件", 
-        "确定要重置hosts文件为默认内容吗？\n当前内容将被清空！",
+        tr("重置hosts文件"), 
+        tr("确定要重置hosts文件为默认内容吗？\n当前内容将被清空！"),
         QMessageBox::Yes | QMessageBox::No);
         
     if (reply == QMessageBox::Yes) {
@@ -523,23 +523,23 @@ void SimpleHostsEditor::onResetHosts()
         hostsTextEdit->setPlainText(defaultContent);
         hasUnsavedChanges = true;
         saveBtn->setEnabled(true);
-        updateStatusMessage("已重置为默认hosts内容", false);
+        updateStatusMessage(tr("已重置为默认hosts内容"), false);
     }
 }
 
 void SimpleHostsEditor::onBackupHosts()
 {
     createBackup();
-    updateStatusMessage("备份创建完成", false);
+    updateStatusMessage(tr("备份创建完成"), false);
 }
 
 void SimpleHostsEditor::createBackup()
 {
     QString backupPath = hostsFilePath + ".backup." + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
     if (QFile::copy(hostsFilePath, backupPath)) {
-        updateStatusMessage("已创建备份: " + QFileInfo(backupPath).fileName(), false);
+        updateStatusMessage(tr("已创建备份: %1").arg(QFileInfo(backupPath).fileName()), false);
     } else {
-        updateStatusMessage("备份创建失败", true);
+        updateStatusMessage(tr("备份创建失败"), true);
     }
 }
 
@@ -555,7 +555,7 @@ void SimpleHostsEditor::updateStatus()
 {
     // 更新行数统计
     int lineCount = hostsTextEdit->toPlainText().split('\n').count();
-    lineCountLabel->setText(QString("行数: %1").arg(lineCount));
+    lineCountLabel->setText(tr("行数: %1").arg(lineCount));
     
     // 更新保存按钮状态
     saveBtn->setEnabled(hasUnsavedChanges);
@@ -591,7 +591,7 @@ bool SimpleHostsEditor::checkAdminRights()
         FreeSid(adminGroup);
     }
     
-    adminStatusLabel->setText(isAdmin ? "✅ 管理员权限" : "⚠️ 普通用户权限");
+    adminStatusLabel->setText(isAdmin ? tr("✅ 管理员权限") : tr("⚠️ 普通用户权限"));
     adminStatusLabel->setStyleSheet(isAdmin ? 
         "color: #28a745; font-weight: bold;" : 
         "color: #ffc107; font-weight: bold;");
@@ -599,7 +599,7 @@ bool SimpleHostsEditor::checkAdminRights()
     return isAdmin;
 #else
     bool isRoot = (getuid() == 0);
-    adminStatusLabel->setText(isRoot ? "✅ Root权限" : "⚠️ 普通用户权限");
+    adminStatusLabel->setText(isRoot ? tr("✅ Root权限") : tr("⚠️ 普通用户权限"));
     adminStatusLabel->setStyleSheet(isRoot ? 
         "color: #28a745; font-weight: bold;" : 
         "color: #ffc107; font-weight: bold;");

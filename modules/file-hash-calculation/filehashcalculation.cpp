@@ -158,69 +158,6 @@ FileHashCalculation::FileHashCalculation() : QWidget(nullptr), DynamicObjectBase
     
     setupUI();
     setAcceptDrops(true);
-    
-    // 设置统一的样式
-    setStyleSheet(R"(
-        QCheckBox {
-            spacing: 8px;
-            font-size: 11pt;
-        }
-        QCheckBox::indicator {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #cccccc;
-            border-radius: 3px;
-            background-color: white;
-        }
-        QCheckBox::indicator:hover {
-            border-color: #4CAF50;
-            background-color: #f8f8f8;
-        }
-        QCheckBox::indicator:checked {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDNMNC41IDguNUwyIDYiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=);
-        }
-        QCheckBox::indicator:checked:hover {
-            background-color: #45a049;
-            border-color: #45a049;
-        }
-        QCheckBox::indicator:disabled {
-            background-color: #f5f5f5;
-            border-color: #e0e0e0;
-        }
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #cccccc;
-            border-radius: 5px;
-            margin-top: 1ex;
-            padding-top: 10px;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QPushButton {
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 11pt;
-        }
-        QPushButton:hover {
-            background-color: #e0e0e0;
-            border-color: #999999;
-        }
-        QPushButton:pressed {
-            background-color: #d0d0d0;
-        }
-        QPushButton:disabled {
-            background-color: #f5f5f5;
-            color: #999999;
-            border-color: #e0e0e0;
-        }
-    )");
 }
 
 FileHashCalculation::~FileHashCalculation()

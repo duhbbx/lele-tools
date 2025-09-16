@@ -8,7 +8,7 @@
 
 {"xxx", "Base64编码解码", "Base64EncodeDecode"},
 
-{"xxx", "根据正则表达式生成内容", "RegExContentGen"},
+{"xxx", "正则表达式生成内容", "RegExContentGen"},
 
 {"xxx", "随机密码生成", "RandomPasswordGen"},
 
@@ -69,3 +69,13 @@
 {"xxx", "摄像头工具", "CameraTool"},
 
 {"xxx", "终端工具", "TerminalTool"},
+
+{"xxx", "路由追踪", "TracerouteTool"},
+
+{"xxx", "回程路由测试", "RouteTestTool"},
+
+{"xxx", "系统基本信息", "SystemInfoTool"},
+
+{"xxx", "富文本记事本", "Notepad"},
+
+{"xxx", "媒体文件管理", "MediaManager"},

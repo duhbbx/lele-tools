@@ -48,16 +48,16 @@ public:
     
 public slots:
     void scan();
-    void stop();
+    static void stop();
     
 signals:
     void finished(const HostInfo& hostInfo);
     
 private:
-    QString getHostName(const QString& ip);
-    QString getMacAddress(const QString& ip);
-    QString getMacVendor(const QString& mac);
-    bool isValidIP(const QString& ip);
+    QString getHostName(const QString& ip) const;
+    QString getMacAddress(const QString& ip) const;
+    static QString getMacVendor(const QString& mac);
+    static bool isValidIP(const QString& ip);
     
     QString m_ip;
     int m_timeout;
@@ -87,7 +87,7 @@ private slots:
 private:
     void scanNextBatch();
     QStringList generateIPRange(const QString& startIP, const QString& endIP);
-    bool isValidIP(const QString& ip);
+    static bool isValidIP(const QString& ip);
 
     QString m_startIP;
     QString m_endIP;

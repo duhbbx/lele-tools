@@ -37,7 +37,7 @@ Telnet::Telnet() : QWidget(nullptr), DynamicObjectBase(),
     timestampCheck->setChecked(true);
     
     updateConnectionButtons(false);
-    updateStatus("就绪", false);
+    updateStatus(tr("就绪"), false);
 }
 
 Telnet::~Telnet()
@@ -62,8 +62,15 @@ void Telnet::setupUI()
     topLayout->addWidget(connectionGroup);
     topLayout->addWidget(commandGroup);
     
+    // 设置上部分的大小策略为固定高度
+    topWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    
     mainSplitter->addWidget(topWidget);
     mainSplitter->addWidget(outputGroup);
+    
+    // 设置分割器的拉伸因子：上部分固定高度，下部分可伸缩
+    mainSplitter->setStretchFactor(0, 0);  // 上部分不拉伸
+    mainSplitter->setStretchFactor(1, 1);  // 下部分可拉伸
     
     mainLayout->addWidget(mainSplitter);
     mainLayout->addLayout(statusLayout);
@@ -98,7 +105,7 @@ void Telnet::setupUI()
             border-radius: 0px;
             padding: 8px;
             font-family: 'Consolas', monospace;
-            font-size: 10pt;
+            font-size: 11pt;
             background-color: #1e1e1e;
             color: #ffffff;
         }
@@ -107,29 +114,29 @@ void Telnet::setupUI()
 
 void Telnet::setupConnectionArea()
 {
-    connectionGroup = new QGroupBox("🌐 连接设置");
+    connectionGroup = new QGroupBox(tr("🌐 连接设置"));
     connectionGroup->setFixedWidth(300);
     connectionLayout = new QGridLayout(connectionGroup);
     
-    hostLabel = new QLabel("主机地址:");
+    hostLabel = new QLabel(tr("主机地址:"));
     hostEdit = new QLineEdit();
-    hostEdit->setPlaceholderText("输入IP地址或域名");
+    hostEdit->setPlaceholderText(tr("输入IP地址或域名"));
     
-    portLabel = new QLabel("端口:");
+    portLabel = new QLabel(tr("端口:"));
     portSpinBox = new QSpinBox();
     portSpinBox->setRange(1, 65535);
     
-    timeoutLabel = new QLabel("超时(秒):");
+    timeoutLabel = new QLabel(tr("超时(秒):"));
     timeoutSpinBox = new QSpinBox();
     timeoutSpinBox->setRange(1, 60);
     
-    autoReconnectCheck = new QCheckBox("自动重连");
+    autoReconnectCheck = new QCheckBox(tr("自动重连"));
     
     connectionButtonLayout = new QHBoxLayout();
-    connectBtn = new QPushButton("🔗 连接");
+    connectBtn = new QPushButton(tr("🔗 连接"));
     connectBtn->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-family: 'Microsoft YaHei'; }");
     
-    disconnectBtn = new QPushButton("❌ 断开");
+    disconnectBtn = new QPushButton(tr("❌ 断开"));
     disconnectBtn->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-family: 'Microsoft YaHei'; }");
     
     connectionButtonLayout->addWidget(connectBtn);
@@ -147,26 +154,26 @@ void Telnet::setupConnectionArea()
 
 void Telnet::setupCommandArea()
 {
-    commandGroup = new QGroupBox("⌨️ 命令输入");
+    commandGroup = new QGroupBox(tr("⌨️ 命令输入"));
     commandLayout = new QVBoxLayout(commandGroup);
     
     commonCommandsCombo = new QComboBox();
     commonCommandsCombo->addItems(QStringList() 
-        << "选择常用命令..." << "help" << "ls -la" << "pwd" << "whoami" << "exit");
+        << tr("选择常用命令...") << "help" << "ls -la" << "pwd" << "whoami" << "exit");
     
     commandInputLayout = new QHBoxLayout();
     commandEdit = new QLineEdit();
-    commandEdit->setPlaceholderText("输入Telnet命令...");
-    sendBtn = new QPushButton("📤 发送");
+    commandEdit->setPlaceholderText(tr("输入Telnet命令..."));
+    sendBtn = new QPushButton(tr("📤 发送"));
     sendBtn->setStyleSheet("font-family: 'Microsoft YaHei';");
     
     commandInputLayout->addWidget(commandEdit);
     commandInputLayout->addWidget(sendBtn);
     
     commandButtonLayout = new QHBoxLayout();
-    clearBtn = new QPushButton("🗑️ 清空");
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
     clearBtn->setStyleSheet("font-family: 'Microsoft YaHei';");
-    saveLogBtn = new QPushButton("💾 保存日志");
+    saveLogBtn = new QPushButton(tr("💾 保存日志"));
     saveLogBtn->setStyleSheet("font-family: 'Microsoft YaHei';");
     
     commandButtonLayout->addWidget(clearBtn);
@@ -180,16 +187,16 @@ void Telnet::setupCommandArea()
 
 void Telnet::setupOutputArea()
 {
-    outputGroup = new QGroupBox("📺 输出显示");
+    outputGroup = new QGroupBox(tr("📺 输出显示"));
     outputLayout = new QVBoxLayout(outputGroup);
     
     outputTextEdit = new QTextEdit();
     outputTextEdit->setReadOnly(true);
     
     QHBoxLayout* optionsLayout = new QHBoxLayout();
-    autoScrollCheck = new QCheckBox("自动滚动");
-    timestampCheck = new QCheckBox("显示时间戳");
-    wordWrapCheck = new QCheckBox("自动换行");
+    autoScrollCheck = new QCheckBox(tr("自动滚动"));
+    timestampCheck = new QCheckBox(tr("显示时间戳"));
+    wordWrapCheck = new QCheckBox(tr("自动换行"));
     
     optionsLayout->addWidget(autoScrollCheck);
     optionsLayout->addWidget(timestampCheck);
@@ -204,14 +211,14 @@ void Telnet::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 4px 8px; background: #f9f9f9; border-radius: 0px;");
     
-    connectionStatusLabel = new QLabel("未连接");
+    connectionStatusLabel = new QLabel(tr("未连接"));
     connectionStatusLabel->setStyleSheet("color: #f44336; font-weight: bold;");
     
-    bytesLabel = new QLabel("发送: 0B | 接收: 0B");
-    bytesLabel->setStyleSheet("color: #666; font-size: 10pt;");
+    bytesLabel = new QLabel(tr("发送: 0B | 接收: 0B"));
+    bytesLabel->setStyleSheet("color: #666; font-size: 11pt;");
     
     statusLayout->addWidget(statusLabel);
     statusLayout->addWidget(connectionStatusLabel);
@@ -225,7 +232,7 @@ void Telnet::onConnect()
     currentPort = portSpinBox->value();
     
     if (currentHost.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请输入主机地址");
+        QMessageBox::warning(this, tr("错误"), tr("请输入主机地址"));
         return;
     }
     
@@ -252,21 +259,21 @@ void Telnet::onClearOutput()
     outputTextEdit->clear();
     bytesReceived = 0;
     bytesSent = 0;
-    updateStatus("输出已清空", false);
-    bytesLabel->setText("发送: 0B | 接收: 0B");
+    updateStatus(tr("输出已清空"), false);
+    bytesLabel->setText(tr("发送: 0B | 接收: 0B"));
 }
 
 void Telnet::onSaveLog()
 {
     QString fileName = QString("telnet_log_%1.txt").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
-    QString filePath = QFileDialog::getSaveFileName(this, "保存Telnet日志", fileName, "文本文件 (*.txt)");
+    QString filePath = QFileDialog::getSaveFileName(this, tr("保存Telnet日志"), fileName, tr("文本文件 (*.txt)"));
     
     if (!filePath.isEmpty()) {
         QFile file(filePath);
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&file);
             out << outputTextEdit->toPlainText();
-            updateStatus("日志已保存", false);
+            updateStatus(tr("日志已保存"), false);
         }
     }
 }
@@ -276,10 +283,10 @@ void Telnet::onSocketConnected()
     isConnected = true;
     connectionTimer->stop();
     updateConnectionButtons(true);
-    connectionStatusLabel->setText("已连接");
+    connectionStatusLabel->setText(tr("已连接"));
     connectionStatusLabel->setStyleSheet("color: #4CAF50; font-weight: bold;");
     
-    QString message = QString("成功连接到 %1:%2").arg(currentHost).arg(currentPort);
+    QString message = tr("成功连接到 %1:%2").arg(currentHost).arg(currentPort);
     appendOutput(message, "#4CAF50");
     updateStatus(message, false);
 }
@@ -288,10 +295,10 @@ void Telnet::onSocketDisconnected()
 {
     isConnected = false;
     updateConnectionButtons(false);
-    connectionStatusLabel->setText("未连接");
+    connectionStatusLabel->setText(tr("未连接"));
     connectionStatusLabel->setStyleSheet("color: #f44336; font-weight: bold;");
     
-    QString message = QString("连接已断开");
+    QString message = tr("连接已断开");
     appendOutput(message, "#f44336");
     updateStatus(message, false);
 }
@@ -303,7 +310,7 @@ void Telnet::onSocketError(QAbstractSocket::SocketError error)
     connectionTimer->stop();
     updateConnectionButtons(false);
     
-    QString message = QString("连接错误: %1").arg(tcpSocket->errorString());
+    QString message = tr("连接错误: %1").arg(tcpSocket->errorString());
     appendOutput(message, "#f44336");
     updateStatus(message, true);
 }
@@ -316,20 +323,20 @@ void Telnet::onSocketReadyRead()
     QString text = QString::fromUtf8(data);
     appendOutput(text, "#ffffff");
     
-    bytesLabel->setText(QString("发送: %1B | 接收: %2B").arg(bytesSent).arg(bytesReceived));
+    bytesLabel->setText(tr("发送: %1B | 接收: %2B").arg(bytesSent).arg(bytesReceived));
 }
 
 void Telnet::onConnectionTimeout()
 {
     if (tcpSocket->state() == QAbstractSocket::ConnectingState) {
         tcpSocket->abort();
-        updateStatus("连接超时", true);
+        updateStatus(tr("连接超时"), true);
     }
 }
 
 void Telnet::connectToHost()
 {
-    updateStatus(QString("正在连接到 %1:%2...").arg(currentHost).arg(currentPort), false);
+    updateStatus(tr("正在连接到 %1:%2...").arg(currentHost).arg(currentPort), false);
     tcpSocket->connectToHost(currentHost, currentPort);
     connectionTimer->start(timeoutSpinBox->value() * 1000);
     updateConnectionButtons(false);
@@ -349,7 +356,7 @@ void Telnet::sendCommand(const QString& command)
     bytesSent += written;
     
     appendOutput(QString("> %1").arg(command), "#00ff00");
-    bytesLabel->setText(QString("发送: %1B | 接收: %2B").arg(bytesSent).arg(bytesReceived));
+    bytesLabel->setText(tr("发送: %1B | 接收: %2B").arg(bytesSent).arg(bytesReceived));
 }
 
 void Telnet::appendOutput(const QString& text, const QString& color)

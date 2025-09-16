@@ -11,15 +11,15 @@
 ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
     this->mainWindow = mainWindow;
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
 
     // 搜索区域
-    QWidget* searchWidget = new QWidget;
+    auto* searchWidget = new QWidget;
     searchWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QVBoxLayout* searchLayout = new QVBoxLayout(searchWidget);
+    auto* searchLayout = new QVBoxLayout(searchWidget);
     searchLayout->setContentsMargins(5, 0, 5, 0);
     searchLayout->setSpacing(5);
 
@@ -29,7 +29,8 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
     searchLineEdit->setStyleSheet("border: 1px solid #ccc; border-radius: 0px; padding: 5px;");
 
     searchLayout->addWidget(searchLineEdit);
-    layout->addWidget(searchWidget, 0); // 搜索区域不拉伸，保持固定大小
+    // 搜索区域不拉伸，保持固定大小
+    layout->addWidget(searchWidget, 0);
 
     // 工具列表
     listWidget = new QListWidget;
@@ -39,6 +40,7 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
         "    border: none;"
         "    background-color: transparent;"
         "    outline: none;"
+        "    font-size: 10pt;"
         "}"
         "QListWidget::item {"
         "    padding: 8px;"
@@ -78,14 +80,15 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
         "}"
     );
 
-    for (const ModuleMeta& moduleMeta : moduleMetaArray) {
-        auto* item0 = new QListWidgetItem(QIcon(moduleMeta.icon), moduleMeta.title);
-        item0->setData(Qt::UserRole, QVariant(moduleMeta.className));
-        item0->setData(Qt::DisplayRole, QVariant(moduleMeta.title));
+    for (const auto& [icon, title, className] : moduleMetaArray) {
+        auto* item0 = new QListWidgetItem(QIcon(icon), title);
+        item0->setData(Qt::UserRole, QVariant(className));
+        item0->setData(Qt::DisplayRole, QVariant(title));
         listWidget->addItem(item0);
     }
 
-    layout->addWidget(listWidget, 1); // 设置拉伸因子为1，让列表填满剩余空间
+    // 设置拉伸因子为1，让列表填满剩余空间
+    layout->addWidget(listWidget, 1);
 
     connect(listWidget, &QListWidget::itemClicked, mainWindow, &MainWindow::itemClickedSlot);
 

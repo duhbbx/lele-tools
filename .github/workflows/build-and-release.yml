@@ -35,10 +35,11 @@ permissions:
 # 全局环境变量
 # 统一管理版本号，便于维护和升级
 env:
-  QT_VERSION: '6.9.1'          # Qt框架版本
-  CMAKE_VERSION: '3.28'        # CMake构建工具版本
-  MSVC_VERSION: '2022'         # Visual Studio编译器版本
-  OPENCV_VERSION: '4.10.0'     # OpenCV计算机视觉库版本（可选）
+  QT_VERSION_WINDOWS: '6.9.1'   # Windows平台Qt版本
+  QT_VERSION_LINUX: '6.5.3'     # Linux平台Qt版本（LTS稳定版）
+  CMAKE_VERSION: '3.28'          # CMake构建工具版本
+  MSVC_VERSION: '2022'           # Visual Studio编译器版本
+  OPENCV_VERSION: '4.10.0'       # OpenCV计算机视觉库版本（可选）
 
 jobs:
   # Windows构建任务
@@ -51,13 +52,35 @@ jobs:
     # 获取仓库的最新代码到构建环境
     - name: Checkout code
       uses: actions/checkout@v4
+
+    # 下载 Npcap SDK（也可以换成 WinPcap SDK）
+    - name: Download Npcap SDK
+      shell: powershell
+      run: |
+        $url = "https://npcap.com/dist/npcap-sdk-1.15.zip"
+        $zipFile = "$env:GITHUB_WORKSPACE\npcap-sdk.zip"
+        $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
+    
+        Write-Host "Downloading Npcap SDK from $url ..."
+        Invoke-WebRequest -Uri $url -OutFile $zipFile
+    
+        Write-Host "Downloaded file size: $(Get-Item $zipFile).Length bytes"
+    
+        Write-Host "Expanding archive to $destDir ..."
+        Expand-Archive $zipFile -DestinationPath $destDir
+    
+        Write-Host "Listing extracted files:"
+        Get-ChildItem -Recurse $destDir | ForEach-Object { Write-Host $_.FullName }
+    
+        Write-Host "Npcap SDK download and extraction complete."
+      
       
     # 步骤2: 安装Qt开发框架
     # Qt是GUI应用程序的核心依赖，包含界面组件和多媒体功能
     - name: Setup Qt
       uses: jurplel/install-qt-action@v3    # 使用第三方Action安装Qt
       with:
-        version: ${{ env.QT_VERSION }}       # Qt版本（6.9.1）
+        version: ${{ env.QT_VERSION_WINDOWS }} # Windows Qt版本（6.9.1）
         host: windows                        # 主机系统
         target: desktop                      # 目标平台（桌面应用）
         arch: win64_msvc2022_64             # 架构（64位Windows + MSVC2022）
@@ -355,14 +378,30 @@ jobs:
         } else {
             Write-Host "vcpkg not found, building without Redis support" -ForegroundColor Yellow
         }
+        # $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk\npcap-sdk-1.15"
+        # 不带npcap-sdk-1.15才是对的目录
+        $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
+        # 打印$npcapDir是否存在
+        if (Test-Path $npcapDir -PathType Container) {
+            Write-Host "Npcap SDK directory exists: $npcapDir"
+        } else {
+            Write-Error "Npcap SDK directory NOT found: $npcapDir"
+            exit 1
+        }
         
+        # 打印日志
+        Write-Host "CMAKE_PREFIX_PATH: $CMakePrefixPath" -ForegroundColor Cyan
         # 构建步骤3: 配置CMake构建系统
         # 根据可用依赖动态配置编译选项
+        
         $CMakeArgs = @(
-            $ProjectRoot,                                    # 项目源码路径
-            "-G", "Visual Studio 17 2022",                 # 使用VS2022生成器
-            "-A", "x64",                                    # 64位架构
-            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"          # Qt和OpenCV路径
+            $ProjectRoot,                                                           # 项目源码路径
+            "-G", "Visual Studio 17 2022",                                          # 使用VS2022生成器
+            "-A", "x64",                                                            # 64位架构
+            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath",                                 # Qt / OpenCV / vcpkg 路径
+            "-DPCAP_INCLUDE_DIR=$npcapDir\Include",                                 # Npcap Include
+            "-DPCAP_LIBRARY=$npcapDir\Lib\x64\wpcap.lib",                           # Npcap wpcap.lib
+            "-DPACKET_LIBRARY=$npcapDir\Lib\x64\packet.lib"                         # Packet.lib
         )
         
         # 配置Redis支持（如果vcpkg可用）
@@ -773,6 +812,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    if: false
     
     steps:
     - name: Checkout code
@@ -811,35 +851,77 @@ jobs:
           libxcb-render-util0-dev \
           libxcb-util-dev \
           libxcb-xkb-dev \
-          libxkbcommon-x11-dev \
-          libhiredis-dev
+          libxkbcommon-x11-dev
           
-    - name: Setup Qt
+    # 步骤2: 检查Linux平台Qt可用性
+    # 在安装前检查架构和模块的可用性，避免安装失败
+    - name: Check Qt availability (Linux)
+      run: |
+        echo "检查Qt ${{ env.QT_VERSION_LINUX }} 在Linux平台的可用性..."
+        pip install aqtinstall
+        
+        # 检查可用架构
+        echo "=== 可用架构 ==="
+        python -m aqt list-qt linux desktop --arch ${{ env.QT_VERSION_LINUX }} || echo "无法获取架构列表"
+        
+        # 检查可用模块
+        echo "=== 可用模块 ==="
+        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION_LINUX }} gcc_64 || echo "无法获取模块列表"
+        
+    # 步骤3: 安装Qt框架（Linux版本）
+    # 使用渐进式安装策略确保Qt能够成功安装
+    - name: Setup Qt (Base)
+      id: qt-install-base
       uses: jurplel/install-qt-action@v3
       with:
-        version: ${{ env.QT_VERSION }}
-        host: linux
-        target: desktop
-        arch: gcc_64
-        modules: 'qtmultimedia qtmultimediawidgets'
-        cache: true
+        version: ${{ env.QT_VERSION_LINUX }} # Linux Qt版本 6.7.2
+        host: linux                        # Linux主机
+        target: desktop                    # 桌面应用
+        arch: gcc_64                         # GCC 64位架构
+        cache: true                        # 启用缓存
+        # 不安装额外模块，先确保基础Qt可用
+        
+    # 尝试安装多媒体模块（可选）
+    - name: Setup Qt Multimedia (Optional)
+      id: qt-multimedia
+      continue-on-error: true              # 允许失败，不影响整体构建
+      run: |
+        echo "尝试安装Qt Multimedia模块..."
+        pip install aqtinstall
+        python -m aqt install-qt linux desktop ${{ env.QT_VERSION_LINUX }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
         
     - name: Cache redis-plus-plus
       uses: actions/cache@v4
       id: redis-cache
       with:
-        path: /usr/local/lib/libredis++*
-        key: ${{ runner.os }}-redis-plus-plus-v1
+        path: |
+          /usr/local/lib/libredis++*
+          /usr/local/lib/libhiredis*
+          /usr/local/include/hiredis
+          /usr/local/include/sw
+        key: ${{ runner.os }}-hiredis-redis-plus-plus-v2
         
     - name: Setup redis-plus-plus
       if: steps.redis-cache.outputs.cache-hit != 'true'
       run: |
-        echo "Installing redis-plus-plus from source..."
+        echo "Installing hiredis and redis-plus-plus from source..."
         
         # Install dependencies
         sudo apt-get install -y git cmake build-essential
         
-        # Clone and build redis-plus-plus
+        # First install hiredis with CMake support
+        echo "Installing hiredis..."
+        cd /tmp
+        git clone https://github.com/redis/hiredis.git
+        cd hiredis
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SSL=OFF
+        make -j$(nproc)
+        sudo make install
+        
+        # Then install redis-plus-plus
+        echo "Installing redis-plus-plus..."
         cd /tmp
         git clone https://github.com/sewenew/redis-plus-plus.git
         cd redis-plus-plus
@@ -849,7 +931,7 @@ jobs:
         make -j$(nproc)
         sudo make install
         
-        echo "redis-plus-plus installed successfully!"
+        echo "hiredis and redis-plus-plus installed successfully!"
         
     - name: Update library cache
       run: |
@@ -894,11 +976,21 @@ jobs:
         cd "$BUILD_DIR"
         
         echo "Configuring project..."
-        cmake "$PROJECT_ROOT" \
-          -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DENABLE_REDIS=ON \
-          -DWITH_OPENCV=ON
+        
+        # 根据Qt Multimedia可用性配置构建选项
+        CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_REDIS=ON -DWITH_OPENCV=ON"
+        
+        # 检查Qt Multimedia是否可用
+        if [ -d "$Qt6_DIR/lib/cmake/Qt6Multimedia" ]; then
+            echo "Qt Multimedia可用，启用摄像头功能"
+            CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=ON"
+        else
+            echo "Qt Multimedia不可用，禁用摄像头功能"
+            CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=OFF"
+        fi
+        
+        echo "CMake配置参数: $CMAKE_ARGS"
+        cmake $PROJECT_ROOT $CMAKE_ARGS
           
         if [ $? -ne 0 ]; then
             echo "Project configuration failed!"

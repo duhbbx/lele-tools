@@ -927,7 +927,7 @@ void QrCodeGen::setupBatchArea()
     batchResultLayout->addLayout(batchButtonLayout);
     
     batchStatusLabel = new QLabel("就绪");
-    batchStatusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
+    batchStatusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
     batchResultLayout->addWidget(batchStatusLabel);
     
     batchSplitter->addWidget(batchResultGroup);

@@ -1,0 +1,10 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+有涉及到本地数据库操作的使用共享的数据库，参考 common\sqlite\SqliteManager.cpp 和 common\sqlite\TableManager.cpp
+代码写完了之后不要帮我编译，看有没有报错，我会自己编译
+不要写任何的说明文档
+button 和 label 中的文本需要使用 tr 修饰，source 使用中文就行

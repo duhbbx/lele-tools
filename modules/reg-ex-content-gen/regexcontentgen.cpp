@@ -130,101 +130,22 @@ void RegExContentGen::setupUI()
     
     mainLayout->addWidget(mainSplitter);
     mainLayout->addLayout(statusLayout);
-    
-    // 应用样式
-    setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 11pt;
-            font-weight: normal;
-            min-width: 80px;
-            background-color: #f8f9fa;
-        }
-        QPushButton:hover { 
-            background-color: #e9ecef; 
-            border-color: #adb5bd;
-        }
-        QPushButton:pressed {
-            background-color: #dee2e6;
-        }
-        QPushButton:disabled {
-            background-color: #e9ecef;
-            color: #6c757d;
-            border-color: #dee2e6;
-        }
-        QGroupBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-weight: bold;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            margin-top: 1ex;
-            padding-top: 10px;
-            font-size: 12pt;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QLineEdit, QTextEdit, QPlainTextEdit {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px;
-            border: 2px solid #ced4da;
-            border-radius: 4px;
-            font-size: 11pt;
-            background-color: white;
-        }
-        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
-            border-color: #80bdff;
-            outline: 0;
-        }
-        QSpinBox, QComboBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 6px;
-            border: 2px solid #ced4da;
-            border-radius: 4px;
-            font-size: 11pt;
-            background-color: white;
-            min-width: 80px;
-        }
-        QLabel {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
-        }
-        QCheckBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
-        }
-        QListWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            border: 2px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 10pt;
-            background-color: white;
-        }
-    )");
 }
 
 void RegExContentGen::setupInputArea()
 {
-    inputGroup = new QGroupBox("🎯 正则表达式输入");
+    inputGroup = new QGroupBox(tr("🎯 正则表达式输入"));
     inputLayout = new QVBoxLayout(inputGroup);
     
-    regexLabel = new QLabel("输入正则表达式:");
+    regexLabel = new QLabel(tr("输入正则表达式:"));
     regexLabel->setStyleSheet("font-weight: bold; color: #495057;");
     
     regexInput = new QLineEdit();
-    regexInput->setPlaceholderText("例如: [a-zA-Z]{3,8}@[a-z]{2,6}\\.[a-z]{2,3}");
+    regexInput->setPlaceholderText(tr("例如: [a-zA-Z]{3,8}@[a-z]{2,6}\\.[a-z]{2,3}"));
     regexInput->setMinimumHeight(40);
     
-    statusLabel = new QLabel("请输入正则表达式");
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt; padding: 4px;");
+    statusLabel = new QLabel(tr("请输入正则表达式"));
+    statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt; padding: 4px;");
     
     inputLayout->addWidget(regexLabel);
     inputLayout->addWidget(regexInput);
@@ -233,40 +154,40 @@ void RegExContentGen::setupInputArea()
 
 void RegExContentGen::setupOptionsArea()
 {
-    optionsGroup = new QGroupBox("⚙️ 生成选项");
+    optionsGroup = new QGroupBox(tr("⚙️ 生成选项"));
     optionsLayout = new QGridLayout(optionsGroup);
     
     // 生成数量
-    optionsLayout->addWidget(new QLabel("生成数量:"), 0, 0);
+    optionsLayout->addWidget(new QLabel(tr("生成数量:")), 0, 0);
     countSpinBox = new QSpinBox();
     countSpinBox->setRange(1, 1000);
     countSpinBox->setValue(10);
-    countSpinBox->setSuffix(" 个");
+    countSpinBox->setSuffix(tr(" 个"));
     optionsLayout->addWidget(countSpinBox, 0, 1);
     
     // 最大长度限制
-    optionsLayout->addWidget(new QLabel("最大长度:"), 1, 0);
+    optionsLayout->addWidget(new QLabel(tr("最大长度:")), 1, 0);
     maxLengthSpinBox = new QSpinBox();
     maxLengthSpinBox->setRange(1, 1000);
     maxLengthSpinBox->setValue(50);
-    maxLengthSpinBox->setSuffix(" 字符");
+    maxLengthSpinBox->setSuffix(tr(" 字符"));
     optionsLayout->addWidget(maxLengthSpinBox, 1, 1);
     
     // 选项复选框
-    uniqueCheckBox = new QCheckBox("生成唯一结果");
+    uniqueCheckBox = new QCheckBox(tr("生成唯一结果"));
     uniqueCheckBox->setChecked(true);
     optionsLayout->addWidget(uniqueCheckBox, 2, 0, 1, 2);
     
-    caseSensitiveCheckBox = new QCheckBox("区分大小写");
+    caseSensitiveCheckBox = new QCheckBox(tr("区分大小写"));
     caseSensitiveCheckBox->setChecked(true);
     optionsLayout->addWidget(caseSensitiveCheckBox, 3, 0, 1, 2);
     
     // 操作按钮
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    generateBtn = new QPushButton("🎲 生成内容");
+    generateBtn = new QPushButton(tr("🎲 生成内容"));
     generateBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; font-weight: bold; } QPushButton:hover { background-color: #218838; }");
     
-    clearBtn = new QPushButton("🧹 清空");
+    clearBtn = new QPushButton(tr("🧹 清空"));
     clearBtn->setStyleSheet("QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
     
     buttonLayout->addWidget(generateBtn);
@@ -276,22 +197,22 @@ void RegExContentGen::setupOptionsArea()
 
 void RegExContentGen::setupResultsArea()
 {
-    resultsGroup = new QGroupBox("📋 生成结果");
+    resultsGroup = new QGroupBox(tr("📋 生成结果"));
     resultsLayout = new QVBoxLayout(resultsGroup);
     
     resultsText = new QTextEdit();
-    resultsText->setPlaceholderText("生成的内容将显示在这里...");
+    resultsText->setPlaceholderText(tr("生成的内容将显示在这里..."));
     resultsText->setMinimumHeight(300);
     resultsText->setFont(QFont("Consolas", 10));
     
     // 结果操作按钮
     resultsButtonLayout = new QHBoxLayout();
     
-    copyBtn = new QPushButton("📋 复制结果");
+    copyBtn = new QPushButton(tr("📋 复制结果"));
     copyBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
     copyBtn->setEnabled(false);
     
-    exportBtn = new QPushButton("💾 导出结果");
+    exportBtn = new QPushButton(tr("💾 导出结果"));
     exportBtn->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; } QPushButton:hover { background-color: #138496; }");
     exportBtn->setEnabled(false);
     
@@ -305,21 +226,21 @@ void RegExContentGen::setupResultsArea()
 
 void RegExContentGen::setupPresetArea()
 {
-    presetGroup = new QGroupBox("📚 预设模式");
+    presetGroup = new QGroupBox(tr("📚 预设模式"));
     presetLayout = new QVBoxLayout(presetGroup);
     
     presetCombo = new QComboBox();
-    presetCombo->addItem("选择预设模式...");
+    presetCombo->addItem(tr("选择预设模式..."));
     
     presetList = new QListWidget();
     presetList->setMaximumHeight(120);
     
-    importBtn = new QPushButton("📁 导入正则");
+    importBtn = new QPushButton(tr("📁 导入正则"));
     importBtn->setStyleSheet("QPushButton { background-color: #6f42c1; color: white; } QPushButton:hover { background-color: #5a32a3; }");
     
-    presetLayout->addWidget(new QLabel("快速选择:"));
+    presetLayout->addWidget(new QLabel(tr("快速选择:")));
     presetLayout->addWidget(presetCombo);
-    presetLayout->addWidget(new QLabel("常用模式:"));
+    presetLayout->addWidget(new QLabel(tr("常用模式:")));
     presetLayout->addWidget(presetList);
     presetLayout->addWidget(importBtn);
 }
@@ -328,7 +249,7 @@ void RegExContentGen::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
     
-    generatedCountLabel = new QLabel("已生成: 0 个");
+    generatedCountLabel = new QLabel(tr("已生成: 0 个"));
     generatedCountLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     
     progressBar = new QProgressBar();
@@ -344,18 +265,18 @@ void RegExContentGen::setupStatusArea()
 void RegExContentGen::initializePresets()
 {
     // 添加常用的正则表达式预设
-    addPreset("邮箱地址", "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "生成邮箱地址格式");
-    addPreset("手机号码", "1[3-9]\\d{9}", "生成中国手机号码");
-    addPreset("身份证号", "[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]", "生成身份证号码");
-    addPreset("IPv4地址", "((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)", "生成IPv4地址");
-    addPreset("MAC地址", "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})", "生成MAC地址");
-    addPreset("URL链接", "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/[a-zA-Z0-9._~:/?#\\[\\]@!$&'()*+,;=-]*)?", "生成URL链接");
-    addPreset("用户名", "[a-zA-Z][a-zA-Z0-9_]{3,15}", "生成用户名");
-    addPreset("密码", "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d@$!%*?&]{8,}", "生成强密码");
-    addPreset("日期格式", "\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])", "生成YYYY-MM-DD格式日期");
-    addPreset("时间格式", "(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]", "生成HH:MM:SS格式时间");
-    addPreset("颜色代码", "#[0-9A-Fa-f]{6}", "生成十六进制颜色代码");
-    addPreset("中文姓名", "[\\u4e00-\\u9fa5]{2,4}", "生成中文姓名");
+    addPreset(tr("邮箱地址"), "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", tr("生成邮箱地址格式"));
+    addPreset(tr("手机号码"), "1[3-9]\\d{9}", tr("生成中国手机号码"));
+    addPreset(tr("身份证号"), "[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]", tr("生成身份证号码"));
+    addPreset(tr("IPv4地址"), "((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)", tr("生成IPv4地址"));
+    addPreset(tr("MAC地址"), "([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})", tr("生成MAC地址"));
+    addPreset(tr("URL链接"), "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/[a-zA-Z0-9._~:/?#\\[\\]@!$&'()*+,;=-]*)?", tr("生成URL链接"));
+    addPreset(tr("用户名"), "[a-zA-Z][a-zA-Z0-9_]{3,15}", tr("生成用户名"));
+    addPreset(tr("密码"), "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d@$!%*?&]{8,}", tr("生成强密码"));
+    addPreset(tr("日期格式"), "\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])", tr("生成YYYY-MM-DD格式日期"));
+    addPreset(tr("时间格式"), "(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]", tr("生成HH:MM:SS格式时间"));
+    addPreset(tr("颜色代码"), "#[0-9A-Fa-f]{6}", tr("生成十六进制颜色代码"));
+    addPreset(tr("中文姓名"), "[\\u4e00-\\u9fa5]{2,4}", tr("生成中文姓名"));
     
     // 填充下拉框和列表
     for (const RegexPreset &preset : presets) {
@@ -371,7 +292,7 @@ void RegExContentGen::initializePresets()
         int index = presetList->row(item);
         if (index >= 0 && index < presets.size()) {
             regexInput->setText(presets[index].regex);
-            statusLabel->setText("已加载预设: " + presets[index].description);
+            statusLabel->setText(tr("已加载预设: %1").arg(presets[index].description));
         }
     });
 }
@@ -389,7 +310,7 @@ void RegExContentGen::onGenerateContent()
 {
     QString regex = regexInput->text().trimmed();
     if (regex.isEmpty()) {
-        statusLabel->setText("请输入正则表达式");
+        statusLabel->setText(tr("请输入正则表达式"));
         statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
         return;
     }
@@ -400,14 +321,14 @@ void RegExContentGen::onGenerateContent()
     progressBar->setValue(0);
     
     generateBtn->setEnabled(false);
-    statusLabel->setText("正在生成内容...");
+    statusLabel->setText(tr("正在生成内容..."));
     statusLabel->setStyleSheet("color: #007bff; font-weight: bold;");
     
     try {
         QStringList results = generateMultipleFromRegex(regex, count);
         
         if (results.isEmpty()) {
-            statusLabel->setText("无法从该正则表达式生成内容");
+            statusLabel->setText(tr("无法从该正则表达式生成内容"));
             statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
         } else {
             generatedResults = results;
@@ -417,15 +338,15 @@ void RegExContentGen::onGenerateContent()
                 resultsText->append(QString("%1. %2").arg(i + 1, 3, 10, QChar('0')).arg(results[i]));
             }
             
-            generatedCountLabel->setText(QString("已生成: %1 个").arg(results.size()));
-            statusLabel->setText(QString("成功生成 %1 个结果").arg(results.size()));
+            generatedCountLabel->setText(tr("已生成: %1 个").arg(results.size()));
+            statusLabel->setText(tr("成功生成 %1 个结果").arg(results.size()));
             statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
             
             copyBtn->setEnabled(true);
             exportBtn->setEnabled(true);
         }
     } catch (const std::exception &e) {
-        statusLabel->setText("生成失败: " + QString(e.what()));
+        statusLabel->setText(tr("生成失败: %1").arg(e.what()));
         statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
     }
     
@@ -713,11 +634,11 @@ void RegExContentGen::onClearAll()
 {
     resultsText->clear();
     generatedResults.clear();
-    generatedCountLabel->setText("已生成: 0 个");
+    generatedCountLabel->setText(tr("已生成: 0 个"));
     copyBtn->setEnabled(false);
     exportBtn->setEnabled(false);
-    statusLabel->setText("已清空结果");
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
+    statusLabel->setText(tr("已清空结果"));
+    statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
 }
 
 void RegExContentGen::onCopyResults()
@@ -730,7 +651,7 @@ void RegExContentGen::onCopyResults()
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(text);
     
-    statusLabel->setText("结果已复制到剪贴板");
+    statusLabel->setText(tr("结果已复制到剪贴板"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
 }
 
@@ -739,7 +660,7 @@ void RegExContentGen::onPresetSelected()
     int index = presetCombo->currentIndex() - 1; // 减1因为第一项是提示文本
     if (index >= 0 && index < presets.size()) {
         regexInput->setText(presets[index].regex);
-        statusLabel->setText("已加载预设: " + presets[index].description);
+        statusLabel->setText(tr("已加载预设: %1").arg(presets[index].description));
         statusLabel->setStyleSheet("color: #007bff; font-weight: bold;");
         presetCombo->setCurrentIndex(0); // 重置为提示文本
     }
@@ -749,18 +670,18 @@ void RegExContentGen::onRegexChanged()
 {
     QString regex = regexInput->text().trimmed();
     if (regex.isEmpty()) {
-        statusLabel->setText("请输入正则表达式");
-        statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
+        statusLabel->setText(tr("请输入正则表达式"));
+        statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
         generateBtn->setEnabled(false);
     } else {
         // 简单验证正则表达式
         QRegularExpression testRegex(regex);
         if (testRegex.isValid()) {
-            statusLabel->setText("正则表达式有效，可以生成内容");
+            statusLabel->setText(tr("正则表达式有效，可以生成内容"));
             statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
             generateBtn->setEnabled(true);
         } else {
-            statusLabel->setText("正则表达式语法错误: " + testRegex.errorString());
+            statusLabel->setText(tr("正则表达式语法错误: %1").arg(testRegex.errorString()));
             statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
             generateBtn->setEnabled(false);
         }
@@ -771,7 +692,7 @@ void RegExContentGen::onGenerateCountChanged()
 {
     int count = countSpinBox->value();
     if (count > 100) {
-        statusLabel->setText("生成大量数据可能需要较长时间");
+        statusLabel->setText(tr("生成大量数据可能需要较长时间"));
         statusLabel->setStyleSheet("color: #ffc107; font-weight: bold;");
     }
 }
@@ -787,8 +708,8 @@ void RegExContentGen::onExportResults()
     
     // 这里可以添加文件保存对话框
     // 暂时显示提示信息
-    QMessageBox::information(this, "导出结果", 
-                           QString("将导出 %1 个结果到文件: %2")
+    QMessageBox::information(this, tr("导出结果"), 
+                           tr("将导出 %1 个结果到文件: %2")
                            .arg(generatedResults.size())
                            .arg(fileName));
 }
@@ -797,7 +718,7 @@ void RegExContentGen::onImportRegex()
 {
     // 这里可以添加从文件导入正则表达式的功能
     // 暂时显示提示信息
-    QMessageBox::information(this, "导入正则", "导入正则表达式功能待实现");
+    QMessageBox::information(this, tr("导入正则"), tr("导入正则表达式功能待实现"));
 }
 
 #include "regexcontentgen.moc"
