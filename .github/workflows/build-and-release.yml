@@ -367,7 +367,7 @@ jobs:
         }
         
         
-        $CMakePrefixPath = "$CMakePrefixPath;$env:GITHUB_WORKSPACE/npcap-sdk-1.15"
+        $CMakePrefixPath = "$CMakePrefixPath;$env:GITHUB_WORKSPACE\npcap-sdk-1.15"
         
         # 打印日志
         Write-Host "CMAKE_PREFIX_PATH: $CMakePrefixPath" -ForegroundColor Cyan
@@ -377,8 +377,7 @@ jobs:
             $ProjectRoot,                                                         # 项目源码路径
             "-G", "Visual Studio 17 2022",                                        # 使用VS2022生成器
             "-A", "x64",                                                          # 64位架构
-            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"                                # Qt和OpenCV路径
-            "-DCMAKE_PREFIX_PATH=$env:GITHUB_WORKSPACE/npcap-sdk-1.15/WpdPack"    # npcap 的路径
+            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"                                # Qt OpenCV npcap 的路径
         )
         
         # 配置Redis支持（如果vcpkg可用）
