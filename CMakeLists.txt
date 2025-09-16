@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-
-
-
 project(lele-tools VERSION 0.1 LANGUAGES CXX)
-
-
 
 # 告诉 CMake 去哪里找 Qt，使用-DCMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64/lib/cmake这个指定避免代码中硬编码
 # set(CMAKE_PREFIX_PATH "C:/Qt/6.9.1/msvc2022_64/lib/cmake/Qt6")
@@ -293,42 +288,52 @@ option(WITH_PCAP "Enable pcap support for network tools" ON)
 if(WITH_PCAP)
     if(WIN32)
         # Windows平台查找Npcap
-        find_path(PCAP_INCLUDE_DIR
-            NAMES pcap.h
-            PATHS
-                "C:/npcap-sdk-1.15/Include"
-                "C:/Program Files/Npcap/Include"
-                "C:/Program Files (x86)/Npcap/Include"
-                "C:/npcap/Include"
-                "${CMAKE_PREFIX_PATH}/include"
-            DOC "Npcap include directory"
-            NO_DEFAULT_PATH
-        )
-        
-        find_library(PCAP_LIBRARY
-            NAMES wpcap pcap
-            PATHS
-                "C:/npcap-sdk-1.15/Lib/x64"
-                "C:/Program Files/Npcap/Lib/x64"
-                "C:/Program Files (x86)/Npcap/Lib/x64"
-                "C:/npcap/Lib/x64"
-                "${CMAKE_PREFIX_PATH}/lib"
-            DOC "Npcap library"
-            NO_DEFAULT_PATH
-        )
-        
-        find_library(PACKET_LIBRARY
-            NAMES packet
-            PATHS
-                "C:/npcap-sdk-1.15/Lib/x64"
-                "C:/Program Files/Npcap/Lib/x64"
-                "C:/Program Files (x86)/Npcap/Lib/x64"
-                "C:/npcap/Lib/x64"
-                "${CMAKE_PREFIX_PATH}/lib"
-            DOC "Packet library"
-            NO_DEFAULT_PATH
-        )
-        
+        # --- 允许用户手动指定路径 ---
+        set(PCAP_INCLUDE_DIR "" CACHE PATH "Npcap include directory (pcap.h)")
+        set(PCAP_LIBRARY "" CACHE FILEPATH "Npcap library (wpcap.lib)")
+        set(PACKET_LIBRARY "" CACHE FILEPATH "Packet library (packet.lib)")
+
+        # --- 如果未指定，才使用 find_path/find_library 搜索 ---
+        if(NOT PCAP_INCLUDE_DIR)
+            find_path(PCAP_INCLUDE_DIR
+                NAMES pcap.h
+                PATHS
+                    "C:/npcap-sdk-1.15/Include"
+                    "C:/Program Files/Npcap/Include"
+                    "C:/Program Files (x86)/Npcap/Include"
+                    "${CMAKE_PREFIX_PATH}/include"
+                DOC "Npcap include directory"
+                NO_DEFAULT_PATH
+            )
+        endif()
+
+        if(NOT PCAP_LIBRARY)
+            find_library(PCAP_LIBRARY
+                NAMES wpcap pcap
+                PATHS
+                    "C:/npcap-sdk-1.15/Lib/x64"
+                    "C:/Program Files/Npcap/Lib/x64"
+                    "C:/Program Files (x86)/Npcap/Lib/x64"
+                    "${CMAKE_PREFIX_PATH}/lib"
+                DOC "Npcap library"
+                NO_DEFAULT_PATH
+            )
+        endif()
+
+        if(NOT PACKET_LIBRARY)
+            find_library(PACKET_LIBRARY
+                NAMES packet
+                PATHS
+                    "C:/npcap-sdk-1.15/Lib/x64"
+                    "C:/Program Files/Npcap/Lib/x64"
+                    "C:/Program Files (x86)/Npcap/Lib/x64"
+                    "${CMAKE_PREFIX_PATH}/lib"
+                DOC "Packet library"
+                NO_DEFAULT_PATH
+            )
+        endif()
+
+        # --- 配置目标 ---
         if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
             message(STATUS "Npcap found:")
             message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
@@ -346,7 +351,7 @@ if(WITH_PCAP)
             message(STATUS "  1. Download Npcap from: https://npcap.com/")
             message(STATUS "  2. Install with 'Install Npcap SDK' option checked")
             message(STATUS "  3. Or download SDK separately from GitHub releases")
-            
+
             # 使用Windows系统API作为备用方案
             message(STATUS "Using Windows ICMP API fallback")
             set(HAVE_PCAP FALSE)

@@ -58,8 +58,10 @@ jobs:
       shell: powershell
       run: |
         $url = "https://npcap.com/dist/npcap-sdk-1.15.zip"
-        Invoke-WebRequest -Uri $url -OutFile npcap-sdk.zip
-        Expand-Archive npcap-sdk.zip -DestinationPath $env:GITHUB_WORKSPACE
+        $zipFile = "$env:GITHUB_WORKSPACE\npcap-sdk.zip"
+        $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
+        Invoke-WebRequest -Uri $url -OutFile $zipFile
+        Expand-Archive $zipFile -DestinationPath $destDir
       
       
     # 步骤2: 安装Qt开发框架
@@ -365,19 +367,21 @@ jobs:
         } else {
             Write-Host "vcpkg not found, building without Redis support" -ForegroundColor Yellow
         }
-        
-        
-        $CMakePrefixPath = "$CMakePrefixPath;$env:GITHUB_WORKSPACE\npcap-sdk-1.15"
+        $npcapDir = "$env:GITHUB_WORKSPACE\npcap-sdk\npcap-sdk-1.15"
         
         # 打印日志
         Write-Host "CMAKE_PREFIX_PATH: $CMakePrefixPath" -ForegroundColor Cyan
         # 构建步骤3: 配置CMake构建系统
         # 根据可用依赖动态配置编译选项
+        
         $CMakeArgs = @(
-            $ProjectRoot,                                                         # 项目源码路径
-            "-G", "Visual Studio 17 2022",                                        # 使用VS2022生成器
-            "-A", "x64",                                                          # 64位架构
-            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath"                                # Qt OpenCV npcap 的路径
+            $ProjectRoot,                                                           # 项目源码路径
+            "-G", "Visual Studio 17 2022",                                          # 使用VS2022生成器
+            "-A", "x64",                                                            # 64位架构
+            "-DCMAKE_PREFIX_PATH=$CMakePrefixPath",                                 # Qt / OpenCV / vcpkg 路径
+            "-DPCAP_INCLUDE_DIR=$npcapDir\Include",                                 # Npcap Include
+            "-DPCAP_LIBRARY=$npcapDir\Lib\x64\wpcap.lib",                           # Npcap wpcap.lib
+            "-DPACKET_LIBRARY=$npcapDir\Lib\x64\packet.lib"                         # Packet.lib
         )
         
         # 配置Redis支持（如果vcpkg可用）
