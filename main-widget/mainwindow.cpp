@@ -121,14 +121,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     setupTabDropdown();
 
     // 设置右侧面板布局
-    QVBoxLayout* rightLayout = new QVBoxLayout(rightPanel);
+    auto* rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setContentsMargins(0, 0, 0, 0); // 无边距
     rightLayout->setSpacing(0);
     rightLayout->addWidget(rightTabWidget, 1); // 设置拉伸因子为1，让标签页填满右侧面板
 
     // 创建工具列表并添加到左侧面板
-    ToolList* toolList = new ToolList(this, nullptr);
-    QVBoxLayout* leftLayout = new QVBoxLayout(leftPanel);
+    auto* toolList = new ToolList(this, nullptr);
+    auto* leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setContentsMargins(5, 5, 5, 5); // 保持适当边距用于美观
     leftLayout->setSpacing(0);
     leftLayout->addWidget(toolList, 1); // 设置拉伸因子为1，让ToolList填满整个左侧面板
@@ -1121,8 +1121,7 @@ void MainWindow::setupScreenCapture() {
     m_screenCapture = new ScreenCaptureAPI(this);
 
     // 连接截图完成信号
-    connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted,
-            this, &MainWindow::onCaptureCompleted);
+    connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted, this, &MainWindow::onCaptureCompleted);
 #endif
 
     // 注册系统级全局快捷键F1
@@ -1187,10 +1186,11 @@ void MainWindow::startScreenCapture() {
 void MainWindow::onCaptureCompleted(ScreenCaptureAPI::CaptureResult result, const QImage& image) {
     qDebug() << "截图完成，结果：" << static_cast<int>(result);
 
-    // 重新显示主窗口
-    this->show();
-    this->raise();
-    this->activateWindow();
+    // 重新显示主窗口,截图完成不显示主窗口
+    this->show();          // 确保窗口显示出来
+    this->showMinimized();
+    // this->raise();         // 把窗口放到最上层（防止被自己其他窗口挡住）
+    // this->activateWindow();// 请求获得焦点，成为当前活动窗口
 
     switch (result) {
     case ScreenCaptureAPI::CaptureResult::Success:

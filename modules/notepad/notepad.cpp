@@ -12,8 +12,8 @@
 REGISTER_DYNAMICOBJECT(Notepad);
 
 // RichTextEdit 实现
-RichTextEdit::RichTextEdit(QWidget* parent) : QTextEdit(parent), 
-    m_isDragging(false), m_currentHandle(None) {
+RichTextEdit::RichTextEdit(QWidget* parent) : QTextEdit(parent),
+                                              m_isDragging(false), m_currentHandle(None) {
     setAcceptDrops(true);
     setMouseTracking(true); // 启用鼠标跟踪
 }
@@ -56,13 +56,12 @@ void RichTextEdit::insertFromMimeData(const QMimeData* source) {
     QTextEdit::insertFromMimeData(source);
 }
 
-void RichTextEdit::wheelEvent(QWheelEvent* event)
-{
+void RichTextEdit::wheelEvent(QWheelEvent* event) {
     // 检查是否按住Ctrl键并且光标在图片上
     if (event->modifiers() & Qt::ControlModifier) {
         QTextCursor cursor = cursorForPosition(event->position().toPoint());
         QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
-        
+
         if (!imageFormat.name().isEmpty()) {
             // 计算缩放因子
             double scaleFactor = 1.0;
@@ -71,20 +70,19 @@ void RichTextEdit::wheelEvent(QWheelEvent* event)
             } else {
                 scaleFactor = 0.9; // 缩小
             }
-            
+
             resizeImageAtCursor(cursor, scaleFactor);
             emit imageResized();
             event->accept();
             return;
         }
     }
-    
+
     // 默认处理
     QTextEdit::wheelEvent(event);
 }
 
-QTextImageFormat RichTextEdit::getImageFormatAtCursor(const QTextCursor& cursor)
-{
+QTextImageFormat RichTextEdit::getImageFormatAtCursor(const QTextCursor& cursor) {
     QTextCharFormat format = cursor.charFormat();
     if (format.isImageFormat()) {
         return format.toImageFormat();
@@ -92,17 +90,16 @@ QTextImageFormat RichTextEdit::getImageFormatAtCursor(const QTextCursor& cursor)
     return QTextImageFormat();
 }
 
-void RichTextEdit::resizeImageAtCursor(const QTextCursor& cursor, double scaleFactor)
-{
+void RichTextEdit::resizeImageAtCursor(const QTextCursor& cursor, double scaleFactor) {
     QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
     if (imageFormat.name().isEmpty()) {
         return;
     }
-    
+
     // 获取当前尺寸
     int currentWidth = imageFormat.width();
     int currentHeight = imageFormat.height();
-    
+
     // 如果没有设置尺寸，使用原始图片尺寸
     if (currentWidth <= 0 || currentHeight <= 0) {
         QPixmap pixmap(imageFormat.name());
@@ -111,33 +108,32 @@ void RichTextEdit::resizeImageAtCursor(const QTextCursor& cursor, double scaleFa
             currentHeight = pixmap.height();
         }
     }
-    
+
     // 计算新尺寸
     int newWidth = qMax(50, static_cast<int>(currentWidth * scaleFactor));
     int newHeight = qMax(50, static_cast<int>(currentHeight * scaleFactor));
-    
+
     // 限制最大尺寸
     if (newWidth > 800) {
         newHeight = (newHeight * 800) / newWidth;
         newWidth = 800;
     }
-    
+
     // 更新图片格式
     QTextCursor editCursor = cursor;
     editCursor.select(QTextCursor::WordUnderCursor);
-    
+
     QTextImageFormat newFormat = imageFormat;
     newFormat.setWidth(newWidth);
     newFormat.setHeight(newHeight);
-    
+
     editCursor.setCharFormat(newFormat);
 }
 
-void RichTextEdit::contextMenuEvent(QContextMenuEvent* event)
-{
+void RichTextEdit::contextMenuEvent(QContextMenuEvent* event) {
     QTextCursor cursor = cursorForPosition(event->pos());
     QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
-    
+
     if (!imageFormat.name().isEmpty()) {
         // 如果光标在图片上，显示图片相关菜单
         showImageContextMenu(event->globalPos(), cursor);
@@ -147,26 +143,25 @@ void RichTextEdit::contextMenuEvent(QContextMenuEvent* event)
     }
 }
 
-void RichTextEdit::showImageContextMenu(const QPoint& pos, const QTextCursor& cursor)
-{
+void RichTextEdit::showImageContextMenu(const QPoint& pos, const QTextCursor& cursor) {
     QMenu* menu = new QMenu(this);
-    
+
     // 图片缩放选项
     QAction* enlargeAction = menu->addAction(tr("🔍 放大图片 (110%)"));
     QAction* shrinkAction = menu->addAction(tr("🔍 缩小图片 (90%)"));
     menu->addSeparator();
-    
+
     // 预设尺寸选项
     QAction* smallAction = menu->addAction(tr("📏 小尺寸 (200px)"));
     QAction* mediumAction = menu->addAction(tr("📏 中尺寸 (400px)"));
     QAction* largeAction = menu->addAction(tr("📏 大尺寸 (600px)"));
     menu->addSeparator();
-    
+
     // 原始尺寸
     QAction* originalAction = menu->addAction(tr("📐 原始尺寸"));
-    
+
     QAction* selectedAction = menu->exec(pos);
-    
+
     if (selectedAction == enlargeAction) {
         resizeImageAtCursor(cursor, 1.1);
         emit imageResized();
@@ -186,72 +181,69 @@ void RichTextEdit::showImageContextMenu(const QPoint& pos, const QTextCursor& cu
         resizeImageToOriginal(cursor);
         emit imageResized();
     }
-    
+
     menu->deleteLater();
 }
 
-void RichTextEdit::resizeImageToWidth(const QTextCursor& cursor, int targetWidth)
-{
+void RichTextEdit::resizeImageToWidth(const QTextCursor& cursor, int targetWidth) {
     QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
     if (imageFormat.name().isEmpty()) {
         return;
     }
-    
+
     // 获取原始图片尺寸
     QPixmap pixmap(imageFormat.name());
     if (pixmap.isNull()) {
         return;
     }
-    
+
     // 计算保持宽高比的高度
     int targetHeight = (pixmap.height() * targetWidth) / pixmap.width();
-    
+
     // 更新图片格式
     QTextCursor editCursor = cursor;
     editCursor.select(QTextCursor::WordUnderCursor);
-    
+
     QTextImageFormat newFormat = imageFormat;
     newFormat.setWidth(targetWidth);
     newFormat.setHeight(targetHeight);
-    
+
     editCursor.setCharFormat(newFormat);
 }
 
-void RichTextEdit::resizeImageToOriginal(const QTextCursor& cursor)
-{
+void RichTextEdit::resizeImageToOriginal(const QTextCursor& cursor) {
     QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
     if (imageFormat.name().isEmpty()) {
         return;
     }
-    
+
     // 获取原始图片尺寸
     QPixmap pixmap(imageFormat.name());
     if (pixmap.isNull()) {
         return;
     }
-    
+
     // 更新为原始尺寸
     QTextCursor editCursor = cursor;
     editCursor.select(QTextCursor::WordUnderCursor);
-    
+
     QTextImageFormat newFormat = imageFormat;
     newFormat.setWidth(pixmap.width());
     newFormat.setHeight(pixmap.height());
-    
+
     editCursor.setCharFormat(newFormat);
 }
 
-void RichTextEdit::mousePressEvent(QMouseEvent* event)
-{
+void RichTextEdit::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) {
         QTextCursor cursor = cursorForPosition(event->pos());
         QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
-        
+
         if (!imageFormat.name().isEmpty()) {
             // 检查是否点击在图片的调整句柄上
             QRect imageRect = getImageRect(cursor);
             ResizeHandle handle = getResizeHandle(event->pos(), imageRect);
-            
+
             if (handle != None) {
                 m_isDragging = true;
                 m_currentHandle = handle;
@@ -259,7 +251,7 @@ void RichTextEdit::mousePressEvent(QMouseEvent* event)
                 m_originalImageRect = imageRect;
                 m_selectedImageCursor = cursor;
                 m_selectedImageFormat = imageFormat;
-                
+
                 // 设置对应的光标样式
                 setCursorForHandle(handle);
                 event->accept();
@@ -278,17 +270,16 @@ void RichTextEdit::mousePressEvent(QMouseEvent* event)
             update(); // 重绘以隐藏句柄
         }
     }
-    
+
     QTextEdit::mousePressEvent(event);
 }
 
-void RichTextEdit::mouseMoveEvent(QMouseEvent* event)
-{
+void RichTextEdit::mouseMoveEvent(QMouseEvent* event) {
     if (m_isDragging && m_currentHandle != None) {
         // 计算新的图片尺寸
         QPoint delta = event->pos() - m_dragStartPos;
         QRect newRect = m_originalImageRect;
-        
+
         switch (m_currentHandle) {
         case TopLeft:
             newRect.setTopLeft(newRect.topLeft() + delta);
@@ -317,35 +308,39 @@ void RichTextEdit::mouseMoveEvent(QMouseEvent* event)
         default:
             break;
         }
-        
+
         // 限制最小尺寸
-        if (newRect.width() < 50) newRect.setWidth(50);
-        if (newRect.height() < 50) newRect.setHeight(50);
-        
+        if (newRect.width() < 50)
+            newRect.setWidth(50);
+        if (newRect.height() < 50)
+            newRect.setHeight(50);
+
         // 限制最大尺寸
-        if (newRect.width() > 800) newRect.setWidth(800);
-        if (newRect.height() > 600) newRect.setHeight(600);
-        
+        if (newRect.width() > 800)
+            newRect.setWidth(800);
+        if (newRect.height() > 600)
+            newRect.setHeight(600);
+
         // 更新图片格式
         QTextCursor editCursor = m_selectedImageCursor;
         editCursor.select(QTextCursor::WordUnderCursor);
-        
+
         QTextImageFormat newFormat = m_selectedImageFormat;
         newFormat.setWidth(newRect.width());
         newFormat.setHeight(newRect.height());
-        
+
         editCursor.setCharFormat(newFormat);
-        
+
         // 发出图片调整信号
         emit imageResized();
-        
+
         event->accept();
         return;
     } else {
         // 检查鼠标是否在图片上，更新光标样式
         QTextCursor cursor = cursorForPosition(event->pos());
         QTextImageFormat imageFormat = getImageFormatAtCursor(cursor);
-        
+
         if (!imageFormat.name().isEmpty()) {
             QRect imageRect = getImageRect(cursor);
             ResizeHandle handle = getResizeHandle(event->pos(), imageRect);
@@ -354,12 +349,11 @@ void RichTextEdit::mouseMoveEvent(QMouseEvent* event)
             setCursor(Qt::IBeamCursor);
         }
     }
-    
+
     QTextEdit::mouseMoveEvent(event);
 }
 
-void RichTextEdit::mouseReleaseEvent(QMouseEvent* event)
-{
+void RichTextEdit::mouseReleaseEvent(QMouseEvent* event) {
     if (m_isDragging) {
         m_isDragging = false;
         m_currentHandle = None;
@@ -367,14 +361,13 @@ void RichTextEdit::mouseReleaseEvent(QMouseEvent* event)
         event->accept();
         return;
     }
-    
+
     QTextEdit::mouseReleaseEvent(event);
 }
 
-void RichTextEdit::paintEvent(QPaintEvent* event)
-{
+void RichTextEdit::paintEvent(QPaintEvent* event) {
     QTextEdit::paintEvent(event);
-    
+
     // 如果有选中的图片，绘制调整句柄
     if (!m_selectedImageFormat.name().isEmpty()) {
         QPainter painter(viewport());
@@ -385,20 +378,19 @@ void RichTextEdit::paintEvent(QPaintEvent* event)
     }
 }
 
-QRect RichTextEdit::getImageRect(const QTextCursor& cursor)
-{
+QRect RichTextEdit::getImageRect(const QTextCursor& cursor) {
     QTextImageFormat format = getImageFormatAtCursor(cursor);
     if (format.name().isEmpty()) {
         return QRect();
     }
-    
+
     // 获取光标在视口中的位置
     QRect cRect = cursorRect(cursor);
-    
+
     // 使用格式中的尺寸，如果没有则使用原始图片尺寸
     int width = format.width();
     int height = format.height();
-    
+
     if (width <= 0 || height <= 0) {
         QPixmap pixmap(format.name());
         if (!pixmap.isNull()) {
@@ -409,15 +401,14 @@ QRect RichTextEdit::getImageRect(const QTextCursor& cursor)
             height = 100;
         }
     }
-    
+
     return QRect(cRect.x(), cRect.y(), width, height);
 }
 
-RichTextEdit::ResizeHandle RichTextEdit::getResizeHandle(const QPoint& pos, const QRect& imageRect)
-{
+RichTextEdit::ResizeHandle RichTextEdit::getResizeHandle(const QPoint& pos, const QRect& imageRect) {
     const int handleSize = 8;
     const int margin = 4;
-    
+
     // 检查角落
     if (QRect(imageRect.topLeft() - QPoint(margin, margin), QSize(handleSize, handleSize)).contains(pos))
         return TopLeft;
@@ -427,7 +418,7 @@ RichTextEdit::ResizeHandle RichTextEdit::getResizeHandle(const QPoint& pos, cons
         return BottomLeft;
     if (QRect(imageRect.bottomRight() - QPoint(handleSize - margin, handleSize - margin), QSize(handleSize, handleSize)).contains(pos))
         return BottomRight;
-    
+
     // 检查边缘
     if (QRect(imageRect.left() - margin, imageRect.top() + handleSize, handleSize, imageRect.height() - 2 * handleSize).contains(pos))
         return Left;
@@ -437,33 +428,31 @@ RichTextEdit::ResizeHandle RichTextEdit::getResizeHandle(const QPoint& pos, cons
         return Top;
     if (QRect(imageRect.left() + handleSize, imageRect.bottom() - margin, imageRect.width() - 2 * handleSize, handleSize).contains(pos))
         return Bottom;
-    
+
     return None;
 }
 
-void RichTextEdit::drawResizeHandles(QPainter& painter, const QRect& imageRect)
-{
+void RichTextEdit::drawResizeHandles(QPainter& painter, const QRect& imageRect) {
     const int handleSize = 8;
     const int margin = 4;
-    
+
     painter.setPen(QPen(Qt::blue, 2));
     painter.setBrush(Qt::white);
-    
+
     // 绘制角落句柄
     painter.drawRect(QRect(imageRect.topLeft() - QPoint(margin, margin), QSize(handleSize, handleSize)));
     painter.drawRect(QRect(imageRect.topRight() - QPoint(handleSize - margin, margin), QSize(handleSize, handleSize)));
     painter.drawRect(QRect(imageRect.bottomLeft() - QPoint(margin, handleSize - margin), QSize(handleSize, handleSize)));
     painter.drawRect(QRect(imageRect.bottomRight() - QPoint(handleSize - margin, handleSize - margin), QSize(handleSize, handleSize)));
-    
+
     // 绘制边缘句柄
-    painter.drawRect(QRect(imageRect.left() - margin, imageRect.center().y() - handleSize/2, handleSize, handleSize));
-    painter.drawRect(QRect(imageRect.right() - margin, imageRect.center().y() - handleSize/2, handleSize, handleSize));
-    painter.drawRect(QRect(imageRect.center().x() - handleSize/2, imageRect.top() - margin, handleSize, handleSize));
-    painter.drawRect(QRect(imageRect.center().x() - handleSize/2, imageRect.bottom() - margin, handleSize, handleSize));
+    painter.drawRect(QRect(imageRect.left() - margin, imageRect.center().y() - handleSize / 2, handleSize, handleSize));
+    painter.drawRect(QRect(imageRect.right() - margin, imageRect.center().y() - handleSize / 2, handleSize, handleSize));
+    painter.drawRect(QRect(imageRect.center().x() - handleSize / 2, imageRect.top() - margin, handleSize, handleSize));
+    painter.drawRect(QRect(imageRect.center().x() - handleSize / 2, imageRect.bottom() - margin, handleSize, handleSize));
 }
 
-void RichTextEdit::setCursorForHandle(ResizeHandle handle)
-{
+void RichTextEdit::setCursorForHandle(ResizeHandle handle) {
     switch (handle) {
     case TopLeft:
     case BottomRight:
@@ -495,7 +484,7 @@ QString RichTextEdit::savePixmapToFile(const QPixmap& pixmap) {
         return filePath;
     }
 
-    return {};
+    return { };
 }
 
 Notepad::Notepad() : QWidget(nullptr), DynamicObjectBase(),
@@ -512,7 +501,7 @@ Notepad::Notepad() : QWidget(nullptr), DynamicObjectBase(),
     autoSaveTimer = new QTimer(this);
     autoSaveTimer->setSingleShot(false); // 设置为重复定时器
     connect(autoSaveTimer, &QTimer::timeout, this, &Notepad::onAutoSaveTimer);
-    autoSaveTimer->start(10 * 1000);  // 每3秒检查一次
+    autoSaveTimer->start(10 * 1000); // 每3秒检查一次
 
     loadNotes();
     updateButtonStates();
@@ -568,37 +557,17 @@ void Notepad::setupNoteListArea() {
     notesList->setSelectionMode(QAbstractItemView::ExtendedSelection); // 支持多选
     notesList->setFocusPolicy(Qt::StrongFocus); // 确保可以接收键盘事件
     notesList->setContextMenuPolicy(Qt::CustomContextMenu); // 启用右键菜单
-    
-    // 设置列表样式
-    notesList->setStyleSheet(
-        "QListWidget {"
-        "    background-color: #ffffff;"
-        "    border: 1px solid #e0e0e0;"
-        "    border-radius: 0px;"  // 移除圆角
-        "    padding: 4px;"
-        "    outline: none;"
-        "}"
-        "QListWidget::item {"
-        "    background-color: #f8f9fa;"
-        "    border: none;"
-        "    border-radius: 0px;"  // 移除圆角
-        "    margin: 2px 0px;"
-        "    padding: 0px;"
-        "}"
-        "QListWidget::item:selected {"
-        "    background-color: #e3f2fd;"
-        "    border: 1px solid #2196f3;"
-        "}"
-        "QListWidget::item:hover {"
-        "    background-color: #f0f0f0;"
-        "}"
-    );
+
+
+    notesList->setItemDelegate(new NoteItemDelegate(notesList));
+
+
     connect(notesList, &QListWidget::currentRowChanged, this, &Notepad::onNoteSelectionChanged);
     connect(notesList, &QListWidget::itemSelectionChanged, this, &Notepad::onItemSelectionChanged);
     connect(notesList, &QListWidget::customContextMenuRequested, this, &Notepad::onShowContextMenu);
 
     // 按钮区域
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    auto* buttonLayout = new QHBoxLayout();
     newNoteBtn = new QPushButton(tr("➕ 新建"));
     newNoteBtn->setToolTip(tr("新建笔记 (Ctrl+N)"));
     newNoteBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
@@ -630,27 +599,7 @@ void Notepad::setupEditorArea() {
     editorContainerLayout = new QHBoxLayout(editorContainer);
     editorContainerLayout->setContentsMargins(0, 0, 0, 0);
     editorContainerLayout->setSpacing(0);
-    
-    // 行号区域
-    lineNumberArea = new QTextEdit();
-    lineNumberArea->setReadOnly(true);
-    lineNumberArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    lineNumberArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    lineNumberArea->setMaximumWidth(60);
-    lineNumberArea->setMinimumWidth(60);
-    lineNumberArea->setStyleSheet(
-        "QTextEdit {"
-        "    background-color: #f5f5f5;"
-        "    border: 1px solid #e0e0e0;"
-        "    border-right: none;"
-        "    color: #666;"
-        "    font-family: 'Consolas', 'Monaco', monospace;"
-        "    font-size: 12px;"
-        "    padding: 8px 4px;"
-        "    selection-background-color: transparent;"
-        "}"
-    );
-    
+
     // 内容编辑器
     contentEdit = new RichTextEdit();
     contentEdit->setPlaceholderText(tr("开始编写你的笔记..."));
@@ -665,7 +614,7 @@ void Notepad::setupEditorArea() {
         "    line-height: 1.4;"
         "}"
     );
-    
+
     // 连接信号
     connect(contentEdit, &RichTextEdit::imageDropped, this, &Notepad::onImagePasted);
     connect(contentEdit, &RichTextEdit::fileDropped, this, &Notepad::onFileDropped);
@@ -675,64 +624,32 @@ void Notepad::setupEditorArea() {
             updateButtonStates();
         }
     });
-    
+
     // 连接内容变化，只做基本标记
     connect(contentEdit, &QTextEdit::textChanged, this, [this]() {
         if (currentNoteId != -1) {
             hasUnsavedChanges = true;
             updateButtonStates();
         }
-  
-        // 更新行号
-        updateLineNumbers();
+
+
     });
-    
-    // 连接滚动条同步
-    connect(contentEdit->verticalScrollBar(), &QScrollBar::valueChanged, 
-            lineNumberArea->verticalScrollBar(), &QScrollBar::setValue);
-    connect(lineNumberArea->verticalScrollBar(), &QScrollBar::valueChanged, 
-            contentEdit->verticalScrollBar(), &QScrollBar::setValue);
-    
-    // 连接光标位置变化
-    connect(contentEdit, &QTextEdit::cursorPositionChanged, this, &Notepad::updateLineNumbers);
-    
+
     // 添加到容器
-    editorContainerLayout->addWidget(lineNumberArea);
     editorContainerLayout->addWidget(contentEdit);
 
     editorLayout->addWidget(toolbar);
     editorLayout->addWidget(editorContainer);
 }
 
-void Notepad::updateLineNumbers() {
-    if (!lineNumberArea || !contentEdit) return;
-    
-    // 获取当前行数
-    int lineCount = contentEdit->document()->blockCount();
-    
-    // 生成行号文本
-    QString lineNumbers;
-    for (int i = 1; i <= lineCount; ++i) {
-        lineNumbers += QString::number(i) + "\n";
-    }
-    
-    // 设置行号文本
-    lineNumberArea->setPlainText(lineNumbers);
-    
-    // 同步滚动位置
-    lineNumberArea->verticalScrollBar()->setValue(contentEdit->verticalScrollBar()->value());
-}
-
-void Notepad::setupShortcuts()
-{
+void Notepad::setupShortcuts() {
     // 创建 Ctrl+N 快捷键
     newNoteShortcut = new QShortcut(QKeySequence::New, this);
     connect(newNoteShortcut, &QShortcut::activated, this, &Notepad::onNewNote);
     newNoteShortcut->setEnabled(false); // 初始时禁用，等tab显示时启用
 }
 
-void Notepad::showEvent(QShowEvent* event)
-{
+void Notepad::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
     // 当tab显示时启用快捷键
     if (newNoteShortcut) {
@@ -740,8 +657,7 @@ void Notepad::showEvent(QShowEvent* event)
     }
 }
 
-void Notepad::hideEvent(QHideEvent* event)
-{
+void Notepad::hideEvent(QHideEvent* event) {
     QWidget::hideEvent(event);
     // 当tab隐藏时禁用快捷键
     if (newNoteShortcut) {
@@ -949,43 +865,27 @@ void Notepad::updateNotesList() {
     }
 }
 
-void Notepad::addNoteToList(const NoteItem& note, bool insertAtTop)
-{
-    QListWidgetItem* item = new QListWidgetItem(notesList);
+void Notepad::addNoteToList(const NoteItem& note, bool insertAtTop) {
+    QListWidgetItem* item = new QListWidgetItem;
 
-    QWidget *container = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(container);
-    layout->setContentsMargins(8, 8, 8, 8);
-
-    QLabel *titleLabel = new QLabel(note.title.isEmpty() ? tr("无标题") : note.title);
-    titleLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #333;");
-
-    QLabel *timeLabel = new QLabel(note.modified.toString("yyyy-MM-dd hh:mm"));
-    timeLabel->setStyleSheet("font-size: 11px; color: #666; text-align: right;");
-
-    layout->addWidget(titleLabel);
-    layout->addWidget(timeLabel);
-
-    container->setLayout(layout);
-
+    // 存储数据
     item->setData(Qt::UserRole, note.id);
+    item->setData(Qt::DisplayRole, note.title.isEmpty() ? tr("无标题") : note.title);
+    item->setData(Qt::UserRole + 1, note.modified.toString("yyyy-MM-dd hh:mm"));
 
-    // 让 item 适配 widget 的高度
-    item->setSizeHint(container->sizeHint());
+    // 高度由 delegate 控制
+    item->setSizeHint(QSize(200, 50));
 
     if (insertAtTop) {
         notesList->insertItem(0, item);
-        notesList->setItemWidget(item, container);
     } else {
         notesList->addItem(item);
-        notesList->setItemWidget(item, container);
     }
-
 }
 
-void Notepad::updateNoteInList(const NoteItem& note)
-{
-    // 查找对应的列表项
+
+
+void Notepad::updateNoteInList(const NoteItem& note) const {
     for (int i = 0; i < notesList->count(); ++i) {
         QListWidgetItem* item = notesList->item(i);
         if (item && item->data(Qt::UserRole).toInt() == note.id) {
@@ -994,25 +894,16 @@ void Notepad::updateNoteInList(const NoteItem& note)
                 displayTitle = displayTitle.left(50) + "...";
             }
 
-            // 使用 HTML 格式美化显示
-            QString displayText = QString(
-                "<div style='padding: 8px; background-color: #f8f9fa; border: none;'>"
-                "<div style='font-size: 14px; font-weight: bold; color: #333; margin-bottom: 4px;'>%1</div>"
-                "<div style='font-size: 11px; color: #666; text-align: right;'>%2</div>"
-                "</div>"
-            ).arg(
-                displayTitle,
-                note.modified.toString("yyyy-MM-dd hh:mm")
-            );
-
-            item->setText(displayText);
+            // 更新数据
+            item->setData(Qt::DisplayRole, displayTitle);
+            item->setData(Qt::UserRole + 1, note.modified.toString("yyyy-MM-dd hh:mm"));
             break;
         }
     }
 }
 
-void Notepad::removeNoteFromList(int noteId)
-{
+
+void Notepad::removeNoteFromList(int noteId) {
     // 查找并删除对应的列表项
     for (int i = 0; i < notesList->count(); ++i) {
         QListWidgetItem* item = notesList->item(i);
@@ -1045,12 +936,11 @@ void Notepad::onNoteSelectionChanged() {
     updateButtonStates();
 }
 
-void Notepad::onItemSelectionChanged()
-{
+void Notepad::onItemSelectionChanged() {
     // 更新删除按钮状态
     QList<QListWidgetItem*> selectedItems = notesList->selectedItems();
     deleteNoteBtn->setEnabled(!selectedItems.isEmpty());
-    
+
     // 如果只有一个选中项，更新当前笔记
     if (selectedItems.size() == 1) {
         onNoteSelectionChanged();
@@ -1101,7 +991,7 @@ void Notepad::onNewNote() {
     if (result.success && result.lastInsertId > 0) {
         currentNoteId = result.lastInsertId;
         hasUnsavedChanges = false;
-        
+
         // 创建新的笔记项并添加到内存列表顶部
         NoteItem newNote;
         newNote.id = result.lastInsertId;
@@ -1110,19 +1000,19 @@ void Notepad::onNewNote() {
         newNote.created = QDateTime::currentDateTime();
         newNote.modified = QDateTime::currentDateTime();
         newNote.isDeleted = false;
-        
+
         // 添加到内存列表顶部
         notes.prepend(newNote);
-        
+
         // 在UI列表顶部插入新项
         addNoteToList(newNote, true);
-        
+
         // 选中新创建的笔记（第一个）
         notesList->setCurrentRow(0);
-        
+
         // 清空编辑器并设置焦点
         contentEdit->clear();
-        
+
         // 延迟设置焦点，确保界面更新完成
         QTimer::singleShot(100, [this]() {
             contentEdit->setFocus();
@@ -1130,7 +1020,7 @@ void Notepad::onNewNote() {
             cursor.movePosition(QTextCursor::Start);
             contentEdit->setTextCursor(cursor);
         });
-        
+
         // updateStatus(tr("已创建新笔记")); // 移除状态栏
         updateButtonStates();
     } else {
@@ -1158,7 +1048,7 @@ void Notepad::onDeleteNote() {
             currentNoteId = -1;
             contentEdit->clear();
             hasUnsavedChanges = false;
-            
+
             // 从内存列表中移除
             for (int i = 0; i < notes.size(); ++i) {
                 if (notes[i].id == deletedNoteId) {
@@ -1166,10 +1056,10 @@ void Notepad::onDeleteNote() {
                     break;
                 }
             }
-            
+
             // 从UI列表中移除
             removeNoteFromList(deletedNoteId);
-            
+
             // updateStatus(tr("笔记已删除")); // 移除状态栏
             updateButtonStates();
         } else {
@@ -1180,44 +1070,45 @@ void Notepad::onDeleteNote() {
 
 void Notepad::onDeleteSelectedNotes() {
     QList<QListWidgetItem*> selectedItems = notesList->selectedItems();
-    if (selectedItems.isEmpty()) return;
-    
+    if (selectedItems.isEmpty())
+        return;
+
     // 确认删除
     QString message = tr("确定要删除选中的 %1 个笔记吗？").arg(selectedItems.size());
     QMessageBox::StandardButton reply = QMessageBox::question(
-        this, 
-        tr("确认删除"), 
+        this,
+        tr("确认删除"),
         message,
         QMessageBox::Yes | QMessageBox::No
     );
-    
+
     if (reply == QMessageBox::Yes) {
         // 收集要删除的笔记ID
         QList<int> noteIds;
         for (QListWidgetItem* item : selectedItems) {
             noteIds.append(item->data(Qt::UserRole).toInt());
         }
-        
+
         // 从数据库删除
         for (int noteId : noteIds) {
             QVariantMap params;
             params["id"] = noteId;
             dbManager->execute("UPDATE notes SET is_deleted = 1 WHERE id = :id", params);
         }
-        
+
         // 从内存中移除
-        notes.removeIf([noteIds](const NoteItem& note) { 
-            return noteIds.contains(note.id); 
+        notes.removeIf([noteIds](const NoteItem& note) {
+            return noteIds.contains(note.id);
         });
-        
+
         // 从列表中移除所有选中项
         qDeleteAll(selectedItems);
-        
+
         // 清空编辑器
         currentNoteId = -1;
         contentEdit->clear();
         hasUnsavedChanges = false;
-        
+
         updateButtonStates();
         // updateStatus(tr("已删除 %1 个笔记").arg(noteIds.size())); // 移除状态栏
     }
@@ -1226,25 +1117,23 @@ void Notepad::onDeleteSelectedNotes() {
 void Notepad::onShowContextMenu(const QPoint& pos) {
     QListWidgetItem* item = notesList->itemAt(pos);
     QList<QListWidgetItem*> selectedItems = notesList->selectedItems();
-    
+
     QMenu contextMenu(this);
-    
+
     if (!selectedItems.isEmpty()) {
         // 有选中项时显示删除选项
-        QString deleteText = selectedItems.size() == 1 ? 
-            tr("🗑️ 删除笔记") : 
-            tr("🗑️ 删除选中的 %1 个笔记").arg(selectedItems.size());
-        
+        QString deleteText = selectedItems.size() == 1 ? tr("🗑️ 删除笔记") : tr("🗑️ 删除选中的 %1 个笔记").arg(selectedItems.size());
+
         QAction* deleteAction = contextMenu.addAction(deleteText);
         connect(deleteAction, &QAction::triggered, this, &Notepad::onDeleteSelectedNotes);
-        
+
         contextMenu.addSeparator();
     }
-    
+
     // 总是显示新建选项
     QAction* newAction = contextMenu.addAction(tr("➕ 新建笔记"));
     connect(newAction, &QAction::triggered, this, &Notepad::onNewNote);
-    
+
     // 显示菜单
     contextMenu.exec(notesList->mapToGlobal(pos));
 }
@@ -1277,20 +1166,20 @@ void Notepad::saveCurrentNote() {
 
     if (result.success && result.affectedRows > 0) {
         hasUnsavedChanges = false;
-        
+
         // 更新内存中的笔记数据
         for (NoteItem& note : notes) {
             if (note.id == currentNoteId) {
                 note.title = title;
                 note.content = content;
                 note.modified = QDateTime::currentDateTime();
-                
+
                 // 更新列表中的对应项
                 updateNoteInList(note);
                 break;
             }
         }
-        
+
         // updateStatus(tr("笔记已保存")); // 移除状态栏
     } else {
         // updateStatus(tr("保存笔记失败"), true); // 移除状态栏
@@ -1298,7 +1187,6 @@ void Notepad::saveCurrentNote() {
 }
 
 void Notepad::createNewNoteFromContent() {
-
     // 获取当前编辑器内容
     QString content = contentEdit->toHtml();
     QString plainText = contentEdit->toPlainText();
@@ -1328,10 +1216,10 @@ void Notepad::createNewNoteFromContent() {
         newNote.created = QDateTime::currentDateTime();
         newNote.modified = QDateTime::currentDateTime();
         newNote.isDeleted = false;
-        
+
         // 添加到内存列表顶部
         notes.prepend(newNote);
-        
+
         // 在UI列表顶部插入新项
         addNoteToList(newNote, true);
 
@@ -1516,40 +1404,40 @@ QString Notepad::saveMediaFile(const QString& filePath) {
 
 void Notepad::insertImageToEditor(const QString& imagePath) {
     QTextCursor cursor = contentEdit->textCursor();
-    
+
     // 获取图片的原始尺寸
     QPixmap pixmap(imagePath);
     if (pixmap.isNull()) {
         // updateStatus(tr("无法加载图片"), true); // 移除状态栏
         return;
     }
-    
+
     // 计算适合的显示尺寸（最大宽度400px，保持宽高比）
     int maxWidth = 400;
     int displayWidth = pixmap.width();
     int displayHeight = pixmap.height();
-    
+
     if (displayWidth > maxWidth) {
         displayHeight = (displayHeight * maxWidth) / displayWidth;
         displayWidth = maxWidth;
     }
-    
+
     // 创建图片格式
     QTextImageFormat imageFormat;
     imageFormat.setName(imagePath);
     imageFormat.setWidth(displayWidth);
     imageFormat.setHeight(displayHeight);
-    
+
     // 设置图片可以调整大小的属性
     imageFormat.setProperty(QTextFormat::ImageAltText, tr("图片 - 点击选中后拖拽句柄调整大小，或右键菜单，或Ctrl+滚轮缩放"));
-    
+
     cursor.insertImage(imageFormat);
-    
+
     // 在图片后添加一个换行
     cursor.insertText("\n");
-    
+
     contentEdit->setTextCursor(cursor);
-    
+
     // 标记为有未保存更改
     if (currentNoteId != -1) {
         hasUnsavedChanges = true;
