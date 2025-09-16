@@ -4,7 +4,7 @@ project(lele-tools VERSION 0.1 LANGUAGES CXX)
 
 
 # 默认环境
-#set(ENVIRONMENT "联想笔记本")
+set(ENVIRONMENT "联想笔记本")
 
 
 # 构建 .env 文件路径
@@ -12,13 +12,18 @@ set(ENV_FILE "${CMAKE_SOURCE_DIR}/.env.${ENVIRONMENT}")
 
 # 从环境配置中加载变量，实现nodejs的效果
 if(EXISTS "${ENV_FILE}")
-    file(READ "${ENV_FILE}" ENV_CONTENTS)
-    foreach(line IN LISTS ENV_CONTENTS)
+    file(STRINGS "${ENV_FILE}" ENV_LINES)  # 一行一行读
+
+    foreach(line IN LISTS ENV_LINES)
         if(line MATCHES "^\\s*([^=]+)=(.+)$")
+            # 先赋值
             set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+            # 再打印变量名和值（双重解引用）
+            message(STATUS "${CMAKE_MATCH_1} = ${${CMAKE_MATCH_1}}")
         endif()
     endforeach()
-    message(STATUS "Loaded environment: ${ENVIRONMENT}")
+
+    message(STATUS "Loaded environment from ${ENV_FILE}")
 else()
     message(WARNING "Environment file ${ENV_FILE} not found")
 endif()
@@ -67,7 +72,12 @@ option(ENABLE_REDIS "Enable Redis support" ON)
 
 if(ENABLE_REDIS)
     message(STATUS "Checking for redis-plus-plus ...")
-    
+
+    message(STATUS "REDIS_PLUS_PLUS_INCLUDE_DIR = ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
+    message(STATUS "REDIS_PLUS_PLUS_LIBRARY     = ${REDIS_PLUS_PLUS_LIBRARY}")
+    message(STATUS "HIREDIS_LIBRARY             = ${HIREDIS_LIBRARY}")
+
+
     # 尝试多种方式查找redis-plus-plus
     find_package(redis++ QUIET CONFIG)
     
