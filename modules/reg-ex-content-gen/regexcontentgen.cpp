@@ -721,4 +721,3 @@ void RegExContentGen::onImportRegex()
     QMessageBox::information(this, tr("导入正则"), tr("导入正则表达式功能待实现"));
 }
 
-#include "regexcontentgen.moc"

@@ -950,5 +950,4 @@ void FileHashCalculation::verifyHashValue()
     compareHashValues();
 }
 
-#include "filehashcalculation.moc"
 

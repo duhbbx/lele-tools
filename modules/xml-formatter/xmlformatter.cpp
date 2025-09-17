@@ -269,4 +269,3 @@ void XmlFormatter::updateStatus(const QString& message, const bool isError) cons
     statusLabel->setStyleSheet(QString("color: %1; font-size: 1pt; padding: 4px 8px; background: %2;").arg(color, bg));
 }
 
-#include "xmlformatter.moc"

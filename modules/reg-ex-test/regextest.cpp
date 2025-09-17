@@ -448,4 +448,3 @@ void RegExTest::updateStatus(const QString& message, bool isError)
     }
 }
 
-#include "regextest.moc"

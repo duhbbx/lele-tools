@@ -1069,5 +1069,4 @@ void MobileLocation::saveHistory()
     settings.endGroup();
 }
 
-#include "mobilelocation.moc"
 

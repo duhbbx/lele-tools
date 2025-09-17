@@ -1116,4 +1116,3 @@ QString TorrentFileAnalysis::generateMagnetLink(const QByteArray &infoHash, cons
     return magnetLink;
 }
 
-#include "torrentfileanalysis.moc"

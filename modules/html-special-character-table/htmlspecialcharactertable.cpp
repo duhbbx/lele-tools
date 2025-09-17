@@ -678,4 +678,3 @@ void HtmlSpecialCharacterTable::saveFavorites() {
 }
 
 
-#include "htmlspecialcharactertable.moc"

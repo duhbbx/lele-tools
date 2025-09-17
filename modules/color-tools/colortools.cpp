@@ -1287,4 +1287,3 @@ void ColorTools::addColorToFavorites(const QColor &color)
 void ColorTools::loadSettings() {}
 void ColorTools::saveSettings() {}
 
-#include "colortools.moc"

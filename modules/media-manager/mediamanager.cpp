@@ -746,4 +746,3 @@ void MediaManager::updateStatus(const QString& message, bool isError)
         "color: #28a745; font-weight: bold;");
 }
 
-#include "mediamanager.moc"

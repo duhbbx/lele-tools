@@ -1618,4 +1618,3 @@ void Notepad::updateButtonStates() {
 //     statusLabel->setStyleSheet(isError ? "color: #dc3545; font-weight: bold;" : "color: #28a745; font-weight: bold;");
 // } // 移除状态栏
 
-#include "notepad.moc"

@@ -49,6 +49,107 @@
 // using namespace Connx;
 // using namespace SqliteWrapper;
 
+// 数据库节点类型枚举
+enum class DbNodeType {
+    Connection,        // 连接
+    Database,          // 数据库
+    Schema,           // 模式
+    TableFolder,      // 表文件夹
+    Table,            // 表
+    ViewFolder,       // 视图文件夹
+    View,             // 视图
+    ProcedureFolder,  // 存储过程文件夹
+    Procedure,        // 存储过程
+    FunctionFolder,   // 函数文件夹
+    Function,         // 函数
+    TriggerFolder,    // 触发器文件夹
+    Trigger,          // 触发器
+    IndexFolder,      // 索引文件夹
+    Index,            // 索引
+    SequenceFolder,   // 序列文件夹
+    Sequence,         // 序列
+    UserFolder,       // 用户文件夹
+    User,             // 用户
+    Column,           // 列
+    Key,              // 键
+    RedisKey,         // Redis键
+    Loading           // 加载中
+};
+
+// 数据库节点数据结构
+struct DbNodeData {
+    DbNodeType type;
+    QString id;           // 唯一标识符
+    QString name;         // 显示名称
+    QString fullName;     // 完整名称（包含schema等）
+    QString schema;       // 模式名
+    QString database;     // 数据库名
+    QVariantMap metadata; // 额外元数据
+    bool isLoaded;        // 是否已加载子节点
+    bool isExpanded;      // 是否已展开
+
+    DbNodeData() : type(DbNodeType::Loading), isLoaded(false), isExpanded(false) {}
+    DbNodeData(DbNodeType t, const QString& nodeId, const QString& nodeName)
+        : type(t), id(nodeId), name(nodeName), isLoaded(false), isExpanded(false) {}
+};
+
+// 自定义树节点项
+class DbTreeWidgetItem : public QTreeWidgetItem {
+public:
+    DbTreeWidgetItem(QTreeWidget* parent, const DbNodeData& data);
+    DbTreeWidgetItem(QTreeWidgetItem* parent, const DbNodeData& data);
+
+    DbNodeData nodeData() const { return m_nodeData; }
+    void setNodeData(const DbNodeData& data) { m_nodeData = data; updateDisplay(); }
+
+    void setLoading(bool loading);
+    void markAsLoaded() { m_nodeData.isLoaded = true; }
+    bool isLoaded() const { return m_nodeData.isLoaded; }
+
+private:
+    void updateDisplay();
+    QString getNodeIcon() const;
+
+    DbNodeData m_nodeData;
+};
+
+// 数据库层级结构定义
+struct DbHierarchyNode {
+    DbNodeType nodeType;
+    QString displayName;
+    QString iconPath;
+    QList<DbHierarchyNode> children;
+
+    DbHierarchyNode(DbNodeType type, const QString& name, const QString& icon = "")
+        : nodeType(type), displayName(name), iconPath(icon) {}
+};
+
+// 数据库类型层级管理器
+class DatabaseHierarchyManager {
+public:
+    static DatabaseHierarchyManager& instance();
+
+    // 获取特定数据库类型的层级结构
+    QList<DbHierarchyNode> getHierarchy(Connx::ConnectionType dbType) const;
+
+    // 检查节点是否需要延迟加载
+    bool needsLazyLoading(DbNodeType nodeType) const;
+
+    // 获取节点图标
+    QString getNodeIcon(DbNodeType nodeType) const;
+
+    // 获取节点显示名称
+    QString getNodeDisplayName(DbNodeType nodeType) const;
+
+private:
+    DatabaseHierarchyManager();
+    void initializeHierarchies();
+
+    QMap<Connx::ConnectionType, QList<DbHierarchyNode>> m_hierarchies;
+    QMap<DbNodeType, QString> m_nodeIcons;
+    QMap<DbNodeType, QString> m_nodeNames;
+};
+
 // 现代化的连接类型列表项委托
 class ConnectionTypeDelegate : public QStyledItemDelegate {
     Q_OBJECT
@@ -254,6 +355,7 @@ private:
     void loadDatabases(QTreeWidgetItem* connectionItem, Connx::Connection* connection);
     void loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database);
     void loadRedisKeys(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database);
+    void loadFolderContent(QTreeWidgetItem* folderItem, Connx::Connection* connection, const QString& database, DbNodeType folderType);
     void refreshDatabase(QTreeWidgetItem* databaseItem);
     void flushDatabase(QTreeWidgetItem* databaseItem);
     void deleteKey(QTreeWidgetItem* keyItem);

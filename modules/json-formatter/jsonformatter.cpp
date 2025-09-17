@@ -505,4 +505,3 @@ QIcon JsonFormatter::getJsonValueIcon(const QJsonValue& value) {
     return QIcon();
 }
 
-#include "jsonformatter.moc"

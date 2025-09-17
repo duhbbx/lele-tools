@@ -833,4 +833,3 @@ void NetworkScanner::updateScanButton(bool isScanning) {
     m_settingsGroup->setEnabled(!isScanning);
 }
 
-#include "networkscanner.moc"

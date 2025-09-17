@@ -302,4 +302,3 @@ void ImageCompression::updatePreview() {}
 QString ImageCompression::formatFileSize(qint64) { return ""; }
 void ImageCompression::resetControls() {}
 
-#include "imagecompression.moc"

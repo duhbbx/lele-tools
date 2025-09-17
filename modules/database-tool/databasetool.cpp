@@ -13,11 +13,162 @@
 #include <QJsonArray>
 #include <QStandardPaths>
 #include <QDir>
+#include <QTimer>
 
 // 移除全局using namespace以避免命名冲突
 // using namespace SqliteWrapper;
 
 REGISTER_DYNAMICOBJECT(DatabaseTool);
+
+// DatabaseHierarchyManager 实现
+DatabaseHierarchyManager& DatabaseHierarchyManager::instance() {
+    static DatabaseHierarchyManager instance;
+    return instance;
+}
+
+DatabaseHierarchyManager::DatabaseHierarchyManager() {
+    initializeHierarchies();
+}
+
+void DatabaseHierarchyManager::initializeHierarchies() {
+    // 初始化节点图标映射
+    m_nodeIcons[DbNodeType::Connection] = "database-connection";
+    m_nodeIcons[DbNodeType::Database] = "database";
+    m_nodeIcons[DbNodeType::Schema] = "schema";
+    m_nodeIcons[DbNodeType::TableFolder] = "folder-table";
+    m_nodeIcons[DbNodeType::Table] = "table";
+    m_nodeIcons[DbNodeType::ViewFolder] = "folder-view";
+    m_nodeIcons[DbNodeType::View] = "view";
+    m_nodeIcons[DbNodeType::ProcedureFolder] = "folder-procedure";
+    m_nodeIcons[DbNodeType::Procedure] = "procedure";
+    m_nodeIcons[DbNodeType::FunctionFolder] = "folder-function";
+    m_nodeIcons[DbNodeType::Function] = "function";
+    m_nodeIcons[DbNodeType::TriggerFolder] = "folder-trigger";
+    m_nodeIcons[DbNodeType::Trigger] = "trigger";
+    m_nodeIcons[DbNodeType::IndexFolder] = "folder-index";
+    m_nodeIcons[DbNodeType::Index] = "index";
+    m_nodeIcons[DbNodeType::SequenceFolder] = "folder-sequence";
+    m_nodeIcons[DbNodeType::Sequence] = "sequence";
+    m_nodeIcons[DbNodeType::UserFolder] = "folder-user";
+    m_nodeIcons[DbNodeType::User] = "user";
+    m_nodeIcons[DbNodeType::Column] = "column";
+    m_nodeIcons[DbNodeType::Key] = "key";
+    m_nodeIcons[DbNodeType::RedisKey] = "redis-key";
+
+    // 初始化节点显示名称
+    m_nodeNames[DbNodeType::TableFolder] = "表";
+    m_nodeNames[DbNodeType::ViewFolder] = "视图";
+    m_nodeNames[DbNodeType::ProcedureFolder] = "存储过程";
+    m_nodeNames[DbNodeType::FunctionFolder] = "函数";
+    m_nodeNames[DbNodeType::TriggerFolder] = "触发器";
+    m_nodeNames[DbNodeType::IndexFolder] = "索引";
+    m_nodeNames[DbNodeType::SequenceFolder] = "序列";
+    m_nodeNames[DbNodeType::UserFolder] = "用户";
+
+    // MySQL层级结构
+    QList<DbHierarchyNode> mysqlHierarchy;
+    mysqlHierarchy.append(DbHierarchyNode(DbNodeType::TableFolder, "表"));
+    mysqlHierarchy.append(DbHierarchyNode(DbNodeType::ViewFolder, "视图"));
+    mysqlHierarchy.append(DbHierarchyNode(DbNodeType::ProcedureFolder, "存储过程"));
+    mysqlHierarchy.append(DbHierarchyNode(DbNodeType::FunctionFolder, "函数"));
+    mysqlHierarchy.append(DbHierarchyNode(DbNodeType::TriggerFolder, "触发器"));
+    m_hierarchies[Connx::ConnectionType::MySQL] = mysqlHierarchy;
+
+    // PostgreSQL层级结构
+    QList<DbHierarchyNode> postgresHierarchy;
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::TableFolder, "表"));
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::ViewFolder, "视图"));
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::ProcedureFolder, "存储过程"));
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::FunctionFolder, "函数"));
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::TriggerFolder, "触发器"));
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::SequenceFolder, "序列"));
+    postgresHierarchy.append(DbHierarchyNode(DbNodeType::IndexFolder, "索引"));
+    m_hierarchies[Connx::ConnectionType::PostgreSQL] = postgresHierarchy;
+
+    // SQLite层级结构（简化）
+    QList<DbHierarchyNode> sqliteHierarchy;
+    sqliteHierarchy.append(DbHierarchyNode(DbNodeType::TableFolder, "表"));
+    sqliteHierarchy.append(DbHierarchyNode(DbNodeType::ViewFolder, "视图"));
+    sqliteHierarchy.append(DbHierarchyNode(DbNodeType::IndexFolder, "索引"));
+    sqliteHierarchy.append(DbHierarchyNode(DbNodeType::TriggerFolder, "触发器"));
+    m_hierarchies[Connx::ConnectionType::SQLite] = sqliteHierarchy;
+
+    // Redis层级结构（无层级，直接显示键）
+    QList<DbHierarchyNode> redisHierarchy;
+    // Redis没有文件夹结构，直接显示键
+    m_hierarchies[Connx::ConnectionType::Redis] = redisHierarchy;
+}
+
+QList<DbHierarchyNode> DatabaseHierarchyManager::getHierarchy(Connx::ConnectionType dbType) const {
+    return m_hierarchies.value(dbType, QList<DbHierarchyNode>());
+}
+
+bool DatabaseHierarchyManager::needsLazyLoading(DbNodeType nodeType) const {
+    // 文件夹类型和数据库节点需要延迟加载
+    return nodeType == DbNodeType::Database ||
+           nodeType == DbNodeType::Schema ||
+           nodeType == DbNodeType::TableFolder ||
+           nodeType == DbNodeType::ViewFolder ||
+           nodeType == DbNodeType::ProcedureFolder ||
+           nodeType == DbNodeType::FunctionFolder ||
+           nodeType == DbNodeType::TriggerFolder ||
+           nodeType == DbNodeType::IndexFolder ||
+           nodeType == DbNodeType::SequenceFolder ||
+           nodeType == DbNodeType::UserFolder;
+}
+
+QString DatabaseHierarchyManager::getNodeIcon(DbNodeType nodeType) const {
+    return m_nodeIcons.value(nodeType, "default");
+}
+
+QString DatabaseHierarchyManager::getNodeDisplayName(DbNodeType nodeType) const {
+    return m_nodeNames.value(nodeType, "未知节点");
+}
+
+// DbTreeWidgetItem 实现
+DbTreeWidgetItem::DbTreeWidgetItem(QTreeWidget* parent, const DbNodeData& data)
+    : QTreeWidgetItem(parent), m_nodeData(data) {
+    updateDisplay();
+}
+
+DbTreeWidgetItem::DbTreeWidgetItem(QTreeWidgetItem* parent, const DbNodeData& data)
+    : QTreeWidgetItem(parent), m_nodeData(data) {
+    updateDisplay();
+}
+
+void DbTreeWidgetItem::updateDisplay() {
+    setText(0, m_nodeData.name);
+    setIcon(0, QIcon(getNodeIcon()));
+
+    // 设置工具提示
+    QString tooltip = m_nodeData.name;
+    if (!m_nodeData.fullName.isEmpty() && m_nodeData.fullName != m_nodeData.name) {
+        tooltip += QString("\n完整名称: %1").arg(m_nodeData.fullName);
+    }
+    if (!m_nodeData.database.isEmpty()) {
+        tooltip += QString("\n数据库: %1").arg(m_nodeData.database);
+    }
+    setToolTip(0, tooltip);
+
+    // 设置节点样式
+    if (m_nodeData.type == DbNodeType::Loading) {
+        setForeground(0, QBrush(QColor(128, 128, 128)));
+        setFont(0, QFont("Arial", 9, QFont::Normal, true));
+    }
+}
+
+QString DbTreeWidgetItem::getNodeIcon() const {
+    QString iconName = DatabaseHierarchyManager::instance().getNodeIcon(m_nodeData.type);
+    return QString(":/icons/%1.png").arg(iconName);
+}
+
+void DbTreeWidgetItem::setLoading(bool loading) {
+    if (loading) {
+        m_nodeData.type = DbNodeType::Loading;
+        m_nodeData.name = "加载中...";
+    }
+    updateDisplay();
+}
 
 // ConnectionDialog 实现
 ConnectionDialog::ConnectionDialog(QWidget* parent) : QDialog(parent) {
@@ -645,12 +796,25 @@ bool ConnectionDialog::validateInput() {
 // DatabaseTreeWidget 实现
 DatabaseTreeWidget::DatabaseTreeWidget(QWidget* parent) : QTreeWidget(parent) {
     setupContextMenu();
-    
+
     setHeaderLabels({"连接"});
     setContextMenuPolicy(Qt::CustomContextMenu);
     setRootIsDecorated(true);
     setAlternatingRowColors(true);
-    
+    setExpandsOnDoubleClick(false); // 禁用默认双击展开，我们自己处理
+
+    // 性能优化设置
+    setUniformRowHeights(true);
+    setAnimated(true);
+    setIndentation(20);
+
+    // 启用虚拟滚动以提高大数据集性能
+    setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    // 减少重绘次数
+    setUpdatesEnabled(true);
+
     QObject::connect(this, &QTreeWidget::itemDoubleClicked, this, &DatabaseTreeWidget::onItemDoubleClicked);
     QObject::connect(this, &QTreeWidget::itemExpanded, this, &DatabaseTreeWidget::onItemExpanded);
     QObject::connect(this, &QTreeWidget::customContextMenuRequested, this, &DatabaseTreeWidget::onCustomContextMenuRequested);
@@ -699,16 +863,40 @@ void DatabaseTreeWidget::addConnection(const QString& name, Connx::Connection* c
 
 void DatabaseTreeWidget::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
     Q_UNUSED(column)
-    
+
     QString itemType = item->data(0, Qt::UserRole).toString();
     QString connectionName = item->data(0, Qt::UserRole + 1).toString();
-    
-    if (itemType == "connection") {
-        emit connectionRequested(connectionName);
+
+    // 智能展开/折叠逻辑
+    if (itemType == "connection" || itemType == "database" ||
+        itemType.endsWith("Folder") || itemType == "placeholder") {
+
+        if (item->isExpanded()) {
+            // 如果已展开，则折叠
+            item->setExpanded(false);
+        } else {
+            // 如果未展开，则展开并加载数据
+            if (itemType == "connection") {
+                // 连接双击时建立连接
+                emit connectionRequested(connectionName);
+            }
+
+            // 展开节点
+            item->setExpanded(true);
+
+            // 如果是占位符节点，触发数据加载
+            if (item->childCount() == 1) {
+                QTreeWidgetItem* firstChild = item->child(0);
+                if (firstChild && firstChild->data(0, Qt::UserRole).toString() == "placeholder") {
+                    onItemExpanded(item);
+                }
+            }
+        }
     } else if (itemType == "table" || itemType == "key") {
+        // 表和键的双击处理
         QString database = item->parent()->text(0);
         QString tableName = item->text(0);
-        
+
         if (itemType == "table") {
             emit tableDoubleClicked(connectionName, database, tableName);
         } else {
@@ -718,70 +906,363 @@ void DatabaseTreeWidget::onItemDoubleClicked(QTreeWidgetItem* item, int column) 
 }
 
 void DatabaseTreeWidget::onItemExpanded(QTreeWidgetItem* item) {
+    if (!item) return;
+
     QString itemType = item->data(0, Qt::UserRole).toString();
-    QString connectionName = m_itemConnectionMap.value(item, "");
-    
-    if (itemType == "connection" && m_connections.contains(connectionName)) {
-        // 清除占位符
-        qDeleteAll(item->takeChildren());
-        
-        // 加载数据库列表
-        Connx::Connection* conn = m_connections[connectionName];
-        loadDatabases(item, conn);
+
+    if (itemType == "connection") {
+        QString connectionName = m_itemConnectionMap.value(item, "");
+        if (m_connections.contains(connectionName)) {
+            // 清除占位符
+            qDeleteAll(item->takeChildren());
+
+            // 加载数据库列表
+            Connx::Connection* conn = m_connections[connectionName];
+            loadDatabases(item, conn);
+        }
     } else if (itemType == "database") {
-        // 清除占位符
-        qDeleteAll(item->takeChildren());
-        
-        // 加载表列表
-        QTreeWidgetItem* connectionItem = item->parent();
-        QString connName = m_itemConnectionMap.value(connectionItem, "");
-        if (m_connections.contains(connName)) {
-            Connx::Connection* conn = m_connections[connName];
-            QString database = item->text(0);
-            loadTables(item, conn, database);
+        // 数据库节点已经在loadDatabases中创建了层级结构，不需要再次加载
+        return;
+    } else {
+        // 处理文件夹类型节点
+        bool isNumeric;
+        int nodeTypeInt = itemType.toInt(&isNumeric);
+        if (isNumeric) {
+            DbNodeType nodeType = static_cast<DbNodeType>(nodeTypeInt);
+
+            // 获取连接信息
+            QString connectionName = item->data(0, Qt::UserRole + 1).toString();
+            if (!m_connections.contains(connectionName)) {
+                qDebug() << "连接不存在:" << connectionName;
+                return;
+            }
+
+            Connx::Connection* conn = m_connections[connectionName];
+
+            // 获取数据库名称
+            QString database;
+            QTreeWidgetItem* dbItem = item->parent();
+            if (dbItem) {
+                database = dbItem->text(0);
+            }
+
+            // 清除占位符
+            qDeleteAll(item->takeChildren());
+
+            // 根据节点类型加载相应内容
+            loadFolderContent(item, conn, database, nodeType);
         }
     }
 }
 
 void DatabaseTreeWidget::loadDatabases(QTreeWidgetItem* connectionItem, Connx::Connection* connection) {
+    if (!connectionItem || !connection) {
+        qDebug() << "loadDatabases: 参数为空";
+        return;
+    }
+
     if (!connection->isConnected()) {
         QTreeWidgetItem* errorItem = new QTreeWidgetItem(connectionItem);
         errorItem->setText(0, "未连接");
         errorItem->setIcon(0, style()->standardIcon(QStyle::SP_MessageBoxWarning));
         return;
     }
-    
-    QStringList databases = connection->getDatabases();
-    
-    for (const QString& db : databases) {
-        QTreeWidgetItem* dbItem = new QTreeWidgetItem(connectionItem);
-        dbItem->setText(0, db);
-        dbItem->setIcon(0, style()->standardIcon(QStyle::SP_DirIcon));
-        dbItem->setData(0, Qt::UserRole, "database");
-        dbItem->setData(0, Qt::UserRole + 1, m_itemConnectionMap[connectionItem]);
-        
-        // 添加占位符
-        QTreeWidgetItem* placeholder = new QTreeWidgetItem(dbItem);
-        placeholder->setText(0, "加载中...");
-        placeholder->setData(0, Qt::UserRole, "placeholder");
+
+    // 禁用更新以提高性能
+    setUpdatesEnabled(false);
+
+    QStringList databases;
+    try {
+        databases = connection->getDatabases();
+        qDebug() << "获取到数据库列表:" << databases.size() << "个数据库";
+    } catch (...) {
+        qDebug() << "获取数据库列表时发生异常";
+        setUpdatesEnabled(true);
+        return;
     }
+
+    // 获取数据库类型的层级结构
+    QList<DbHierarchyNode> hierarchy = DatabaseHierarchyManager::instance().getHierarchy(connection->getType());
+
+    // 批量创建数据库节点
+    QList<QTreeWidgetItem*> dbItems;
+    dbItems.reserve(databases.size());
+
+    QString parentConnectionName = m_itemConnectionMap.value(connectionItem, "");
+
+    for (const QString& db : databases) {
+        // 创建数据库节点数据
+        DbNodeData dbNodeData(DbNodeType::Database, QString("db_%1").arg(db), db);
+        dbNodeData.database = db;
+        dbNodeData.fullName = db;
+
+        DbTreeWidgetItem* dbItem = new DbTreeWidgetItem(nullptr, dbNodeData);
+        dbItem->setData(0, Qt::UserRole, "database");
+        dbItem->setData(0, Qt::UserRole + 1, parentConnectionName);
+
+        // 添加到映射中
+        m_itemConnectionMap[dbItem] = parentConnectionName;
+
+        // 根据数据库类型添加层级结构
+        if (connection->getType() == Connx::ConnectionType::Redis) {
+            // Redis直接显示键，添加占位符
+            QTreeWidgetItem* placeholder = new QTreeWidgetItem(dbItem);
+            placeholder->setText(0, "加载中...");
+            placeholder->setData(0, Qt::UserRole, "placeholder");
+        } else {
+            // 其他数据库类型添加文件夹结构
+            for (const DbHierarchyNode& node : hierarchy) {
+                DbNodeData folderData(node.nodeType, QString("%1_%2_%3").arg(db).arg(static_cast<int>(node.nodeType)).arg(node.displayName), node.displayName);
+                folderData.database = db;
+                folderData.fullName = QString("%1.%2").arg(db).arg(node.displayName);
+
+                DbTreeWidgetItem* folderItem = new DbTreeWidgetItem(dbItem, folderData);
+                folderItem->setData(0, Qt::UserRole, QString::number(static_cast<int>(node.nodeType)));
+                folderItem->setData(0, Qt::UserRole + 1, parentConnectionName);
+
+                // 为需要延迟加载的节点添加占位符
+                if (DatabaseHierarchyManager::instance().needsLazyLoading(node.nodeType)) {
+                    QTreeWidgetItem* placeholder = new QTreeWidgetItem(folderItem);
+                    placeholder->setText(0, "加载中...");
+                    placeholder->setData(0, Qt::UserRole, "placeholder");
+                }
+            }
+        }
+
+        dbItems.append(dbItem);
+    }
+
+    // 批量添加到父节点
+    connectionItem->addChildren(dbItems);
+
+    // 重新启用更新
+    setUpdatesEnabled(true);
+}
+
+void DatabaseTreeWidget::loadFolderContent(QTreeWidgetItem* folderItem, Connx::Connection* connection, const QString& database, DbNodeType folderType) {
+    if (!folderItem || !connection) {
+        qDebug() << "loadFolderContent: 参数为空";
+        return;
+    }
+
+    // 禁用更新以提高性能
+    setUpdatesEnabled(false);
+
+    QString connectionName = folderItem->data(0, Qt::UserRole + 1).toString();
+
+    try {
+        switch (folderType) {
+            case DbNodeType::TableFolder: {
+                QStringList tables = connection->getTables(database);
+                QList<QTreeWidgetItem*> tableItems;
+                tableItems.reserve(tables.size());
+
+                for (const QString& table : tables) {
+                    DbNodeData tableData(DbNodeType::Table, QString("table_%1_%2").arg(database).arg(table), table);
+                    tableData.database = database;
+                    tableData.fullName = QString("%1.%2").arg(database).arg(table);
+
+                    DbTreeWidgetItem* tableItem = new DbTreeWidgetItem(nullptr, tableData);
+                    tableItem->setData(0, Qt::UserRole, "table");
+                    tableItem->setData(0, Qt::UserRole + 1, connectionName);
+                    tableItems.append(tableItem);
+                }
+
+                folderItem->addChildren(tableItems);
+                break;
+            }
+
+            case DbNodeType::ViewFolder: {
+                // 获取视图列表（如果数据库支持）
+                QStringList views;
+                if (connection->getType() == Connx::ConnectionType::MySQL) {
+                    // MySQL获取视图的SQL
+                    Connx::QueryResult result = connection->query(
+                        QString("SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = '%1'").arg(database)
+                    );
+                    if (result.success) {
+                        for (const QVariantList& row : result.rows) {
+                            if (!row.isEmpty()) {
+                                views << row.first().toString();
+                            }
+                        }
+                    }
+                }
+
+                QList<QTreeWidgetItem*> viewItems;
+                viewItems.reserve(views.size());
+
+                for (const QString& view : views) {
+                    DbNodeData viewData(DbNodeType::View, QString("view_%1_%2").arg(database).arg(view), view);
+                    viewData.database = database;
+                    viewData.fullName = QString("%1.%2").arg(database).arg(view);
+
+                    DbTreeWidgetItem* viewItem = new DbTreeWidgetItem(nullptr, viewData);
+                    viewItem->setData(0, Qt::UserRole, "view");
+                    viewItem->setData(0, Qt::UserRole + 1, connectionName);
+                    viewItems.append(viewItem);
+                }
+
+                folderItem->addChildren(viewItems);
+                break;
+            }
+
+            case DbNodeType::ProcedureFolder: {
+                // 获取存储过程列表
+                QStringList procedures;
+                if (connection->getType() == Connx::ConnectionType::MySQL) {
+                    Connx::QueryResult result = connection->query(
+                        QString("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = '%1' AND ROUTINE_TYPE = 'PROCEDURE'").arg(database)
+                    );
+                    if (result.success) {
+                        for (const QVariantList& row : result.rows) {
+                            if (!row.isEmpty()) {
+                                procedures << row.first().toString();
+                            }
+                        }
+                    }
+                }
+
+                QList<QTreeWidgetItem*> procedureItems;
+                procedureItems.reserve(procedures.size());
+
+                for (const QString& procedure : procedures) {
+                    DbNodeData procData(DbNodeType::Procedure, QString("proc_%1_%2").arg(database).arg(procedure), procedure);
+                    procData.database = database;
+                    procData.fullName = QString("%1.%2").arg(database).arg(procedure);
+
+                    DbTreeWidgetItem* procItem = new DbTreeWidgetItem(nullptr, procData);
+                    procItem->setData(0, Qt::UserRole, "procedure");
+                    procItem->setData(0, Qt::UserRole + 1, connectionName);
+                    procedureItems.append(procItem);
+                }
+
+                folderItem->addChildren(procedureItems);
+                break;
+            }
+
+            case DbNodeType::FunctionFolder: {
+                // 获取函数列表
+                QStringList functions;
+                if (connection->getType() == Connx::ConnectionType::MySQL) {
+                    Connx::QueryResult result = connection->query(
+                        QString("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = '%1' AND ROUTINE_TYPE = 'FUNCTION'").arg(database)
+                    );
+                    if (result.success) {
+                        for (const QVariantList& row : result.rows) {
+                            if (!row.isEmpty()) {
+                                functions << row.first().toString();
+                            }
+                        }
+                    }
+                }
+
+                QList<QTreeWidgetItem*> functionItems;
+                functionItems.reserve(functions.size());
+
+                for (const QString& function : functions) {
+                    DbNodeData funcData(DbNodeType::Function, QString("func_%1_%2").arg(database).arg(function), function);
+                    funcData.database = database;
+                    funcData.fullName = QString("%1.%2").arg(database).arg(function);
+
+                    DbTreeWidgetItem* funcItem = new DbTreeWidgetItem(nullptr, funcData);
+                    funcItem->setData(0, Qt::UserRole, "function");
+                    funcItem->setData(0, Qt::UserRole + 1, connectionName);
+                    functionItems.append(funcItem);
+                }
+
+                folderItem->addChildren(functionItems);
+                break;
+            }
+
+            case DbNodeType::TriggerFolder: {
+                // 获取触发器列表
+                QStringList triggers;
+                if (connection->getType() == Connx::ConnectionType::MySQL) {
+                    Connx::QueryResult result = connection->query(
+                        QString("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '%1'").arg(database)
+                    );
+                    if (result.success) {
+                        for (const QVariantList& row : result.rows) {
+                            if (!row.isEmpty()) {
+                                triggers << row.first().toString();
+                            }
+                        }
+                    }
+                }
+
+                QList<QTreeWidgetItem*> triggerItems;
+                triggerItems.reserve(triggers.size());
+
+                for (const QString& trigger : triggers) {
+                    DbNodeData triggerData(DbNodeType::Trigger, QString("trigger_%1_%2").arg(database).arg(trigger), trigger);
+                    triggerData.database = database;
+                    triggerData.fullName = QString("%1.%2").arg(database).arg(trigger);
+
+                    DbTreeWidgetItem* triggerItem = new DbTreeWidgetItem(nullptr, triggerData);
+                    triggerItem->setData(0, Qt::UserRole, "trigger");
+                    triggerItem->setData(0, Qt::UserRole + 1, connectionName);
+                    triggerItems.append(triggerItem);
+                }
+
+                folderItem->addChildren(triggerItems);
+                break;
+            }
+
+            default:
+                qDebug() << "不支持的文件夹类型:" << static_cast<int>(folderType);
+                break;
+        }
+
+    } catch (...) {
+        qDebug() << "加载文件夹内容时发生异常:" << static_cast<int>(folderType);
+    }
+
+    // 重新启用更新
+    setUpdatesEnabled(true);
 }
 
 void DatabaseTreeWidget::loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
+    if (!databaseItem || !connection) {
+        qDebug() << "loadTables: 参数为空";
+        return;
+    }
+
     // 对于Redis，加载键列表
     if (connection->getType() == Connx::ConnectionType::Redis) {
         loadRedisKeys(databaseItem, connection, database);
     } else {
         // 其他数据库类型加载表列表
         QStringList tables = connection->getTables(database);
-        
+
+        // 获取连接名称
+        QTreeWidgetItem* connectionItem = databaseItem->parent();
+        QString connectionName;
+        if (connectionItem) {
+            connectionName = m_itemConnectionMap.value(connectionItem, "");
+        }
+
+        // 禁用更新以提高性能
+        setUpdatesEnabled(false);
+
+        // 批量创建表节点
+        QList<QTreeWidgetItem*> tableItems;
+        tableItems.reserve(tables.size());
+
         for (const QString& table : tables) {
-            QTreeWidgetItem* tableItem = new QTreeWidgetItem(databaseItem);
+            QTreeWidgetItem* tableItem = new QTreeWidgetItem();
             tableItem->setText(0, table);
             tableItem->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
             tableItem->setData(0, Qt::UserRole, "table");
-            tableItem->setData(0, Qt::UserRole + 1, m_itemConnectionMap[databaseItem->parent()]);
+            tableItem->setData(0, Qt::UserRole + 1, connectionName);
+            tableItems.append(tableItem);
         }
+
+        // 批量添加到父节点
+        databaseItem->addChildren(tableItems);
+
+        // 重新启用更新
+        setUpdatesEnabled(true);
     }
 }
 
@@ -1235,44 +1716,68 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
             }
         }
 
-        // 更新结果表格
+        // 更新结果表格 - 性能优化版本
         if (!result.columns.isEmpty() && !result.rows.isEmpty()) {
             // 新的结构化数据
             int columnCount = result.columns.size();
             int rowCount = result.rows.size();
 
+            // 禁用排序和更新以提高性能
+            m_resultTable->setSortingEnabled(false);
+            m_resultTable->setUpdatesEnabled(false);
+
+            // 清除旧数据
+            m_resultTable->clear();
+
+            // 设置行列数
             m_resultTable->setRowCount(rowCount);
             m_resultTable->setColumnCount(columnCount);
 
             // 设置列头
             m_resultTable->setHorizontalHeaderLabels(result.columns);
 
-            // 填充数据行
+            // 批量填充数据行 - 性能优化
+            QVector<QTableWidgetItem*> items;
+            items.reserve(rowCount * columnCount);
+
             for (int i = 0; i < rowCount; ++i) {
                 const QVariantList& row = result.rows[i];
                 for (int j = 0; j < qMin(row.size(), columnCount); ++j) {
                     QTableWidgetItem* item = new QTableWidgetItem(row[j].toString());
                     item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+                    items.append(item);
                     m_resultTable->setItem(i, j, item);
                 }
             }
 
-            // 自动调整列宽
-            m_resultTable->resizeColumnsToContents();
+            // 重新启用更新
+            m_resultTable->setUpdatesEnabled(true);
 
-            // 设置合理的列宽范围
-            for (int j = 0; j < columnCount; ++j) {
-                int width = m_resultTable->columnWidth(j);
-                if (width > 300) {
-                    m_resultTable->setColumnWidth(j, 300);
-                } else if (width < 100) {
-                    m_resultTable->setColumnWidth(j, 100);
+            // 延迟调整列宽以避免阻塞UI
+            QTimer::singleShot(0, [this, columnCount]() {
+                // 智能列宽调整 - 只对前几列进行自动调整
+                for (int j = 0; j < qMin(columnCount, 10); ++j) {
+                    m_resultTable->resizeColumnToContents(j);
+                    int width = m_resultTable->columnWidth(j);
+                    if (width > 300) {
+                        m_resultTable->setColumnWidth(j, 300);
+                    } else if (width < 80) {
+                        m_resultTable->setColumnWidth(j, 80);
+                    }
                 }
-            }
+
+                // 其余列设置默认宽度
+                for (int j = 10; j < columnCount; ++j) {
+                    m_resultTable->setColumnWidth(j, 120);
+                }
+            });
 
             // 确保表头可见
             m_resultTable->horizontalHeader()->setVisible(true);
             m_resultTable->verticalHeader()->setVisible(true);
+
+            // 启用排序
+            m_resultTable->setSortingEnabled(true);
 
             m_rowsLabel->setText(QString("行数: %1").arg(rowCount));
         } else if (!result.data.isEmpty()) {

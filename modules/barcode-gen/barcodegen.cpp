@@ -1237,5 +1237,4 @@ QVector<int> BarcodeGen::generateUPCAPattern(const QString &text)
     return pattern;
 }
 
-#include "barcodegen.moc"
 

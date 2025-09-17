@@ -1624,4 +1624,3 @@ void QrCodeGen::dropEvent(QDropEvent *event)
 void QrCodeGen::loadSettings() {}
 void QrCodeGen::saveSettings() {}
 
-#include "qrcodegen.moc"
