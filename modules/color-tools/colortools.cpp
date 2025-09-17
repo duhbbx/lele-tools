@@ -605,7 +605,7 @@ void ColorTools::setupColorWheel()
     
     layout->addWidget(wheelGroup);
     
-    tabWidget->addTab(colorPickerWidget, "色轮");
+    tabWidget->addTab(colorPickerWidget, tr("色轮"));
 }
 
 void ColorTools::setupColorBars()
@@ -616,7 +616,7 @@ void ColorTools::setupColorBars()
     QGroupBox *hsvGroup = new QGroupBox("🌈 HSV 调节");
     QGridLayout *hsvLayout = new QGridLayout(hsvGroup);
     
-    hsvLayout->addWidget(new QLabel("色相:"), 0, 0);
+    hsvLayout->addWidget(new QLabel(tr("色相:")), 0, 0);
     hueBar = new ColorBar(ColorBar::HueBar);
     hsvLayout->addWidget(hueBar, 0, 1);
     hueSpin = new QSpinBox();
@@ -624,14 +624,14 @@ void ColorTools::setupColorBars()
     hueSpin->setSuffix("°");
     hsvLayout->addWidget(hueSpin, 0, 2);
     
-    hsvLayout->addWidget(new QLabel("饱和度:"), 1, 0);
+    hsvLayout->addWidget(new QLabel(tr("饱和度:")), 1, 0);
     saturationBar = new ColorBar(ColorBar::SaturationBar);
     hsvLayout->addWidget(saturationBar, 1, 1);
     saturationSpin = new QSpinBox();
     saturationSpin->setRange(0, 255);
     hsvLayout->addWidget(saturationSpin, 1, 2);
     
-    hsvLayout->addWidget(new QLabel("明度:"), 2, 0);
+    hsvLayout->addWidget(new QLabel(tr("明度:")), 2, 0);
     valueBar = new ColorBar(ColorBar::ValueBar);
     hsvLayout->addWidget(valueBar, 2, 1);
     valueSpin = new QSpinBox();
@@ -643,21 +643,21 @@ void ColorTools::setupColorBars()
     QGroupBox *rgbGroup = new QGroupBox("🔴 RGB 调节");
     QGridLayout *rgbLayout = new QGridLayout(rgbGroup);
     
-    rgbLayout->addWidget(new QLabel("红色:"), 0, 0);
+    rgbLayout->addWidget(new QLabel(tr("红色:")), 0, 0);
     redBar = new ColorBar(ColorBar::RedBar);
     rgbLayout->addWidget(redBar, 0, 1);
     redSpin = new QSpinBox();
     redSpin->setRange(0, 255);
     rgbLayout->addWidget(redSpin, 0, 2);
     
-    rgbLayout->addWidget(new QLabel("绿色:"), 1, 0);
+    rgbLayout->addWidget(new QLabel(tr("绿色:")), 1, 0);
     greenBar = new ColorBar(ColorBar::GreenBar);
     rgbLayout->addWidget(greenBar, 1, 1);
     greenSpin = new QSpinBox();
     greenSpin->setRange(0, 255);
     rgbLayout->addWidget(greenSpin, 1, 2);
     
-    rgbLayout->addWidget(new QLabel("蓝色:"), 2, 0);
+    rgbLayout->addWidget(new QLabel(tr("蓝色:")), 2, 0);
     blueBar = new ColorBar(ColorBar::BlueBar);
     rgbLayout->addWidget(blueBar, 2, 1);
     blueSpin = new QSpinBox();
@@ -682,7 +682,7 @@ void ColorTools::setupColorBars()
     layout->addWidget(alphaGroup);
     layout->addStretch();
     
-    tabWidget->addTab(barsWidget, "调节器");
+    tabWidget->addTab(barsWidget, tr("调节器"));
 }
 
 void ColorTools::setupColorInputs()
@@ -693,35 +693,35 @@ void ColorTools::setupColorInputs()
     colorInputGroup = new QGroupBox("🔢 颜色值输入");
     QGridLayout *inputLayout = new QGridLayout(colorInputGroup);
     
-    inputLayout->addWidget(new QLabel("HEX:"), 0, 0);
+    inputLayout->addWidget(new QLabel(tr("HEX:")), 0, 0);
     hexEdit = new QLineEdit();
-    hexEdit->setPlaceholderText("#FF0000");
+    hexEdit->setPlaceholderText(tr("#FF0000"));
     inputLayout->addWidget(hexEdit, 0, 1);
     
-    inputLayout->addWidget(new QLabel("RGB:"), 1, 0);
+    inputLayout->addWidget(new QLabel(tr("RGB:")), 1, 0);
     rgbEdit = new QLineEdit();
-    rgbEdit->setPlaceholderText("rgb(255, 0, 0)");
+    rgbEdit->setPlaceholderText(tr("rgb(255, 0, 0)"));
     inputLayout->addWidget(rgbEdit, 1, 1);
     
-    inputLayout->addWidget(new QLabel("HSL:"), 2, 0);
+    inputLayout->addWidget(new QLabel(tr("HSL:")), 2, 0);
     hslEdit = new QLineEdit();
-    hslEdit->setPlaceholderText("hsl(0, 100%, 50%)");
+    hslEdit->setPlaceholderText(tr("hsl(0, 100%, 50%)"));
     inputLayout->addWidget(hslEdit, 2, 1);
     
-    inputLayout->addWidget(new QLabel("HSV:"), 3, 0);
+    inputLayout->addWidget(new QLabel(tr("HSV:")), 3, 0);
     hsvEdit = new QLineEdit();
-    hsvEdit->setPlaceholderText("hsv(0, 100%, 100%)");
+    hsvEdit->setPlaceholderText(tr("hsv(0, 100%, 100%)"));
     inputLayout->addWidget(hsvEdit, 3, 1);
     
-    inputLayout->addWidget(new QLabel("CMYK:"), 4, 0);
+    inputLayout->addWidget(new QLabel(tr("CMYK:")), 4, 0);
     cmykEdit = new QLineEdit();
-    cmykEdit->setPlaceholderText("cmyk(0%, 100%, 100%, 0%)");
+    cmykEdit->setPlaceholderText(tr("cmyk(0%, 100%, 100%, 0%)"));
     inputLayout->addWidget(cmykEdit, 4, 1);
     
     layout->addWidget(colorInputGroup);
     layout->addStretch();
     
-    tabWidget->addTab(inputWidget, "输入");
+    tabWidget->addTab(inputWidget, tr("输入"));
 }
 
 void ColorTools::setupColorPreview()
@@ -733,25 +733,25 @@ void ColorTools::setupColorPreview()
     QHBoxLayout *previewLayout = new QHBoxLayout(previewGroup);
     
     QVBoxLayout *currentLayout = new QVBoxLayout();
-    currentLayout->addWidget(new QLabel("当前颜色"));
+    currentLayout->addWidget(new QLabel(tr("当前颜色")));
     currentColorPreview = new ColorPreview();
     currentLayout->addWidget(currentColorPreview);
     previewLayout->addLayout(currentLayout);
     
     QVBoxLayout *previousLayout = new QVBoxLayout();
-    previousLayout->addWidget(new QLabel("之前颜色"));
+    previousLayout->addWidget(new QLabel(tr("之前颜色")));
     previousColorPreview = new ColorPreview();
     previousLayout->addWidget(previousColorPreview);
     previewLayout->addLayout(previousLayout);
     
-    colorInfoLabel = new QLabel("颜色信息");
+    colorInfoLabel = new QLabel(tr("颜色信息"));
     colorInfoLabel->setWordWrap(true);
     previewLayout->addWidget(colorInfoLabel);
     
     layout->addWidget(previewGroup);
     layout->addStretch();
     
-    tabWidget->addTab(previewWidget, "预览");
+    tabWidget->addTab(previewWidget, tr("预览"));
 }
 
 void ColorTools::setupColorPalettes()
@@ -775,7 +775,7 @@ void ColorTools::setupColorPalettes()
     
     layout->addWidget(paletteGroup);
     
-    tabWidget->addTab(paletteWidget, "调色板");
+    tabWidget->addTab(paletteWidget, tr("调色板"));
 }
 
 void ColorTools::setupColorHistory()
@@ -799,7 +799,7 @@ void ColorTools::setupColorHistory()
     
     layout->addWidget(favoritesGroup);
     
-    tabWidget->addTab(historyWidget, "历史");
+    tabWidget->addTab(historyWidget, tr("历史"));
 }
 
 void ColorTools::setupColorAnalysis()
@@ -816,12 +816,12 @@ void ColorTools::setupColorAnalysis()
     analysisLayout->addWidget(analysisText);
     
     QHBoxLayout *contrastLayout = new QHBoxLayout();
-    contrastLayout->addWidget(new QLabel("对比度检查:"));
+    contrastLayout->addWidget(new QLabel(tr("对比度检查:")));
     contrastPreview1 = new ColorPreview();
     contrastPreview2 = new ColorPreview();
-    contrastRatioLabel = new QLabel("1:1");
+    contrastRatioLabel = new QLabel(tr("1:1"));
     contrastLayout->addWidget(contrastPreview1);
-    contrastLayout->addWidget(new QLabel("vs"));
+    contrastLayout->addWidget(new QLabel(tr("vs")));
     contrastLayout->addWidget(contrastPreview2);
     contrastLayout->addWidget(contrastRatioLabel);
     contrastLayout->addStretch();
@@ -830,7 +830,7 @@ void ColorTools::setupColorAnalysis()
     layout->addWidget(analysisGroup);
     layout->addStretch();
     
-    tabWidget->addTab(analysisWidget, "分析");
+    tabWidget->addTab(analysisWidget, tr("分析"));
 }
 
 void ColorTools::setupStatusArea()
@@ -841,27 +841,27 @@ void ColorTools::setupStatusArea()
     // 第一行：常用操作
     QHBoxLayout *row1Layout = new QHBoxLayout();
     
-    pickFromScreenBtn = new QPushButton("🎯 取色");
+    pickFromScreenBtn = new QPushButton(tr("🎯 取色"));
     pickFromScreenBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; min-width: 60px; } QPushButton:hover { background-color: #218838; }");
     row1Layout->addWidget(pickFromScreenBtn);
     
-    copyColorBtn = new QPushButton("📋 复制");
+    copyColorBtn = new QPushButton(tr("📋 复制"));
     copyColorBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; min-width: 60px; } QPushButton:hover { background-color: #0056b3; }");
     row1Layout->addWidget(copyColorBtn);
     
-    pasteColorBtn = new QPushButton("📋 粘贴");
+    pasteColorBtn = new QPushButton(tr("📋 粘贴"));
     pasteColorBtn->setMinimumWidth(60);
     row1Layout->addWidget(pasteColorBtn);
     
-    randomColorBtn = new QPushButton("🎲 随机");
+    randomColorBtn = new QPushButton(tr("🎲 随机"));
     randomColorBtn->setStyleSheet("QPushButton { background-color: #6f42c1; color: white; min-width: 60px; } QPushButton:hover { background-color: #5a32a3; }");
     row1Layout->addWidget(randomColorBtn);
     
-    addToHistoryBtn = new QPushButton("📜 历史");
+    addToHistoryBtn = new QPushButton(tr("📜 历史"));
     addToHistoryBtn->setMinimumWidth(60);
     row1Layout->addWidget(addToHistoryBtn);
     
-    addToFavoritesBtn = new QPushButton("⭐ 收藏");
+    addToFavoritesBtn = new QPushButton(tr("⭐ 收藏"));
     addToFavoritesBtn->setMinimumWidth(60);
     row1Layout->addWidget(addToFavoritesBtn);
     
@@ -870,31 +870,31 @@ void ColorTools::setupStatusArea()
     // 第二行：配色工具
     QHBoxLayout *row2Layout = new QHBoxLayout();
     
-    complementaryBtn = new QPushButton("🔄 互补");
+    complementaryBtn = new QPushButton(tr("🔄 互补"));
     complementaryBtn->setMinimumWidth(60);
     row2Layout->addWidget(complementaryBtn);
     
-    analogousBtn = new QPushButton("🌈 类似");
+    analogousBtn = new QPushButton(tr("🌈 类似"));
     analogousBtn->setMinimumWidth(60);
     row2Layout->addWidget(analogousBtn);
     
-    triadicBtn = new QPushButton("🔺 三角");
+    triadicBtn = new QPushButton(tr("🔺 三角"));
     triadicBtn->setMinimumWidth(60);
     row2Layout->addWidget(triadicBtn);
     
-    monochromaticBtn = new QPushButton("🎨 单色");
+    monochromaticBtn = new QPushButton(tr("🎨 单色"));
     monochromaticBtn->setMinimumWidth(60);
     row2Layout->addWidget(monochromaticBtn);
     
-    contrastCheckBtn = new QPushButton("🔍 对比");
+    contrastCheckBtn = new QPushButton(tr("🔍 对比"));
     contrastCheckBtn->setMinimumWidth(60);
     row2Layout->addWidget(contrastCheckBtn);
     
-    exportPaletteBtn = new QPushButton("💾 导出");
+    exportPaletteBtn = new QPushButton(tr("💾 导出"));
     exportPaletteBtn->setMinimumWidth(60);
     row2Layout->addWidget(exportPaletteBtn);
     
-    importPaletteBtn = new QPushButton("📁 导入");
+    importPaletteBtn = new QPushButton(tr("📁 导入"));
     importPaletteBtn->setMinimumWidth(60);
     row2Layout->addWidget(importPaletteBtn);
     
@@ -911,7 +911,7 @@ void ColorTools::setupStatusArea()
     // 状态栏
     statusLayout = new QHBoxLayout();
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     
     progressBar = new QProgressBar();
@@ -1032,7 +1032,7 @@ QString ColorTools::colorToCmyk(const QColor &color) const
 void ColorTools::onColorChanged()
 {
     addColorToHistory(m_currentColor);
-    statusLabel->setText("颜色已更新");
+    statusLabel->setText(tr("颜色已更新"));
 }
 
 void ColorTools::onWheelColorChanged(const QColor &color)
@@ -1109,47 +1109,47 @@ void ColorTools::onPickColorFromScreen()
 {
     m_pickingColor = !m_pickingColor;
     if (m_pickingColor) {
-        pickFromScreenBtn->setText("🛑 停止取色");
+        pickFromScreenBtn->setText(tr("🛑 停止取色"));
         m_pickTimer->start();
-        statusLabel->setText("屏幕取色中...");
+        statusLabel->setText(tr("屏幕取色中..."));
     } else {
-        pickFromScreenBtn->setText("🎯 屏幕取色");
+        pickFromScreenBtn->setText(tr("🎯 屏幕取色"));
         m_pickTimer->stop();
-        statusLabel->setText("停止取色");
+        statusLabel->setText(tr("停止取色"));
     }
 }
 
 void ColorTools::onAddToHistory()
 {
     addColorToHistory(m_currentColor);
-    statusLabel->setText("已添加到历史");
+    statusLabel->setText(tr("已添加到历史"));
 }
 
 void ColorTools::onAddToFavorites()
 {
     addColorToFavorites(m_currentColor);
-    statusLabel->setText("已添加到收藏");
+    statusLabel->setText(tr("已添加到收藏"));
 }
 
 void ColorTools::onClearHistory()
 {
     m_colorHistory.clear();
     historyPalette->clearColors();
-    statusLabel->setText("历史已清空");
+    statusLabel->setText(tr("历史已清空"));
 }
 
 void ColorTools::onClearFavorites()
 {
     m_favoriteColors.clear();
     favoritesPalette->clearColors();
-    statusLabel->setText("收藏已清空");
+    statusLabel->setText(tr("收藏已清空"));
 }
 
 void ColorTools::onCopyColor()
 {
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(colorToHex(m_currentColor));
-    statusLabel->setText("颜色已复制到剪贴板");
+    statusLabel->setText(tr("颜色已复制到剪贴板"));
 }
 
 void ColorTools::onPasteColor()
@@ -1159,9 +1159,9 @@ void ColorTools::onPasteColor()
     QColor color = hexToColor(text);
     if (color.isValid()) {
         setCurrentColor(color);
-        statusLabel->setText("颜色已从剪贴板粘贴");
+        statusLabel->setText(tr("颜色已从剪贴板粘贴"));
     } else {
-        statusLabel->setText("剪贴板中没有有效的颜色值");
+        statusLabel->setText(tr("剪贴板中没有有效的颜色值"));
     }
 }
 
@@ -1174,7 +1174,7 @@ void ColorTools::onRandomColor()
         generator->bounded(128, 256)
     );
     setCurrentColor(randomColor);
-    statusLabel->setText("已生成随机颜色");
+    statusLabel->setText(tr("已生成随机颜色"));
 }
 
 void ColorTools::onComplementaryColor() {}

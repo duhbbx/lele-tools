@@ -114,9 +114,9 @@ RegExTest::RegExTest() : QWidget(nullptr), DynamicObjectBase()
     loadCommonPresets();
     
     // 设置示例
-    regexEdit->setText("\\b\\w+@\\w+\\.\\w+\\b");
+    regexEdit->setText(tr("\\b\\w+@\\w+\\.\\w+\\b"));
     testTextEdit->setPlainText("联系我们：admin@example.com 或 support@test.org\n技术支持：tech@company.net");
-    replaceEdit->setText("[邮箱]");
+    replaceEdit->setText(tr("[邮箱]"));
     
     onTestRegex();
 }
@@ -164,20 +164,20 @@ void RegExTest::setupToolbar()
     toolbarLayout->setContentsMargins(5, 5, 5, 5);
     toolbarLayout->setSpacing(8);
     
-    testBtn = new QPushButton("🔍 测试");
+    testBtn = new QPushButton(tr("🔍 测试"));
     testBtn->setToolTip("测试正则表达式");
     testBtn->setFixedSize(75, 32);
     
-    clearBtn = new QPushButton("🗑️ 清空");
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
     clearBtn->setToolTip("清空结果");
     clearBtn->setFixedSize(75, 32);
     
-    copyBtn = new QPushButton("📋 复制");
+    copyBtn = new QPushButton(tr("📋 复制"));
     copyBtn->setToolTip("复制匹配结果");
     copyBtn->setFixedSize(75, 32);
     copyBtn->setEnabled(false);
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet(R"(
         QLabel {
@@ -209,7 +209,7 @@ void RegExTest::setupInputArea()
     QVBoxLayout* regexLayout = new QVBoxLayout(regexGroup);
     
     regexEdit = new QLineEdit();
-    regexEdit->setPlaceholderText("输入正则表达式...");
+    regexEdit->setPlaceholderText(tr("输入正则表达式..."));
     regexEdit->setFont(QFont("Consolas", 11));
     
     // 标志选项
@@ -233,7 +233,7 @@ void RegExTest::setupInputArea()
     QVBoxLayout* textLayout = new QVBoxLayout(textGroup);
     
     testTextEdit = new QTextEdit();
-    testTextEdit->setPlaceholderText("输入要测试的文本...");
+    testTextEdit->setPlaceholderText(tr("输入要测试的文本..."));
     testTextEdit->setFont(QFont("Consolas", 11));
     
     textLayout->addWidget(testTextEdit);
@@ -268,10 +268,10 @@ void RegExTest::setupResultsArea()
     replaceLayout = new QVBoxLayout(replaceTab);
     
     QHBoxLayout* replaceInputLayout = new QHBoxLayout();
-    QLabel* replaceLabel = new QLabel("替换为:");
+    QLabel* replaceLabel = new QLabel(tr("替换为:"));
     replaceEdit = new QLineEdit();
-    replaceEdit->setPlaceholderText("输入替换文本...");
-    replaceBtn = new QPushButton("替换");
+    replaceEdit->setPlaceholderText(tr("输入替换文本..."));
+    replaceBtn = new QPushButton(tr("替换"));
     replaceBtn->setFixedSize(60, 28);
     
     replaceInputLayout->addWidget(replaceLabel);
@@ -280,15 +280,15 @@ void RegExTest::setupResultsArea()
     
     replaceResultEdit = new QPlainTextEdit();
     replaceResultEdit->setReadOnly(true);
-    replaceResultEdit->setPlaceholderText("替换结果将显示在这里...");
+    replaceResultEdit->setPlaceholderText(tr("替换结果将显示在这里..."));
     replaceResultEdit->setFont(QFont("Consolas", 11));
     
     replaceLayout->addLayout(replaceInputLayout);
     replaceLayout->addWidget(replaceResultEdit);
     
     // 添加标签页
-    resultsTabWidget->addTab(matchesTab, "🎯 匹配结果");
-    resultsTabWidget->addTab(replaceTab, "🔄 替换结果");
+    resultsTabWidget->addTab(matchesTab, tr("🎯 匹配结果"));
+    resultsTabWidget->addTab(replaceTab, tr("🔄 替换结果"));
 }
 
 void RegExTest::setupPresetsArea()
@@ -299,7 +299,7 @@ void RegExTest::setupPresetsArea()
     presetsCombo = new QComboBox();
     presetsCombo->setMinimumWidth(200);
     
-    loadPresetBtn = new QPushButton("加载");
+    loadPresetBtn = new QPushButton(tr("加载"));
     loadPresetBtn->setFixedSize(50, 28);
     
     presetsLayout->addWidget(presetsCombo);

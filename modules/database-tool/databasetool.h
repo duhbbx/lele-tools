@@ -40,10 +40,15 @@
 #include <QPropertyAnimation>
 #include <QGraphicsDropShadowEffect>
 #include <QRegularExpression>
+#include <QSyntaxHighlighter>
+#include <QTextCharFormat>
+#include <QTextDocument>
 
 #include "../../common/dynamicobjectbase.h"
 #include "../../common/connx/Connection.h"
 #include "../../common/sqlite/ConnectionConfigTableManager.h"
+#include "abstractnodeevent.h"
+#include "nodeeventfactory.h"
 
 // 不使用全局using namespace以避免命名冲突
 // using namespace Connx;
@@ -148,6 +153,31 @@ private:
     QMap<Connx::ConnectionType, QList<DbHierarchyNode>> m_hierarchies;
     QMap<DbNodeType, QString> m_nodeIcons;
     QMap<DbNodeType, QString> m_nodeNames;
+};
+
+// SQL语法高亮器
+class SqlSyntaxHighlighter : public QSyntaxHighlighter {
+    Q_OBJECT
+
+public:
+    explicit SqlSyntaxHighlighter(QTextDocument* parent = nullptr);
+
+protected:
+    void highlightBlock(const QString& text) override;
+
+private:
+    struct HighlightingRule {
+        QRegularExpression pattern;
+        QTextCharFormat format;
+    };
+    QVector<HighlightingRule> highlightingRules;
+
+    QTextCharFormat keywordFormat;
+    QTextCharFormat functionFormat;
+    QTextCharFormat stringFormat;
+    QTextCharFormat commentFormat;
+    QTextCharFormat numberFormat;
+    QTextCharFormat operatorFormat;
 };
 
 // 现代化的连接类型列表项委托
@@ -315,7 +345,8 @@ private:
     
     // 查询区域
     QTextEdit* m_queryEdit;
-    
+    SqlSyntaxHighlighter* m_syntaxHighlighter;
+
     // 结果区域
     QTabWidget* m_resultTabs;
     QTableWidget* m_resultTable;
@@ -359,6 +390,19 @@ private:
     void refreshDatabase(QTreeWidgetItem* databaseItem);
     void flushDatabase(QTreeWidgetItem* databaseItem);
     void deleteKey(QTreeWidgetItem* keyItem);
+
+    // 新增：使用抽象事件系统的方法
+    NodeChain buildNodeChainFromTreeItem(QTreeWidgetItem* item);
+    Node createNodeFromTreeItem(QTreeWidgetItem* item);
+    NodeType convertDbNodeTypeToNodeType(DbNodeType dbNodeType);
+    DbNodeType convertNodeTypeToDbNodeType(NodeType nodeType);
+    void updateTreeItemWithNodes(QTreeWidgetItem* parentItem, const QList<Node>& nodes);
+    void populateTreeItemData(QTreeWidgetItem* item, const Node& node);
+    void setNodeIcon(QTreeWidgetItem* item, NodeType nodeType);
+    bool canNodeExpand(NodeType nodeType);
+    QString generateNodeTooltip(const Node& node);
+    QString getNodeTypeDisplayName(NodeType nodeType);
+    void showExpandError(const QString& title, const QString& message);
     
     QMap<QString, Connx::Connection*> m_connections;
     QMap<QTreeWidgetItem*, QString> m_itemConnectionMap;

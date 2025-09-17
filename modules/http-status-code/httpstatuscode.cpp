@@ -74,12 +74,12 @@ void HttpStatusCode::setupSearchArea()
     searchLayout = new QVBoxLayout(searchGroup);
     
     searchEdit = new QLineEdit;
-    searchEdit->setPlaceholderText("输入状态码或描述进行搜索...");
+    searchEdit->setPlaceholderText(tr("输入状态码或描述进行搜索..."));
     searchLayout->addWidget(searchEdit);
     
     QHBoxLayout *searchButtonLayout = new QHBoxLayout;
-    quickSearchBtn = new QPushButton("快速查找");
-    searchResultLabel = new QLabel("显示所有状态码");
+    quickSearchBtn = new QPushButton(tr("快速查找"));
+    searchResultLabel = new QLabel(tr("显示所有状态码"));
     
     searchButtonLayout->addWidget(quickSearchBtn);
     searchButtonLayout->addStretch();
@@ -97,7 +97,7 @@ void HttpStatusCode::setupFilterArea()
     filterLayout = new QGridLayout(filterGroup);
     
     // 分类筛选
-    filterLayout->addWidget(new QLabel("分类:"), 0, 0);
+    filterLayout->addWidget(new QLabel(tr("分类:")), 0, 0);
     categoryCombo = new QComboBox;
     categoryCombo->addItems(CATEGORY_NAMES);
     filterLayout->addWidget(categoryCombo, 0, 1, 1, 2);
@@ -126,7 +126,7 @@ void HttpStatusCode::setupFilterArea()
     filterLayout->addWidget(show4xxCheckBox, 3, 0);
     filterLayout->addWidget(show5xxCheckBox, 3, 1);
     
-    resetFilterBtn = new QPushButton("重置筛选");
+    resetFilterBtn = new QPushButton(tr("重置筛选"));
     filterLayout->addWidget(resetFilterBtn, 3, 2);
     
     // 连接信号
@@ -172,7 +172,7 @@ void HttpStatusCode::setupStatusTableArea()
     
     tableLayout->addWidget(statusTable);
     
-    countLabel = new QLabel("共 0 个状态码");
+    countLabel = new QLabel(tr("共 0 个状态码"));
     countLabel->setAlignment(Qt::AlignRight);
     tableLayout->addWidget(countLabel);
     
@@ -189,48 +189,48 @@ void HttpStatusCode::setupDetailsArea()
     QWidget *basicInfoWidget = new QWidget;
     QGridLayout *basicInfoLayout = new QGridLayout(basicInfoWidget);
     
-    basicInfoLayout->addWidget(new QLabel("状态码:"), 0, 0);
-    codeLabel = new QLabel("--");
+    basicInfoLayout->addWidget(new QLabel(tr("状态码:")), 0, 0);
+    codeLabel = new QLabel(tr("--"));
     codeLabel->setStyleSheet("font-size: 14pt; font-weight: bold; color: #4CAF50;");
     basicInfoLayout->addWidget(codeLabel, 0, 1);
     
-    basicInfoLayout->addWidget(new QLabel("状态短语:"), 1, 0);
-    phraseLabel = new QLabel("--");
+    basicInfoLayout->addWidget(new QLabel(tr("状态短语:")), 1, 0);
+    phraseLabel = new QLabel(tr("--"));
     phraseLabel->setStyleSheet("font-size: 12pt; font-weight: bold;");
     basicInfoLayout->addWidget(phraseLabel, 1, 1);
     
-    basicInfoLayout->addWidget(new QLabel("分类:"), 2, 0);
-    categoryLabel = new QLabel("--");
+    basicInfoLayout->addWidget(new QLabel(tr("分类:")), 2, 0);
+    categoryLabel = new QLabel(tr("--"));
     basicInfoLayout->addWidget(categoryLabel, 2, 1);
     
     detailsLayout->addWidget(basicInfoWidget);
     
     // 详细描述
-    detailsLayout->addWidget(new QLabel("详细描述:"));
+    detailsLayout->addWidget(new QLabel(tr("详细描述:")));
     descriptionEdit = new QTextEdit;
     descriptionEdit->setMaximumHeight(80);
     descriptionEdit->setReadOnly(true);
-    descriptionEdit->setPlaceholderText("点击左侧状态码查看详细描述...");
+    descriptionEdit->setPlaceholderText(tr("点击左侧状态码查看详细描述..."));
     detailsLayout->addWidget(descriptionEdit);
     
     // 使用场景
-    detailsLayout->addWidget(new QLabel("使用场景:"));
+    detailsLayout->addWidget(new QLabel(tr("使用场景:")));
     usageEdit = new QTextEdit;
     usageEdit->setMaximumHeight(60);
     usageEdit->setReadOnly(true);
-    usageEdit->setPlaceholderText("使用场景说明...");
+    usageEdit->setPlaceholderText(tr("使用场景说明..."));
     detailsLayout->addWidget(usageEdit);
     
     // 示例
-    detailsLayout->addWidget(new QLabel("示例:"));
+    detailsLayout->addWidget(new QLabel(tr("示例:")));
     examplesEdit = new QTextEdit;
     examplesEdit->setMaximumHeight(60);
     examplesEdit->setReadOnly(true);
-    examplesEdit->setPlaceholderText("代码示例...");
+    examplesEdit->setPlaceholderText(tr("代码示例..."));
     detailsLayout->addWidget(examplesEdit);
     
     // RFC标准
-    rfcLabel = new QLabel("RFC标准: --");
+    rfcLabel = new QLabel(tr("RFC标准: --"));
     rfcLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
     detailsLayout->addWidget(rfcLabel);
 }
@@ -240,10 +240,10 @@ void HttpStatusCode::setupToolbarArea()
     toolbarGroup = new QGroupBox("操作", this);
     toolbarLayout = new QHBoxLayout(toolbarGroup);
     
-    copyCodeBtn = new QPushButton("复制状态码");
-    copyDescBtn = new QPushButton("复制描述");
-    exportBtn = new QPushButton("导出列表");
-    refreshBtn = new QPushButton("刷新");
+    copyCodeBtn = new QPushButton(tr("复制状态码"));
+    copyDescBtn = new QPushButton(tr("复制描述"));
+    exportBtn = new QPushButton(tr("导出列表"));
+    refreshBtn = new QPushButton(tr("刷新"));
     
     toolbarLayout->addWidget(copyCodeBtn);
     toolbarLayout->addWidget(copyDescBtn);
@@ -663,13 +663,13 @@ void HttpStatusCode::updateDetailsPanel(const HttpStatusInfo &info)
 void HttpStatusCode::clearDetailsPanel()
 {
     m_currentStatus = HttpStatusInfo();
-    codeLabel->setText("--");
-    phraseLabel->setText("--");
-    categoryLabel->setText("--");
+    codeLabel->setText(tr("--"));
+    phraseLabel->setText(tr("--"));
+    categoryLabel->setText(tr("--"));
     descriptionEdit->clear();
     usageEdit->clear();
     examplesEdit->clear();
-    rfcLabel->setText("RFC标准: --");
+    rfcLabel->setText(tr("RFC标准: --"));
 }
 
 void HttpStatusCode::updateCountLabel()
@@ -733,19 +733,19 @@ void HttpStatusCode::onStatusCodeClicked(QTableWidgetItem *item)
 void HttpStatusCode::onCopyCodeClicked()
 {
     if (m_currentStatus.code == 0) {
-        QMessageBox::information(this, "提示", "请先选择一个状态码");
+        QMessageBox::information(this, tr("提示"), tr("请先选择一个状态码"));
         return;
     }
     
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(QString::number(m_currentStatus.code));
-    QMessageBox::information(this, "成功", "状态码已复制到剪贴板");
+    QMessageBox::information(this, tr("成功"), tr("状态码已复制到剪贴板"));
 }
 
 void HttpStatusCode::onCopyDescriptionClicked()
 {
     if (m_currentStatus.code == 0) {
-        QMessageBox::information(this, "提示", "请先选择一个状态码");
+        QMessageBox::information(this, tr("提示"), tr("请先选择一个状态码"));
         return;
     }
     
@@ -754,7 +754,7 @@ void HttpStatusCode::onCopyDescriptionClicked()
                                       .arg(m_currentStatus.phrase)
                                       .arg(m_currentStatus.description);
     clipboard->setText(text);
-    QMessageBox::information(this, "成功", "状态码描述已复制到剪贴板");
+    QMessageBox::information(this, tr("成功"), tr("状态码描述已复制到剪贴板"));
 }
 
 void HttpStatusCode::onExportClicked()
@@ -774,14 +774,14 @@ void HttpStatusCode::onRefreshClicked()
     initializeStatusCodes();
     filterStatusCodes();
     clearDetailsPanel();
-    QMessageBox::information(this, "成功", "数据已刷新");
+    QMessageBox::information(this, tr("成功"), tr("数据已刷新"));
 }
 
 void HttpStatusCode::onQuickSearchClicked()
 {
     QString searchTerm = searchEdit->text().trimmed();
     if (searchTerm.isEmpty()) {
-        QMessageBox::information(this, "提示", "请输入搜索关键词");
+        QMessageBox::information(this, tr("提示"), tr("请输入搜索关键词"));
         return;
     }
     performQuickSearch(searchTerm);

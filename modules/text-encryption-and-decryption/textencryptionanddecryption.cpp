@@ -11,7 +11,7 @@ TextEncryptionAndDecryption::TextEncryptionAndDecryption() : QWidget(nullptr), D
 
     QLabel * label = new QLabel;
 
-    label->setText("待实现.....");
+    label->setText(tr("待实现....."));
 
     layout->addWidget(label);
     layout->setAlignment(Qt::AlignTop);

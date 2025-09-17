@@ -334,7 +334,7 @@ void RouteTestTool::setupQuickTestArea()
     m_quickTestDesc->setStyleSheet("color: #6c757d; font-weight: normal;");
     layout->addWidget(m_quickTestDesc);
     
-    m_quickTestBtn = new QPushButton("开始四网快速测试");
+    m_quickTestBtn = new QPushButton(tr("开始四网快速测试"));
     m_quickTestBtn->setObjectName("quickTestBtn");
     layout->addWidget(m_quickTestBtn);
     
@@ -349,18 +349,18 @@ void RouteTestTool::setupCustomTestArea()
     QVBoxLayout *layout = new QVBoxLayout(m_customTestGroup);
     
     // IP输入
-    layout->addWidget(new QLabel("目标IP地址:"));
+    layout->addWidget(new QLabel(tr("目标IP地址:")));
     m_customIPEdit = new QLineEdit();
-    m_customIPEdit->setPlaceholderText("输入IP地址，如: 8.8.8.8");
+    m_customIPEdit->setPlaceholderText(tr("输入IP地址，如: 8.8.8.8"));
     layout->addWidget(m_customIPEdit);
     
     // 名称输入
-    layout->addWidget(new QLabel("节点名称(可选):"));
+    layout->addWidget(new QLabel(tr("节点名称(可选):")));
     m_customNameEdit = new QLineEdit();
-    m_customNameEdit->setPlaceholderText("为此IP起个名字，如: Google DNS");
+    m_customNameEdit->setPlaceholderText(tr("为此IP起个名字，如: Google DNS"));
     layout->addWidget(m_customNameEdit);
     
-    m_customTestBtn = new QPushButton("测试此IP");
+    m_customTestBtn = new QPushButton(tr("测试此IP"));
     layout->addWidget(m_customTestBtn);
     
     m_controlLayout->addWidget(m_customTestGroup);
@@ -375,17 +375,17 @@ void RouteTestTool::setupNodeTestArea()
     QVBoxLayout *layout = new QVBoxLayout(m_nodeTestGroup);
     
     // ISP选择
-    layout->addWidget(new QLabel("选择运营商:"));
+    layout->addWidget(new QLabel(tr("选择运营商:")));
     m_ispCombo = new QComboBox();
     m_ispCombo->addItems({"电信", "联通", "移动", "教育网"});
     layout->addWidget(m_ispCombo);
     
     // 节点选择
-    layout->addWidget(new QLabel("选择节点:"));
+    layout->addWidget(new QLabel(tr("选择节点:")));
     m_nodeCombo = new QComboBox();
     layout->addWidget(m_nodeCombo);
     
-    m_nodeTestBtn = new QPushButton("测试选中节点");
+    m_nodeTestBtn = new QPushButton(tr("测试选中节点"));
     layout->addWidget(m_nodeTestBtn);
     
     m_controlLayout->addWidget(m_nodeTestGroup);
@@ -406,17 +406,17 @@ void RouteTestTool::setupControlArea()
     layout->addWidget(m_progressBar);
     
     // 状态标签
-    m_statusLabel = new QLabel("就绪");
+    m_statusLabel = new QLabel(tr("就绪"));
     m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
     layout->addWidget(m_statusLabel);
     
     // 控制按钮
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    m_stopBtn = new QPushButton("停止测试");
+    m_stopBtn = new QPushButton(tr("停止测试"));
     m_stopBtn->setObjectName("stopBtn");
     m_stopBtn->setEnabled(false);
-    m_clearBtn = new QPushButton("清空结果");
-    m_exportBtn = new QPushButton("导出结果");
+    m_clearBtn = new QPushButton(tr("清空结果"));
+    m_exportBtn = new QPushButton(tr("导出结果"));
     
     btnLayout->addWidget(m_stopBtn);
     btnLayout->addWidget(m_clearBtn);
@@ -447,18 +447,18 @@ void RouteTestTool::setupResultsArea()
     m_resultsTable->horizontalHeader()->setStretchLastSection(true);
     m_resultsTable->verticalHeader()->setVisible(false);
     
-    m_resultTabs->addTab(m_resultsTable, "📊 测试结果");
+    m_resultTabs->addTab(m_resultsTable, tr("📊 测试结果"));
     
     // 当前测试详情标签页
     m_currentTestText = new QTextEdit();
     m_currentTestText->setReadOnly(true);
-    m_resultTabs->addTab(m_currentTestText, "🔍 当前测试详情");
+    m_resultTabs->addTab(m_currentTestText, tr("🔍 当前测试详情"));
     
     // 日志标签页
     m_logText = new QTextEdit();
     m_logText->setReadOnly(true);
     m_logText->setMaximumHeight(150);
-    m_resultTabs->addTab(m_logText, "📝 操作日志");
+    m_resultTabs->addTab(m_logText, tr("📝 操作日志"));
     
     m_resultsLayout->addWidget(m_resultTabs);
 }
@@ -524,10 +524,10 @@ void RouteTestTool::updateUI()
     m_progressBar->setVisible(m_testing && m_totalTests > 1);
     
     if (m_testing) {
-        m_statusLabel->setText("测试进行中...");
+        m_statusLabel->setText(tr("测试进行中..."));
         m_statusLabel->setStyleSheet("font-weight: bold; color: #28a745;");
     } else {
-        m_statusLabel->setText("就绪");
+        m_statusLabel->setText(tr("就绪"));
         m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
     }
 }
@@ -642,7 +642,7 @@ void RouteTestTool::onCustomTestClicked()
     QString name = m_customNameEdit->text().trimmed();
     
     if (ip.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请输入目标IP地址");
+        QMessageBox::warning(this, tr("错误"), tr("请输入目标IP地址"));
         return;
     }
     
@@ -664,7 +664,7 @@ void RouteTestTool::onNodeTestClicked()
 {
     QList<TestNode> selectedNodes = getSelectedNodes();
     if (selectedNodes.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请选择要测试的节点");
+        QMessageBox::warning(this, tr("错误"), tr("请选择要测试的节点"));
         return;
     }
     
@@ -704,7 +704,7 @@ void RouteTestTool::onClearResultsClicked()
 void RouteTestTool::onExportResultsClicked()
 {
     if (m_testResults.isEmpty()) {
-        QMessageBox::information(this, "提示", "没有测试结果可导出");
+        QMessageBox::information(this, tr("提示"), tr("没有测试结果可导出"));
         return;
     }
     
@@ -741,7 +741,7 @@ void RouteTestTool::onExportResultsClicked()
             }
             
             logMessage("结果已导出到: " + fileName);
-            QMessageBox::information(this, "成功", "测试结果已导出");
+            QMessageBox::information(this, tr("成功"), tr("测试结果已导出"));
         }
     }
 }

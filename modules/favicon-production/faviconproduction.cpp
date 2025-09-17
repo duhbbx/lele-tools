@@ -58,16 +58,16 @@ void FaviconProduction::setupInputArea()
     inputLayout = new QVBoxLayout(inputGroup);
     
     inputButtonLayout = new QHBoxLayout();
-    selectImageBtn = new QPushButton("📂 选择图片");
-    clearBtn = new QPushButton("🗑️ 清空");
+    selectImageBtn = new QPushButton(tr("📂 选择图片"));
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
     
     inputButtonLayout->addWidget(selectImageBtn);
     inputButtonLayout->addWidget(clearBtn);
     inputButtonLayout->addStretch();
     
-    imagePathLabel = new QLabel("未选择图片");
-    imageSizeLabel = new QLabel("图片尺寸: 0 x 0");
-    imagePreviewLabel = new QLabel("预览");
+    imagePathLabel = new QLabel(tr("未选择图片"));
+    imageSizeLabel = new QLabel(tr("图片尺寸: 0 x 0"));
+    imagePreviewLabel = new QLabel(tr("预览"));
     imagePreviewLabel->setFixedSize(120, 120);
     imagePreviewLabel->setStyleSheet("border: 2px dashed #cccccc; border-radius: 0px;");
     imagePreviewLabel->setAlignment(Qt::AlignCenter);
@@ -97,9 +97,9 @@ void FaviconProduction::setupSizeSelection()
     }
     
     sizeButtonLayout = new QHBoxLayout();
-    selectAllBtn = new QPushButton("全选");
-    deselectAllBtn = new QPushButton("全不选");
-    previewBtn = new QPushButton("🔍 预览");
+    selectAllBtn = new QPushButton(tr("全选"));
+    deselectAllBtn = new QPushButton(tr("全不选"));
+    previewBtn = new QPushButton(tr("🔍 预览"));
     previewBtn->setEnabled(false);
     
     connect(selectAllBtn, &QPushButton::clicked, [this]() {
@@ -142,18 +142,18 @@ void FaviconProduction::setupOutputArea()
     outputLayout = new QVBoxLayout(outputGroup);
     
     outputPathLayout = new QHBoxLayout();
-    auto* pathLabel = new QLabel("输出目录:");
+    auto* pathLabel = new QLabel(tr("输出目录:"));
     outputPathEdit = new QLineEdit();
-    selectOutputBtn = new QPushButton("📁 浏览");
+    selectOutputBtn = new QPushButton(tr("📁 浏览"));
     
     outputPathLayout->addWidget(pathLabel);
     outputPathLayout->addWidget(outputPathEdit);
     outputPathLayout->addWidget(selectOutputBtn);
     
     outputButtonLayout = new QHBoxLayout();
-    generateBtn = new QPushButton("🚀 生成Favicon");
+    generateBtn = new QPushButton(tr("🚀 生成Favicon"));
     generateBtn->setEnabled(false);
-    generateHtmlBtn = new QPushButton("📋 生成HTML代码");
+    generateHtmlBtn = new QPushButton(tr("📋 生成HTML代码"));
     generateHtmlBtn->setEnabled(false);
     
     outputButtonLayout->addWidget(generateBtn);
@@ -162,7 +162,7 @@ void FaviconProduction::setupOutputArea()
     
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     
     codeTabWidget = new QTabWidget();
     codeTabWidget->setMaximumHeight(120);
@@ -171,8 +171,8 @@ void FaviconProduction::setupOutputArea()
     manifestCodeEdit = new QTextEdit();
     manifestCodeEdit->setReadOnly(true);
     
-    codeTabWidget->addTab(htmlCodeEdit, "HTML代码");
-    codeTabWidget->addTab(manifestCodeEdit, "Manifest");
+    codeTabWidget->addTab(htmlCodeEdit, tr("HTML代码"));
+    codeTabWidget->addTab(manifestCodeEdit, tr("Manifest"));
     
     outputLayout->addLayout(outputPathLayout);
     outputLayout->addLayout(outputButtonLayout);
@@ -207,7 +207,7 @@ void FaviconProduction::onSelectImage()
 void FaviconProduction::onGenerateFavicons()
 {
     if (currentImagePath.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请先选择源图片");
+        QMessageBox::warning(this, tr("错误"), tr("请先选择源图片"));
         return;
     }
     
@@ -219,7 +219,7 @@ void FaviconProduction::onGenerateFavicons()
     }
     
     if (selectedIndices.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请至少选择一个尺寸");
+        QMessageBox::warning(this, tr("错误"), tr("请至少选择一个尺寸"));
         return;
     }
 
@@ -254,10 +254,10 @@ void FaviconProduction::onClearAll()
 {
     currentImagePath.clear();
     originalPixmap = QPixmap();
-    imagePathLabel->setText("未选择图片");
-    imageSizeLabel->setText("图片尺寸: 0 x 0");
+    imagePathLabel->setText(tr("未选择图片"));
+    imageSizeLabel->setText(tr("图片尺寸: 0 x 0"));
     imagePreviewLabel->clear();
-    imagePreviewLabel->setText("预览");
+    imagePreviewLabel->setText(tr("预览"));
     generateBtn->setEnabled(false);
     generateHtmlBtn->setEnabled(false);
     htmlCodeEdit->clear();
@@ -289,7 +289,7 @@ void FaviconProduction::loadImage(const QString& filePath)
 {
     const QPixmap pixmap(filePath);
     if (pixmap.isNull()) {
-        QMessageBox::warning(this, "错误", "无法加载图片文件");
+        QMessageBox::warning(this, tr("错误"), tr("无法加载图片文件"));
         return;
     }
     

@@ -38,4 +38,3 @@ void ColorButton::mousePressEvent(QMouseEvent *event)
     QPushButton::mousePressEvent(event);
 }
 
-#include "colorbutton.moc"

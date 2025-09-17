@@ -18,7 +18,7 @@ OpenCvDemo::OpenCvDemo() : QWidget(nullptr), DynamicObjectBase()
 
     QLabel * label = new QLabel;
 
-    label->setText("待实现.....");
+    label->setText(tr("待实现....."));
 
 #ifdef WITH_OPENCV
     // Load an image using OpenCV
@@ -36,7 +36,7 @@ OpenCvDemo::OpenCvDemo() : QWidget(nullptr), DynamicObjectBase()
     layout->addWidget(label1);
 #else
     QLabel * label1 = new QLabel;
-    label1->setText("OpenCV support not available");
+    label1->setText(tr("OpenCV support not available"));
     layout->addWidget(label1);
 #endif
 

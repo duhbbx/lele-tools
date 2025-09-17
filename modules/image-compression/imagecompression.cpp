@@ -91,9 +91,9 @@ void ImageCompression::setupUI()
     fileLayout = new QVBoxLayout(fileGroup);
     
     QHBoxLayout* btnLayout = new QHBoxLayout();
-    selectBtn = new QPushButton("📂 选择图片");
-    saveBtn = new QPushButton("💾 保存");
-    clearBtn = new QPushButton("🗑️ 清空");
+    selectBtn = new QPushButton(tr("📂 选择图片"));
+    saveBtn = new QPushButton(tr("💾 保存"));
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
     saveBtn->setEnabled(false);
     
     btnLayout->addWidget(selectBtn);
@@ -101,8 +101,8 @@ void ImageCompression::setupUI()
     btnLayout->addWidget(clearBtn);
     btnLayout->addStretch();
     
-    filePathLabel = new QLabel("未选择文件");
-    originalSizeLabel = new QLabel("文件大小: 0 KB");
+    filePathLabel = new QLabel(tr("未选择文件"));
+    originalSizeLabel = new QLabel(tr("文件大小: 0 KB"));
     
     fileLayout->addLayout(btnLayout);
     fileLayout->addWidget(filePathLabel);
@@ -123,13 +123,13 @@ void ImageCompression::setupUI()
     compressGroup = new QGroupBox("🗜️ 压缩设置");
     compressLayout = new QGridLayout(compressGroup);
     
-    qualityLabel = new QLabel("质量:");
+    qualityLabel = new QLabel(tr("质量:"));
     qualitySpinBox = new QSpinBox();
     qualitySpinBox->setRange(1, 100);
     qualitySpinBox->setValue(85);
     qualitySpinBox->setSuffix("%");
     
-    formatLabel = new QLabel("格式:");
+    formatLabel = new QLabel(tr("格式:"));
     formatCombo = new QComboBox();
     formatCombo->addItems(QStringList() << "JPEG" << "PNG" << "WEBP");
     
@@ -142,12 +142,12 @@ void ImageCompression::setupUI()
     sizeGroup = new QGroupBox("📏 尺寸设置");
     sizeLayout = new QGridLayout(sizeGroup);
     
-    widthLabel = new QLabel("宽度:");
+    widthLabel = new QLabel(tr("宽度:"));
     widthSpinBox = new QSpinBox();
     widthSpinBox->setRange(1, 5000);
     widthSpinBox->setSuffix("px");
     
-    heightLabel = new QLabel("高度:");
+    heightLabel = new QLabel(tr("高度:"));
     heightSpinBox = new QSpinBox();
     heightSpinBox->setRange(1, 5000);
     heightSpinBox->setSuffix("px");
@@ -162,7 +162,7 @@ void ImageCompression::setupUI()
     // 移除多余的stretch，让图片预览区域占用更多空间
     
     // 状态区域
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
     
@@ -235,8 +235,8 @@ void ImageCompression::onClearAll()
 {
     currentImagePath.clear();
     imageViewer->setImage(QPixmap());
-    filePathLabel->setText("未选择文件");
-    originalSizeLabel->setText("文件大小: 0 KB");
+    filePathLabel->setText(tr("未选择文件"));
+    originalSizeLabel->setText(tr("文件大小: 0 KB"));
     saveBtn->setEnabled(false);
     updateStatus("已清空", false);
 }
@@ -245,7 +245,7 @@ void ImageCompression::loadImage(const QString& filePath)
 {
     QPixmap pixmap(filePath);
     if (pixmap.isNull()) {
-        QMessageBox::warning(this, "错误", "无法加载图片");
+        QMessageBox::warning(this, tr("错误"), tr("无法加载图片"));
         return;
     }
     

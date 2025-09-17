@@ -107,12 +107,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     // 创建欢迎页面
     QWidget* welcomePage = new QWidget();
     QVBoxLayout* welcomeLayout = new QVBoxLayout(welcomePage);
-    QLabel* welcomeLabel = new QLabel("欢迎使用乐乐的工具箱\n\n请从左侧菜单选择要使用的工具");
+    QLabel* welcomeLabel = new QLabel(tr("欢迎使用乐乐的工具箱\n\n请从左侧菜单选择要使用的工具"));
     welcomeLabel->setAlignment(Qt::AlignCenter);
     welcomeLabel->setStyleSheet("font-size: 18px; color: #666; padding: 50px;");
     welcomeLayout->addWidget(welcomeLabel);
 
-    rightTabWidget->addTab(welcomePage, "首页");
+    rightTabWidget->addTab(welcomePage, tr("首页"));
 
     // 设置标签页样式和功能
     setupTabWidget();
@@ -196,8 +196,8 @@ void MainWindow::itemClickedSlot(QListWidgetItem* item) {
         // 创建一个错误提示对话框
         QMessageBox errorBox;
         errorBox.setIcon(QMessageBox::Critical);
-        errorBox.setWindowTitle("错误提示");
-        errorBox.setText("对应的模块还未实现");
+        errorBox.setWindowTitle(tr("错误提示"));
+        errorBox.setText(tr("对应的模块还未实现"));
         errorBox.setStandardButtons(QMessageBox::Ok);
         errorBox.exec();
         return;
@@ -339,7 +339,7 @@ void MainWindow::createMenuBar() {
     backToHomeAction->setIcon(this->style()->standardIcon(QStyle::SP_DirHomeIcon));
     connect(backToHomeAction, &QAction::triggered, [this]() {
         rightTabWidget->setCurrentIndex(0);
-        this->setWindowTitle("乐乐的工具箱");
+        this->setWindowTitle(tr("乐乐的工具箱"));
     });
     toolsMenu->addAction(backToHomeAction);
 
@@ -447,29 +447,29 @@ void MainWindow::setupWindowControls() {
         "}";
 
     // 最小化按钮
-    minimizeButton = new QPushButton("−");
+    minimizeButton = new QPushButton(tr("−"));
     minimizeButton->setStyleSheet(buttonStyle);
     minimizeButton->setToolTip("最小化");
     connect(minimizeButton, &QPushButton::clicked, this, &QWidget::showMinimized);
 
     // 最大化/还原按钮
-    maximizeButton = new QPushButton("□");
+    maximizeButton = new QPushButton(tr("□"));
     maximizeButton->setStyleSheet(buttonStyle);
     maximizeButton->setToolTip("最大化");
     connect(maximizeButton, &QPushButton::clicked, [this]() {
         if (this->isMaximized()) {
             this->showNormal();
-            maximizeButton->setText("□");
+            maximizeButton->setText(tr("□"));
             maximizeButton->setToolTip("最大化");
         } else {
             this->showMaximized();
-            maximizeButton->setText("◱");
+            maximizeButton->setText(tr("◱"));
             maximizeButton->setToolTip("还原");
         }
     });
 
     // 关闭按钮
-    closeButton = new QPushButton("×");
+    closeButton = new QPushButton(tr("×"));
     closeButton->setStyleSheet(closeButtonStyle);
     closeButton->setToolTip("关闭");
     connect(closeButton, &QPushButton::clicked, this, &MainWindow::close);
@@ -486,7 +486,7 @@ void MainWindow::createStatusBar() {
     // 添加左侧面板toggle按钮
     leftPanelToggle = new QPushButton();
     leftPanelToggle->setFixedSize(85, 22);
-    leftPanelToggle->setText("◀ 收起");
+    leftPanelToggle->setText(tr("◀ 收起"));
     leftPanelToggle->setStyleSheet(
         "QPushButton {"
         "    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f8f9fa, stop:1 #e9ecef);"
@@ -573,13 +573,13 @@ void MainWindow::toggleLeftPanel() {
     if (isLeftPanelCollapsed) {
         // 展开左侧面板
         leftPanel->setVisible(true);
-        leftPanelToggle->setText("◀ 收起");
+        leftPanelToggle->setText(tr("◀ 收起"));
         leftPanelToggle->setToolTip("收起左侧工具栏");
         isLeftPanelCollapsed = false;
     } else {
         // 收起左侧面板
         leftPanel->setVisible(false);
-        leftPanelToggle->setText("▶ 展开");
+        leftPanelToggle->setText(tr("▶ 展开"));
         leftPanelToggle->setToolTip("展开左侧工具栏");
         isLeftPanelCollapsed = true;
     }
@@ -597,7 +597,7 @@ void MainWindow::setupTabWidget() {
         if (index >= 0 && index < rightTabWidget->count()) {
             QString title = rightTabWidget->tabText(index);
             if (title == "首页") {
-                this->setWindowTitle("乐乐的工具箱");
+                this->setWindowTitle(tr("乐乐的工具箱"));
             } else {
                 this->setWindowTitle(QString("乐乐的工具箱 - %1").arg(title));
             }
@@ -619,7 +619,7 @@ void MainWindow::closeTab(int index) {
 
         // 如果关闭后只剩首页，更新窗口标题
         if (rightTabWidget->count() == 1) {
-            this->setWindowTitle("乐乐的工具箱");
+            this->setWindowTitle(tr("乐乐的工具箱"));
         }
 
         // 更新下拉菜单
@@ -749,11 +749,11 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
             // 双击可拖拽区域实现最大化/还原
             if (this->isMaximized()) {
                 this->showNormal();
-                maximizeButton->setText("□");
+                maximizeButton->setText(tr("□"));
                 maximizeButton->setToolTip("最大化");
             } else {
                 this->showMaximized();
-                maximizeButton->setText("◱");
+                maximizeButton->setText(tr("◱"));
                 maximizeButton->setToolTip("还原");
             }
         }
@@ -809,7 +809,7 @@ void MainWindow::showCopyTooltip() {
     QHBoxLayout* tooltipLayout = new QHBoxLayout(copyTooltip);
     tooltipLayout->setContentsMargins(10, 5, 10, 5);
 
-    QLabel* tooltipLabel = new QLabel("复制成功！");
+    QLabel* tooltipLabel = new QLabel(tr("复制成功！"));
     tooltipLabel->setAlignment(Qt::AlignCenter);
     tooltipLabel->setStyleSheet("background-color: transparent; border: none;");
     tooltipLayout->addWidget(tooltipLabel);
@@ -863,13 +863,13 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
             if (this->isMaximized()) {
                 this->showNormal();
                 if (maximizeButton) {
-                    maximizeButton->setText("□");
+                    maximizeButton->setText(tr("□"));
                     maximizeButton->setToolTip("最大化");
                 }
             } else {
                 this->showMaximized();
                 if (maximizeButton) {
-                    maximizeButton->setText("◱");
+                    maximizeButton->setText(tr("◱"));
                     maximizeButton->setToolTip("还原");
                 }
             }
@@ -954,7 +954,7 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
 
 void MainWindow::setupTabDropdown() {
     // 创建下拉按钮
-    tabDropdownButton = new QPushButton("⋮");
+    tabDropdownButton = new QPushButton(tr("⋮"));
     tabDropdownButton->setFixedSize(25, 25);
     tabDropdownButton->setStyleSheet(
         "QPushButton {"

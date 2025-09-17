@@ -23,7 +23,7 @@ void Calculator::setupUI()
     mainLayout->setSpacing(15);
 
     // 标题
-    QLabel *titleLabel = new QLabel("表达式计算器");
+    QLabel *titleLabel = new QLabel(tr("表达式计算器"));
     titleLabel->setStyleSheet(
         "QLabel {"
         "    font-size: 22px;"
@@ -35,13 +35,13 @@ void Calculator::setupUI()
     mainLayout->addWidget(titleLabel);
 
     // 表达式输入区域
-    QLabel *inputLabel = new QLabel("输入数学表达式:");
+    QLabel *inputLabel = new QLabel(tr("输入数学表达式:"));
     inputLabel->setStyleSheet("font-weight: bold; color: #34495e; font-size: 14px;");
     mainLayout->addWidget(inputLabel);
 
     expressionInput = new QTextEdit();
     expressionInput->setMaximumHeight(120);
-    expressionInput->setPlaceholderText("输入数学表达式，如: 2 + 3 * 4, sqrt(16), sin(30), log(100) 等...\n\n支持的运算符:\n+ - * / ^ ( )\n\n支持的函数:\nsqrt(), sin(), cos(), tan(), log(), ln(), abs()");
+    expressionInput->setPlaceholderText(tr("输入数学表达式，如: 2 + 3 * 4, sqrt(16), sin(30), log(100) 等...\n\n支持的运算符:\n+ - * / ^ ( )\n\n支持的函数:\nsqrt(), sin(), cos(), tan(), log(), ln(), abs()"));
     expressionInput->setAcceptRichText(false);
     
     connect(expressionInput, &QTextEdit::textChanged, this, &Calculator::onExpressionChanged);
@@ -50,8 +50,8 @@ void Calculator::setupUI()
     // 按钮区域
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     
-    copyButton = new QPushButton("📋 复制结果");
-    clearButton = new QPushButton("🗑️ 清空");
+    copyButton = new QPushButton(tr("📋 复制结果"));
+    clearButton = new QPushButton(tr("🗑️ 清空"));
     
     copyButton->setMinimumHeight(35);
     clearButton->setMinimumHeight(35);
@@ -67,18 +67,18 @@ void Calculator::setupUI()
     mainLayout->addLayout(buttonLayout);
 
     // 结果显示区域
-    QLabel *resultLabel = new QLabel("计算结果:");
+    QLabel *resultLabel = new QLabel(tr("计算结果:"));
     resultLabel->setStyleSheet("font-weight: bold; color: #34495e; font-size: 14px;");
     mainLayout->addWidget(resultLabel);
 
     resultOutput = new QTextEdit();
     resultOutput->setMaximumHeight(80);
     resultOutput->setReadOnly(true);
-    resultOutput->setPlaceholderText("计算结果将显示在这里...");
+    resultOutput->setPlaceholderText(tr("计算结果将显示在这里..."));
     mainLayout->addWidget(resultOutput);
 
     // 状态标签
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #7f8c8d; font-size: 12px; padding: 5px;");
     mainLayout->addWidget(statusLabel);
 }
@@ -121,11 +121,11 @@ void Calculator::calculateExpression()
         
         // 检查结果是否有效
         if (std::isnan(result)) {
-            resultOutput->setText("❌ 计算结果为 NaN (非数字)");
+            resultOutput->setText(tr("❌ 计算结果为 NaN (非数字)"));
             copyButton->setEnabled(false);
             showMessage("计算结果无效", true);
         } else if (std::isinf(result)) {
-            resultOutput->setText("❌ 计算结果为无穷大");
+            resultOutput->setText(tr("❌ 计算结果为无穷大"));
             copyButton->setEnabled(false);
             showMessage("计算结果为无穷大", true);
         } else {
@@ -148,7 +148,7 @@ void Calculator::calculateExpression()
         copyButton->setEnabled(false);
         showMessage("计算出错", true);
     } catch (...) {
-        resultOutput->setText("❌ 未知计算错误");
+        resultOutput->setText(tr("❌ 未知计算错误"));
         copyButton->setEnabled(false);
         showMessage("未知错误", true);
     }

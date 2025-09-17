@@ -203,7 +203,7 @@ TorrentFileAnalysis::TorrentFileAnalysis() : QWidget(nullptr), DynamicObjectBase
     connect(fileTree, &QTreeWidget::itemDoubleClicked, this, &TorrentFileAnalysis::onFileItemDoubleClicked);
     
     connect(m_statusTimer, &QTimer::timeout, [this]() {
-        statusLabel->setText("就绪");
+        statusLabel->setText(tr("就绪"));
     });
     
     // 启用拖拽
@@ -231,9 +231,9 @@ void TorrentFileAnalysis::setupUI()
     setupFileListArea();
     setupRawDataArea();
     
-    tabWidget->addTab(infoWidget, "📋 种子信息");
-    tabWidget->addTab(fileListWidget, "📁 文件列表");
-    tabWidget->addTab(rawDataWidget, "📄 原始数据");
+    tabWidget->addTab(infoWidget, tr("📋 种子信息"));
+    tabWidget->addTab(fileListWidget, tr("📁 文件列表"));
+    tabWidget->addTab(rawDataWidget, tr("📄 原始数据"));
     
     mainLayout->addWidget(fileGroup);
     mainLayout->addWidget(tabWidget);
@@ -355,20 +355,20 @@ void TorrentFileAnalysis::setupFileArea()
     fileLayout = new QHBoxLayout(fileGroup);
     
     filePathEdit = new QLineEdit();
-    filePathEdit->setPlaceholderText("选择或拖拽种子文件到此处...");
+    filePathEdit->setPlaceholderText(tr("选择或拖拽种子文件到此处..."));
     filePathEdit->setReadOnly(true);
     fileLayout->addWidget(filePathEdit);
     
-    openFileBtn = new QPushButton("📂 浏览文件");
+    openFileBtn = new QPushButton(tr("📂 浏览文件"));
     openFileBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
     fileLayout->addWidget(openFileBtn);
     
-    clearBtn = new QPushButton("🗑️ 清空");
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
     clearBtn->setStyleSheet("QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
     fileLayout->addWidget(clearBtn);
     
     // 拖拽提示
-    dropHintLabel = new QLabel("💡 提示：您可以直接拖拽.torrent文件到窗口中进行分析");
+    dropHintLabel = new QLabel(tr("💡 提示：您可以直接拖拽.torrent文件到窗口中进行分析"));
     dropHintLabel->setStyleSheet("color: #6c757d; font-style: italic; margin: 5px;");
     dropHintLabel->setAlignment(Qt::AlignCenter);
     
@@ -395,59 +395,59 @@ void TorrentFileAnalysis::setupInfoArea()
     basicInfoGroup = new QGroupBox("📋 基本信息");
     basicInfoLayout = new QGridLayout(basicInfoGroup);
     
-    basicInfoLayout->addWidget(new QLabel("名称:"), 0, 0);
-    nameLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("名称:")), 0, 0);
+    nameLabel = new QLabel(tr("-"));
     nameLabel->setWordWrap(true);
     nameLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
     basicInfoLayout->addWidget(nameLabel, 0, 1);
     
-    basicInfoLayout->addWidget(new QLabel("注释:"), 1, 0);
-    commentLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("注释:")), 1, 0);
+    commentLabel = new QLabel(tr("-"));
     commentLabel->setWordWrap(true);
     basicInfoLayout->addWidget(commentLabel, 1, 1);
     
-    basicInfoLayout->addWidget(new QLabel("创建者:"), 2, 0);
-    createdByLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("创建者:")), 2, 0);
+    createdByLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(createdByLabel, 2, 1);
     
-    basicInfoLayout->addWidget(new QLabel("创建时间:"), 3, 0);
-    creationDateLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("创建时间:")), 3, 0);
+    creationDateLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(creationDateLabel, 3, 1);
     
-    basicInfoLayout->addWidget(new QLabel("主要Tracker:"), 4, 0);
-    announceLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("主要Tracker:")), 4, 0);
+    announceLabel = new QLabel(tr("-"));
     announceLabel->setWordWrap(true);
     basicInfoLayout->addWidget(announceLabel, 4, 1);
     
-    basicInfoLayout->addWidget(new QLabel("Info Hash:"), 5, 0);
-    infoHashLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("Info Hash:")), 5, 0);
+    infoHashLabel = new QLabel(tr("-"));
     infoHashLabel->setStyleSheet("font-family: 'Consolas', monospace; font-weight: bold; color: #e74c3c;");
     infoHashLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     basicInfoLayout->addWidget(infoHashLabel, 5, 1);
     
-    basicInfoLayout->addWidget(new QLabel("总大小:"), 6, 0);
-    totalSizeLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("总大小:")), 6, 0);
+    totalSizeLabel = new QLabel(tr("-"));
     totalSizeLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
     basicInfoLayout->addWidget(totalSizeLabel, 6, 1);
     
-    basicInfoLayout->addWidget(new QLabel("块大小:"), 7, 0);
-    pieceLengthLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("块大小:")), 7, 0);
+    pieceLengthLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(pieceLengthLabel, 7, 1);
     
-    basicInfoLayout->addWidget(new QLabel("块数量:"), 8, 0);
-    pieceCountLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("块数量:")), 8, 0);
+    pieceCountLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(pieceCountLabel, 8, 1);
     
-    basicInfoLayout->addWidget(new QLabel("文件数量:"), 9, 0);
-    fileCountLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("文件数量:")), 9, 0);
+    fileCountLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(fileCountLabel, 9, 1);
     
-    basicInfoLayout->addWidget(new QLabel("私有种子:"), 10, 0);
-    isPrivateLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("私有种子:")), 10, 0);
+    isPrivateLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(isPrivateLabel, 10, 1);
     
-    basicInfoLayout->addWidget(new QLabel("编码:"), 11, 0);
-    encodingLabel = new QLabel("-");
+    basicInfoLayout->addWidget(new QLabel(tr("编码:")), 11, 0);
+    encodingLabel = new QLabel(tr("-"));
     basicInfoLayout->addWidget(encodingLabel, 11, 1);
     
     scrollLayout->addWidget(basicInfoGroup);
@@ -463,12 +463,12 @@ void TorrentFileAnalysis::setupInfoArea()
     magnetLayout->addWidget(magnetLinkEdit);
     
     magnetButtonLayout = new QHBoxLayout();
-    copyMagnetBtn = new QPushButton("📋 复制磁力链接");
+    copyMagnetBtn = new QPushButton(tr("📋 复制磁力链接"));
     copyMagnetBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
     copyMagnetBtn->setEnabled(false);
     magnetButtonLayout->addWidget(copyMagnetBtn);
     
-    copyHashBtn = new QPushButton("📋 复制Hash");
+    copyHashBtn = new QPushButton(tr("📋 复制Hash"));
     copyHashBtn->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; } QPushButton:hover { background-color: #138496; }");
     copyHashBtn->setEnabled(false);
     magnetButtonLayout->addWidget(copyHashBtn);
@@ -521,18 +521,18 @@ void TorrentFileAnalysis::setupFileListArea()
     
     fileButtonLayout = new QHBoxLayout();
     
-    exportFileListBtn = new QPushButton("💾 导出文件列表");
+    exportFileListBtn = new QPushButton(tr("💾 导出文件列表"));
     exportFileListBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
     exportFileListBtn->setEnabled(false);
     fileButtonLayout->addWidget(exportFileListBtn);
     
-    showDetailsBtn = new QPushButton("🔍 显示详情");
+    showDetailsBtn = new QPushButton(tr("🔍 显示详情"));
     showDetailsBtn->setEnabled(false);
     fileButtonLayout->addWidget(showDetailsBtn);
     
     fileButtonLayout->addStretch();
     
-    fileStatsLabel = new QLabel("文件统计: 0 个文件, 总大小: 0 B");
+    fileStatsLabel = new QLabel(tr("文件统计: 0 个文件, 总大小: 0 B"));
     fileStatsLabel->setStyleSheet("color: #6c757d; font-weight: bold;");
     fileButtonLayout->addWidget(fileStatsLabel);
     
@@ -556,7 +556,7 @@ void TorrentFileAnalysis::setupRawDataArea()
     
     rawButtonLayout = new QHBoxLayout();
     
-    saveRawBtn = new QPushButton("💾 保存原始数据");
+    saveRawBtn = new QPushButton(tr("💾 保存原始数据"));
     saveRawBtn->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; } QPushButton:hover { background-color: #138496; }");
     saveRawBtn->setEnabled(false);
     rawButtonLayout->addWidget(saveRawBtn);
@@ -571,7 +571,7 @@ void TorrentFileAnalysis::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     
     progressBar = new QProgressBar();
@@ -635,7 +635,7 @@ void TorrentFileAnalysis::onCopyMagnetLink()
     if (m_hasValidTorrent && !m_currentTorrent.magnetLink.isEmpty()) {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(m_currentTorrent.magnetLink);
-        statusLabel->setText("磁力链接已复制到剪贴板");
+        statusLabel->setText(tr("磁力链接已复制到剪贴板"));
         m_statusTimer->start();
     }
 }
@@ -645,7 +645,7 @@ void TorrentFileAnalysis::onCopyInfoHash()
     if (m_hasValidTorrent && !m_currentTorrent.infoHash.isEmpty()) {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(m_currentTorrent.infoHash.toHex().toUpper());
-        statusLabel->setText("Info Hash已复制到剪贴板");
+        statusLabel->setText(tr("Info Hash已复制到剪贴板"));
         m_statusTimer->start();
     }
 }
@@ -678,7 +678,7 @@ void TorrentFileAnalysis::onExportFileList()
                        .arg(item.percentage);
             }
             
-            statusLabel->setText("文件列表导出成功");
+            statusLabel->setText(tr("文件列表导出成功"));
             m_statusTimer->start();
         } else {
             QMessageBox::warning(this, "导出失败", "无法写入文件: " + file.errorString());
@@ -702,7 +702,7 @@ void TorrentFileAnalysis::onSaveRawData()
             out.setEncoding(QStringConverter::Utf8);
             out << rawDataEdit->toPlainText();
             
-            statusLabel->setText("原始数据保存成功");
+            statusLabel->setText(tr("原始数据保存成功"));
             m_statusTimer->start();
         } else {
             QMessageBox::warning(this, "保存失败", "无法写入文件: " + file.errorString());
@@ -752,7 +752,7 @@ void TorrentFileAnalysis::onShowFileDetails()
 // 核心分析功能
 void TorrentFileAnalysis::analyzeTorrentFile(const QString &filePath)
 {
-    statusLabel->setText("正在分析种子文件...");
+    statusLabel->setText(tr("正在分析种子文件..."));
     progressBar->setVisible(true);
     progressBar->setRange(0, 0); // 不确定进度
     
@@ -787,7 +787,7 @@ void TorrentFileAnalysis::analyzeTorrentFile(const QString &filePath)
         saveRawBtn->setEnabled(true);
         showDetailsBtn->setEnabled(true);
         
-        statusLabel->setText("种子文件分析完成");
+        statusLabel->setText(tr("种子文件分析完成"));
         
     } catch (const std::exception &e) {
         statusLabel->setText("种子文件解析失败: " + QString(e.what()));
@@ -945,7 +945,7 @@ void TorrentFileAnalysis::updateFileList(const TorrentInfo &info)
     m_fileItems.clear();
     
     if (info.files.isEmpty()) {
-        fileStatsLabel->setText("文件统计: 0 个文件, 总大小: 0 B");
+        fileStatsLabel->setText(tr("文件统计: 0 个文件, 总大小: 0 B"));
         return;
     }
     
@@ -1034,24 +1034,24 @@ void TorrentFileAnalysis::clearAllData()
     filePathEdit->clear();
     
     // 清空信息显示
-    nameLabel->setText("-");
-    commentLabel->setText("-");
-    createdByLabel->setText("-");
-    creationDateLabel->setText("-");
-    announceLabel->setText("-");
-    infoHashLabel->setText("-");
-    totalSizeLabel->setText("-");
-    pieceLengthLabel->setText("-");
-    pieceCountLabel->setText("-");
-    fileCountLabel->setText("-");
-    isPrivateLabel->setText("-");
-    encodingLabel->setText("-");
+    nameLabel->setText(tr("-"));
+    commentLabel->setText(tr("-"));
+    createdByLabel->setText(tr("-"));
+    creationDateLabel->setText(tr("-"));
+    announceLabel->setText(tr("-"));
+    infoHashLabel->setText(tr("-"));
+    totalSizeLabel->setText(tr("-"));
+    pieceLengthLabel->setText(tr("-"));
+    pieceCountLabel->setText(tr("-"));
+    fileCountLabel->setText(tr("-"));
+    isPrivateLabel->setText(tr("-"));
+    encodingLabel->setText(tr("-"));
     
     magnetLinkEdit->setPlainText("暂无磁力链接");
     announceListEdit->setPlainText("暂无Tracker信息");
     
     fileTree->clear();
-    fileStatsLabel->setText("文件统计: 0 个文件, 总大小: 0 B");
+    fileStatsLabel->setText(tr("文件统计: 0 个文件, 总大小: 0 B"));
     
     rawDataEdit->setPlainText("暂无数据");
     
@@ -1062,7 +1062,7 @@ void TorrentFileAnalysis::clearAllData()
     saveRawBtn->setEnabled(false);
     showDetailsBtn->setEnabled(false);
     
-    statusLabel->setText("就绪");
+    statusLabel->setText(tr("就绪"));
 }
 
 // 工具函数

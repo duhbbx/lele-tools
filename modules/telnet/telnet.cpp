@@ -30,7 +30,7 @@ Telnet::Telnet() : QWidget(nullptr), DynamicObjectBase(),
     connect(saveLogBtn, &QPushButton::clicked, this, &Telnet::onSaveLog);
     connect(commandEdit, &QLineEdit::returnPressed, this, &Telnet::onSendCommand);
     
-    hostEdit->setText("127.0.0.1");
+    hostEdit->setText(tr("127.0.0.1"));
     portSpinBox->setValue(23);
     timeoutSpinBox->setValue(10);
     autoScrollCheck->setChecked(true);

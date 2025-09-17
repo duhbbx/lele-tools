@@ -158,7 +158,7 @@ void ScreenCapture::setupControlArea()
     controlGroup = new QGroupBox("📸 快捷截图");
     QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
     
-    quickBtn = new QPushButton("F1 快捷截图 (自定义区域)");
+    quickBtn = new QPushButton(tr("F1 快捷截图 (自定义区域)"));
     quickBtn->setObjectName("quickBtn");
     quickBtn->setToolTip("按F1或点击此按钮进行快捷截图");
     connect(quickBtn, &QPushButton::clicked, this, &ScreenCapture::onQuickScreenshotClicked);
@@ -172,19 +172,19 @@ void ScreenCapture::setupQuickActions()
     quickGroup = new QGroupBox("🎯 截图模式");
     QGridLayout *quickLayout = new QGridLayout(quickGroup);
     
-    customBtn = new QPushButton("自定义区域");
+    customBtn = new QPushButton(tr("自定义区域"));
     customBtn->setToolTip("拖拽鼠标选择截图区域");
     connect(customBtn, &QPushButton::clicked, this, &ScreenCapture::onCustomScreenshotClicked);
     
-    fullScreenBtn = new QPushButton("全屏截图");
+    fullScreenBtn = new QPushButton(tr("全屏截图"));
     fullScreenBtn->setToolTip("截取整个屏幕");
     connect(fullScreenBtn, &QPushButton::clicked, this, &ScreenCapture::onFullScreenshotClicked);
     
-    longScreenBtn = new QPushButton("长截图");
+    longScreenBtn = new QPushButton(tr("长截图"));
     longScreenBtn->setToolTip("滚动截图，适合截取长页面");
     connect(longScreenBtn, &QPushButton::clicked, this, &ScreenCapture::onLongScreenshotClicked);
     
-    areaScreenBtn = new QPushButton("区域截图");
+    areaScreenBtn = new QPushButton(tr("区域截图"));
     areaScreenBtn->setToolTip("截取指定坐标区域");
     connect(areaScreenBtn, &QPushButton::clicked, this, &ScreenCapture::onAreaScreenshotClicked);
     
@@ -210,11 +210,11 @@ void ScreenCapture::setupAdvancedOptions()
     
     // 保存路径
     QHBoxLayout *pathLayout = new QHBoxLayout();
-    QLabel *pathLabel = new QLabel("保存路径:");
+    QLabel *pathLabel = new QLabel(tr("保存路径:"));
     savePathEdit = new QLineEdit();
-    savePathEdit->setPlaceholderText("选择截图保存目录");
+    savePathEdit->setPlaceholderText(tr("选择截图保存目录"));
     
-    browseDirBtn = new QPushButton("浏览...");
+    browseDirBtn = new QPushButton(tr("浏览..."));
     browseDirBtn->setFixedWidth(60);
     connect(browseDirBtn, &QPushButton::clicked, this, &ScreenCapture::onOpenScreenCaptureDirClicked);
     
@@ -224,7 +224,7 @@ void ScreenCapture::setupAdvancedOptions()
     
     // 语言选择
     QHBoxLayout *langLayout = new QHBoxLayout();
-    QLabel *langLabel = new QLabel("界面语言:");
+    QLabel *langLabel = new QLabel(tr("界面语言:"));
     languageCombo = new QComboBox();
     languageCombo->addItems({"中文", "English"});
     languageCombo->setFixedWidth(100);
@@ -246,12 +246,12 @@ void ScreenCapture::setupStatusArea()
     statusGroup = new QGroupBox("📋 状态信息");
     QVBoxLayout *statusLayout = new QVBoxLayout(statusGroup);
     
-    statusLabel = new QLabel("就绪 - 准备截图");
+    statusLabel = new QLabel(tr("就绪 - 准备截图"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     
     statusText = new QTextEdit();
     statusText->setMaximumHeight(80);
-    statusText->setPlaceholderText("截图操作的详细信息将显示在这里...");
+    statusText->setPlaceholderText(tr("截图操作的详细信息将显示在这里..."));
     statusText->append("💡 提示：按F1键可以快速启动截图工具");
     statusText->append("🎯 支持多种截图模式：自定义区域、全屏、长截图等");
     statusText->append("📚 使用集成的ScreenCapture库提供强大的截图功能");
@@ -265,7 +265,7 @@ void ScreenCapture::setupStatusArea()
 void ScreenCapture::executeScreenCapture(const QString &mode)
 {
 #ifdef WITH_SCREEN_CAPTURE
-    statusLabel->setText("🚀 正在启动截图工具...");
+    statusLabel->setText(tr("🚀 正在启动截图工具..."));
     statusLabel->setStyleSheet("color: #007bff; font-weight: bold;");
     statusText->append("🚀 使用集成的ScreenCapture库进行截图");
     statusText->append("📝 模式: " + mode);
@@ -273,17 +273,17 @@ void ScreenCapture::executeScreenCapture(const QString &mode)
     try {
         // 这里调用ScreenCapture库的功能
         // 注意：需要根据实际的ScreenCapture库API进行调用
-        statusLabel->setText("✅ 截图完成");
+        statusLabel->setText(tr("✅ 截图完成"));
         statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
         statusText->append("✅ 截图操作完成");
         
     } catch (...) {
-        statusLabel->setText("❌ 截图失败");
+        statusLabel->setText(tr("❌ 截图失败"));
         statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
         statusText->append("❌ 截图操作失败");
     }
 #else
-    statusLabel->setText("❌ 截图功能不可用");
+    statusLabel->setText(tr("❌ 截图功能不可用"));
     statusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
     statusText->append("❌ 截图功能仅在Windows平台可用");
     statusText->append("📝 请求的模式: " + mode);

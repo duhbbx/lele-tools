@@ -24,7 +24,7 @@ HtmlSpecialCharacterTable::HtmlSpecialCharacterTable() : QWidget(nullptr), Dynam
     // 连接信号槽
     connect(m_searchTimer, &QTimer::timeout, this, &HtmlSpecialCharacterTable::filterCharacters);
     connect(m_statusTimer, &QTimer::timeout, [this]() {
-        statusLabel->setText("就绪");
+        statusLabel->setText(tr("就绪"));
     });
 
     connect(searchEdit, &QLineEdit::textChanged, this, &HtmlSpecialCharacterTable::onSearchTextChanged);
@@ -95,17 +95,17 @@ void HtmlSpecialCharacterTable::setupSearchArea() {
 
     // 搜索框
     searchEdit = new QLineEdit();
-    searchEdit->setPlaceholderText("搜索字符、实体或描述...");
+    searchEdit->setPlaceholderText(tr("搜索字符、实体或描述..."));
     searchEdit->setMinimumWidth(200);
-    searchLayout->addWidget(new QLabel("搜索:"));
+    searchLayout->addWidget(new QLabel(tr("搜索:")));
     searchLayout->addWidget(searchEdit);
 
-    clearSearchBtn = new QPushButton("🗑️ 清空");
+    clearSearchBtn = new QPushButton(tr("🗑️ 清空"));
     clearSearchBtn->setMaximumWidth(60);
     searchLayout->addWidget(clearSearchBtn);
 
     // 分类过滤
-    searchLayout->addWidget(new QLabel("分类:"));
+    searchLayout->addWidget(new QLabel(tr("分类:")));
     categoryCombo = new QComboBox();
     categoryCombo->addItems({ "全部", "基本符号", "标点符号", "数学符号", "货币符号", "箭头符号", "希腊字母", "特殊字符" });
     categoryCombo->setMinimumWidth(120);
@@ -191,7 +191,7 @@ void HtmlSpecialCharacterTable::setupDetailPanel() {
     detailLayout = new QVBoxLayout(detailGroup);
 
     // 字符显示
-    detailCharLabel = new QLabel("选择一个字符");
+    detailCharLabel = new QLabel(tr("选择一个字符"));
     detailCharLabel->setAlignment(Qt::AlignCenter);
     detailCharLabel->setStyleSheet("font-size: 36pt; font-weight: bold; color: #2c3e50; min-height: 80px; background-color: #ecf0f1; border-radius: 8px; margin: 10px;");
     detailLayout->addWidget(detailCharLabel);
@@ -199,40 +199,40 @@ void HtmlSpecialCharacterTable::setupDetailPanel() {
     // 详细信息
     QGridLayout* infoLayout = new QGridLayout();
 
-    infoLayout->addWidget(new QLabel("HTML实体:"), 0, 0);
-    detailEntityLabel = new QLabel("-");
+    infoLayout->addWidget(new QLabel(tr("HTML实体:")), 0, 0);
+    detailEntityLabel = new QLabel(tr("-"));
     detailEntityLabel->setStyleSheet("font-family: 'Consolas', monospace; font-weight: bold; color: #e74c3c;");
     infoLayout->addWidget(detailEntityLabel, 0, 1);
 
-    infoLayout->addWidget(new QLabel("数字实体:"), 1, 0);
-    detailNumericLabel = new QLabel("-");
+    infoLayout->addWidget(new QLabel(tr("数字实体:")), 1, 0);
+    detailNumericLabel = new QLabel(tr("-"));
     detailNumericLabel->setStyleSheet("font-family: 'Consolas', monospace; font-weight: bold; color: #f39c12;");
     infoLayout->addWidget(detailNumericLabel, 1, 1);
 
-    infoLayout->addWidget(new QLabel("十六进制:"), 2, 0);
-    detailHexLabel = new QLabel("-");
+    infoLayout->addWidget(new QLabel(tr("十六进制:")), 2, 0);
+    detailHexLabel = new QLabel(tr("-"));
     detailHexLabel->setStyleSheet("font-family: 'Consolas', monospace; font-weight: bold; color: #9b59b6;");
     infoLayout->addWidget(detailHexLabel, 2, 1);
 
-    infoLayout->addWidget(new QLabel("Unicode:"), 3, 0);
-    detailUnicodeLabel = new QLabel("-");
+    infoLayout->addWidget(new QLabel(tr("Unicode:")), 3, 0);
+    detailUnicodeLabel = new QLabel(tr("-"));
     detailUnicodeLabel->setStyleSheet("font-family: 'Consolas', monospace; font-weight: bold; color: #3498db;");
     infoLayout->addWidget(detailUnicodeLabel, 3, 1);
 
-    infoLayout->addWidget(new QLabel("描述:"), 4, 0);
-    detailDescLabel = new QLabel("-");
+    infoLayout->addWidget(new QLabel(tr("描述:")), 4, 0);
+    detailDescLabel = new QLabel(tr("-"));
     detailDescLabel->setWordWrap(true);
     infoLayout->addWidget(detailDescLabel, 4, 1);
 
-    infoLayout->addWidget(new QLabel("分类:"), 5, 0);
-    detailCategoryLabel = new QLabel("-");
+    infoLayout->addWidget(new QLabel(tr("分类:")), 5, 0);
+    detailCategoryLabel = new QLabel(tr("-"));
     detailCategoryLabel->setStyleSheet("color: #27ae60; font-weight: bold;");
     infoLayout->addWidget(detailCategoryLabel, 5, 1);
 
     detailLayout->addLayout(infoLayout);
 
     // 使用示例
-    detailLayout->addWidget(new QLabel("使用示例:"));
+    detailLayout->addWidget(new QLabel(tr("使用示例:")));
     usageExample = new QTextEdit();
     usageExample->setMaximumHeight(80);
     usageExample->setReadOnly(true);
@@ -241,19 +241,19 @@ void HtmlSpecialCharacterTable::setupDetailPanel() {
     // 操作按钮
     detailButtonLayout = new QHBoxLayout();
 
-    copyCharDetailBtn = new QPushButton("📋 字符");
+    copyCharDetailBtn = new QPushButton(tr("📋 字符"));
     copyCharDetailBtn->setStyleSheet("QPushButton { background-color: #3498db; color: white; } QPushButton:hover { background-color: #2980b9; }");
     detailButtonLayout->addWidget(copyCharDetailBtn);
 
-    copyEntityDetailBtn = new QPushButton("📋 实体");
+    copyEntityDetailBtn = new QPushButton(tr("📋 实体"));
     copyEntityDetailBtn->setStyleSheet("QPushButton { background-color: #e74c3c; color: white; } QPushButton:hover { background-color: #c0392b; }");
     detailButtonLayout->addWidget(copyEntityDetailBtn);
 
-    copyNumericDetailBtn = new QPushButton("📋 数字");
+    copyNumericDetailBtn = new QPushButton(tr("📋 数字"));
     copyNumericDetailBtn->setStyleSheet("QPushButton { background-color: #f39c12; color: white; } QPushButton:hover { background-color: #e67e22; }");
     detailButtonLayout->addWidget(copyNumericDetailBtn);
 
-    copyHexDetailBtn = new QPushButton("📋 十六进制");
+    copyHexDetailBtn = new QPushButton(tr("📋 十六进制"));
     copyHexDetailBtn->setStyleSheet("QPushButton { background-color: #9b59b6; color: white; } QPushButton:hover { background-color: #8e44ad; }");
     detailButtonLayout->addWidget(copyHexDetailBtn);
 
@@ -261,9 +261,9 @@ void HtmlSpecialCharacterTable::setupDetailPanel() {
 
     // 收藏按钮
     QHBoxLayout* favoriteLayout = new QHBoxLayout();
-    addToFavoritesBtn = new QPushButton("⭐ 添加到收藏");
+    addToFavoritesBtn = new QPushButton(tr("⭐ 添加到收藏"));
     addToFavoritesBtn->setStyleSheet("QPushButton { background-color: #f1c40f; color: white; } QPushButton:hover { background-color: #f39c12; }");
-    removeFromFavoritesBtn = new QPushButton("❌ 从收藏移除");
+    removeFromFavoritesBtn = new QPushButton(tr("❌ 从收藏移除"));
     removeFromFavoritesBtn->setStyleSheet("QPushButton { background-color: #e74c3c; color: white; } QPushButton:hover { background-color: #c0392b; }");
 
     favoriteLayout->addWidget(addToFavoritesBtn);
@@ -301,14 +301,14 @@ void HtmlSpecialCharacterTable::setupStatusArea() {
     // 操作按钮
     buttonLayout = new QHBoxLayout();
 
-    exportBtn = new QPushButton("💾 导出列表");
+    exportBtn = new QPushButton(tr("💾 导出列表"));
     exportBtn->setStyleSheet("QPushButton { background-color: #27ae60; color: white; } QPushButton:hover { background-color: #229954; }");
     buttonLayout->addWidget(exportBtn);
 
-    importBtn = new QPushButton("📁 导入列表");
+    importBtn = new QPushButton(tr("📁 导入列表"));
     buttonLayout->addWidget(importBtn);
 
-    showFavoritesBtn = new QPushButton("⭐ 显示收藏");
+    showFavoritesBtn = new QPushButton(tr("⭐ 显示收藏"));
     showFavoritesBtn->setStyleSheet("QPushButton { background-color: #f1c40f; color: white; } QPushButton:hover { background-color: #f39c12; }");
     buttonLayout->addWidget(showFavoritesBtn);
 
@@ -317,10 +317,10 @@ void HtmlSpecialCharacterTable::setupStatusArea() {
     // 状态栏
     statusLayout = new QHBoxLayout();
 
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #27ae60; font-weight: bold;");
 
-    countLabel = new QLabel("字符: 0");
+    countLabel = new QLabel(tr("字符: 0"));
     countLabel->setStyleSheet("color: #7f8c8d;");
 
     progressBar = new QProgressBar();
@@ -482,11 +482,11 @@ void HtmlSpecialCharacterTable::onClearSearch() {
 }
 
 void HtmlSpecialCharacterTable::onExportList() {
-    QMessageBox::information(this, "导出功能", "导出功能待实现");
+    QMessageBox::information(this, tr("导出功能"), tr("导出功能待实现"));
 }
 
 void HtmlSpecialCharacterTable::onImportList() {
-    QMessageBox::information(this, "导入功能", "导入功能待实现");
+    QMessageBox::information(this, tr("导入功能"), tr("导入功能待实现"));
 }
 
 void HtmlSpecialCharacterTable::onShowFavorites() {
@@ -499,7 +499,7 @@ void HtmlSpecialCharacterTable::onAddToFavorites() {
         if (!m_favoriteCharacters.contains(m_currentCharacter)) {
             m_favoriteCharacters.append(m_currentCharacter);
             saveFavorites();
-            statusLabel->setText("已添加到收藏");
+            statusLabel->setText(tr("已添加到收藏"));
             m_statusTimer->start();
 
             // 更新按钮状态
@@ -513,7 +513,7 @@ void HtmlSpecialCharacterTable::onRemoveFromFavorites() {
     if (!m_currentCharacter.character.isEmpty()) {
         m_favoriteCharacters.removeAll(m_currentCharacter);
         saveFavorites();
-        statusLabel->setText("已从收藏移除");
+        statusLabel->setText(tr("已从收藏移除"));
         m_statusTimer->start();
 
         // 更新按钮状态
@@ -643,13 +643,13 @@ void HtmlSpecialCharacterTable::updateDetailPanel(const HtmlCharacter& character
 }
 
 void HtmlSpecialCharacterTable::clearDetailPanel() {
-    detailCharLabel->setText("选择一个字符");
-    detailEntityLabel->setText("-");
-    detailNumericLabel->setText("-");
-    detailHexLabel->setText("-");
-    detailUnicodeLabel->setText("-");
-    detailDescLabel->setText("-");
-    detailCategoryLabel->setText("-");
+    detailCharLabel->setText(tr("选择一个字符"));
+    detailEntityLabel->setText(tr("-"));
+    detailNumericLabel->setText(tr("-"));
+    detailHexLabel->setText(tr("-"));
+    detailUnicodeLabel->setText(tr("-"));
+    detailDescLabel->setText(tr("-"));
+    detailCategoryLabel->setText(tr("-"));
     usageExample->clear();
 
     // 禁用按钮

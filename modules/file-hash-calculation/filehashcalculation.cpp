@@ -218,21 +218,21 @@ void FileHashCalculation::setupFileSelectionArea()
     
     fileListEdit = new QTextEdit;
     fileListEdit->setMaximumHeight(120);
-    fileListEdit->setPlaceholderText("拖拽文件到此处，或点击按钮选择文件...");
+    fileListEdit->setPlaceholderText(tr("拖拽文件到此处，或点击按钮选择文件..."));
     fileListEdit->setReadOnly(true);
     fileSelectionLayout->addWidget(fileListEdit);
     
     fileButtonLayout = new QHBoxLayout;
-    selectFilesBtn = new QPushButton("选择文件");
-    selectFolderBtn = new QPushButton("选择文件夹");
-    clearFilesBtn = new QPushButton("清空列表");
+    selectFilesBtn = new QPushButton(tr("选择文件"));
+    selectFolderBtn = new QPushButton(tr("选择文件夹"));
+    clearFilesBtn = new QPushButton(tr("清空列表"));
     
     fileButtonLayout->addWidget(selectFilesBtn);
     fileButtonLayout->addWidget(selectFolderBtn);
     fileButtonLayout->addWidget(clearFilesBtn);
     fileSelectionLayout->addLayout(fileButtonLayout);
     
-    fileCountLabel = new QLabel("已选择 0 个文件");
+    fileCountLabel = new QLabel(tr("已选择 0 个文件"));
     fileSelectionLayout->addWidget(fileCountLabel);
     
     // 连接信号
@@ -277,8 +277,8 @@ void FileHashCalculation::setupAlgorithmArea()
     algorithmLayout->addWidget(sha3_512CheckBox, 4, 1);
     
     QHBoxLayout *algorithmButtonLayout = new QHBoxLayout;
-    selectAllBtn = new QPushButton("全选");
-    selectNoneBtn = new QPushButton("全不选");
+    selectAllBtn = new QPushButton(tr("全选"));
+    selectNoneBtn = new QPushButton(tr("全不选"));
     
     algorithmButtonLayout->addWidget(selectAllBtn);
     algorithmButtonLayout->addWidget(selectNoneBtn);
@@ -319,9 +319,9 @@ void FileHashCalculation::setupControlArea()
     controlGroup = new QGroupBox("操作控制", this);
     controlLayout = new QHBoxLayout(controlGroup);
     
-    calculateBtn = new QPushButton("开始计算");
-    stopBtn = new QPushButton("停止计算");
-    clearBtn = new QPushButton("清空结果");
+    calculateBtn = new QPushButton(tr("开始计算"));
+    stopBtn = new QPushButton(tr("停止计算"));
+    clearBtn = new QPushButton(tr("清空结果"));
     
     stopBtn->setEnabled(false);
     
@@ -349,9 +349,9 @@ void FileHashCalculation::setupResultArea()
     resultLayout->addWidget(resultTable);
     
     resultButtonLayout = new QHBoxLayout;
-    copyResultBtn = new QPushButton("复制结果");
-    saveResultBtn = new QPushButton("保存结果");
-    exportBtn = new QPushButton("导出报告");
+    copyResultBtn = new QPushButton(tr("复制结果"));
+    saveResultBtn = new QPushButton(tr("保存结果"));
+    exportBtn = new QPushButton(tr("导出报告"));
     
     resultButtonLayout->addWidget(copyResultBtn);
     resultButtonLayout->addWidget(saveResultBtn);
@@ -375,27 +375,27 @@ void FileHashCalculation::setupComparisonArea()
     comparisonLayout = new QVBoxLayout(comparisonGroup);
     
     QHBoxLayout *inputLayout = new QHBoxLayout;
-    inputLayout->addWidget(new QLabel("期望哈希值:"));
+    inputLayout->addWidget(new QLabel(tr("期望哈希值:")));
     expectedHashEdit = new QLineEdit;
-    expectedHashEdit->setPlaceholderText("输入要比较的哈希值...");
+    expectedHashEdit->setPlaceholderText(tr("输入要比较的哈希值..."));
     inputLayout->addWidget(expectedHashEdit);
     comparisonLayout->addLayout(inputLayout);
     
     QHBoxLayout *typeLayout = new QHBoxLayout;
-    typeLayout->addWidget(new QLabel("哈希类型:"));
+    typeLayout->addWidget(new QLabel(tr("哈希类型:")));
     hashTypeCombo = new QComboBox;
     hashTypeCombo->addItems({"MD5", "SHA1", "SHA256", "SHA512"});
     hashTypeCombo->setCurrentText("MD5");
     typeLayout->addWidget(hashTypeCombo);
     
-    compareBtn = new QPushButton("比较");
-    verifyBtn = new QPushButton("验证");
+    compareBtn = new QPushButton(tr("比较"));
+    verifyBtn = new QPushButton(tr("验证"));
     typeLayout->addWidget(compareBtn);
     typeLayout->addWidget(verifyBtn);
     typeLayout->addStretch();
     comparisonLayout->addLayout(typeLayout);
     
-    comparisonResultLabel = new QLabel("等待比较...");
+    comparisonResultLabel = new QLabel(tr("等待比较..."));
     comparisonResultLabel->setWordWrap(true);
     comparisonResultLabel->setStyleSheet("QLabel { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }");
     comparisonLayout->addWidget(comparisonResultLabel);
@@ -408,9 +408,9 @@ void FileHashCalculation::setupComparisonArea()
 void FileHashCalculation::setupStatusArea()
 {
     statusLayout = new QHBoxLayout;
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     progressBar = new QProgressBar;
-    timeLabel = new QLabel("耗时: 00:00");
+    timeLabel = new QLabel(tr("耗时: 00:00"));
     
     progressBar->setVisible(false);
     
@@ -452,7 +452,7 @@ void FileHashCalculation::onSelectFolderClicked()
         if (!files.isEmpty()) {
             addFilesToList(files);
         } else {
-            QMessageBox::information(this, "提示", "选择的文件夹中没有文件");
+            QMessageBox::information(this, tr("提示"), tr("选择的文件夹中没有文件"));
         }
     }
 }
@@ -460,13 +460,13 @@ void FileHashCalculation::onSelectFolderClicked()
 void FileHashCalculation::onCalculateClicked()
 {
     if (m_selectedFiles.isEmpty()) {
-        QMessageBox::information(this, "提示", "请先选择要计算的文件");
+        QMessageBox::information(this, tr("提示"), tr("请先选择要计算的文件"));
         return;
     }
     
     QStringList selectedAlgorithms = getSelectedAlgorithms();
     if (selectedAlgorithms.isEmpty()) {
-        QMessageBox::information(this, "提示", "请至少选择一种哈希算法");
+        QMessageBox::information(this, tr("提示"), tr("请至少选择一种哈希算法"));
         return;
     }
     
@@ -686,7 +686,7 @@ void FileHashCalculation::clearResults()
 {
     m_results.clear();
     resultTable->setRowCount(0);
-    comparisonResultLabel->setText("等待比较...");
+    comparisonResultLabel->setText(tr("等待比较..."));
     comparisonResultLabel->setStyleSheet("QLabel { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }");
 }
 
@@ -737,7 +737,7 @@ void FileHashCalculation::startCalculation()
     m_timer->start(100); // 每100ms更新一次时间显示
     m_workerThread->start();
     
-    statusLabel->setText("正在计算哈希值...");
+    statusLabel->setText(tr("正在计算哈希值..."));
 }
 
 void FileHashCalculation::stopCalculation()
@@ -748,7 +748,7 @@ void FileHashCalculation::stopCalculation()
         m_worker->setStopFlag(true);
     }
     
-    statusLabel->setText("正在停止计算...");
+    statusLabel->setText(tr("正在停止计算..."));
 }
 
 void FileHashCalculation::updateProgress(int current, int total)
@@ -826,7 +826,7 @@ QString FileHashCalculation::formatDuration(qint64 ms)
 void FileHashCalculation::saveResultsToFile()
 {
     if (m_results.isEmpty()) {
-        QMessageBox::information(this, "提示", "没有结果可保存");
+        QMessageBox::information(this, tr("提示"), tr("没有结果可保存"));
         return;
     }
     
@@ -839,7 +839,7 @@ void FileHashCalculation::saveResultsToFile()
     
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "错误", "无法创建文件");
+        QMessageBox::warning(this, tr("错误"), tr("无法创建文件"));
         return;
     }
     
@@ -889,7 +889,7 @@ void FileHashCalculation::saveResultsToFile()
 void FileHashCalculation::copyResultsToClipboard()
 {
     if (m_results.isEmpty()) {
-        QMessageBox::information(this, "提示", "没有结果可复制");
+        QMessageBox::information(this, tr("提示"), tr("没有结果可复制"));
         return;
     }
     
@@ -905,14 +905,14 @@ void FileHashCalculation::copyResultsToClipboard()
     }
     
     QApplication::clipboard()->setText(text);
-    statusLabel->setText("结果已复制到剪贴板");
+    statusLabel->setText(tr("结果已复制到剪贴板"));
 }
 
 void FileHashCalculation::compareHashValues()
 {
     QString expectedHash = expectedHashEdit->text().trimmed().toUpper();
     if (expectedHash.isEmpty()) {
-        comparisonResultLabel->setText("请输入要比较的哈希值");
+        comparisonResultLabel->setText(tr("请输入要比较的哈希值"));
         comparisonResultLabel->setStyleSheet("QLabel { padding: 8px; border: 1px solid #orange; border-radius: 4px; color: orange; }");
         return;
     }

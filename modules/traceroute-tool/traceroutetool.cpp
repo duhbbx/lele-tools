@@ -534,20 +534,20 @@ void TracerouteTool::setupControlArea()
     layout->setSpacing(8);
     
     // 目标地址输入
-    layout->addWidget(new QLabel("目标地址:"), 0, 0);
+    layout->addWidget(new QLabel(tr("目标地址:")), 0, 0);
     m_targetEdit = new QLineEdit();
-    m_targetEdit->setPlaceholderText("输入IP地址或域名 (例: google.com, 8.8.8.8)");
+    m_targetEdit->setPlaceholderText(tr("输入IP地址或域名 (例: google.com, 8.8.8.8)"));
     layout->addWidget(m_targetEdit, 0, 1, 1, 2);
     
     // 最大跳数
-    layout->addWidget(new QLabel("最大跳数:"), 1, 0);
+    layout->addWidget(new QLabel(tr("最大跳数:")), 1, 0);
     m_maxHopsSpin = new QSpinBox();
     m_maxHopsSpin->setRange(1, 64);
     m_maxHopsSpin->setValue(30);
     layout->addWidget(m_maxHopsSpin, 1, 1);
     
     // 超时时间
-    layout->addWidget(new QLabel("超时(ms):"), 1, 2);
+    layout->addWidget(new QLabel(tr("超时(ms):")), 1, 2);
     m_timeoutSpin = new QSpinBox();
     m_timeoutSpin->setRange(1000, 10000);
     m_timeoutSpin->setValue(3000);
@@ -561,13 +561,13 @@ void TracerouteTool::setupControlArea()
     
     // 控制按钮
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    m_startBtn = new QPushButton("开始追踪");
+    m_startBtn = new QPushButton(tr("开始追踪"));
     m_startBtn->setObjectName("startBtn");
-    m_stopBtn = new QPushButton("停止");
+    m_stopBtn = new QPushButton(tr("停止"));
     m_stopBtn->setObjectName("stopBtn");
     m_stopBtn->setEnabled(false);
-    m_clearBtn = new QPushButton("清空结果");
-    m_exportBtn = new QPushButton("导出结果");
+    m_clearBtn = new QPushButton(tr("清空结果"));
+    m_exportBtn = new QPushButton(tr("导出结果"));
     
     btnLayout->addWidget(m_startBtn);
     btnLayout->addWidget(m_stopBtn);
@@ -629,7 +629,7 @@ void TracerouteTool::setupStatusArea()
     QVBoxLayout *layout = new QVBoxLayout(m_logGroup);
     
     // 状态标签
-    m_statusLabel = new QLabel("就绪");
+    m_statusLabel = new QLabel(tr("就绪"));
     m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
     layout->addWidget(m_statusLabel);
     
@@ -654,7 +654,7 @@ void TracerouteTool::updateUI()
         m_statusLabel->setText(QString("正在追踪到 %1...").arg(m_currentTarget));
         m_statusLabel->setStyleSheet("font-weight: bold; color: #28a745;");
     } else {
-        m_statusLabel->setText("就绪");
+        m_statusLabel->setText(tr("就绪"));
         m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
     }
 }
@@ -741,7 +741,7 @@ void TracerouteTool::onStartTraceroute()
 {
     QString target = m_targetEdit->text().trimmed();
     if (target.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请输入目标地址");
+        QMessageBox::warning(this, tr("错误"), tr("请输入目标地址"));
         return;
     }
     
@@ -785,7 +785,7 @@ void TracerouteTool::onClearResults()
 void TracerouteTool::onExportResults()
 {
     if (m_resultsTable->rowCount() == 0) {
-        QMessageBox::information(this, "提示", "没有结果可导出");
+        QMessageBox::information(this, tr("提示"), tr("没有结果可导出"));
         return;
     }
     
@@ -828,7 +828,7 @@ void TracerouteTool::onExportResults()
             logMessage("结果已导出到: " + fileName);
             QMessageBox::information(this, "成功", "结果已导出到:\n" + fileName);
         } else {
-            QMessageBox::warning(this, "错误", "无法写入文件");
+            QMessageBox::warning(this, tr("错误"), tr("无法写入文件"));
         }
     }
 }

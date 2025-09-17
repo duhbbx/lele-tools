@@ -15,7 +15,7 @@ MobileLocation::MobileLocation() : QWidget(nullptr), DynamicObjectBase()
     statusTimer->setInterval(3000);
     
     connect(statusTimer, &QTimer::timeout, [this]() {
-        statusLabel->setText("就绪");
+        statusLabel->setText(tr("就绪"));
     });
     
     setupUI();
@@ -76,13 +76,13 @@ void MobileLocation::setupInputArea()
     inputLayout = new QGridLayout(inputGroup);
     
     // 手机号码输入
-    inputLayout->addWidget(new QLabel("手机号码:"), 0, 0);
+    inputLayout->addWidget(new QLabel(tr("手机号码:")), 0, 0);
     numberEdit = new QLineEdit;
-    numberEdit->setPlaceholderText("请输入手机号码，如：13812345678");
+    numberEdit->setPlaceholderText(tr("请输入手机号码，如：13812345678"));
     inputLayout->addWidget(numberEdit, 0, 1, 1, 2);
     
     // 国家/地区选择
-    inputLayout->addWidget(new QLabel("国家/地区:"), 1, 0);
+    inputLayout->addWidget(new QLabel(tr("国家/地区:")), 1, 0);
     countryCombo = new QComboBox;
     countryCombo->addItem("中国 (+86)", "86");
     countryCombo->addItem("美国 (+1)", "1");
@@ -92,7 +92,7 @@ void MobileLocation::setupInputArea()
     inputLayout->addWidget(countryCombo, 1, 1, 1, 2);
     
     // 查询模式
-    inputLayout->addWidget(new QLabel("查询模式:"), 2, 0);
+    inputLayout->addWidget(new QLabel(tr("查询模式:")), 2, 0);
     queryModeCombo = new QComboBox;
     queryModeCombo->addItem("本地数据库", 0);
     queryModeCombo->addItem("在线查询", 1);
@@ -100,8 +100,8 @@ void MobileLocation::setupInputArea()
     inputLayout->addWidget(queryModeCombo, 2, 1, 1, 2);
     
     // 按钮
-    queryBtn = new QPushButton("查询");
-    clearBtn = new QPushButton("清空");
+    queryBtn = new QPushButton(tr("查询"));
+    clearBtn = new QPushButton(tr("清空"));
     
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(queryBtn);
@@ -131,35 +131,35 @@ void MobileLocation::setupResultArea()
     QGridLayout *resultGridLayout = new QGridLayout(resultWidget);
     
     // 结果标签
-    resultGridLayout->addWidget(new QLabel("手机号码:"), 0, 0);
-    numberLabel = new QLabel("--");
+    resultGridLayout->addWidget(new QLabel(tr("手机号码:")), 0, 0);
+    numberLabel = new QLabel(tr("--"));
     numberLabel->setStyleSheet("font-weight: bold; color: #2c5aa0;");
     resultGridLayout->addWidget(numberLabel, 0, 1);
     
-    resultGridLayout->addWidget(new QLabel("国家/地区:"), 1, 0);
-    countryLabel = new QLabel("--");
+    resultGridLayout->addWidget(new QLabel(tr("国家/地区:")), 1, 0);
+    countryLabel = new QLabel(tr("--"));
     resultGridLayout->addWidget(countryLabel, 1, 1);
     
-    resultGridLayout->addWidget(new QLabel("省份:"), 2, 0);
-    provinceLabel = new QLabel("--");
+    resultGridLayout->addWidget(new QLabel(tr("省份:")), 2, 0);
+    provinceLabel = new QLabel(tr("--"));
     resultGridLayout->addWidget(provinceLabel, 2, 1);
     
-    resultGridLayout->addWidget(new QLabel("城市:"), 3, 0);
-    cityLabel = new QLabel("--");
+    resultGridLayout->addWidget(new QLabel(tr("城市:")), 3, 0);
+    cityLabel = new QLabel(tr("--"));
     resultGridLayout->addWidget(cityLabel, 3, 1);
     
-    resultGridLayout->addWidget(new QLabel("运营商:"), 4, 0);
-    carrierLabel = new QLabel("--");
+    resultGridLayout->addWidget(new QLabel(tr("运营商:")), 4, 0);
+    carrierLabel = new QLabel(tr("--"));
     resultGridLayout->addWidget(carrierLabel, 4, 1);
     
-    resultGridLayout->addWidget(new QLabel("号码类型:"), 5, 0);
-    typeLabel = new QLabel("--");
+    resultGridLayout->addWidget(new QLabel(tr("号码类型:")), 5, 0);
+    typeLabel = new QLabel(tr("--"));
     resultGridLayout->addWidget(typeLabel, 5, 1);
     
     resultLayout->addWidget(resultWidget);
     
     // 复制按钮
-    copyResultBtn = new QPushButton("复制结果");
+    copyResultBtn = new QPushButton(tr("复制结果"));
     QHBoxLayout *resultBtnLayout = new QHBoxLayout;
     resultBtnLayout->addStretch();
     resultBtnLayout->addWidget(copyResultBtn);
@@ -176,7 +176,7 @@ void MobileLocation::setupBatchArea()
     // 批量输入
     batchInput = new QTextEdit;
     batchInput->setMaximumHeight(100);
-    batchInput->setPlaceholderText("每行输入一个手机号码，支持批量查询");
+    batchInput->setPlaceholderText(tr("每行输入一个手机号码，支持批量查询"));
     batchLayout->addWidget(batchInput);
     
     // 批量结果表格
@@ -189,9 +189,9 @@ void MobileLocation::setupBatchArea()
     
     // 批量操作按钮
     batchButtonLayout = new QHBoxLayout;
-    batchQueryBtn = new QPushButton("批量查询");
-    importBtn = new QPushButton("导入");
-    exportBtn = new QPushButton("导出");
+    batchQueryBtn = new QPushButton(tr("批量查询"));
+    importBtn = new QPushButton(tr("导入"));
+    exportBtn = new QPushButton(tr("导出"));
     
     batchButtonLayout->addWidget(batchQueryBtn);
     batchButtonLayout->addWidget(importBtn);
@@ -204,7 +204,7 @@ void MobileLocation::setupBatchArea()
     batchProgress->setVisible(false);
     batchLayout->addWidget(batchProgress);
     
-    batchStatusLabel = new QLabel("就绪");
+    batchStatusLabel = new QLabel(tr("就绪"));
     batchLayout->addWidget(batchStatusLabel);
     
     // 连接信号
@@ -227,9 +227,9 @@ void MobileLocation::setupHistoryArea()
     
     // 历史记录操作按钮
     historyButtonLayout = new QHBoxLayout;
-    clearHistoryBtn = new QPushButton("清空历史");
-    exportHistoryBtn = new QPushButton("导出历史");
-    historyCountLabel = new QLabel("共 0 条记录");
+    clearHistoryBtn = new QPushButton(tr("清空历史"));
+    exportHistoryBtn = new QPushButton(tr("导出历史"));
+    historyCountLabel = new QLabel(tr("共 0 条记录"));
     
     historyButtonLayout->addWidget(clearHistoryBtn);
     historyButtonLayout->addWidget(exportHistoryBtn);
@@ -246,7 +246,7 @@ void MobileLocation::setupHistoryArea()
 void MobileLocation::setupStatusArea()
 {
     statusLayout = new QHBoxLayout;
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     progressBar = new QProgressBar;
     progressBar->setVisible(false);
     
@@ -484,15 +484,15 @@ void MobileLocation::onQueryButtonClicked()
 {
     QString number = numberEdit->text().trimmed();
     if (number.isEmpty()) {
-        statusLabel->setText("请输入手机号码");
+        statusLabel->setText(tr("请输入手机号码"));
         return;
     }
     
     // 格式化手机号码
     QString formattedNumber = formatPhoneNumber(number);
     if (formattedNumber.isEmpty()) {
-        statusLabel->setText("手机号码格式不正确");
-        QMessageBox::warning(this, "输入错误", "请输入正确的手机号码格式");
+        statusLabel->setText(tr("手机号码格式不正确"));
+        QMessageBox::warning(this, tr("输入错误"), tr("请输入正确的手机号码格式"));
         return;
     }
     
@@ -523,7 +523,7 @@ void MobileLocation::onQueryButtonClicked()
     
     if (info.isValid) {
         addToHistory(info);
-        statusLabel->setText("查询完成");
+        statusLabel->setText(tr("查询完成"));
     } else {
         statusLabel->setText("查询失败: " + info.errorMessage);
     }
@@ -533,13 +533,13 @@ void MobileLocation::onBatchQueryClicked()
 {
     QString text = batchInput->toPlainText().trimmed();
     if (text.isEmpty()) {
-        statusLabel->setText("请输入要批量查询的手机号码");
+        statusLabel->setText(tr("请输入要批量查询的手机号码"));
         return;
     }
     
     QStringList numbers = text.split('\n', Qt::SkipEmptyParts);
     if (numbers.isEmpty()) {
-        statusLabel->setText("没有有效的手机号码");
+        statusLabel->setText(tr("没有有效的手机号码"));
         return;
     }
     
@@ -588,13 +588,13 @@ void MobileLocation::onClearHistoryClicked()
 {
     historyList.clear();
     updateHistoryDisplay();
-    statusLabel->setText("历史记录已清空");
+    statusLabel->setText(tr("历史记录已清空"));
 }
 
 void MobileLocation::onExportHistoryClicked()
 {
     if (historyList.isEmpty()) {
-        QMessageBox::information(this, "提示", "没有历史记录可导出");
+        QMessageBox::information(this, tr("提示"), tr("没有历史记录可导出"));
         return;
     }
     
@@ -607,7 +607,7 @@ void MobileLocation::onExportHistoryClicked()
     
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "错误", "无法创建文件");
+        QMessageBox::warning(this, tr("错误"), tr("无法创建文件"));
         return;
     }
     
@@ -644,7 +644,7 @@ void MobileLocation::onImportNumbersClicked()
     
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "错误", "无法打开文件");
+        QMessageBox::warning(this, tr("错误"), tr("无法打开文件"));
         return;
     }
     
@@ -676,7 +676,7 @@ void MobileLocation::onImportNumbersClicked()
 void MobileLocation::onCopyResultClicked()
 {
     if (numberLabel->text() == "--") {
-        QMessageBox::information(this, "提示", "没有查询结果可复制");
+        QMessageBox::information(this, tr("提示"), tr("没有查询结果可复制"));
         return;
     }
     
@@ -689,7 +689,7 @@ void MobileLocation::onCopyResultClicked()
                      .arg(typeLabel->text());
     
     QApplication::clipboard()->setText(result);
-    statusLabel->setText("查询结果已复制到剪贴板");
+    statusLabel->setText(tr("查询结果已复制到剪贴板"));
 }
 
 void MobileLocation::onNumberChanged()
@@ -713,7 +713,7 @@ void MobileLocation::onCountryChanged()
     // 根据国家选择更新界面
     QString countryCode = countryCombo->currentData().toString();
     if (countryCode == "86") {
-        numberEdit->setPlaceholderText("请输入手机号码，如：13812345678");
+        numberEdit->setPlaceholderText(tr("请输入手机号码，如：13812345678"));
     } else {
         numberEdit->setPlaceholderText(QString("请输入%1的手机号码").arg(countryCombo->currentText()));
     }
@@ -745,7 +745,7 @@ void MobileLocation::onHistoryItemClicked(int row, int column)
         // 显示结果
         displayResult(history.info);
         
-        statusLabel->setText("已加载历史记录");
+        statusLabel->setText(tr("已加载历史记录"));
     }
 }
 
@@ -764,12 +764,12 @@ void MobileLocation::onNetworkReplyFinished()
         
         if (info.isValid) {
             addToHistory(info);
-            statusLabel->setText("在线查询完成");
+            statusLabel->setText(tr("在线查询完成"));
         } else {
             statusLabel->setText("在线查询失败: " + info.errorMessage);
         }
     } else {
-        statusLabel->setText("网络查询失败");
+        statusLabel->setText(tr("网络查询失败"));
     }
     
     progressBar->setVisible(false);
@@ -780,7 +780,7 @@ void MobileLocation::onNetworkReplyFinished()
 void MobileLocation::onNetworkError(QNetworkReply::NetworkError error)
 {
     Q_UNUSED(error)
-    statusLabel->setText("网络连接错误");
+    statusLabel->setText(tr("网络连接错误"));
     progressBar->setVisible(false);
 }
 
@@ -862,7 +862,7 @@ void MobileLocation::queryNumberOnline(const QString &number)
             this, &MobileLocation::onNetworkError);
     
     progressBar->setVisible(true);
-    statusLabel->setText("正在在线查询...");
+    statusLabel->setText(tr("正在在线查询..."));
 }
 
 // 数据处理功能
@@ -939,12 +939,12 @@ void MobileLocation::displayResult(const MobileInfo &info)
 
 void MobileLocation::clearResultDisplay()
 {
-    numberLabel->setText("--");
-    countryLabel->setText("--");
-    provinceLabel->setText("--");
-    cityLabel->setText("--");
-    carrierLabel->setText("--");
-    typeLabel->setText("--");
+    numberLabel->setText(tr("--"));
+    countryLabel->setText(tr("--"));
+    provinceLabel->setText(tr("--"));
+    cityLabel->setText(tr("--"));
+    carrierLabel->setText(tr("--"));
+    typeLabel->setText(tr("--"));
 }
 
 MobileInfo MobileLocation::parseOnlineResponse(const QString &response)

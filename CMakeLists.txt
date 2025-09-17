@@ -251,6 +251,7 @@ set(PROJECT_SOURCES
         common/validator/myintvalidator.cpp
         ${TS_FILES}
         ${WINDOWS_RC_FILES}
+        common/connx/AbstractNodeEvent.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

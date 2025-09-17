@@ -52,7 +52,7 @@ CameraTool::CameraTool(QWidget *parent)
     m_cameraCombo->setEnabled(false);
     m_resolutionCombo->setEnabled(false);
     
-    m_cameraStatusLabel->setText("Qt Multimedia不可用");
+    m_cameraStatusLabel->setText(tr("Qt Multimedia不可用"));
     m_cameraStatusLabel->setStyleSheet("color: #ff6b6b; font-weight: bold;");
 #endif
 }
@@ -120,10 +120,10 @@ void CameraTool::setupCameraControls()
     
     // 摄像头选择
     QHBoxLayout *cameraLayout = new QHBoxLayout();
-    cameraLayout->addWidget(new QLabel("摄像头:"));
+    cameraLayout->addWidget(new QLabel(tr("摄像头:")));
     m_cameraCombo = new QComboBox();
     m_cameraCombo->setMinimumWidth(200);
-    m_refreshBtn = new QPushButton("刷新");
+    m_refreshBtn = new QPushButton(tr("刷新"));
     m_refreshBtn->setMaximumWidth(60);
     
     cameraLayout->addWidget(m_cameraCombo);
@@ -132,7 +132,7 @@ void CameraTool::setupCameraControls()
     
     // 分辨率选择
     QHBoxLayout *resLayout = new QHBoxLayout();
-    resLayout->addWidget(new QLabel("分辨率:"));
+    resLayout->addWidget(new QLabel(tr("分辨率:")));
     m_resolutionCombo = new QComboBox();
     m_resolutionCombo->addItems({"640x480", "800x600", "1024x768", "1280x720", "1920x1080"});
     m_resolutionCombo->setCurrentText("1280x720");
@@ -141,9 +141,9 @@ void CameraTool::setupCameraControls()
     
     // 控制按钮
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    m_startBtn = new QPushButton("开启摄像头");
+    m_startBtn = new QPushButton(tr("开启摄像头"));
     m_startBtn->setObjectName("startBtn");
-    m_stopBtn = new QPushButton("关闭摄像头");
+    m_stopBtn = new QPushButton(tr("关闭摄像头"));
     m_stopBtn->setObjectName("stopBtn");
     m_stopBtn->setEnabled(false);
     
@@ -152,7 +152,7 @@ void CameraTool::setupCameraControls()
     layout->addLayout(btnLayout);
     
     // 状态标签
-    m_cameraStatusLabel = new QLabel("摄像头未启动");
+    m_cameraStatusLabel = new QLabel(tr("摄像头未启动"));
     m_cameraStatusLabel->setStyleSheet("color: #6c757d; font-weight: bold;");
     layout->addWidget(m_cameraStatusLabel);
     
@@ -178,7 +178,7 @@ void CameraTool::setupPreviewArea()
     layout->addWidget(m_videoWidget);
     
     // 创建预览标签（当没有摄像头时显示）
-    m_previewLabel = new QLabel("摄像头预览区域\n请选择并启动摄像头");
+    m_previewLabel = new QLabel(tr("摄像头预览区域\n请选择并启动摄像头"));
     m_previewLabel->setAlignment(Qt::AlignCenter);
     m_previewLabel->setStyleSheet("color: #6c757d; font-size: 14px; background-color: #f8f9fa;");
     m_previewLabel->setMinimumSize(400, 300);
@@ -188,7 +188,7 @@ void CameraTool::setupPreviewArea()
     m_videoWidget->hide();
 #else
     // 创建提示标签
-    m_previewLabel = new QLabel("Qt Multimedia模块不可用\n摄像头功能已禁用\n\n请安装Qt Multimedia模块以启用摄像头功能");
+    m_previewLabel = new QLabel(tr("Qt Multimedia模块不可用\n摄像头功能已禁用\n\n请安装Qt Multimedia模块以启用摄像头功能"));
     m_previewLabel->setAlignment(Qt::AlignCenter);
     m_previewLabel->setStyleSheet("color: #ff6b6b; font-size: 14px; background-color: #f8f9fa; font-weight: bold;");
     m_previewLabel->setMinimumSize(400, 300);
@@ -203,16 +203,16 @@ void CameraTool::setupCaptureControls()
     layout->setSpacing(8);
     
     // 拍照按钮
-    m_takePhotoBtn = new QPushButton("拍照");
+    m_takePhotoBtn = new QPushButton(tr("拍照"));
     m_takePhotoBtn->setObjectName("takePhotoBtn");
     m_takePhotoBtn->setEnabled(false);
     layout->addWidget(m_takePhotoBtn);
     
     // 录制按钮
     QHBoxLayout *recordLayout = new QHBoxLayout();
-    m_startRecordBtn = new QPushButton("开始录制");
+    m_startRecordBtn = new QPushButton(tr("开始录制"));
     m_startRecordBtn->setEnabled(false);
-    m_stopRecordBtn = new QPushButton("停止录制");
+    m_stopRecordBtn = new QPushButton(tr("停止录制"));
     m_stopRecordBtn->setEnabled(false);
     
     recordLayout->addWidget(m_startRecordBtn);
@@ -220,7 +220,7 @@ void CameraTool::setupCaptureControls()
     layout->addLayout(recordLayout);
     
     // 录制状态
-    m_recordingStatusLabel = new QLabel("未录制");
+    m_recordingStatusLabel = new QLabel(tr("未录制"));
     m_recordingStatusLabel->setStyleSheet("color: #6c757d;");
     layout->addWidget(m_recordingStatusLabel);
     
@@ -238,7 +238,7 @@ void CameraTool::setupScreenshotControls()
     
     // 屏幕选择
     QHBoxLayout *screenLayout = new QHBoxLayout();
-    screenLayout->addWidget(new QLabel("屏幕:"));
+    screenLayout->addWidget(new QLabel(tr("屏幕:")));
     m_screenCombo = new QComboBox();
     
     // 枚举所有屏幕
@@ -256,7 +256,7 @@ void CameraTool::setupScreenshotControls()
     layout->addLayout(screenLayout);
     
     // 截屏按钮
-    m_screenshotBtn = new QPushButton("截取屏幕");
+    m_screenshotBtn = new QPushButton(tr("截取屏幕"));
     layout->addWidget(m_screenshotBtn);
     
     connect(m_screenshotBtn, &QPushButton::clicked, this, &CameraTool::onTakeScreenshotClicked);
@@ -270,11 +270,11 @@ void CameraTool::setupSettingsArea()
     
     // 保存路径
     QHBoxLayout *pathLayout = new QHBoxLayout();
-    pathLayout->addWidget(new QLabel("保存路径:"));
+    pathLayout->addWidget(new QLabel(tr("保存路径:")));
     m_savePathLabel = new QLabel();
     m_savePathLabel->setStyleSheet("color: #007bff; text-decoration: underline;");
     m_savePathLabel->setWordWrap(true);
-    m_savePathBtn = new QPushButton("浏览");
+    m_savePathBtn = new QPushButton(tr("浏览"));
     m_savePathBtn->setMaximumWidth(60);
     
     pathLayout->addWidget(m_savePathLabel);
@@ -288,7 +288,7 @@ void CameraTool::setupSettingsArea()
     
     // 图片质量
     QHBoxLayout *qualityLayout = new QHBoxLayout();
-    qualityLayout->addWidget(new QLabel("图片质量:"));
+    qualityLayout->addWidget(new QLabel(tr("图片质量:")));
     m_qualitySpin = new QSpinBox();
     m_qualitySpin->setRange(1, 100);
     m_qualitySpin->setValue(90);
@@ -355,7 +355,7 @@ void CameraTool::updateCameraInfo()
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
     m_deviceCountLabel->setText(QString("检测到摄像头设备: %1 个").arg(cameras.size()));
 #else
-    m_deviceCountLabel->setText("Qt Multimedia不可用");
+    m_deviceCountLabel->setText(tr("Qt Multimedia不可用"));
 #endif
 }
 
@@ -373,18 +373,18 @@ void CameraTool::updateUI()
     
     // 更新状态标签
     if (m_cameraActive) {
-        m_cameraStatusLabel->setText("摄像头运行中");
+        m_cameraStatusLabel->setText(tr("摄像头运行中"));
         m_cameraStatusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     } else {
-        m_cameraStatusLabel->setText("摄像头未启动");
+        m_cameraStatusLabel->setText(tr("摄像头未启动"));
         m_cameraStatusLabel->setStyleSheet("color: #6c757d; font-weight: bold;");
     }
     
     if (m_recording) {
-        m_recordingStatusLabel->setText("正在录制...");
+        m_recordingStatusLabel->setText(tr("正在录制..."));
         m_recordingStatusLabel->setStyleSheet("color: #dc3545; font-weight: bold;");
     } else {
-        m_recordingStatusLabel->setText("未录制");
+        m_recordingStatusLabel->setText(tr("未录制"));
         m_recordingStatusLabel->setStyleSheet("color: #6c757d;");
     }
 }
@@ -476,7 +476,7 @@ void CameraTool::onRefreshCamerasClicked()
 void CameraTool::onCameraSelectionChanged()
 {
     if (m_cameraActive) {
-        QMessageBox::information(this, "提示", "请先关闭当前摄像头后再切换");
+        QMessageBox::information(this, tr("提示"), tr("请先关闭当前摄像头后再切换"));
         return;
     }
     
@@ -494,13 +494,13 @@ void CameraTool::onStartCameraClicked()
 {
     int index = m_cameraCombo->currentIndex();
     if (index < 0) {
-        QMessageBox::warning(this, "错误", "请先选择一个摄像头设备");
+        QMessageBox::warning(this, tr("错误"), tr("请先选择一个摄像头设备"));
         return;
     }
     
     QVariant cameraData = m_cameraCombo->itemData(index);
     if (!cameraData.canConvert<QCameraDevice>()) {
-        QMessageBox::warning(this, "错误", "无效的摄像头设备");
+        QMessageBox::warning(this, tr("错误"), tr("无效的摄像头设备"));
         return;
     }
     
@@ -556,7 +556,7 @@ void CameraTool::onStopCameraClicked()
 void CameraTool::onTakePhotoClicked()
 {
     if (!m_imageCapture || !m_camera || !m_camera->isActive()) {
-        QMessageBox::warning(this, "错误", "摄像头未启动或图像捕获未准备就绪");
+        QMessageBox::warning(this, tr("错误"), tr("摄像头未启动或图像捕获未准备就绪"));
         return;
     }
     
@@ -587,7 +587,7 @@ void CameraTool::onStartRecordingClicked()
 {
     // 注意：这里需要QMediaRecorder，但为了简化，我们暂时只提供占位实现
     logMessage("录制功能暂未实现（需要QMediaRecorder）");
-    QMessageBox::information(this, "提示", "录制功能将在后续版本中实现");
+    QMessageBox::information(this, tr("提示"), tr("录制功能将在后续版本中实现"));
 }
 
 void CameraTool::onStopRecordingClicked()
@@ -609,13 +609,13 @@ void CameraTool::onTakeScreenshotClicked()
                 QMessageBox::information(this, "成功", QString("截图已保存到:\n%1").arg(fullPath));
             } else {
                 logMessage("保存截图失败");
-                QMessageBox::warning(this, "错误", "保存截图失败");
+                QMessageBox::warning(this, tr("错误"), tr("保存截图失败"));
             }
         } else {
             // 复制到剪贴板
             QGuiApplication::clipboard()->setPixmap(screenshot);
             logMessage("屏幕截图已复制到剪贴板");
-            QMessageBox::information(this, "成功", "截图已复制到剪贴板");
+            QMessageBox::information(this, tr("成功"), tr("截图已复制到剪贴板"));
         }
         
     } catch (const std::exception& e) {
@@ -638,7 +638,7 @@ void CameraTool::onResolutionChanged()
 {
     // 如果摄像头正在运行，提示需要重启
     if (m_cameraActive) {
-        QMessageBox::information(this, "提示", "分辨率更改将在下次启动摄像头时生效");
+        QMessageBox::information(this, tr("提示"), tr("分辨率更改将在下次启动摄像头时生效"));
     }
 }
 

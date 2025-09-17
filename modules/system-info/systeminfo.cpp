@@ -317,7 +317,7 @@ void SystemInfoTool::setupSystemInfoArea()
     QVBoxLayout *systemTabLayout = new QVBoxLayout(m_systemTab);
     systemTabLayout->addWidget(m_systemScrollArea);
     
-    m_tabWidget->addTab(m_systemTab, "🖥️ 系统信息");
+    m_tabWidget->addTab(m_systemTab, tr("🖥️ 系统信息"));
 }
 
 void SystemInfoTool::setupNetworkInfoArea()
@@ -329,28 +329,28 @@ void SystemInfoTool::setupNetworkInfoArea()
     // 添加网络信息输入框（只读，可选中复制）
     int row = 0;
     
-    m_networkLayout->addWidget(new QLabel("主机名:"), row, 0);
+    m_networkLayout->addWidget(new QLabel(tr("主机名:")), row, 0);
     m_hostnameEdit = new QLineEdit("获取中...");
     m_hostnameEdit->setReadOnly(true);
     m_hostnameEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
     m_hostnameEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_hostnameEdit, row++, 1);
     
-    m_networkLayout->addWidget(new QLabel("主IP地址:"), row, 0);
+    m_networkLayout->addWidget(new QLabel(tr("主IP地址:")), row, 0);
     m_primaryIPEdit = new QLineEdit("获取中...");
     m_primaryIPEdit->setReadOnly(true);
     m_primaryIPEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
     m_primaryIPEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_primaryIPEdit, row++, 1);
     
-    m_networkLayout->addWidget(new QLabel("默认网关:"), row, 0);
+    m_networkLayout->addWidget(new QLabel(tr("默认网关:")), row, 0);
     m_gatewayEdit = new QLineEdit("获取中...");
     m_gatewayEdit->setReadOnly(true);
     m_gatewayEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
     m_gatewayEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_gatewayEdit, row++, 1);
     
-    m_networkLayout->addWidget(new QLabel("DNS服务器:"), row, 0);
+    m_networkLayout->addWidget(new QLabel(tr("DNS服务器:")), row, 0);
     m_dnsEdit = new QTextEdit();
     m_dnsEdit->setReadOnly(true);
     m_dnsEdit->setMaximumHeight(60);
@@ -370,7 +370,7 @@ void SystemInfoTool::setupHardwareInfoArea()
     int row = 0;
     
     // 操作系统
-    m_hardwareLayout->addWidget(new QLabel("操作系统:"), row, 0);
+    m_hardwareLayout->addWidget(new QLabel(tr("操作系统:")), row, 0);
     m_osEdit = new QLineEdit("获取中...");
     m_osEdit->setReadOnly(true);
     m_osEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
@@ -378,7 +378,7 @@ void SystemInfoTool::setupHardwareInfoArea()
     m_hardwareLayout->addWidget(m_osEdit, row++, 1, 1, 2);
     
     // CPU信息
-    m_hardwareLayout->addWidget(new QLabel("处理器:"), row, 0);
+    m_hardwareLayout->addWidget(new QLabel(tr("处理器:")), row, 0);
     m_cpuEdit = new QTextEdit();
     m_cpuEdit->setReadOnly(true);
     m_cpuEdit->setMaximumHeight(60);
@@ -386,14 +386,14 @@ void SystemInfoTool::setupHardwareInfoArea()
     m_cpuEdit->setStyleSheet("QTextEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_cpuEdit, row++, 1, 1, 2);
     
-    m_hardwareLayout->addWidget(new QLabel("CPU核心:"), row, 0);
+    m_hardwareLayout->addWidget(new QLabel(tr("CPU核心:")), row, 0);
     m_coresEdit = new QLineEdit("获取中...");
     m_coresEdit->setReadOnly(true);
     m_coresEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
     m_coresEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_coresEdit, row++, 1);
     
-    m_hardwareLayout->addWidget(new QLabel("CPU频率:"), row, 0);
+    m_hardwareLayout->addWidget(new QLabel(tr("CPU频率:")), row, 0);
     m_frequencyEdit = new QLineEdit("获取中...");
     m_frequencyEdit->setReadOnly(true);
     m_frequencyEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
@@ -401,7 +401,7 @@ void SystemInfoTool::setupHardwareInfoArea()
     m_hardwareLayout->addWidget(m_frequencyEdit, row++, 1);
     
     // 内存信息
-    m_hardwareLayout->addWidget(new QLabel("系统内存:"), row, 0);
+    m_hardwareLayout->addWidget(new QLabel(tr("系统内存:")), row, 0);
     m_memoryEdit = new QLineEdit("获取中...");
     m_memoryEdit->setReadOnly(true);
     m_memoryEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
@@ -413,7 +413,7 @@ void SystemInfoTool::setupHardwareInfoArea()
     m_hardwareLayout->addWidget(m_memoryProgress, row++, 2);
     
     // 交换内存
-    m_hardwareLayout->addWidget(new QLabel("虚拟内存:"), row, 0);
+    m_hardwareLayout->addWidget(new QLabel(tr("虚拟内存:")), row, 0);
     m_swapEdit = new QLineEdit("获取中...");
     m_swapEdit->setReadOnly(true);
     m_swapEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
@@ -455,7 +455,7 @@ void SystemInfoTool::setupDiskInfoArea()
     
     m_diskLayout->addWidget(m_diskTable);
     
-    m_tabWidget->addTab(m_diskTab, "💾 磁盘信息");
+    m_tabWidget->addTab(m_diskTab, tr("💾 磁盘信息"));
 }
 
 void SystemInfoTool::setupControlArea()
@@ -463,11 +463,11 @@ void SystemInfoTool::setupControlArea()
     m_controlGroup = new QGroupBox("🔧 控制操作");
     QHBoxLayout *layout = new QHBoxLayout(m_controlGroup);
     
-    m_refreshBtn = new QPushButton("刷新信息");
+    m_refreshBtn = new QPushButton(tr("刷新信息"));
     m_refreshBtn->setObjectName("refreshBtn");
-    m_exportBtn = new QPushButton("导出报告");
+    m_exportBtn = new QPushButton(tr("导出报告"));
     
-    m_lastUpdateLabel = new QLabel("最后更新: 从未");
+    m_lastUpdateLabel = new QLabel(tr("最后更新: 从未"));
     m_lastUpdateLabel->setStyleSheet("color: #6c757d; font-style: italic;");
     
     layout->addWidget(m_refreshBtn);
@@ -511,7 +511,7 @@ void SystemInfoTool::updateSystemInfoDisplay(const ::SystemInfo &info)
         m_swapProgress->setValue((int)swapPercent);
         m_swapProgress->setFormat(QString("%1%").arg(swapPercent, 0, 'f', 1));
     } else {
-        m_swapEdit->setText("未配置");
+        m_swapEdit->setText(tr("未配置"));
         m_swapProgress->setValue(0);
         m_swapProgress->setFormat("N/A");
     }
@@ -662,9 +662,9 @@ void SystemInfoTool::onExportClicked()
                 out << "\n";
             }
             
-            QMessageBox::information(this, "成功", "系统信息报告已导出");
+            QMessageBox::information(this, tr("成功"), tr("系统信息报告已导出"));
         } else {
-            QMessageBox::warning(this, "错误", "无法写入文件");
+            QMessageBox::warning(this, tr("错误"), tr("无法写入文件"));
         }
     }
 }

@@ -24,7 +24,7 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
     searchLayout->setSpacing(5);
 
     searchLineEdit = new QLineEdit;
-    searchLineEdit->setPlaceholderText("搜索工具...");
+    searchLineEdit->setPlaceholderText(tr("搜索工具..."));
     searchLineEdit->setFixedHeight(30);
     searchLineEdit->setStyleSheet("border: 1px solid #ccc; border-radius: 0px; padding: 5px;");
 

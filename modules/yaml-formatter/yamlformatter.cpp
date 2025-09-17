@@ -198,17 +198,17 @@ void YamlFormatter::setupToolbar()
     toolbarLayout->setContentsMargins(5, 5, 5, 5);
     toolbarLayout->setSpacing(8);
     
-    formatBtn = new QPushButton("🎨 格式化");
+    formatBtn = new QPushButton(tr("🎨 格式化"));
 
-    minifyBtn = new QPushButton("📦 压缩");
+    minifyBtn = new QPushButton(tr("📦 压缩"));
 
-    validateBtn = new QPushButton("✅ 验证");
+    validateBtn = new QPushButton(tr("✅ 验证"));
 
-    clearBtn = new QPushButton("🗑️ 清空");
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
 
-    copyBtn = new QPushButton("📋 复制");
+    copyBtn = new QPushButton(tr("📋 复制"));
 
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 11pt;");
     
     toolbarLayout->addWidget(formatBtn);
@@ -229,7 +229,7 @@ void YamlFormatter::setupOptions()
     optionsLayout->setContentsMargins(10, 10, 10, 10);
     optionsLayout->setSpacing(15);
     
-    indentLabel = new QLabel("缩进空格:");
+    indentLabel = new QLabel(tr("缩进空格:"));
     indentSpinBox = new QSpinBox();
     indentSpinBox->setRange(2, 8);
     indentSpinBox->setValue(2);
@@ -253,11 +253,11 @@ void YamlFormatter::setupInputOutput()
     inputWidget = new QWidget();
     inputLayout = new QVBoxLayout(inputWidget);
     
-    inputLabel = new QLabel("📝 YAML输入");
+    inputLabel = new QLabel(tr("📝 YAML输入"));
     inputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
     
     inputTextEdit = new QTextEdit();
-    inputTextEdit->setPlaceholderText("请输入要格式化的YAML数据...");
+    inputTextEdit->setPlaceholderText(tr("请输入要格式化的YAML数据..."));
     
     inputLayout->addWidget(inputLabel);
     inputLayout->addWidget(inputTextEdit);
@@ -266,7 +266,7 @@ void YamlFormatter::setupInputOutput()
     outputWidget = new QWidget();
     outputLayout = new QVBoxLayout(outputWidget);
     
-    outputLabel = new QLabel("📄 格式化结果");
+    outputLabel = new QLabel(tr("📄 格式化结果"));
     outputLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333;");
     
     outputTextEdit = new QPlainTextEdit();

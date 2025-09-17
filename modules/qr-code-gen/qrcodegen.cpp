@@ -395,7 +395,7 @@ QrCodeGen::QrCodeGen() : QWidget(nullptr), DynamicObjectBase()
     connect(copyParseResultBtn, &QPushButton::clicked, [this]() {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(parseResultEdit->toPlainText());
-        statusLabel->setText("解析结果已复制到剪贴板");
+        statusLabel->setText(tr("解析结果已复制到剪贴板"));
         m_statusTimer->start();
     });
     
@@ -416,7 +416,7 @@ QrCodeGen::QrCodeGen() : QWidget(nullptr), DynamicObjectBase()
     
     connect(m_updateTimer, &QTimer::timeout, this, &QrCodeGen::updateQRCodePreview);
     connect(m_statusTimer, &QTimer::timeout, [this]() {
-        statusLabel->setText("就绪");
+        statusLabel->setText(tr("就绪"));
     });
     
     // 启用拖拽
@@ -450,10 +450,10 @@ void QrCodeGen::setupUI()
     setupBatchArea();
     setupHistoryArea();
     
-    tabWidget->addTab(generateWidget, "🎨 生成二维码");
-    tabWidget->addTab(parseWidget, "🔍 解析二维码");
-    tabWidget->addTab(batchWidget, "📊 批量处理");
-    tabWidget->addTab(historyWidget, "📜 历史记录");
+    tabWidget->addTab(generateWidget, tr("🎨 生成二维码"));
+    tabWidget->addTab(parseWidget, tr("🔍 解析二维码"));
+    tabWidget->addTab(batchWidget, tr("📊 批量处理"));
+    tabWidget->addTab(historyWidget, tr("📜 历史记录"));
     
     mainLayout->addWidget(tabWidget);
     
@@ -566,7 +566,7 @@ void QrCodeGen::setupGenerateArea()
     inputLayout = new QVBoxLayout(inputGroup);
     
     QHBoxLayout *typeLayout = new QHBoxLayout();
-    typeLayout->addWidget(new QLabel("数据类型:"));
+    typeLayout->addWidget(new QLabel(tr("数据类型:")));
     dataTypeCombo = new QComboBox();
     dataTypeCombo->addItems({"文本", "网址", "邮箱", "电话", "短信", "WiFi", "电子名片", "日历事件", "地理位置"});
     typeLayout->addWidget(dataTypeCombo);
@@ -574,7 +574,7 @@ void QrCodeGen::setupGenerateArea()
     inputLayout->addLayout(typeLayout);
     
     QHBoxLayout *presetLayout = new QHBoxLayout();
-    presetLayout->addWidget(new QLabel("快速模板:"));
+    presetLayout->addWidget(new QLabel(tr("快速模板:")));
     presetCombo = new QComboBox();
     presetCombo->addItem("选择模板...");
     presetLayout->addWidget(presetCombo);
@@ -582,7 +582,7 @@ void QrCodeGen::setupGenerateArea()
     inputLayout->addLayout(presetLayout);
     
     textEdit = new QTextEdit();
-    textEdit->setPlaceholderText("在此输入要生成二维码的内容...");
+    textEdit->setPlaceholderText(tr("在此输入要生成二维码的内容..."));
     textEdit->setMaximumHeight(120);
     inputLayout->addWidget(textEdit);
     
@@ -591,53 +591,53 @@ void QrCodeGen::setupGenerateArea()
     QGridLayout *specialLayout = new QGridLayout(specialInputWidget);
     
     // URL输入
-    specialLayout->addWidget(new QLabel("网址:"), 0, 0);
+    specialLayout->addWidget(new QLabel(tr("网址:")), 0, 0);
     urlEdit = new QLineEdit();
-    urlEdit->setPlaceholderText("https://example.com");
+    urlEdit->setPlaceholderText(tr("https://example.com"));
     specialLayout->addWidget(urlEdit, 0, 1);
     
     // 邮箱输入
-    specialLayout->addWidget(new QLabel("邮箱:"), 1, 0);
+    specialLayout->addWidget(new QLabel(tr("邮箱:")), 1, 0);
     emailEdit = new QLineEdit();
-    emailEdit->setPlaceholderText("example@email.com");
+    emailEdit->setPlaceholderText(tr("example@email.com"));
     specialLayout->addWidget(emailEdit, 1, 1);
     
     // 电话输入
-    specialLayout->addWidget(new QLabel("电话:"), 2, 0);
+    specialLayout->addWidget(new QLabel(tr("电话:")), 2, 0);
     phoneEdit = new QLineEdit();
-    phoneEdit->setPlaceholderText("+86 138 0013 8000");
+    phoneEdit->setPlaceholderText(tr("+86 138 0013 8000"));
     specialLayout->addWidget(phoneEdit, 2, 1);
     
     // WiFi输入
-    specialLayout->addWidget(new QLabel("WiFi名称:"), 3, 0);
+    specialLayout->addWidget(new QLabel(tr("WiFi名称:")), 3, 0);
     wifiSSIDEdit = new QLineEdit();
-    wifiSSIDEdit->setPlaceholderText("WiFi网络名称");
+    wifiSSIDEdit->setPlaceholderText(tr("WiFi网络名称"));
     specialLayout->addWidget(wifiSSIDEdit, 3, 1);
     
-    specialLayout->addWidget(new QLabel("WiFi密码:"), 4, 0);
+    specialLayout->addWidget(new QLabel(tr("WiFi密码:")), 4, 0);
     wifiPasswordEdit = new QLineEdit();
-    wifiPasswordEdit->setPlaceholderText("WiFi密码");
+    wifiPasswordEdit->setPlaceholderText(tr("WiFi密码"));
     specialLayout->addWidget(wifiPasswordEdit, 4, 1);
     
-    specialLayout->addWidget(new QLabel("加密方式:"), 5, 0);
+    specialLayout->addWidget(new QLabel(tr("加密方式:")), 5, 0);
     wifiSecurityCombo = new QComboBox();
     wifiSecurityCombo->addItems({"WPA", "WEP", "无密码"});
     specialLayout->addWidget(wifiSecurityCombo, 5, 1);
     
     // 电子名片输入
-    specialLayout->addWidget(new QLabel("姓名:"), 6, 0);
+    specialLayout->addWidget(new QLabel(tr("姓名:")), 6, 0);
     vcardNameEdit = new QLineEdit();
-    vcardNameEdit->setPlaceholderText("张三");
+    vcardNameEdit->setPlaceholderText(tr("张三"));
     specialLayout->addWidget(vcardNameEdit, 6, 1);
     
-    specialLayout->addWidget(new QLabel("名片电话:"), 7, 0);
+    specialLayout->addWidget(new QLabel(tr("名片电话:")), 7, 0);
     vcardPhoneEdit = new QLineEdit();
-    vcardPhoneEdit->setPlaceholderText("+86 138 0013 8000");
+    vcardPhoneEdit->setPlaceholderText(tr("+86 138 0013 8000"));
     specialLayout->addWidget(vcardPhoneEdit, 7, 1);
     
-    specialLayout->addWidget(new QLabel("名片邮箱:"), 8, 0);
+    specialLayout->addWidget(new QLabel(tr("名片邮箱:")), 8, 0);
     vcardEmailEdit = new QLineEdit();
-    vcardEmailEdit->setPlaceholderText("zhang@example.com");
+    vcardEmailEdit->setPlaceholderText(tr("zhang@example.com"));
     specialLayout->addWidget(vcardEmailEdit, 8, 1);
     
     specialInputWidget->setVisible(false);
@@ -649,13 +649,13 @@ void QrCodeGen::setupGenerateArea()
     settingsGroup = new QGroupBox("⚙️ 生成设置");
     settingsLayout = new QGridLayout(settingsGroup);
     
-    settingsLayout->addWidget(new QLabel("容错级别:"), 0, 0);
+    settingsLayout->addWidget(new QLabel(tr("容错级别:")), 0, 0);
     errorCorrectionCombo = new QComboBox();
     errorCorrectionCombo->addItems({"低 (L)", "中 (M)", "高 (Q)", "最高 (H)"});
     errorCorrectionCombo->setCurrentIndex(1);
     settingsLayout->addWidget(errorCorrectionCombo, 0, 1);
     
-    settingsLayout->addWidget(new QLabel("图片大小:"), 1, 0);
+    settingsLayout->addWidget(new QLabel(tr("图片大小:")), 1, 0);
     QHBoxLayout *sizeLayout = new QHBoxLayout();
     sizeSpinBox = new QSpinBox();
     sizeSpinBox->setRange(100, 1000);
@@ -669,7 +669,7 @@ void QrCodeGen::setupGenerateArea()
     sizeLayout->addWidget(sizeSlider);
     settingsLayout->addLayout(sizeLayout, 1, 1);
     
-    settingsLayout->addWidget(new QLabel("边框大小:"), 2, 0);
+    settingsLayout->addWidget(new QLabel(tr("边框大小:")), 2, 0);
     borderSpinBox = new QSpinBox();
     borderSpinBox->setRange(0, 20);
     borderSpinBox->setValue(4);
@@ -700,22 +700,22 @@ void QrCodeGen::setupStyleArea()
     styleGroup = new QGroupBox("🎨 样式设置");
     styleLayout = new QGridLayout(styleGroup);
     
-    styleLayout->addWidget(new QLabel("前景色:"), 0, 0);
+    styleLayout->addWidget(new QLabel(tr("前景色:")), 0, 0);
     foregroundColorBtn = new ColorButton(Qt::black);
     styleLayout->addWidget(foregroundColorBtn, 0, 1);
     
-    styleLayout->addWidget(new QLabel("背景色:"), 0, 2);
+    styleLayout->addWidget(new QLabel(tr("背景色:")), 0, 2);
     backgroundColorBtn = new ColorButton(Qt::white);
     styleLayout->addWidget(backgroundColorBtn, 0, 3);
     
     logoCheckBox = new QCheckBox("添加Logo");
     styleLayout->addWidget(logoCheckBox, 1, 0);
     
-    selectLogoBtn = new QPushButton("📁 选择Logo");
+    selectLogoBtn = new QPushButton(tr("📁 选择Logo"));
     selectLogoBtn->setEnabled(false);
     styleLayout->addWidget(selectLogoBtn, 1, 1);
     
-    removeLogoBtn = new QPushButton("🗑️ 移除");
+    removeLogoBtn = new QPushButton(tr("🗑️ 移除"));
     removeLogoBtn->setEnabled(false);
     styleLayout->addWidget(removeLogoBtn, 1, 2);
     
@@ -723,10 +723,10 @@ void QrCodeGen::setupStyleArea()
     logoPreviewLabel->setFixedSize(40, 40);
     logoPreviewLabel->setStyleSheet("border: 1px solid #ccc; border-radius: 4px;");
     logoPreviewLabel->setAlignment(Qt::AlignCenter);
-    logoPreviewLabel->setText("Logo");
+    logoPreviewLabel->setText(tr("Logo"));
     styleLayout->addWidget(logoPreviewLabel, 1, 3);
     
-    styleLayout->addWidget(new QLabel("Logo大小:"), 2, 0);
+    styleLayout->addWidget(new QLabel(tr("Logo大小:")), 2, 0);
     logoSizeSpinBox = new QSpinBox();
     logoSizeSpinBox->setRange(20, 100);
     logoSizeSpinBox->setValue(50);
@@ -737,7 +737,7 @@ void QrCodeGen::setupStyleArea()
     roundedCornersCheckBox = new QCheckBox("圆角");
     styleLayout->addWidget(roundedCornersCheckBox, 2, 2);
     
-    styleLayout->addWidget(new QLabel("圆角半径:"), 3, 0);
+    styleLayout->addWidget(new QLabel(tr("圆角半径:")), 3, 0);
     cornerRadiusSpinBox = new QSpinBox();
     cornerRadiusSpinBox->setRange(0, 50);
     cornerRadiusSpinBox->setValue(10);
@@ -745,7 +745,7 @@ void QrCodeGen::setupStyleArea()
     cornerRadiusSpinBox->setEnabled(false);
     styleLayout->addWidget(cornerRadiusSpinBox, 3, 1);
     
-    styleLayout->addWidget(new QLabel("图案样式:"), 3, 2);
+    styleLayout->addWidget(new QLabel(tr("图案样式:")), 3, 2);
     patternCombo = new QComboBox();
     patternCombo->addItems({"方形", "圆形", "圆角方形"});
     styleLayout->addWidget(patternCombo, 3, 3);
@@ -757,7 +757,7 @@ void QrCodeGen::setupStyleArea()
         if (!checked) {
             removeLogoBtn->setEnabled(false);
             logoPreviewLabel->clear();
-            logoPreviewLabel->setText("Logo");
+            logoPreviewLabel->setText(tr("Logo"));
             m_logoPixmap = QPixmap();
         }
         onStyleChanged();
@@ -780,20 +780,20 @@ void QrCodeGen::setupPreviewArea()
     // 预览操作按钮
     previewButtonLayout = new QHBoxLayout();
     
-    generateBtn = new QPushButton("🎨 生成二维码");
+    generateBtn = new QPushButton(tr("🎨 生成二维码"));
     generateBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; font-weight: bold; min-width: 120px; } QPushButton:hover { background-color: #218838; }");
     previewButtonLayout->addWidget(generateBtn);
     
-    saveBtn = new QPushButton("💾 保存");
+    saveBtn = new QPushButton(tr("💾 保存"));
     saveBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
     saveBtn->setEnabled(false);
     previewButtonLayout->addWidget(saveBtn);
     
-    copyBtn = new QPushButton("📋 复制");
+    copyBtn = new QPushButton(tr("📋 复制"));
     copyBtn->setEnabled(false);
     previewButtonLayout->addWidget(copyBtn);
     
-    addToHistoryBtn = new QPushButton("📜 添加到历史");
+    addToHistoryBtn = new QPushButton(tr("📜 添加到历史"));
     addToHistoryBtn->setEnabled(false);
     previewButtonLayout->addWidget(addToHistoryBtn);
     
@@ -809,11 +809,11 @@ void QrCodeGen::setupParseArea()
     parseInputGroup = new QGroupBox("📁 图片上传");
     parseInputLayout = new QVBoxLayout(parseInputGroup);
     
-    uploadImageBtn = new QPushButton("📂 选择图片");
+    uploadImageBtn = new QPushButton(tr("📂 选择图片"));
     uploadImageBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; min-height: 40px; } QPushButton:hover { background-color: #0056b3; }");
     parseInputLayout->addWidget(uploadImageBtn);
     
-    parseClipboardBtn = new QPushButton("📋 从剪贴板解析");
+    parseClipboardBtn = new QPushButton(tr("📋 从剪贴板解析"));
     parseClipboardBtn->setStyleSheet("QPushButton { background-color: #6f42c1; color: white; } QPushButton:hover { background-color: #5a32a3; }");
     parseInputLayout->addWidget(parseClipboardBtn);
     
@@ -821,7 +821,7 @@ void QrCodeGen::setupParseArea()
     uploadedImageLabel->setFixedSize(250, 250);
     uploadedImageLabel->setStyleSheet("border: 2px dashed #ccc; border-radius: 8px; background-color: #f8f9fa;");
     uploadedImageLabel->setAlignment(Qt::AlignCenter);
-    uploadedImageLabel->setText("拖拽图片到此处\n或点击选择图片");
+    uploadedImageLabel->setText(tr("拖拽图片到此处\n或点击选择图片"));
     uploadedImageLabel->setWordWrap(true);
     parseInputLayout->addWidget(uploadedImageLabel);
     
@@ -833,16 +833,16 @@ void QrCodeGen::setupParseArea()
     parseResultLayout = new QVBoxLayout(parseResultGroup);
     
     parseResultEdit = new QTextEdit();
-    parseResultEdit->setPlaceholderText("解析结果将显示在这里...");
+    parseResultEdit->setPlaceholderText(tr("解析结果将显示在这里..."));
     parseResultEdit->setReadOnly(true);
     parseResultLayout->addWidget(parseResultEdit);
     
     QHBoxLayout *parseButtonLayout = new QHBoxLayout();
-    clearParseBtn = new QPushButton("🗑️ 清空");
+    clearParseBtn = new QPushButton(tr("🗑️ 清空"));
     clearParseBtn->setStyleSheet("QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
     parseButtonLayout->addWidget(clearParseBtn);
     
-    copyParseResultBtn = new QPushButton("📋 复制结果");
+    copyParseResultBtn = new QPushButton(tr("📋 复制结果"));
     copyParseResultBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
     copyParseResultBtn->setEnabled(false);
     parseButtonLayout->addWidget(copyParseResultBtn);
@@ -863,19 +863,19 @@ void QrCodeGen::setupBatchArea()
     batchInputLayout = new QVBoxLayout(batchInputGroup);
     
     batchTextEdit = new QTextEdit();
-    batchTextEdit->setPlaceholderText("每行一个内容，用于批量生成二维码...\n例如:\nhttps://example1.com\nhttps://example2.com\nhttps://example3.com");
+    batchTextEdit->setPlaceholderText(tr("每行一个内容，用于批量生成二维码...\n例如:\nhttps://example1.com\nhttps://example2.com\nhttps://example3.com"));
     batchTextEdit->setMaximumHeight(200);
     batchInputLayout->addWidget(batchTextEdit);
     
     batchInputButtonLayout = new QHBoxLayout();
-    addBatchItemBtn = new QPushButton("➕ 添加项目");
+    addBatchItemBtn = new QPushButton(tr("➕ 添加项目"));
     batchInputButtonLayout->addWidget(addBatchItemBtn);
     
-    clearBatchListBtn = new QPushButton("🗑️ 清空列表");
+    clearBatchListBtn = new QPushButton(tr("🗑️ 清空列表"));
     clearBatchListBtn->setStyleSheet("QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
     batchInputButtonLayout->addWidget(clearBatchListBtn);
     
-    importBatchBtn = new QPushButton("📁 导入文件");
+    importBatchBtn = new QPushButton(tr("📁 导入文件"));
     batchInputButtonLayout->addWidget(importBatchBtn);
     
     batchInputButtonLayout->addStretch();
@@ -905,15 +905,15 @@ void QrCodeGen::setupBatchArea()
     
     batchButtonLayout = new QHBoxLayout();
     
-    batchGenerateBtn = new QPushButton("🎨 批量生成");
+    batchGenerateBtn = new QPushButton(tr("🎨 批量生成"));
     batchGenerateBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; font-weight: bold; } QPushButton:hover { background-color: #218838; }");
     batchButtonLayout->addWidget(batchGenerateBtn);
     
-    batchParseBtn = new QPushButton("🔍 批量解析");
+    batchParseBtn = new QPushButton(tr("🔍 批量解析"));
     batchParseBtn->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; } QPushButton:hover { background-color: #138496; }");
     batchButtonLayout->addWidget(batchParseBtn);
     
-    exportBatchBtn = new QPushButton("💾 导出结果");
+    exportBatchBtn = new QPushButton(tr("💾 导出结果"));
     exportBatchBtn->setEnabled(false);
     batchButtonLayout->addWidget(exportBatchBtn);
     
@@ -926,7 +926,7 @@ void QrCodeGen::setupBatchArea()
     
     batchResultLayout->addLayout(batchButtonLayout);
     
-    batchStatusLabel = new QLabel("就绪");
+    batchStatusLabel = new QLabel(tr("就绪"));
     batchStatusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
     batchResultLayout->addWidget(batchStatusLabel);
     
@@ -950,13 +950,13 @@ void QrCodeGen::setupHistoryArea()
     
     historyButtonLayout = new QHBoxLayout();
     
-    clearHistoryBtn = new QPushButton("🗑️ 清空历史");
+    clearHistoryBtn = new QPushButton(tr("🗑️ 清空历史"));
     clearHistoryBtn->setStyleSheet("QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
     historyButtonLayout->addWidget(clearHistoryBtn);
     
     historyButtonLayout->addStretch();
     
-    historyCountLabel = new QLabel("历史记录: 0 项");
+    historyCountLabel = new QLabel(tr("历史记录: 0 项"));
     historyCountLabel->setStyleSheet("color: #6c757d; font-weight: bold;");
     historyButtonLayout->addWidget(historyCountLabel);
     
@@ -968,7 +968,7 @@ void QrCodeGen::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
     
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
     
     progressBar = new QProgressBar();
@@ -1012,11 +1012,11 @@ void QrCodeGen::onGenerateQRCode()
 {
     QString text = textEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        statusLabel->setText("请输入要生成二维码的内容");
+        statusLabel->setText(tr("请输入要生成二维码的内容"));
         return;
     }
     
-    statusLabel->setText("正在生成二维码...");
+    statusLabel->setText(tr("正在生成二维码..."));
     progressBar->setVisible(true);
     progressBar->setRange(0, 0);
     
@@ -1036,9 +1036,9 @@ void QrCodeGen::onGenerateQRCode()
         copyBtn->setEnabled(true);
         addToHistoryBtn->setEnabled(true);
         
-        statusLabel->setText("二维码生成成功");
+        statusLabel->setText(tr("二维码生成成功"));
     } else {
-        statusLabel->setText("二维码生成失败");
+        statusLabel->setText(tr("二维码生成失败"));
     }
     
     progressBar->setVisible(false);
@@ -1121,7 +1121,7 @@ void QrCodeGen::onSelectLogo()
             removeLogoBtn->setEnabled(true);
             logoSizeSpinBox->setEnabled(true);
             
-            statusLabel->setText("Logo已加载");
+            statusLabel->setText(tr("Logo已加载"));
             m_statusTimer->start();
             onStyleChanged();
         }
@@ -1132,11 +1132,11 @@ void QrCodeGen::onRemoveLogo()
 {
     m_logoPixmap = QPixmap();
     logoPreviewLabel->clear();
-    logoPreviewLabel->setText("Logo");
+    logoPreviewLabel->setText(tr("Logo"));
     removeLogoBtn->setEnabled(false);
     logoSizeSpinBox->setEnabled(false);
     
-    statusLabel->setText("Logo已移除");
+    statusLabel->setText(tr("Logo已移除"));
     m_statusTimer->start();
     onStyleChanged();
 }
@@ -1174,9 +1174,9 @@ void QrCodeGen::onUploadImage()
             parseResultEdit->setPlainText(result);
             copyParseResultBtn->setEnabled(!result.isEmpty());
             
-            statusLabel->setText("图片已上传并解析");
+            statusLabel->setText(tr("图片已上传并解析"));
         } else {
-            statusLabel->setText("无法加载图片文件");
+            statusLabel->setText(tr("无法加载图片文件"));
         }
         m_statusTimer->start();
     }
@@ -1197,12 +1197,12 @@ void QrCodeGen::onParseFromClipboard()
             parseResultEdit->setPlainText(result);
             copyParseResultBtn->setEnabled(!result.isEmpty());
             
-            statusLabel->setText("已从剪贴板解析图片");
+            statusLabel->setText(tr("已从剪贴板解析图片"));
         } else {
-            statusLabel->setText("剪贴板中没有有效的图片");
+            statusLabel->setText(tr("剪贴板中没有有效的图片"));
         }
     } else {
-        statusLabel->setText("剪贴板中没有图片数据");
+        statusLabel->setText(tr("剪贴板中没有图片数据"));
     }
     m_statusTimer->start();
 }
@@ -1210,10 +1210,10 @@ void QrCodeGen::onParseFromClipboard()
 void QrCodeGen::onClearParseResult()
 {
     uploadedImageLabel->clear();
-    uploadedImageLabel->setText("拖拽图片到此处\n或点击选择图片");
+    uploadedImageLabel->setText(tr("拖拽图片到此处\n或点击选择图片"));
     parseResultEdit->clear();
     copyParseResultBtn->setEnabled(false);
-    statusLabel->setText("解析结果已清空");
+    statusLabel->setText(tr("解析结果已清空"));
     m_statusTimer->start();
 }
 
@@ -1222,7 +1222,7 @@ void QrCodeGen::onBatchGenerate()
 {
     QStringList lines = batchTextEdit->toPlainText().split('\n', Qt::SkipEmptyParts);
     if (lines.isEmpty()) {
-        statusLabel->setText("请输入批量生成的内容");
+        statusLabel->setText(tr("请输入批量生成的内容"));
         return;
     }
     
@@ -1231,7 +1231,7 @@ void QrCodeGen::onBatchGenerate()
     
     batchProgressBar->setVisible(true);
     batchProgressBar->setRange(0, lines.size());
-    batchStatusLabel->setText("正在批量生成...");
+    batchStatusLabel->setText(tr("正在批量生成..."));
     
     QRStyle style = getCurrentStyle();
     
@@ -1256,7 +1256,7 @@ void QrCodeGen::onBatchParse()
     
     batchProgressBar->setVisible(true);
     batchProgressBar->setRange(0, filePaths.size());
-    batchStatusLabel->setText("正在批量解析...");
+    batchStatusLabel->setText(tr("正在批量解析..."));
     
     QRStyle style = getCurrentStyle();
     
@@ -1277,7 +1277,7 @@ void QrCodeGen::onAddBatchItem()
         currentBatch += text;
         batchTextEdit->setPlainText(currentBatch);
         
-        statusLabel->setText("已添加到批量列表");
+        statusLabel->setText(tr("已添加到批量列表"));
         m_statusTimer->start();
     }
 }
@@ -1288,7 +1288,7 @@ void QrCodeGen::onClearBatchList()
     batchTextEdit->clear();
     batchTable->setRowCount(0);
     m_batchItems.clear();
-    batchStatusLabel->setText("就绪");
+    batchStatusLabel->setText(tr("就绪"));
     exportBatchBtn->setEnabled(false);
 }
 
@@ -1325,7 +1325,7 @@ void QrCodeGen::onBatchCompleted()
     batchStatusLabel->setText(QString("批量处理完成，共处理 %1 项").arg(m_batchItems.size()));
     exportBatchBtn->setEnabled(!m_batchItems.isEmpty());
     
-    statusLabel->setText("批量处理完成");
+    statusLabel->setText(tr("批量处理完成"));
     m_statusTimer->start();
 }
 
@@ -1333,7 +1333,7 @@ void QrCodeGen::onBatchError(const QString &error)
 {
     batchProgressBar->setVisible(false);
     batchStatusLabel->setText("处理出错: " + error);
-    statusLabel->setText("批量处理出错");
+    statusLabel->setText(tr("批量处理出错"));
     m_statusTimer->start();
 }
 
@@ -1350,9 +1350,9 @@ void QrCodeGen::onSaveQRCode()
     
     if (!filePath.isEmpty()) {
         if (m_currentQRCode.save(filePath)) {
-            statusLabel->setText("二维码保存成功");
+            statusLabel->setText(tr("二维码保存成功"));
         } else {
-            statusLabel->setText("二维码保存失败");
+            statusLabel->setText(tr("二维码保存失败"));
         }
         m_statusTimer->start();
     }
@@ -1365,7 +1365,7 @@ void QrCodeGen::onCopyToClipboard()
     if (!m_currentQRCode.isNull()) {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setPixmap(m_currentQRCode);
-        statusLabel->setText("二维码已复制到剪贴板");
+        statusLabel->setText(tr("二维码已复制到剪贴板"));
         m_statusTimer->start();
     }
 }
@@ -1406,7 +1406,7 @@ void QrCodeGen::onImportBatch()
             QString content = in.readAll();
             batchTextEdit->setPlainText(content);
             
-            statusLabel->setText("批量列表导入成功");
+            statusLabel->setText(tr("批量列表导入成功"));
             m_statusTimer->start();
         }
     }
@@ -1424,7 +1424,7 @@ void QrCodeGen::onAddToHistory()
         item.createTime = QDateTime::currentDateTime();
         
         addToHistory(item);
-        statusLabel->setText("已添加到历史记录");
+        statusLabel->setText(tr("已添加到历史记录"));
         m_statusTimer->start();
     }
 }
@@ -1433,8 +1433,8 @@ void QrCodeGen::onClearHistory()
 {
     m_historyItems.clear();
     historyList->clear();
-    historyCountLabel->setText("历史记录: 0 项");
-    statusLabel->setText("历史记录已清空");
+    historyCountLabel->setText(tr("历史记录: 0 项"));
+    statusLabel->setText(tr("历史记录已清空"));
     m_statusTimer->start();
 }
 
@@ -1455,7 +1455,7 @@ void QrCodeGen::onHistoryItemClicked(QListWidgetItem *item)
         copyBtn->setEnabled(true);
         addToHistoryBtn->setEnabled(true);
         
-        statusLabel->setText("已加载历史记录");
+        statusLabel->setText(tr("已加载历史记录"));
         m_statusTimer->start();
     }
 }
@@ -1610,7 +1610,7 @@ void QrCodeGen::dropEvent(QDropEvent *event)
                 parseResultEdit->setPlainText(result);
                 copyParseResultBtn->setEnabled(!result.isEmpty());
                 
-                statusLabel->setText("图片已拖拽并解析");
+                statusLabel->setText(tr("图片已拖拽并解析"));
                 m_statusTimer->start();
             }
             

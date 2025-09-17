@@ -99,7 +99,7 @@ void UuidGen::setupGeneratorTab()
     settingsLayout->setContentsMargins(15, 25, 15, 15);
     settingsLayout->setSpacing(12);
     
-    QLabel *versionLabel = new QLabel("UUID版本:");
+    QLabel *versionLabel = new QLabel(tr("UUID版本:"));
     versionLabel->setStyleSheet("font-weight: bold; font-size: 13px;");
     settingsLayout->addWidget(versionLabel, 0, 0);
     
@@ -109,7 +109,7 @@ void UuidGen::setupGeneratorTab()
     versionCombo->setStyleSheet("QComboBox { font-size: 13px; padding: 6px; }");
     settingsLayout->addWidget(versionCombo, 0, 1);
     
-    QLabel *formatLabel = new QLabel("输出格式:");
+    QLabel *formatLabel = new QLabel(tr("输出格式:"));
     formatLabel->setStyleSheet("font-weight: bold; font-size: 13px;");
     settingsLayout->addWidget(formatLabel, 1, 0);
     
@@ -119,7 +119,7 @@ void UuidGen::setupGeneratorTab()
     formatCombo->setStyleSheet("QComboBox { font-size: 13px; padding: 6px; }");
     settingsLayout->addWidget(formatCombo, 1, 1);
     
-    QLabel *countLabel = new QLabel("生成数量:");
+    QLabel *countLabel = new QLabel(tr("生成数量:"));
     countLabel->setStyleSheet("font-weight: bold; font-size: 13px;");
     settingsLayout->addWidget(countLabel, 2, 0);
     
@@ -130,12 +130,12 @@ void UuidGen::setupGeneratorTab()
     countSpin->setStyleSheet("QSpinBox { font-size: 13px; padding: 6px; }");
     settingsLayout->addWidget(countSpin, 2, 1);
     
-    generateButton = new QPushButton("生成UUID");
+    generateButton = new QPushButton(tr("生成UUID"));
     generateButton->setMinimumHeight(45);
     generateButton->setStyleSheet("QPushButton { background-color: #007bff; color: white; font-weight: bold; font-size: 14px; padding: 12px; }");
     settingsLayout->addWidget(generateButton, 3, 0, 1, 2);
     
-    batchGenerateButton = new QPushButton("批量生成");
+    batchGenerateButton = new QPushButton(tr("批量生成"));
     batchGenerateButton->setMinimumHeight(45);
     batchGenerateButton->setStyleSheet("QPushButton { background-color: #28a745; color: white; font-weight: bold; font-size: 14px; padding: 12px; }");
     settingsLayout->addWidget(batchGenerateButton, 4, 0, 1, 2);
@@ -165,12 +165,12 @@ void UuidGen::setupGeneratorTab()
         "    line-height: 1.4;"
         "}"
     );
-    resultEdit->setPlaceholderText("生成的UUID将显示在这里...");
+    resultEdit->setPlaceholderText(tr("生成的UUID将显示在这里..."));
     resultLayout->addWidget(resultEdit);
     
     QHBoxLayout *buttonLayout = new QHBoxLayout;
-    copyButton = new QPushButton("复制当前");
-    copyAllButton = new QPushButton("复制全部");
+    copyButton = new QPushButton(tr("复制当前"));
+    copyAllButton = new QPushButton(tr("复制全部"));
     
     copyButton->setMinimumHeight(35);
     copyAllButton->setMinimumHeight(35);
@@ -182,7 +182,7 @@ void UuidGen::setupGeneratorTab()
     buttonLayout->addStretch();
     resultLayout->addLayout(buttonLayout);
     
-    statisticsLabel = new QLabel("统计: 已生成 0 个UUID");
+    statisticsLabel = new QLabel(tr("统计: 已生成 0 个UUID"));
     statisticsLabel->setStyleSheet("color: #6c757d; font-style: italic; font-size: 13px; margin-top: 5px;");
     resultLayout->addWidget(statisticsLabel);
     
@@ -211,12 +211,12 @@ void UuidGen::setupValidatorTab()
     inputLayout->setContentsMargins(15, 25, 15, 15);
     inputLayout->setSpacing(10);
     
-    QLabel *formatHintLabel = new QLabel("支持多种格式: 标准格式、简单格式、大括号格式等");
+    QLabel *formatHintLabel = new QLabel(tr("支持多种格式: 标准格式、简单格式、大括号格式等"));
     formatHintLabel->setStyleSheet("color: #6c757d; font-style: italic; margin-bottom: 5px;");
     inputLayout->addWidget(formatHintLabel);
     
     inputUuidEdit = new QLineEdit;
-    inputUuidEdit->setPlaceholderText("例如: 550e8400-e29b-41d4-a716-446655440000");
+    inputUuidEdit->setPlaceholderText(tr("例如: 550e8400-e29b-41d4-a716-446655440000"));
     inputUuidEdit->setMinimumHeight(40);
     inputUuidEdit->setStyleSheet(
         "QLineEdit {"
@@ -233,8 +233,8 @@ void UuidGen::setupValidatorTab()
     inputLayout->addWidget(inputUuidEdit);
     
     QHBoxLayout *buttonLayout = new QHBoxLayout;
-    validateButton = new QPushButton("验证UUID");
-    parseButton = new QPushButton("解析详情");
+    validateButton = new QPushButton(tr("验证UUID"));
+    parseButton = new QPushButton(tr("解析详情"));
     
     validateButton->setMinimumHeight(35);
     parseButton->setMinimumHeight(35);
@@ -255,7 +255,7 @@ void UuidGen::setupValidatorTab()
     resultLayout->setContentsMargins(15, 25, 15, 15);
     resultLayout->setSpacing(10);
     
-    validationStatusLabel = new QLabel("请输入UUID进行验证");
+    validationStatusLabel = new QLabel(tr("请输入UUID进行验证"));
     validationStatusLabel->setMinimumHeight(30);
     validationStatusLabel->setStyleSheet(
         "color: #6c757d; "
@@ -268,7 +268,7 @@ void UuidGen::setupValidatorTab()
     );
     resultLayout->addWidget(validationStatusLabel);
     
-    QLabel *detailLabel = new QLabel("详细信息:");
+    QLabel *detailLabel = new QLabel(tr("详细信息:"));
     detailLabel->setStyleSheet("font-weight: bold; margin-top: 10px; font-size: 13px;");
     resultLayout->addWidget(detailLabel);
     
@@ -284,7 +284,7 @@ void UuidGen::setupValidatorTab()
         "    padding: 10px;"
         "}"
     );
-    parseResultEdit->setPlaceholderText("UUID的详细解析信息将显示在这里...");
+    parseResultEdit->setPlaceholderText(tr("UUID的详细解析信息将显示在这里..."));
     resultLayout->addWidget(parseResultEdit);
     
     layout->addWidget(validationResultGroup);
@@ -311,12 +311,12 @@ void UuidGen::setupConverterTab()
     convertLayout->setContentsMargins(15, 25, 15, 15);
     convertLayout->setSpacing(10);
     
-    QLabel *inputLabel = new QLabel("输入UUID:");
+    QLabel *inputLabel = new QLabel(tr("输入UUID:"));
     inputLabel->setStyleSheet("font-weight: bold; font-size: 13px;");
     convertLayout->addWidget(inputLabel, 0, 0);
     
     convertInputEdit = new QLineEdit;
-    convertInputEdit->setPlaceholderText("输入要转换格式的UUID...");
+    convertInputEdit->setPlaceholderText(tr("输入要转换格式的UUID..."));
     convertInputEdit->setMinimumHeight(35);
     convertInputEdit->setStyleSheet(
         "QLineEdit {"
@@ -329,7 +329,7 @@ void UuidGen::setupConverterTab()
     );
     convertLayout->addWidget(convertInputEdit, 0, 1, 1, 2);
     
-    QLabel *formatLabel = new QLabel("转换为:");
+    QLabel *formatLabel = new QLabel(tr("转换为:"));
     formatLabel->setStyleSheet("font-weight: bold; font-size: 13px;");
     convertLayout->addWidget(formatLabel, 1, 0);
     
@@ -339,7 +339,7 @@ void UuidGen::setupConverterTab()
     convertToCombo->setStyleSheet("QComboBox { font-size: 13px; padding: 6px; }");
     convertLayout->addWidget(convertToCombo, 1, 1);
     
-    convertButton = new QPushButton("转换格式");
+    convertButton = new QPushButton(tr("转换格式"));
     convertButton->setMinimumHeight(40);
     convertButton->setStyleSheet("QPushButton { background-color: #6f42c1; color: white; font-weight: bold; padding: 10px 20px; font-size: 13px; }");
     convertLayout->addWidget(convertButton, 2, 0, 1, 3);
@@ -365,10 +365,10 @@ void UuidGen::setupConverterTab()
         "    padding: 10px;"
         "}"
     );
-    convertResultEdit->setPlaceholderText("转换后的UUID格式将显示在这里...");
+    convertResultEdit->setPlaceholderText(tr("转换后的UUID格式将显示在这里..."));
     resultLayout->addWidget(convertResultEdit);
     
-    QPushButton *copyConvertedButton = new QPushButton("复制转换结果");
+    QPushButton *copyConvertedButton = new QPushButton(tr("复制转换结果"));
     copyConvertedButton->setStyleSheet("QPushButton { background-color: #28a745; color: white; font-weight: bold; }");
     copyConvertedButton->setMaximumWidth(150);
     resultLayout->addWidget(copyConvertedButton);
@@ -382,9 +382,9 @@ void UuidGen::setupConverterTab()
         if (!text.isEmpty()) {
             QClipboard *clipboard = QApplication::clipboard();
             clipboard->setText(text);
-            QMessageBox::information(this, "成功", "转换结果已复制到剪贴板");
+            QMessageBox::information(this, tr("成功"), tr("转换结果已复制到剪贴板"));
         } else {
-            QMessageBox::information(this, "提示", "没有转换结果可复制");
+            QMessageBox::information(this, tr("提示"), tr("没有转换结果可复制"));
         }
     });
 }
@@ -403,8 +403,8 @@ void UuidGen::setupHistoryTab()
     historyLayout->setSpacing(10);
     
     QHBoxLayout *buttonLayout = new QHBoxLayout;
-    deleteItemButton = new QPushButton("删除选中");
-    clearHistoryButton = new QPushButton("清空历史");
+    deleteItemButton = new QPushButton(tr("删除选中"));
+    clearHistoryButton = new QPushButton(tr("清空历史"));
     
     deleteItemButton->setMinimumHeight(35);
     clearHistoryButton->setMinimumHeight(35);
@@ -458,7 +458,7 @@ void UuidGen::setupHistoryTab()
     
     historyLayout->addWidget(historyTable);
     
-    historyStatsLabel = new QLabel("历史记录: 0 条");
+    historyStatsLabel = new QLabel(tr("历史记录: 0 条"));
     historyStatsLabel->setStyleSheet("color: #6c757d; font-style: italic; font-size: 13px; margin-top: 5px;");
     historyLayout->addWidget(historyStatsLabel);
     
@@ -474,8 +474,8 @@ void UuidGen::setupToolbar()
     toolbarGroup = new QGroupBox("工具");
     QHBoxLayout *layout = new QHBoxLayout(toolbarGroup);
     
-    exportButton = new QPushButton("导出UUID");
-    importButton = new QPushButton("导入设置");
+    exportButton = new QPushButton(tr("导出UUID"));
+    importButton = new QPushButton(tr("导入设置"));
     
     exportButton->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; }");
     importButton->setStyleSheet("QPushButton { background-color: #6f42c1; color: white; }");
@@ -638,18 +638,18 @@ void UuidGen::onValidateClicked()
 {
     QString uuid = inputUuidEdit->text().trimmed();
     if (uuid.isEmpty()) {
-        QMessageBox::information(this, "提示", "请输入UUID");
+        QMessageBox::information(this, tr("提示"), tr("请输入UUID"));
         return;
     }
     
     if (isValidUuid(uuid)) {
-        validationStatusLabel->setText("✓ UUID格式有效");
+        validationStatusLabel->setText(tr("✓ UUID格式有效"));
         validationStatusLabel->setStyleSheet("color: #28a745;");
-        parseResultEdit->setText("这是一个有效的UUID格式");
+        parseResultEdit->setText(tr("这是一个有效的UUID格式"));
     } else {
-        validationStatusLabel->setText("✗ UUID格式无效");
+        validationStatusLabel->setText(tr("✗ UUID格式无效"));
         validationStatusLabel->setStyleSheet("color: #dc3545;");
-        parseResultEdit->setText("输入的字符串不是有效的UUID格式");
+        parseResultEdit->setText(tr("输入的字符串不是有效的UUID格式"));
     }
 }
 
@@ -657,7 +657,7 @@ void UuidGen::onParseClicked()
 {
     QString uuid = inputUuidEdit->text().trimmed();
     if (uuid.isEmpty()) {
-        QMessageBox::information(this, "提示", "请输入UUID");
+        QMessageBox::information(this, tr("提示"), tr("请输入UUID"));
         return;
     }
     
@@ -675,16 +675,16 @@ void UuidGen::onInputUuidChanged()
 {
     QString uuid = inputUuidEdit->text().trimmed();
     if (uuid.isEmpty()) {
-        validationStatusLabel->setText("请输入UUID进行验证");
+        validationStatusLabel->setText(tr("请输入UUID进行验证"));
         validationStatusLabel->setStyleSheet("color: #6c757d;");
         return;
     }
     
     if (isValidUuid(uuid)) {
-        validationStatusLabel->setText("✓ UUID格式有效");
+        validationStatusLabel->setText(tr("✓ UUID格式有效"));
         validationStatusLabel->setStyleSheet("color: #28a745;");
     } else {
-        validationStatusLabel->setText("✗ UUID格式无效");
+        validationStatusLabel->setText(tr("✗ UUID格式无效"));
         validationStatusLabel->setStyleSheet("color: #dc3545;");
     }
 }
@@ -695,7 +695,7 @@ void UuidGen::onCopyClicked()
     if (!text.isEmpty()) {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
-        QMessageBox::information(this, "成功", "UUID已复制到剪贴板");
+        QMessageBox::information(this, tr("成功"), tr("UUID已复制到剪贴板"));
     }
 }
 
@@ -705,13 +705,13 @@ void UuidGen::onCopyAllClicked()
     if (!text.isEmpty()) {
         QClipboard *clipboard = QApplication::clipboard();
         clipboard->setText(text);
-        QMessageBox::information(this, "成功", "所有UUID已复制到剪贴板");
+        QMessageBox::information(this, tr("成功"), tr("所有UUID已复制到剪贴板"));
     }
 }
 
 void UuidGen::onClearHistoryClicked()
 {
-    int ret = QMessageBox::question(this, "确认", "确定要清空历史记录吗？");
+    int ret = QMessageBox::question(this, tr("确认"), tr("确定要清空历史记录吗？"));
     if (ret == QMessageBox::Yes) {
         uuidHistory.clear();
         updateHistoryTable();
@@ -733,7 +733,7 @@ void UuidGen::onExportClicked()
                 out << info.uuid << "\n";
             }
             file.close();
-            QMessageBox::information(this, "成功", "UUID已导出");
+            QMessageBox::information(this, tr("成功"), tr("UUID已导出"));
         }
     }
 }
@@ -742,12 +742,12 @@ void UuidGen::onConvertFormatClicked()
 {
     QString uuid = convertInputEdit->text().trimmed();
     if (uuid.isEmpty()) {
-        QMessageBox::information(this, "提示", "请输入UUID");
+        QMessageBox::information(this, tr("提示"), tr("请输入UUID"));
         return;
     }
     
     if (!isValidUuid(uuid)) {
-        QMessageBox::warning(this, "错误", "UUID格式无效");
+        QMessageBox::warning(this, tr("错误"), tr("UUID格式无效"));
         return;
     }
     
@@ -780,9 +780,9 @@ void UuidGen::onDeleteHistoryItemClicked()
 void UuidGen::onVersionChanged() {}
 void UuidGen::onFormatChanged() {}
 void UuidGen::onCustomParametersChanged() {}
-void UuidGen::onImportClicked() { QMessageBox::information(this, "提示", "功能开发中..."); }
-void UuidGen::onGenerateFromNameClicked() { QMessageBox::information(this, "提示", "功能开发中..."); }
-void UuidGen::onCompareUuidsClicked() { QMessageBox::information(this, "提示", "功能开发中..."); }
+void UuidGen::onImportClicked() { QMessageBox::information(this, tr("提示"), tr("功能开发中...")); }
+void UuidGen::onGenerateFromNameClicked() { QMessageBox::information(this, tr("提示"), tr("功能开发中...")); }
+void UuidGen::onCompareUuidsClicked() { QMessageBox::information(this, tr("提示"), tr("功能开发中...")); }
 void UuidGen::saveSettings() {}
 void UuidGen::loadSettings() {}
 UuidVersion UuidGen::detectVersion(const QString &uuid) { Q_UNUSED(uuid); return UUID_V4; }

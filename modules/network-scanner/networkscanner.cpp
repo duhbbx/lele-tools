@@ -352,14 +352,14 @@ void NetworkScanner::setupScanSettings() {
     settingsLayout->setSpacing(8);
 
     // 网络接口选择
-    settingsLayout->addWidget(new QLabel("网络接口:"), 0, 0);
+    settingsLayout->addWidget(new QLabel(tr("网络接口:")), 0, 0);
     m_interfaceCombo = new QComboBox();
     m_interfaceCombo->setMinimumWidth(200);
     connect(m_interfaceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &NetworkScanner::onInterfaceChanged);
     settingsLayout->addWidget(m_interfaceCombo, 0, 1);
 
-    m_refreshBtn = new QPushButton("🔄 刷新");
+    m_refreshBtn = new QPushButton(tr("🔄 刷新"));
     m_refreshBtn->setMaximumWidth(80);
     connect(m_refreshBtn, &QPushButton::clicked, this, &NetworkScanner::onRefreshInterfaces);
     settingsLayout->addWidget(m_refreshBtn, 0, 2);
@@ -370,26 +370,26 @@ void NetworkScanner::setupScanSettings() {
     settingsLayout->addWidget(m_customRangeCheck, 1, 0);
 
     // IP范围显示/编辑
-    m_ipRangeLabel = new QLabel("IP范围: ");
+    m_ipRangeLabel = new QLabel(tr("IP范围: "));
     settingsLayout->addWidget(m_ipRangeLabel, 2, 0);
 
     QHBoxLayout* ipLayout = new QHBoxLayout();
     m_startIPEdit = new QLineEdit();
-    m_startIPEdit->setPlaceholderText("开始IP");
+    m_startIPEdit->setPlaceholderText(tr("开始IP"));
     m_startIPEdit->setEnabled(false);
     ipLayout->addWidget(m_startIPEdit);
 
-    ipLayout->addWidget(new QLabel(" - "));
+    ipLayout->addWidget(new QLabel(tr(" - ")));
 
     m_endIPEdit = new QLineEdit();
-    m_endIPEdit->setPlaceholderText("结束IP");
+    m_endIPEdit->setPlaceholderText(tr("结束IP"));
     m_endIPEdit->setEnabled(false);
     ipLayout->addWidget(m_endIPEdit);
 
     settingsLayout->addLayout(ipLayout, 2, 1, 1, 2);
 
     // 超时设置
-    settingsLayout->addWidget(new QLabel("超时(ms):"), 3, 0);
+    settingsLayout->addWidget(new QLabel(tr("超时(ms):")), 3, 0);
     m_timeoutSpin = new QSpinBox();
     m_timeoutSpin->setRange(100, 10000);
     m_timeoutSpin->setValue(1000);
@@ -397,7 +397,7 @@ void NetworkScanner::setupScanSettings() {
     settingsLayout->addWidget(m_timeoutSpin, 3, 1);
 
     // 并发线程数
-    settingsLayout->addWidget(new QLabel("并发数:"), 3, 2);
+    settingsLayout->addWidget(new QLabel(tr("并发数:")), 3, 2);
     m_threadSpin = new QSpinBox();
     m_threadSpin->setRange(1, 20);
     m_threadSpin->setValue(10);
@@ -406,23 +406,23 @@ void NetworkScanner::setupScanSettings() {
 
     // 控制按钮
     m_buttonLayout = new QHBoxLayout();
-    m_scanBtn = new QPushButton("🚀 开始扫描");
+    m_scanBtn = new QPushButton(tr("🚀 开始扫描"));
     m_scanBtn->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }");
     connect(m_scanBtn, &QPushButton::clicked, this, &NetworkScanner::onStartScan);
     m_buttonLayout->addWidget(m_scanBtn);
 
-    m_stopBtn = new QPushButton("⏹️ 停止扫描");
+    m_stopBtn = new QPushButton(tr("⏹️ 停止扫描"));
     m_stopBtn->setEnabled(false);
     m_stopBtn->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; }");
     // 使用DirectConnection确保立即响应
     connect(m_stopBtn, &QPushButton::clicked, this, &NetworkScanner::onStopScan, Qt::DirectConnection);
     m_buttonLayout->addWidget(m_stopBtn);
 
-    m_clearBtn = new QPushButton("🗑️ 清空结果");
+    m_clearBtn = new QPushButton(tr("🗑️ 清空结果"));
     connect(m_clearBtn, &QPushButton::clicked, this, &NetworkScanner::onClearResults);
     m_buttonLayout->addWidget(m_clearBtn);
 
-    m_exportBtn = new QPushButton("📤 导出结果");
+    m_exportBtn = new QPushButton(tr("📤 导出结果"));
     connect(m_exportBtn, &QPushButton::clicked, this, &NetworkScanner::onExportResults);
     m_buttonLayout->addWidget(m_exportBtn);
 
@@ -479,12 +479,12 @@ void NetworkScanner::setupStatusArea() {
     m_progressBar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed); // 高度随内容
     progressLayout->addWidget(m_progressBar);
 
-    m_statusLabel = new QLabel("就绪");
+    m_statusLabel = new QLabel(tr("就绪"));
     m_statusLabel->setStyleSheet("color: #666; font-weight: bold;");
     m_statusLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     progressLayout->addWidget(m_statusLabel);
 
-    m_foundLabel = new QLabel("发现主机: 0");
+    m_foundLabel = new QLabel(tr("发现主机: 0"));
     m_foundLabel->setStyleSheet("color: #4CAF50; font-weight: bold;");
     m_foundLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     progressLayout->addWidget(m_foundLabel);
@@ -494,7 +494,7 @@ void NetworkScanner::setupStatusArea() {
 
     // 日志文本高度弹性
     m_logText = new QTextEdit();
-    m_logText->setPlaceholderText("扫描日志将显示在这里...");
+    m_logText->setPlaceholderText(tr("扫描日志将显示在这里..."));
     m_logText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     statusLayout->addWidget(m_logText);
 }
@@ -557,7 +557,7 @@ bool NetworkScanner::validateIPRange() {
     QString endIP = m_endIPEdit->text().trimmed();
 
     if (startIP.isEmpty() || endIP.isEmpty()) {
-        QMessageBox::warning(this, "输入错误", "请输入有效的IP地址范围");
+        QMessageBox::warning(this, tr("输入错误"), tr("请输入有效的IP地址范围"));
         return false;
     }
 
@@ -566,7 +566,7 @@ bool NetworkScanner::validateIPRange() {
 
     if (startAddr.protocol() != QAbstractSocket::IPv4Protocol ||
         endAddr.protocol() != QAbstractSocket::IPv4Protocol) {
-        QMessageBox::warning(this, "输入错误", "请输入有效的IPv4地址");
+        QMessageBox::warning(this, tr("输入错误"), tr("请输入有效的IPv4地址"));
         return false;
     }
 
@@ -574,12 +574,12 @@ bool NetworkScanner::validateIPRange() {
     quint32 end = endAddr.toIPv4Address();
 
     if (start > end) {
-        QMessageBox::warning(this, "输入错误", "开始IP不能大于结束IP");
+        QMessageBox::warning(this, tr("输入错误"), tr("开始IP不能大于结束IP"));
         return false;
     }
 
     if (end - start > 65535) {
-        QMessageBox::warning(this, "范围过大", "IP范围不能超过65535个地址");
+        QMessageBox::warning(this, tr("范围过大"), tr("IP范围不能超过65535个地址"));
         return false;
     }
 
@@ -594,7 +594,7 @@ void NetworkScanner::onStartScan() {
     // 清空之前的结果
     m_resultsTable->setRowCount(0);
     m_foundHosts = 0;
-    m_foundLabel->setText("发现主机: 0");
+    m_foundLabel->setText(tr("发现主机: 0"));
     m_logText->clear();
 
     // 创建扫描线程
@@ -637,7 +637,7 @@ void NetworkScanner::onStopScan() {
     updateScanButton(false);
     m_progressBar->setVisible(false);
     m_statusTimer->stop();
-    m_statusLabel->setText("正在停止扫描...");
+    m_statusLabel->setText(tr("正在停止扫描..."));
     m_logText->append(QString("[%1] 用户停止扫描")
         .arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
 
@@ -657,10 +657,10 @@ void NetworkScanner::onStopScan() {
                     m_scanThread->wait(1000);
                 }
             }
-            m_statusLabel->setText("扫描已停止");
+            m_statusLabel->setText(tr("扫描已停止"));
         });
     } else {
-        m_statusLabel->setText("扫描已停止");
+        m_statusLabel->setText(tr("扫描已停止"));
     }
 }
 
@@ -668,16 +668,16 @@ void NetworkScanner::onStopScan() {
 void NetworkScanner::onClearResults() {
     m_resultsTable->setRowCount(0);
     m_foundHosts = 0;
-    m_foundLabel->setText("发现主机: 0");
+    m_foundLabel->setText(tr("发现主机: 0"));
     m_logText->clear();
     m_progressBar->setValue(0);
     m_progressBar->setVisible(false);
-    m_statusLabel->setText("就绪");
+    m_statusLabel->setText(tr("就绪"));
 }
 
 void NetworkScanner::onExportResults() {
     if (m_resultsTable->rowCount() == 0) {
-        QMessageBox::information(this, "导出结果", "没有可导出的数据");
+        QMessageBox::information(this, tr("导出结果"), tr("没有可导出的数据"));
         return;
     }
 

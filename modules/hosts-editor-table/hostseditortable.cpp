@@ -616,8 +616,8 @@ bool HostsEditor::tryRobocopyElevation(const QString& tempFile) {
 void HostsEditor::showManualSaveDialog(const QString& tempFile) {
     QMessageBox msgBox(this);
     msgBox.setIcon(QMessageBox::Information);
-    msgBox.setWindowTitle("手动保存hosts文件");
-    msgBox.setText("自动权限提升失败，请手动保存hosts文件。");
+    msgBox.setWindowTitle(tr("手动保存hosts文件"));
+    msgBox.setText(tr("自动权限提升失败，请手动保存hosts文件。"));
     msgBox.setInformativeText(QString(
         "请按照以下步骤手动保存：\n\n"
         "1. 以管理员身份运行文件管理器\n"

@@ -137,7 +137,7 @@ void BarcodeGen::setupInputArea()
     inputLayout = new QGridLayout(inputGroup);
     
     // 条形码类型
-    inputLayout->addWidget(new QLabel("类型:"), 0, 0);
+    inputLayout->addWidget(new QLabel(tr("类型:")), 0, 0);
     barcodeTypeCombo = new QComboBox;
     barcodeTypeCombo->addItem("Code 128", static_cast<int>(BarcodeType::Code128));
     barcodeTypeCombo->addItem("Code 39", static_cast<int>(BarcodeType::Code39));
@@ -149,19 +149,19 @@ void BarcodeGen::setupInputArea()
     inputLayout->addWidget(barcodeTypeCombo, 0, 1, 1, 2);
     
     // 输入文本
-    inputLayout->addWidget(new QLabel("内容:"), 1, 0);
+    inputLayout->addWidget(new QLabel(tr("内容:")), 1, 0);
     textEdit = new QLineEdit;
-    textEdit->setPlaceholderText("请输入要生成条形码的内容");
+    textEdit->setPlaceholderText(tr("请输入要生成条形码的内容"));
     inputLayout->addWidget(textEdit, 1, 1, 1, 2);
     
     // 预设模板
-    inputLayout->addWidget(new QLabel("预设:"), 2, 0);
+    inputLayout->addWidget(new QLabel(tr("预设:")), 2, 0);
     presetCombo = new QComboBox;
     inputLayout->addWidget(presetCombo, 2, 1, 1, 2);
     
     // 按钮
-    generateBtn = new QPushButton("生成条形码");
-    clearBtn = new QPushButton("清空");
+    generateBtn = new QPushButton(tr("生成条形码"));
+    clearBtn = new QPushButton(tr("清空"));
     
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(generateBtn);
@@ -190,22 +190,22 @@ void BarcodeGen::setupStyleArea()
     styleLayout = new QGridLayout(styleGroup);
     
     // 颜色设置
-    styleLayout->addWidget(new QLabel("前景色:"), 0, 0);
+    styleLayout->addWidget(new QLabel(tr("前景色:")), 0, 0);
     foregroundColorBtn = new ColorButton(Qt::black);
     styleLayout->addWidget(foregroundColorBtn, 0, 1);
     
-    styleLayout->addWidget(new QLabel("背景色:"), 0, 2);
+    styleLayout->addWidget(new QLabel(tr("背景色:")), 0, 2);
     backgroundColorBtn = new ColorButton(Qt::white);
     styleLayout->addWidget(backgroundColorBtn, 0, 3);
     
     // 尺寸设置
-    styleLayout->addWidget(new QLabel("宽度:"), 1, 0);
+    styleLayout->addWidget(new QLabel(tr("宽度:")), 1, 0);
     widthSpinBox = new QSpinBox;
     widthSpinBox->setRange(100, 1000);
     widthSpinBox->setValue(300);
     styleLayout->addWidget(widthSpinBox, 1, 1);
     
-    styleLayout->addWidget(new QLabel("高度:"), 1, 2);
+    styleLayout->addWidget(new QLabel(tr("高度:")), 1, 2);
     heightSpinBox = new QSpinBox;
     heightSpinBox->setRange(50, 500);
     heightSpinBox->setValue(100);
@@ -216,7 +216,7 @@ void BarcodeGen::setupStyleArea()
     showTextCheckBox->setChecked(true);
     styleLayout->addWidget(showTextCheckBox, 2, 0, 1, 2);
     
-    styleLayout->addWidget(new QLabel("字体大小:"), 2, 2);
+    styleLayout->addWidget(new QLabel(tr("字体大小:")), 2, 2);
     fontSizeSpinBox = new QSpinBox;
     fontSizeSpinBox->setRange(8, 24);
     fontSizeSpinBox->setValue(12);
@@ -245,15 +245,15 @@ void BarcodeGen::setupBatchArea()
     
     batchTextEdit = new QTextEdit;
     batchTextEdit->setMaximumHeight(80);
-    batchTextEdit->setPlaceholderText("每行一个内容，用于批量生成条形码");
+    batchTextEdit->setPlaceholderText(tr("每行一个内容，用于批量生成条形码"));
     batchLayout->addWidget(batchTextEdit);
     
     batchButtonLayout = new QHBoxLayout;
-    batchGenerateBtn = new QPushButton("批量生成");
-    addBatchItemBtn = new QPushButton("添加当前");
-    clearBatchListBtn = new QPushButton("清空列表");
-    importBatchBtn = new QPushButton("导入");
-    exportBatchBtn = new QPushButton("导出");
+    batchGenerateBtn = new QPushButton(tr("批量生成"));
+    addBatchItemBtn = new QPushButton(tr("添加当前"));
+    clearBatchListBtn = new QPushButton(tr("清空列表"));
+    importBatchBtn = new QPushButton(tr("导入"));
+    exportBatchBtn = new QPushButton(tr("导出"));
     
     batchButtonLayout->addWidget(batchGenerateBtn);
     batchButtonLayout->addWidget(addBatchItemBtn);
@@ -285,9 +285,9 @@ void BarcodeGen::setupPreviewArea()
     previewLayout->addWidget(barcodePreview);
     
     previewButtonLayout = new QHBoxLayout;
-    saveBtn = new QPushButton("保存");
-    copyBtn = new QPushButton("复制");
-    addToHistoryBtn = new QPushButton("添加到历史");
+    saveBtn = new QPushButton(tr("保存"));
+    copyBtn = new QPushButton(tr("复制"));
+    addToHistoryBtn = new QPushButton(tr("添加到历史"));
     
     previewButtonLayout->addWidget(saveBtn);
     previewButtonLayout->addWidget(copyBtn);
@@ -315,8 +315,8 @@ void BarcodeGen::setupHistoryArea()
     historyLayout->addWidget(historyTable);
     
     historyButtonLayout = new QHBoxLayout;
-    clearHistoryBtn = new QPushButton("清空历史");
-    historyCountLabel = new QLabel("共 0 条记录");
+    clearHistoryBtn = new QPushButton(tr("清空历史"));
+    historyCountLabel = new QLabel(tr("共 0 条记录"));
     historyButtonLayout->addWidget(clearHistoryBtn);
     historyButtonLayout->addStretch();
     historyButtonLayout->addWidget(historyCountLabel);
@@ -332,7 +332,7 @@ void BarcodeGen::setupHistoryArea()
 void BarcodeGen::setupStatusArea()
 {
     statusLayout = new QHBoxLayout;
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     progressBar = new QProgressBar;
     progressBar->setVisible(false);
     
@@ -371,7 +371,7 @@ void BarcodeGen::onGenerateBarcode()
 {
     QString text = textEdit->text().trimmed();
     if (text.isEmpty()) {
-        statusLabel->setText("请输入要生成条形码的内容");
+        statusLabel->setText(tr("请输入要生成条形码的内容"));
         return;
     }
     
@@ -379,8 +379,8 @@ void BarcodeGen::onGenerateBarcode()
     BarcodeStyle style = getCurrentStyle();
     
     if (!isValidBarcodeData(text, type)) {
-        statusLabel->setText("输入内容不符合该条形码类型的要求");
-        QMessageBox::warning(this, "输入错误", "输入内容不符合该条形码类型的要求");
+        statusLabel->setText(tr("输入内容不符合该条形码类型的要求"));
+        QMessageBox::warning(this, tr("输入错误"), tr("输入内容不符合该条形码类型的要求"));
         return;
     }
     
@@ -396,11 +396,11 @@ void BarcodeGen::onGenerateBarcode()
         item.isValid = true;
         m_currentBarcode = barcode;
         displayResult(item);
-        statusLabel->setText("条形码生成成功");
+        statusLabel->setText(tr("条形码生成成功"));
     } else {
         item.isValid = false;
         item.errorMessage = "生成失败";
-        statusLabel->setText("条形码生成失败");
+        statusLabel->setText(tr("条形码生成失败"));
     }
 }
 
@@ -466,13 +466,13 @@ void BarcodeGen::onBatchGenerate()
 {
     QString text = batchTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        statusLabel->setText("请输入批量处理的内容");
+        statusLabel->setText(tr("请输入批量处理的内容"));
         return;
     }
     
     QStringList lines = text.split('\n', Qt::SkipEmptyParts);
     if (lines.isEmpty()) {
-        statusLabel->setText("没有有效的输入内容");
+        statusLabel->setText(tr("没有有效的输入内容"));
         return;
     }
     
@@ -527,7 +527,7 @@ void BarcodeGen::onAddBatchItem()
 {
     QString text = textEdit->text().trimmed();
     if (text.isEmpty()) {
-        statusLabel->setText("请先输入要添加的内容");
+        statusLabel->setText(tr("请先输入要添加的内容"));
         return;
     }
     
@@ -538,14 +538,14 @@ void BarcodeGen::onAddBatchItem()
     currentText += text;
     batchTextEdit->setPlainText(currentText);
     
-    statusLabel->setText("已添加到批量列表");
+    statusLabel->setText(tr("已添加到批量列表"));
 }
 
 void BarcodeGen::onClearBatchList()
 {
     batchTextEdit->clear();
     m_batchItems.clear();
-    statusLabel->setText("批量列表已清空");
+    statusLabel->setText(tr("批量列表已清空"));
 }
 
 void BarcodeGen::onImportBatch()
@@ -559,7 +559,7 @@ void BarcodeGen::onImportBatch()
     
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "错误", "无法打开文件");
+        QMessageBox::warning(this, tr("错误"), tr("无法打开文件"));
         return;
     }
     
@@ -585,14 +585,14 @@ void BarcodeGen::onImportBatch()
         batchTextEdit->setPlainText(items.join('\n'));
         statusLabel->setText(QString("已导入 %1 项数据").arg(items.size()));
     } else {
-        statusLabel->setText("文件中没有有效数据");
+        statusLabel->setText(tr("文件中没有有效数据"));
     }
 }
 
 void BarcodeGen::onExportBatch()
 {
     if (m_batchItems.isEmpty()) {
-        QMessageBox::information(this, "提示", "没有批量数据可导出");
+        QMessageBox::information(this, tr("提示"), tr("没有批量数据可导出"));
         return;
     }
     
@@ -605,7 +605,7 @@ void BarcodeGen::onExportBatch()
     
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "错误", "无法创建文件");
+        QMessageBox::warning(this, tr("错误"), tr("无法创建文件"));
         return;
     }
     
@@ -630,7 +630,7 @@ void BarcodeGen::onExportBatch()
 void BarcodeGen::onSaveBarcode()
 {
     if (m_currentBarcode.isNull()) {
-        QMessageBox::information(this, "提示", "没有可保存的条形码");
+        QMessageBox::information(this, tr("提示"), tr("没有可保存的条形码"));
         return;
     }
     
@@ -643,8 +643,8 @@ void BarcodeGen::onSaveBarcode()
         if (m_currentBarcode.save(fileName)) {
             statusLabel->setText(QString("条形码已保存到: %1").arg(fileName));
         } else {
-            statusLabel->setText("保存失败");
-            QMessageBox::warning(this, "错误", "保存条形码失败");
+            statusLabel->setText(tr("保存失败"));
+            QMessageBox::warning(this, tr("错误"), tr("保存条形码失败"));
         }
     }
 }
@@ -652,18 +652,18 @@ void BarcodeGen::onSaveBarcode()
 void BarcodeGen::onCopyToClipboard()
 {
     if (m_currentBarcode.isNull()) {
-        QMessageBox::information(this, "提示", "没有可复制的条形码");
+        QMessageBox::information(this, tr("提示"), tr("没有可复制的条形码"));
         return;
     }
     
     QApplication::clipboard()->setPixmap(m_currentBarcode);
-    statusLabel->setText("条形码已复制到剪贴板");
+    statusLabel->setText(tr("条形码已复制到剪贴板"));
 }
 
 void BarcodeGen::onAddToHistory()
 {
     if (m_currentBarcode.isNull()) {
-        QMessageBox::information(this, "提示", "没有可添加的条形码");
+        QMessageBox::information(this, tr("提示"), tr("没有可添加的条形码"));
         return;
     }
     
@@ -676,15 +676,15 @@ void BarcodeGen::onAddToHistory()
     item.isValid = true;
     
     addToHistory(item);
-    statusLabel->setText("已添加到历史记录");
+    statusLabel->setText(tr("已添加到历史记录"));
 }
 
 void BarcodeGen::onClearHistory()
 {
     m_historyItems.clear();
     historyTable->setRowCount(0);
-    historyCountLabel->setText("共 0 条记录");
-    statusLabel->setText("历史记录已清空");
+    historyCountLabel->setText(tr("共 0 条记录"));
+    statusLabel->setText(tr("历史记录已清空"));
 }
 
 void BarcodeGen::onHistoryItemClicked(QTableWidgetItem *item)
@@ -718,7 +718,7 @@ void BarcodeGen::onHistoryItemClicked(QTableWidgetItem *item)
         barcodePreview->setBarcodeItem(historyItem);
         m_currentBarcode = historyItem.barcodePixmap;
         
-        statusLabel->setText("已加载历史记录");
+        statusLabel->setText(tr("已加载历史记录"));
     }
 }
 
@@ -856,7 +856,7 @@ void BarcodeGen::showBatchResults()
 {
     // 创建批量结果对话框
     QDialog dialog(this);
-    dialog.setWindowTitle("批量生成结果");
+    dialog.setWindowTitle(tr("批量生成结果"));
     dialog.resize(600, 400);
     
     QVBoxLayout *layout = new QVBoxLayout(&dialog);
@@ -877,8 +877,8 @@ void BarcodeGen::showBatchResults()
     layout->addWidget(resultTable);
     
     QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *saveAllBtn = new QPushButton("保存全部");
-    QPushButton *closeBtn = new QPushButton("关闭");
+    QPushButton *saveAllBtn = new QPushButton(tr("保存全部"));
+    QPushButton *closeBtn = new QPushButton(tr("关闭"));
     
     buttonLayout->addWidget(saveAllBtn);
     buttonLayout->addStretch();

@@ -26,7 +26,7 @@ Ping::Ping() : QWidget(nullptr), DynamicObjectBase(), isPinging(false), currentS
     connect(hostEdit, &QLineEdit::textChanged, this, &Ping::onHostChanged);
 
     // 设置默认值
-    hostEdit->setText("www.baidu.com");
+    hostEdit->setText(tr("www.baidu.com"));
     countSpinBox->setValue(4);
     intervalSpinBox->setValue(1000);
     timeoutSpinBox->setValue(5000);
@@ -57,20 +57,20 @@ void Ping::setupUI() {
     buttonLayout = new QHBoxLayout();
     buttonLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-    startBtn = new QPushButton("🚀 开始Ping");
+    startBtn = new QPushButton(tr("🚀 开始Ping"));
     startBtn->setFixedSize(110, 32);
 
-    stopBtn = new QPushButton("⏹️ 停止");
+    stopBtn = new QPushButton(tr("⏹️ 停止"));
     stopBtn->setFixedSize(80, 32);
     stopBtn->setEnabled(false);
 
-    clearBtn = new QPushButton("🗑️ 清空");
+    clearBtn = new QPushButton(tr("🗑️ 清空"));
     clearBtn->setFixedSize(80, 32);
 
-    copyBtn = new QPushButton("📋 复制");
+    copyBtn = new QPushButton(tr("📋 复制"));
     copyBtn->setFixedSize(80, 32);
 
-    statusLabel = new QLabel("就绪");
+    statusLabel = new QLabel(tr("就绪"));
     statusLabel->setFixedHeight(32);
     statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 4px 8px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd;");
 
@@ -109,15 +109,15 @@ void Ping::setupInputArea() {
     inputGroup = new QGroupBox("🌐 目标主机");
     inputLayout = new QGridLayout(inputGroup);
 
-    hostLabel = new QLabel("主机地址:");
+    hostLabel = new QLabel(tr("主机地址:"));
     hostEdit = new QLineEdit();
-    hostEdit->setPlaceholderText("输入域名或IP地址");
+    hostEdit->setPlaceholderText(tr("输入域名或IP地址"));
 
-    resolveBtn = new QPushButton("🔍 解析");
+    resolveBtn = new QPushButton(tr("🔍 解析"));
     resolveBtn->setFixedSize(85, 32);
 
-    ipLabel = new QLabel("解析IP:");
-    ipValueLabel = new QLabel("未解析");
+    ipLabel = new QLabel(tr("解析IP:"));
+    ipValueLabel = new QLabel(tr("未解析"));
 
     inputLayout->addWidget(hostLabel, 0, 0);
     inputLayout->addWidget(hostEdit, 0, 1);
@@ -130,17 +130,17 @@ void Ping::setupControlArea() {
     controlGroup = new QGroupBox("⚙️ Ping参数");
     controlLayout = new QHBoxLayout(controlGroup);
 
-    countLabel = new QLabel("次数:");
+    countLabel = new QLabel(tr("次数:"));
     countSpinBox = new QSpinBox();
     countSpinBox->setRange(1, 100);
     countSpinBox->setValue(4);
 
-    intervalLabel = new QLabel("间隔(ms):");
+    intervalLabel = new QLabel(tr("间隔(ms):"));
     intervalSpinBox = new QSpinBox();
     intervalSpinBox->setRange(100, 10000);
     intervalSpinBox->setValue(1000);
 
-    timeoutLabel = new QLabel("超时(ms):");
+    timeoutLabel = new QLabel(tr("超时(ms):"));
     timeoutSpinBox = new QSpinBox();
     timeoutSpinBox->setRange(1000, 30000);
     timeoutSpinBox->setValue(5000);
@@ -161,7 +161,7 @@ void Ping::setupResultsArea() {
     resultsWidget = new QWidget();
     resultsLayout = new QVBoxLayout(resultsWidget);
 
-    resultsLabel = new QLabel("📊 Ping结果");
+    resultsLabel = new QLabel(tr("📊 Ping结果"));
     resultsLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
 
     resultsTable = new QTableWidget();
@@ -180,18 +180,18 @@ void Ping::setupStatisticsArea() {
     statsGroup->setFixedHeight(120);
     statsLayout = new QGridLayout(statsGroup);
 
-    sentLabel = new QLabel("已发送:");
-    sentValueLabel = new QLabel("0");
-    receivedLabel = new QLabel("已接收:");
-    receivedValueLabel = new QLabel("0");
-    lossLabel = new QLabel("丢包率:");
-    lossValueLabel = new QLabel("0%");
-    minLabel = new QLabel("最小时间:");
-    minValueLabel = new QLabel("0ms");
-    maxLabel = new QLabel("最大时间:");
-    maxValueLabel = new QLabel("0ms");
-    avgLabel = new QLabel("平均时间:");
-    avgValueLabel = new QLabel("0ms");
+    sentLabel = new QLabel(tr("已发送:"));
+    sentValueLabel = new QLabel(tr("0"));
+    receivedLabel = new QLabel(tr("已接收:"));
+    receivedValueLabel = new QLabel(tr("0"));
+    lossLabel = new QLabel(tr("丢包率:"));
+    lossValueLabel = new QLabel(tr("0%"));
+    minLabel = new QLabel(tr("最小时间:"));
+    minValueLabel = new QLabel(tr("0ms"));
+    maxLabel = new QLabel(tr("最大时间:"));
+    maxValueLabel = new QLabel(tr("0ms"));
+    avgLabel = new QLabel(tr("平均时间:"));
+    avgValueLabel = new QLabel(tr("0ms"));
 
     statsLayout->addWidget(sentLabel, 0, 0);
     statsLayout->addWidget(sentValueLabel, 0, 1);
@@ -211,7 +211,7 @@ void Ping::setupStatisticsArea() {
 void Ping::onStartPing() {
     QString host = hostEdit->text().trimmed();
     if (host.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请输入要Ping的主机地址");
+        QMessageBox::warning(this, tr("错误"), tr("请输入要Ping的主机地址"));
         return;
     }
 
@@ -255,7 +255,7 @@ void Ping::onCopyResults() {
 }
 
 void Ping::onHostChanged() {
-    ipValueLabel->setText("未解析");
+    ipValueLabel->setText(tr("未解析"));
     resolvedIP.clear();
 }
 
@@ -271,7 +271,7 @@ void Ping::onResolveHost() {
         ipValueLabel->setText(resolvedIP);
         ipValueLabel->setStyleSheet("color: #4CAF50; font-weight: bold;");
     } else {
-        ipValueLabel->setText("解析失败");
+        ipValueLabel->setText(tr("解析失败"));
         ipValueLabel->setStyleSheet("color: #f44336; font-weight: bold;");
         resolvedIP.clear();
     }
