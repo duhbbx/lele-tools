@@ -4,7 +4,7 @@ project(lele-tools VERSION 0.1 LANGUAGES CXX)
 
 
 # 默认环境
-set(ENVIRONMENT "联想笔记本")
+set(ENVIRONMENT "台式机")
 
 
 # 构建 .env 文件路径
