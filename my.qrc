@@ -2,5 +2,13 @@
     <qresource prefix="/">
         <file>resources/close.svg</file>
         <file>common/thirdparty/screen-capture/Res/iconfont.ttf</file>
+        <file>resources/app-icon.svg</file>
+        <file>resources/app-icon-16.png</file>
+        <file>resources/app-icon-24.png</file>
+        <file>resources/app-icon-32.png</file>
+        <file>resources/app-icon-48.png</file>
+        <file>resources/app-icon-64.png</file>
+        <file>resources/app-icon-128.png</file>
+        <file>resources/app-icon-256.png</file>
     </qresource>
 </RCC>

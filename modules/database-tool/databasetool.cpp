@@ -1121,6 +1121,13 @@ void QueryTab::setupUI() {
     m_resultTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_resultTable->setAlternatingRowColors(true);
     m_resultTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    // 设置表头调整策略
+    m_resultTable->horizontalHeader()->setStretchLastSection(false);
+    m_resultTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    m_resultTable->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_resultTable->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
     m_resultTabs->addTab(m_resultTable, "📊 结果");
     
     // 消息文本
@@ -1162,34 +1169,31 @@ void QueryTab::onExecuteClicked() {
         QMessageBox::warning(this, "执行错误", "数据库连接无效");
         return;
     }
-    
-    QString query = m_queryEdit->toPlainText().trimmed();
+
+    QString query;
+    if (m_queryEdit->textCursor().hasSelection()) {
+        query = m_queryEdit->textCursor().selectedText();
+    } else {
+        query = m_queryEdit->toPlainText();
+    }
+
+    query = query.trimmed();
     if (query.isEmpty()) {
         QMessageBox::information(this, "提示", "请输入要执行的命令");
         return;
     }
-    
+
     m_statusLabel->setText("正在执行...");
-    
-    // 解析命令和参数
-    QStringList parts = query.split(' ', Qt::SkipEmptyParts);
-    if (parts.isEmpty()) {
-        return;
-    }
-    
-    QString command = parts.takeFirst().toUpper();
-    QVariantList params;
-    for (const QString& part : parts) {
-        params.append(part);
-    }
-    
-    Connx::QueryResult result = m_connection->execute(command, params);
+
+    // 不再做手工解析，直接交给连接执行
+    Connx::QueryResult result = m_connection->execute(query);
     updateResults(result);
-    
+
     emit queryExecuted(result);
 }
 
-void QueryTab::onClearClicked() {
+
+void QueryTab::onClearClicked() const {
     m_queryEdit->clear();
     m_resultTable->setRowCount(0);
     m_resultTable->setColumnCount(0);
@@ -1199,7 +1203,7 @@ void QueryTab::onClearClicked() {
     m_rowsLabel->setText("行数: 0");
 }
 
-void QueryTab::onFormatClicked() {
+void QueryTab::onFormatClicked() const {
     // Redis命令格式化（简单实现）
     QString query = m_queryEdit->toPlainText().trimmed();
     if (query.isEmpty()) return;
@@ -1214,38 +1218,91 @@ void QueryTab::onFormatClicked() {
 
 void QueryTab::updateResults(const Connx::QueryResult& result) {
     m_timeLabel->setText(QString("执行时间: %1ms").arg(result.executionTime));
-    
+
     if (result.success) {
         m_statusLabel->setText("✅ 执行成功");
-        
+
+        // 调试输出
+        qDebug() << "QueryResult data size:" << result.data.size();
+        for (int i = 0; i < qMin(3, result.data.size()); ++i) {
+            qDebug() << "Row" << i << ":" << result.data[i];
+            if (result.data[i].typeId() == QMetaType::QVariantList) {
+                QVariantList row = result.data[i].toList();
+                qDebug() << "  Row as list size:" << row.size();
+                for (int j = 0; j < qMin(5, row.size()); ++j) {
+                    qDebug() << "    Col" << j << ":" << row[j];
+                }
+            }
+        }
+
         // 更新结果表格
-        if (!result.data.isEmpty()) {
-            QVariant data = result.data.first();
-            
-            if (data.typeId() == QMetaType::QVariantList) {
-                // 数组结果
-                QVariantList list = data.toList();
+        if (!result.columns.isEmpty() && !result.rows.isEmpty()) {
+            // 新的结构化数据
+            int columnCount = result.columns.size();
+            int rowCount = result.rows.size();
+
+            m_resultTable->setRowCount(rowCount);
+            m_resultTable->setColumnCount(columnCount);
+
+            // 设置列头
+            m_resultTable->setHorizontalHeaderLabels(result.columns);
+
+            // 填充数据行
+            for (int i = 0; i < rowCount; ++i) {
+                const QVariantList& row = result.rows[i];
+                for (int j = 0; j < qMin(row.size(), columnCount); ++j) {
+                    QTableWidgetItem* item = new QTableWidgetItem(row[j].toString());
+                    item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+                    m_resultTable->setItem(i, j, item);
+                }
+            }
+
+            // 自动调整列宽
+            m_resultTable->resizeColumnsToContents();
+
+            // 设置合理的列宽范围
+            for (int j = 0; j < columnCount; ++j) {
+                int width = m_resultTable->columnWidth(j);
+                if (width > 300) {
+                    m_resultTable->setColumnWidth(j, 300);
+                } else if (width < 100) {
+                    m_resultTable->setColumnWidth(j, 100);
+                }
+            }
+
+            // 确保表头可见
+            m_resultTable->horizontalHeader()->setVisible(true);
+            m_resultTable->verticalHeader()->setVisible(true);
+
+            m_rowsLabel->setText(QString("行数: %1").arg(rowCount));
+        } else if (!result.data.isEmpty()) {
+            // 兼容旧格式 - 处理Redis等其他类型的结果
+            QVariant firstData = result.data.first();
+
+            if (firstData.typeId() == QMetaType::QVariantList) {
+                // 数组结果（单列数据）
+                QVariantList list = firstData.toList();
                 m_resultTable->setRowCount(list.size());
                 m_resultTable->setColumnCount(1);
                 m_resultTable->setHorizontalHeaderLabels({"值"});
-                
+
                 for (int i = 0; i < list.size(); ++i) {
                     QTableWidgetItem* item = new QTableWidgetItem(list[i].toString());
                     item->setFlags(item->flags() & ~Qt::ItemIsEditable);
                     m_resultTable->setItem(i, 0, item);
                 }
-                
+
                 m_rowsLabel->setText(QString("行数: %1").arg(list.size()));
             } else {
-                // 单一结果
+                // 单一结果（非数组）
                 m_resultTable->setRowCount(1);
                 m_resultTable->setColumnCount(1);
                 m_resultTable->setHorizontalHeaderLabels({"结果"});
-                
-                QTableWidgetItem* item = new QTableWidgetItem(data.toString());
+
+                QTableWidgetItem* item = new QTableWidgetItem(firstData.toString());
                 item->setFlags(item->flags() & ~Qt::ItemIsEditable);
                 m_resultTable->setItem(0, 0, item);
-                
+
                 m_rowsLabel->setText("行数: 1");
             }
         } else {
@@ -1253,7 +1310,7 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
             m_resultTable->setColumnCount(0);
             m_rowsLabel->setText("行数: 0");
         }
-        
+
         m_messagesText->append(QString("[%1] 命令执行成功")
                               .arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
     } else {
@@ -1261,7 +1318,7 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
         m_messagesText->append(QString("[%1] 错误: %2")
                               .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
                               .arg(result.errorMessage));
-        
+
         m_resultTable->setRowCount(0);
         m_resultTable->setColumnCount(0);
         m_rowsLabel->setText("行数: 0");

@@ -230,6 +230,15 @@ set(TS_FILES
     translations/lele-tools_en_US.ts
 )
 
+# Windows资源文件
+set(WINDOWS_RC_FILES "")
+if(WIN32)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/resources/app.rc")
+        set(WINDOWS_RC_FILES "${CMAKE_SOURCE_DIR}/resources/app.rc")
+        message(STATUS "Including Windows resource file: ${WINDOWS_RC_FILES}")
+    endif()
+endif()
+
 set(PROJECT_SOURCES
         main.cpp
         main-widget/mainwindow.cpp main-widget/mainwindow.h
@@ -241,6 +250,7 @@ set(PROJECT_SOURCES
         common/thirdparty/pugixml/pugixml.cpp common/thirdparty/pugixml/pugixml.hpp common/thirdparty/pugixml/pugiconfig.hpp
         common/validator/myintvalidator.cpp
         ${TS_FILES}
+        ${WINDOWS_RC_FILES}
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -444,6 +454,28 @@ set_target_properties(lele-tools PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
+# 设置应用程序图标
+if(WIN32)
+    # Windows图标
+    if(EXISTS "${CMAKE_SOURCE_DIR}/resources/app-icon.ico")
+        set_target_properties(lele-tools PROPERTIES
+            WIN32_EXECUTABLE_ICON "${CMAKE_SOURCE_DIR}/resources/app-icon.ico"
+        )
+        message(STATUS "Windows application icon configured: ${CMAKE_SOURCE_DIR}/resources/app-icon.ico")
+    endif()
+elseif(APPLE)
+    # macOS图标 (如果有icns文件)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/resources/app-icon.icns")
+        set_target_properties(lele-tools PROPERTIES
+            MACOSX_BUNDLE_ICON_FILE "app-icon.icns"
+        )
+        # 复制图标到bundle
+        configure_file("${CMAKE_SOURCE_DIR}/resources/app-icon.icns"
+                      "${CMAKE_BINARY_DIR}/lele-tools.app/Contents/Resources/app-icon.icns"
+                      COPYONLY)
+    endif()
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS lele-tools

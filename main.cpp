@@ -48,6 +48,17 @@ int main(int argc, char* argv[]) {
 
     QApplication a(argc, argv);
 
+    // 设置应用程序图标
+    QIcon appIcon;
+    appIcon.addFile(":/resources/app-icon-16.png", QSize(16, 16));
+    appIcon.addFile(":/resources/app-icon-24.png", QSize(24, 24));
+    appIcon.addFile(":/resources/app-icon-32.png", QSize(32, 32));
+    appIcon.addFile(":/resources/app-icon-48.png", QSize(48, 48));
+    appIcon.addFile(":/resources/app-icon-64.png", QSize(64, 64));
+    appIcon.addFile(":/resources/app-icon-128.png", QSize(128, 128));
+    appIcon.addFile(":/resources/app-icon-256.png", QSize(256, 256));
+    QApplication::setWindowIcon(appIcon);
+
     // Qt 6.9中这些属性已经默认启用，不再需要设置
     // QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);  // Qt 6.9中已废弃
     // QApplication::setAttribute(Qt::AA_EnableHighDpiScaling); // Qt 6.9中已废弃

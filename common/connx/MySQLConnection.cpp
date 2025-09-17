@@ -255,12 +255,10 @@ QueryResult MySQLConnection::executeNativeQuery(const QString& sql, const QVaria
         int numFields = mysql_num_fields(res);
         MYSQL_FIELD* fields = mysql_fetch_fields(res);
 
-        // 添加列头
-        QVariantList headers;
+        // 设置列名
         for (int i = 0; i < numFields; ++i) {
-            headers << QString::fromUtf8(fields[i].name);
+            result.columns << QString::fromUtf8(fields[i].name);
         }
-        result.data << headers;
 
         // 添加数据行
         MYSQL_ROW row;
@@ -269,7 +267,17 @@ QueryResult MySQLConnection::executeNativeQuery(const QString& sql, const QVaria
             for (int i = 0; i < numFields; ++i) {
                 dataRow << (row[i] ? QString::fromUtf8(row[i]) : QVariant());
             }
-            result.data << dataRow;
+            result.rows << dataRow;
+        }
+
+        // 兼容性：保持旧的data格式
+        QVariantList headers;
+        for (const QString& col : result.columns) {
+            headers << col;
+        }
+        result.data << headers;
+        for (const QVariantList& row : result.rows) {
+            result.data << QVariant(row);
         }
 
         mysql_free_result(res);

@@ -35,10 +35,12 @@ enum class ConnectionType {
 struct QueryResult {
     bool success;
     QString errorMessage;
-    QVariantList data;
+    QStringList columns;        // 列名
+    QList<QVariantList> rows;   // 数据行，每行是一个QVariantList
+    QVariantList data;          // 兼容性保留，逐步淘汰
     int affectedRows;
     qint64 executionTime; // 执行时间(毫秒)
-    
+
     QueryResult() : success(false), affectedRows(0), executionTime(0) {}
 };
 

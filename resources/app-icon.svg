@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- 主背景渐变 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#676eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+
+    <!-- 工具渐变 -->
+    <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#ea580c"/>
+    </linearGradient>
+
+    <!-- 阴影滤镜 -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+
+    <!-- 高光滤镜 -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 圆角矩形背景 -->
+  <rect x="20" y="20" width="216" height="216" rx="48" ry="48"
+        fill="url(#bgGradient)"
+        filter="url(#shadow)"/>
+
+  <!-- 内部圆环装饰 -->
+  <rect x="30" y="30" width="196" height="196" rx="38" ry="38"
+        fill="none"
+        stroke="rgba(255,255,255,0.1)"
+        stroke-width="1"/>
+
+  <!-- 工具组图标 -->
+  <g transform="translate(128, 128)" filter="url(#glow)">
+
+    <!-- 扳手主体 -->
+    <g transform="rotate(-25)">
+      <!-- 扳手杆 -->
+      <rect x="-45" y="-6" width="90" height="12" rx="6"
+            fill="url(#toolGradient)"/>
+
+      <!-- 扳手开口圆环 -->
+      <circle cx="38" cy="0" r="18"
+              fill="none"
+              stroke="url(#toolGradient)"
+              stroke-width="6"/>
+
+      <!-- 扳手尾部 -->
+      <circle cx="-38" cy="0" r="8"
+              fill="url(#toolGradient)"/>
+    </g>
+
+    <!-- 螺丝刀 -->
+    <g transform="rotate(35)">
+      <!-- 螺丝刀杆 -->
+      <rect x="-3" y="-40" width="6" height="60" rx="3"
+            fill="rgba(255,255,255,0.95)"/>
+
+      <!-- 螺丝刀手柄 -->
+      <rect x="-8" y="15" width="16" height="25" rx="3"
+            fill="url(#toolGradient)"/>
+
+      <!-- 手柄握纹 -->
+      <rect x="-6" y="18" width="12" height="2" rx="1"
+            fill="rgba(255,255,255,0.3)"/>
+      <rect x="-6" y="25" width="12" height="2" rx="1"
+            fill="rgba(255,255,255,0.3)"/>
+      <rect x="-6" y="32" width="12" height="2" rx="1"
+            fill="rgba(255,255,255,0.3)"/>
+    </g>
+
+    <!-- 齿轮装饰 (右上) -->
+    <g transform="translate(40, -40) scale(0.7)" opacity="0.8">
+      <!-- 齿轮主体 -->
+      <circle r="20" fill="rgba(255,255,255,0.9)"/>
+      <circle r="12" fill="rgba(255,255,255,0.95)"/>
+
+      <!-- 8个齿 -->
+      <g fill="rgba(255,255,255,0.9)">
+        <rect x="-2" y="-24" width="4" height="8" rx="2"/>
+        <rect x="-2" y="16" width="4" height="8" rx="2"/>
+        <rect x="-24" y="-2" width="8" height="4" rx="2"/>
+        <rect x="16" y="-2" width="8" height="4" rx="2"/>
+        <!-- 对角线齿 -->
+        <rect x="-17" y="-17" width="6" height="6" rx="2" transform="rotate(45)"/>
+        <rect x="11" y="-17" width="6" height="6" rx="2" transform="rotate(45)"/>
+        <rect x="-17" y="11" width="6" height="6" rx="2" transform="rotate(45)"/>
+        <rect x="11" y="11" width="6" height="6" rx="2" transform="rotate(45)"/>
+      </g>
+
+      <!-- 中心孔 -->
+      <circle r="5" fill="url(#bgGradient)"/>
+    </g>
+
+  </g>
+
+  <!-- 高光效果 -->
+  <ellipse cx="90" cy="75" rx="35" ry="20"
+           fill="rgba(255,255,255,0.15)"
+           transform="rotate(-30 90 75)"/>
+
+  <!-- 底部反光 -->
+  <ellipse cx="128" cy="200" rx="60" ry="12"
+           fill="rgba(255,255,255,0.08)"/>
+
+</svg>

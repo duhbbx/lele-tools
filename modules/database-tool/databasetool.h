@@ -196,8 +196,8 @@ signals:
 
 private slots:
     void onExecuteClicked();
-    void onClearClicked();
-    void onFormatClicked();
+    void onClearClicked() const;
+    void onFormatClicked() const;
 
 private:
     void setupUI();

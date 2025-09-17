@@ -4,7 +4,10 @@
       "Read(//d/projects/vcpkg/installed/x64-windows/include/**)",
       "Read(//d/projects/vcpkg/installed/x64-windows/lib/**)",
       "Bash(cmake:*)",
-      "Read(//d/projects/**)"
+      "Read(//d/projects/**)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

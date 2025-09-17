@@ -856,6 +856,27 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
         }
     }
 
+    // 处理标题栏双击最大化/还原
+    if (msg->message == WM_NCLBUTTONDBLCLK) {
+        if (msg->wParam == HTCAPTION) {
+            // 切换最大化/还原状态
+            if (this->isMaximized()) {
+                this->showNormal();
+                if (maximizeButton) {
+                    maximizeButton->setText("□");
+                    maximizeButton->setToolTip("最大化");
+                }
+            } else {
+                this->showMaximized();
+                if (maximizeButton) {
+                    maximizeButton->setText("◱");
+                    maximizeButton->setToolTip("还原");
+                }
+            }
+            return true; // 阻止默认处理
+        }
+    }
+
     if (msg->message == WM_NCHITTEST) {
         const LONG borderWidth = 8; // 缩放敏感区域宽度
         RECT winrect;
