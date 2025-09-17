@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(lele-tools VERSION 0.1 LANGUAGES CXX)
+
+# 添加自定义模块路径
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 
 
@@ -35,11 +38,19 @@ set(CMAKE_AUTOUIC ON)   # 自动处理 .ui 文件
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Windows MSVC 编译器标志
+if(WIN32 AND MSVC)
+    # 允许多个 CL.EXE 写入同一个 .PDB 文件
+    add_compile_options(/FS)
+endif()
+
 
 # Redis 可选支持
 option(WITH_REDIS "Enable Redis support" ON)
 # OpenCV 可选支持
 option(WITH_OPENCV "Enable OpenCV support" ON)
+# MySQL 可选支持
+option(WITH_MYSQL "Enable MySQL support" ON)
 
 if(WITH_OPENCV)
     # 尝试不同的OpenCV路径
@@ -133,7 +144,20 @@ endif()
 
 
 # 第三方的代码
+# 临时禁用Qt AUTOGEN功能给yaml-cpp（它不需要Qt）
+set(CMAKE_AUTOMOC_BACKUP ${CMAKE_AUTOMOC})
+set(CMAKE_AUTOUIC_BACKUP ${CMAKE_AUTOUIC})
+set(CMAKE_AUTORCC_BACKUP ${CMAKE_AUTORCC})
+set(CMAKE_AUTOMOC OFF)
+set(CMAKE_AUTOUIC OFF)
+set(CMAKE_AUTORCC OFF)
+
 add_subdirectory(common/thirdparty/yaml-cpp)
+
+# 恢复Qt AUTOGEN设置
+set(CMAKE_AUTOMOC ${CMAKE_AUTOMOC_BACKUP})
+set(CMAKE_AUTOUIC ${CMAKE_AUTOUIC_BACKUP})
+set(CMAKE_AUTORCC ${CMAKE_AUTORCC_BACKUP})
 
 # 截图功能仅在Windows平台可用
 if(WIN32)
@@ -163,7 +187,7 @@ SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 
 
 
-# 必需的Qt组件 (包含SQL)
+# 必需的Qt组件 (包含SQL用于SQLite，MySQL使用原生驱动)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql)
 
@@ -301,6 +325,39 @@ endif()
 # 添加Windows Socket库 (Redis需要)
 if(WIN32 AND HAVE_REDIS)
     target_link_libraries(lele-tools PRIVATE ws2_32 wsock32)
+endif()
+
+# MySQL 可选支持
+if(WITH_MYSQL)
+    message(STATUS "Checking for MySQL ...")
+
+    # 使用自定义FindMySQL模块
+    find_package(MySQL QUIET)
+
+    if(MySQL_FOUND)
+        message(STATUS "MySQL found via FindMySQL module")
+        set(HAVE_MYSQL TRUE)
+    else()
+        message(WARNING "MySQL not found. Building without MySQL support.")
+        set(HAVE_MYSQL FALSE)
+    endif()
+else()
+    message(STATUS "MySQL support disabled")
+    set(HAVE_MYSQL FALSE)
+endif()
+
+# MySQL库链接
+if(HAVE_MYSQL)
+    message(STATUS "Linking MySQL to target")
+    target_compile_definitions(lele-tools PRIVATE WITH_MYSQL)
+
+    if(TARGET MySQL::MySQL)
+        target_link_libraries(lele-tools PRIVATE MySQL::MySQL)
+    else()
+        message(STATUS "MySQL target not found, linking manually")
+        target_include_directories(lele-tools PRIVATE ${MySQL_INCLUDE_DIRS})
+        target_link_libraries(lele-tools PRIVATE ${MySQL_LIBRARIES})
+    endif()
 endif()
 
 # Npcap/libpcap支持 (Traceroute工具需要)

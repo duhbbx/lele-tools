@@ -1,5 +1,6 @@
 #include "Connection.h"
 #include "RedisConnection.h"
+#include "MySQLConnection.h"
 #include <QDateTime>
 #include <QDebug>
 
@@ -71,9 +72,7 @@ Connection* ConnectionFactory::createConnection(ConnectionType type, const Conne
     case ConnectionType::Redis:
         return new RedisConnection(config);
     case ConnectionType::MySQL:
-        // TODO: 实现MySQL连接
-        qWarning() << "MySQL connection not implemented yet";
-        return nullptr;
+        return new MySQLConnection(config);
     case ConnectionType::PostgreSQL:
         // TODO: 实现PostgreSQL连接
         qWarning() << "PostgreSQL connection not implemented yet";

@@ -1,5 +1,8 @@
 #include "databasetool.h"
 #include "../../common/connx/RedisConnection.h"
+#ifdef WITH_MYSQL
+#include "../../common/connx/MySQLConnection.h"
+#endif
 #include <QApplication>
 #include <QMessageBox>
 #include <QInputDialog>
@@ -30,62 +33,222 @@ ConnectionDialog::ConnectionDialog(const Connx::ConnectionConfig& config, QWidge
 
 void ConnectionDialog::setupUI() {
     setModal(true);
-    setFixedSize(650, 450); // 增大对话框尺寸
-    
+    setMinimumSize(750, 520); // 设置最小尺寸而不是固定尺寸
+    resize(750, 520); // 设置默认尺寸
+    setWindowFlags(Qt::Dialog | Qt::WindowCloseButtonHint);
+
     // 主分割器布局
     m_mainLayout = new QHBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
-    m_mainLayout->setSpacing(10);
-    
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setSpacing(0);
+
     m_splitter = new QSplitter(Qt::Horizontal);
-    
+    m_splitter->setHandleWidth(1);
+
     setupLeftPanel();
     setupRightPanel();
-    
+
     m_splitter->addWidget(m_leftPanel);
     m_splitter->addWidget(m_rightPanel);
     m_splitter->setStretchFactor(0, 0); // 左侧固定
     m_splitter->setStretchFactor(1, 1); // 右侧拉伸
-    m_splitter->setSizes({180, 450});
-    
+    m_splitter->setSizes({220, 530}); // 调整合理的初始大小
+
     m_mainLayout->addWidget(m_splitter);
-    
-    // 设置样式
+
+    // 设置现代化样式
     setStyleSheet(R"(
-        QListWidget {
-            border: 1px solid #ddd;
-            background: white;
-            font-size: 11pt;
-        }
-        QListWidget::item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-        }
-        QListWidget::item:selected {
-            background: #007acc;
-        }
-        QLineEdit, QSpinBox, QComboBox {
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            font-size: 11pt;
-            min-height: 20px;
-        }
-        QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
-            border-color: #007acc;
-        }
-        QPushButton {
-            padding: 8px 16px;
-            font-size: 11pt;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        QDialog {
             background: #f8f9fa;
         }
-        QPushButton:hover {
+        QWidget#leftPanel {
+            background: #2c3e50;
+            border-right: 1px solid #34495e;
+        }
+        QLabel#typeLabel {
+            color: #ecf0f1;
+            font-weight: bold;
+            font-size: 13pt;
+            padding: 10px;
+            background: transparent;
+        }
+        QListWidget {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 8px;
+            show-decoration-selected: 0;
+        }
+        QWidget#rightPanel {
+            background: white;
+            border: none;
+        }
+        QLineEdit, QSpinBox, QComboBox {
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 11pt;
+            height: 40px;
+            min-width: 200px;
+            background: white;
+        }
+        QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        QSpinBox::up-button, QSpinBox::down-button {
+            width: 20px;
+            height: 18px;
+            border: none;
+            background: #f8f9fa;
+        }
+        QSpinBox::up-button:hover, QSpinBox::down-button:hover {
             background: #e9ecef;
+        }
+        QSpinBox::up-arrow {
+            image: none;
+            border-style: solid;
+            border-width: 4px;
+            border-color: transparent transparent #6c757d transparent;
+            width: 0px;
+            height: 0px;
+        }
+        QSpinBox::down-arrow {
+            image: none;
+            border-style: solid;
+            border-width: 4px;
+            border-color: #6c757d transparent transparent transparent;
+            width: 0px;
+            height: 0px;
+        }
+        QComboBox::drop-down {
+            border: none;
+            width: 20px;
+            background: #f8f9fa;
+        }
+        QComboBox::drop-down:hover {
+            background: #e9ecef;
+        }
+        QComboBox::down-arrow {
+            image: none;
+            border-style: solid;
+            border-width: 4px;
+            border-color: #6c757d transparent transparent transparent;
+            width: 0px;
+            height: 0px;
+        }
+        QCheckBox {
+            font-size: 11pt;
+            color: #2c3e50;
+        }
+        QCheckBox::indicator {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #bdc3c7;
+            border-radius: 3px;
+        }
+        QCheckBox::indicator:checked {
+            background: #3498db;
+            border-color: #3498db;
+        }
+        QPushButton {
+            padding: 10px 20px;
+            font-size: 11pt;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        QPushButton#testBtn {
+            background: #27ae60;
+            color: white;
+        }
+        QPushButton#testBtn:hover {
+            background: #229954;
+        }
+        QPushButton#testBtn:pressed {
+            background: #1e8449;
+        }
+        QDialogButtonBox QPushButton {
+            background: #3498db;
+            color: white;
+            min-width: 80px;
+        }
+        QDialogButtonBox QPushButton:hover {
+            background: #2980b9;
+        }
+        QDialogButtonBox QPushButton:pressed {
+            background: #21618c;
+        }
+        QDialogButtonBox QPushButton[text="Cancel"] {
+            background: #95a5a6;
+        }
+        QDialogButtonBox QPushButton[text="Cancel"]:hover {
+            background: #7f8c8d;
         }
         QLabel {
             font-size: 11pt;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        QLabel#statusLabel {
+            font-style: italic;
+            color: #7f8c8d;
+            padding: 8px;
+        }
+        /* 现代化滚动条样式 */
+        QScrollBar:vertical {
+            background: rgba(0, 0, 0, 0.05);
+            width: 12px;
+            border-radius: 6px;
+            border: none;
+        }
+        QScrollBar::handle:vertical {
+            background: rgba(52, 152, 219, 0.6);
+            border-radius: 6px;
+            min-height: 20px;
+            margin: 0px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: rgba(52, 152, 219, 0.8);
+        }
+        QScrollBar::handle:vertical:pressed {
+            background: rgba(41, 128, 185, 1.0);
+        }
+        QScrollBar::add-line:vertical,
+        QScrollBar::sub-line:vertical {
+            height: 0px;
+            width: 0px;
+        }
+        QScrollBar::add-page:vertical,
+        QScrollBar::sub-page:vertical {
+            background: transparent;
+        }
+        QScrollBar:horizontal {
+            background: rgba(0, 0, 0, 0.05);
+            height: 12px;
+            border-radius: 6px;
+            border: none;
+        }
+        QScrollBar::handle:horizontal {
+            background: rgba(52, 152, 219, 0.6);
+            border-radius: 6px;
+            min-width: 20px;
+            margin: 0px;
+        }
+        QScrollBar::handle:horizontal:hover {
+            background: rgba(52, 152, 219, 0.8);
+        }
+        QScrollBar::handle:horizontal:pressed {
+            background: rgba(41, 128, 185, 1.0);
+        }
+        QScrollBar::add-line:horizontal,
+        QScrollBar::sub-line:horizontal {
+            height: 0px;
+            width: 0px;
+        }
+        QScrollBar::add-page:horizontal,
+        QScrollBar::sub-page:horizontal {
+            background: transparent;
         }
     )");
 }
@@ -97,7 +260,10 @@ Connx::ConnectionConfig ConnectionDialog::getConnectionConfig() const {
     config.port = m_portSpin->value();
     config.timeout = m_timeoutSpin->value();
     config.useSSL = m_sslCheck->isChecked();
-    
+
+    // 设置连接类型
+    config.extraParams["connectionType"] = m_currentType;
+
     // 根据数据库类型设置特定配置
     if (m_currentType == "Redis") {
         config.username = ""; // Redis通常不使用用户名
@@ -107,31 +273,37 @@ Connx::ConnectionConfig ConnectionDialog::getConnectionConfig() const {
         config.username = m_usernameEdit->text().trimmed();
         config.password = m_passwordEdit->text();
         config.database = m_databaseEdit->text().trimmed();
-        
+
         // MySQL特有配置
         if (m_currentType == "MySQL") {
             config.extraParams["charset"] = m_charsetCombo->currentText();
         }
     }
-    
+
     return config;
 }
 
 void ConnectionDialog::setupLeftPanel() {
     m_leftPanel = new QWidget();
-    m_leftPanel->setFixedWidth(160);
+    m_leftPanel->setObjectName("leftPanel");
+    m_leftPanel->setMinimumWidth(200);
+    m_leftPanel->setMaximumWidth(220);
     m_leftLayout = new QVBoxLayout(m_leftPanel);
-    m_leftLayout->setContentsMargins(5, 5, 5, 5);
+    m_leftLayout->setContentsMargins(0, 20, 0, 20);
     m_leftLayout->setSpacing(8);
-    
+
     // 数据库类型标题
     m_typeLabel = new QLabel("数据库类型");
-    m_typeLabel->setStyleSheet("font-weight: bold; font-size: 12pt; color: #333; padding: 5px;");
+    m_typeLabel->setObjectName("typeLabel");
     m_leftLayout->addWidget(m_typeLabel);
     
     // 数据库类型列表
     m_typeList = new QListWidget();
-    m_typeList->setFixedWidth(150);
+    m_typeList->setMinimumWidth(180);
+    m_typeList->setMaximumWidth(200);
+
+    // 使用自定义委托代替纯QSS样式
+    m_typeList->setItemDelegate(new ConnectionTypeDelegate(this));
     
     // 添加数据库类型项
     QStringList types = Connx::ConnectionFactory::getSupportedTypes();
@@ -156,9 +328,19 @@ void ConnectionDialog::setupLeftPanel() {
         m_typeList->addItem(item);
     }
     
-    // 默认选择Redis
-    m_typeList->setCurrentRow(0);
-    m_currentType = "Redis";
+    // 默认选择MySQL（如果可用），否则选择第一个
+    m_currentType = "Redis"; // 默认fallback
+    for (int i = 0; i < m_typeList->count(); ++i) {
+        if (m_typeList->item(i)->text() == "MySQL") {
+            m_typeList->setCurrentRow(i);
+            m_currentType = "MySQL";
+            break;
+        }
+    }
+    if (m_currentType == "Redis" && m_typeList->count() > 0) {
+        m_typeList->setCurrentRow(0);
+        m_currentType = m_typeList->item(0)->text();
+    }
     
     QObject::connect(m_typeList, &QListWidget::currentTextChanged, 
                     this, &ConnectionDialog::onConnectionTypeChanged);
@@ -169,16 +351,17 @@ void ConnectionDialog::setupLeftPanel() {
 
 void ConnectionDialog::setupRightPanel() {
     m_rightPanel = new QWidget();
+    m_rightPanel->setObjectName("rightPanel");
     m_rightLayout = new QVBoxLayout(m_rightPanel);
-    m_rightLayout->setContentsMargins(10, 5, 5, 5);
-    m_rightLayout->setSpacing(10);
-    
-    // 表单区域
+    m_rightLayout->setContentsMargins(30, 30, 30, 20);
+    m_rightLayout->setSpacing(20);
+
+    // 表单区域 - 使用网格布局代替FormLayout
     m_formWidget = new QWidget();
-    m_formLayout = new QFormLayout(m_formWidget);
-    m_formLayout->setLabelAlignment(Qt::AlignRight);
-    m_formLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
-    m_formLayout->setVerticalSpacing(12);
+    m_gridLayout = new QGridLayout(m_formWidget);
+    m_gridLayout->setVerticalSpacing(18);
+    m_gridLayout->setHorizontalSpacing(15);
+    m_gridLayout->setColumnStretch(1, 1); // 第二列（输入控件）可拉伸
     
     // 创建所有表单控件
     createFormControls();
@@ -192,7 +375,7 @@ void ConnectionDialog::setupRightPanel() {
     
     // 测试连接按钮
     m_testBtn = new QPushButton("🔍 测试连接");
-    m_testBtn->setStyleSheet("QPushButton { background: #17a2b8; color: white; font-weight: bold; }");
+    m_testBtn->setObjectName("testBtn");
     QObject::connect(m_testBtn, &QPushButton::clicked, this, &ConnectionDialog::onTestConnection);
     m_buttonLayout->addWidget(m_testBtn);
     
@@ -208,61 +391,73 @@ void ConnectionDialog::setupRightPanel() {
     
     // 状态标签
     m_statusLabel = new QLabel("");
-    m_statusLabel->setStyleSheet("color: #666; font-style: italic; padding: 5px;");
+    m_statusLabel->setObjectName("statusLabel");
     m_rightLayout->addWidget(m_statusLabel);
     
     // 初始化表单
-    updateFormForType("Redis");
+    updateFormForType(m_currentType);
 }
 
 void ConnectionDialog::createFormControls() {
+    const int CONTROL_HEIGHT = 40; // 统一控件高度
+
     // 基本连接信息
     m_nameEdit = new QLineEdit();
     m_nameEdit->setPlaceholderText("为此连接起一个名称");
-    
+    m_nameEdit->setFixedHeight(CONTROL_HEIGHT);
+
     m_hostEdit = new QLineEdit();
     m_hostEdit->setText("localhost");
     m_hostEdit->setPlaceholderText("服务器地址");
-    
+    m_hostEdit->setFixedHeight(CONTROL_HEIGHT);
+
     m_portSpin = new QSpinBox();
     m_portSpin->setRange(1, 65535);
     m_portSpin->setValue(6379);
-    
+    m_portSpin->setFixedHeight(CONTROL_HEIGHT);
+
     m_usernameEdit = new QLineEdit();
     m_usernameEdit->setPlaceholderText("用户名 (可选)");
-    
+    m_usernameEdit->setFixedHeight(CONTROL_HEIGHT);
+
     m_passwordEdit = new QLineEdit();
     m_passwordEdit->setEchoMode(QLineEdit::Password);
     m_passwordEdit->setPlaceholderText("密码 (可选)");
-    
+    m_passwordEdit->setFixedHeight(CONTROL_HEIGHT);
+
     m_databaseEdit = new QLineEdit();
     m_databaseEdit->setText("0");
-    
+    m_databaseEdit->setFixedHeight(CONTROL_HEIGHT);
+
     m_timeoutSpin = new QSpinBox();
     m_timeoutSpin->setRange(5, 300);
     m_timeoutSpin->setValue(30);
     m_timeoutSpin->setSuffix(" 秒");
-    
+    m_timeoutSpin->setFixedHeight(CONTROL_HEIGHT);
+
     m_sslCheck = new QCheckBox("使用SSL加密连接");
-    
+    m_sslCheck->setFixedHeight(CONTROL_HEIGHT);
+
     // Redis特有控件
     m_dbIndexLabel = new QLabel("数据库索引:");
     m_dbIndexSpin = new QSpinBox();
     m_dbIndexSpin->setRange(0, 15);
     m_dbIndexSpin->setValue(0);
-    
+    m_dbIndexSpin->setFixedHeight(CONTROL_HEIGHT);
+
     // MySQL特有控件
     m_charsetLabel = new QLabel("字符集:");
     m_charsetCombo = new QComboBox();
     m_charsetCombo->addItems({"utf8mb4", "utf8", "latin1", "gbk"});
     m_charsetCombo->setCurrentText("utf8mb4");
+    m_charsetCombo->setFixedHeight(CONTROL_HEIGHT);
 }
 
 void ConnectionDialog::setConnectionConfig(const Connx::ConnectionConfig& config) {
     m_nameEdit->setText(config.name);
-    
+
     // 根据配置确定类型并选择
-    QString typeName = "Redis"; // 默认Redis
+    QString typeName = config.extraParams.value("connectionType", "Redis").toString();
     for (int i = 0; i < m_typeList->count(); ++i) {
         if (m_typeList->item(i)->text() == typeName) {
             m_typeList->setCurrentRow(i);
@@ -286,89 +481,104 @@ void ConnectionDialog::onConnectionTypeChanged() {
 }
 
 void ConnectionDialog::updateFormForType(const QString& type) {
-    // 清空现有表单
+    // 清空现有网格布局
     QLayoutItem* item;
-    while ((item = m_formLayout->takeAt(0)) != nullptr) {
+    while ((item = m_gridLayout->takeAt(0)) != nullptr) {
         if (item->widget()) {
             item->widget()->setParent(nullptr);
         }
         delete item;
     }
-    
+
     // 获取默认配置
     Connx::ConnectionType connType = Connx::ConnectionFactory::getTypeFromString(type);
     Connx::ConnectionConfig defaultConfig = Connx::ConnectionFactory::getDefaultConfig(connType);
-    
+
     // 更新默认值
     m_portSpin->setValue(defaultConfig.port);
     m_databaseEdit->setText(defaultConfig.database);
-    
+
+    int row = 0;
+
+    // 创建标签的辅助函数
+    auto createLabel = [this](const QString& text) -> QLabel* {
+        QLabel* label = new QLabel(text);
+        label->setStyleSheet("QLabel { font-weight: 500; color: #2c3e50; margin-bottom: 5px; }");
+        return label;
+    };
+
     // 基本信息（所有类型都有）
-    m_formLayout->addRow("连接名称:", m_nameEdit);
-    m_formLayout->addRow("主机地址:", m_hostEdit);
-    m_formLayout->addRow("端口:", m_portSpin);
-    
+    m_gridLayout->addWidget(createLabel("连接名称:"), row, 0, Qt::AlignTop);
+    m_gridLayout->addWidget(m_nameEdit, row++, 1);
+
+    m_gridLayout->addWidget(createLabel("主机地址:"), row, 0, Qt::AlignTop);
+    m_gridLayout->addWidget(m_hostEdit, row++, 1);
+
+    m_gridLayout->addWidget(createLabel("端口:"), row, 0, Qt::AlignTop);
+    m_gridLayout->addWidget(m_portSpin, row++, 1);
+
     if (type == "Redis") {
         // Redis特有表单
-        m_usernameEdit->setVisible(false);
         m_passwordEdit->setPlaceholderText("Redis密码 (可选)");
-        m_databaseEdit->setVisible(false);
-        
-        m_formLayout->addRow("密码:", m_passwordEdit);
-        m_formLayout->addRow(m_dbIndexLabel, m_dbIndexSpin);
-        m_formLayout->addRow("超时:", m_timeoutSpin);
-        m_formLayout->addRow("", m_sslCheck);
-        
-        // 隐藏MySQL特有控件
-        m_charsetLabel->setVisible(false);
-        m_charsetCombo->setVisible(false);
-        
+
+        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_passwordEdit, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("数据库索引:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_dbIndexSpin, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_timeoutSpin, row++, 1);
+
+        m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
+        m_gridLayout->addWidget(m_sslCheck, row++, 1);
+
     } else if (type == "MySQL" || type == "PostgreSQL") {
         // SQL数据库表单
-        m_usernameEdit->setVisible(true);
         m_passwordEdit->setPlaceholderText("数据库密码");
-        m_databaseEdit->setVisible(true);
         m_databaseEdit->setPlaceholderText("数据库名称");
-        
-        m_formLayout->addRow("用户名:", m_usernameEdit);
-        m_formLayout->addRow("密码:", m_passwordEdit);
-        m_formLayout->addRow("数据库:", m_databaseEdit);
-        
+
+        m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_usernameEdit, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_passwordEdit, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("数据库:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_databaseEdit, row++, 1);
+
         if (type == "MySQL") {
-            m_charsetLabel->setVisible(true);
-            m_charsetCombo->setVisible(true);
-            m_formLayout->addRow(m_charsetLabel, m_charsetCombo);
-        } else {
-            m_charsetLabel->setVisible(false);
-            m_charsetCombo->setVisible(false);
+            m_gridLayout->addWidget(createLabel("字符集:"), row, 0, Qt::AlignTop);
+            m_gridLayout->addWidget(m_charsetCombo, row++, 1);
         }
-        
-        m_formLayout->addRow("超时:", m_timeoutSpin);
-        m_formLayout->addRow("", m_sslCheck);
-        
-        // 隐藏Redis特有控件
-        m_dbIndexLabel->setVisible(false);
-        m_dbIndexSpin->setVisible(false);
-        
+
+        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_timeoutSpin, row++, 1);
+
+        m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
+        m_gridLayout->addWidget(m_sslCheck, row++, 1);
+
     } else {
         // 其他数据库类型的通用表单
-        m_usernameEdit->setVisible(true);
-        m_passwordEdit->setVisible(true);
-        m_databaseEdit->setVisible(true);
-        
-        m_formLayout->addRow("用户名:", m_usernameEdit);
-        m_formLayout->addRow("密码:", m_passwordEdit);
-        m_formLayout->addRow("数据库:", m_databaseEdit);
-        m_formLayout->addRow("超时:", m_timeoutSpin);
-        m_formLayout->addRow("", m_sslCheck);
-        
-        // 隐藏特有控件
-        m_dbIndexLabel->setVisible(false);
-        m_dbIndexSpin->setVisible(false);
-        m_charsetLabel->setVisible(false);
-        m_charsetCombo->setVisible(false);
+        m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_usernameEdit, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_passwordEdit, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("数据库:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_databaseEdit, row++, 1);
+
+        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(m_timeoutSpin, row++, 1);
+
+        m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
+        m_gridLayout->addWidget(m_sslCheck, row++, 1);
     }
-    
+
+    // 添加弹性空间
+    m_gridLayout->setRowStretch(row, 1);
+
     // 更新状态说明
     QListWidgetItem* currentItem = m_typeList->currentItem();
     if (currentItem) {
@@ -416,17 +626,19 @@ void ConnectionDialog::onAccept() {
 
 bool ConnectionDialog::validateInput() {
     if (m_nameEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "输入错误", "请输入连接名称");
+        m_statusLabel->setText("❌ 请输入连接名称");
         m_nameEdit->setFocus();
         return false;
     }
-    
+
     if (m_hostEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "输入错误", "请输入主机地址");
+        m_statusLabel->setText("❌ 请输入主机地址");
         m_hostEdit->setFocus();
         return false;
     }
-    
+
+    // 清除错误信息
+    m_statusLabel->setText("");
     return true;
 }
 
@@ -1213,7 +1425,7 @@ void DatabaseTool::onNewConnection() {
         Connx::ConnectionConfig config = dialog.getConnectionConfig();
         
         if (m_connectionConfigs.contains(config.name)) {
-            QMessageBox::warning(this, "连接已存在", "已存在同名连接，请使用不同的名称");
+            m_statusLabel->setText("❌ 连接名称已存在，请使用不同的名称");
             return;
         }
         
@@ -1222,7 +1434,7 @@ void DatabaseTool::onNewConnection() {
         // 保存到SQLite数据库
         SqliteWrapper::ConnectionConfigEntity configEntity;
         configEntity.name = config.name;
-        configEntity.type = "Redis"; // 目前只支持Redis
+        configEntity.type = config.extraParams.value("connectionType", "Redis").toString();
         configEntity.host = config.host;
         configEntity.port = config.port;
         configEntity.username = config.username;
@@ -1236,12 +1448,13 @@ void DatabaseTool::onNewConnection() {
         
         bool saved = m_configManager->saveConfig(configEntity);
         if (!saved) {
-            QMessageBox::warning(this, "保存失败", "无法保存连接配置到数据库");
+            m_statusLabel->setText("❌ 无法保存连接配置到数据库");
             return;
         }
         
         // 创建连接对象
-        Connx::ConnectionType type = Connx::ConnectionType::Redis; // 目前只支持Redis
+        QString typeString = config.extraParams.value("connectionType", "Redis").toString();
+        Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
         Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
         if (connection) {
             m_connections[config.name] = connection;
@@ -1325,7 +1538,34 @@ void DatabaseTool::loadConnections() {
         m_connectionConfigs[config.name] = config;
         
         // 创建连接对象
-        Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(configEntity.type);
+        QString typeString = configEntity.type;
+
+        // 修复历史数据中可能错误的连接类型
+        if (typeString.isEmpty() || typeString == "Unknown" ||
+            (typeString == "Redis" && config.port != 6379 && !config.database.contains(QRegularExpression("^\\d+$")))) {
+
+            // 根据端口和配置推断连接类型
+            if (config.port == 3306 && !config.database.isEmpty()) {
+                typeString = "MySQL";
+            } else if (config.port == 5432) {
+                typeString = "PostgreSQL";
+            } else if (config.port == 6379 || config.database.contains(QRegularExpression("^\\d+$"))) {
+                typeString = "Redis";
+            } else if (config.extraParams.contains("connectionType")) {
+                typeString = config.extraParams["connectionType"].toString();
+            } else {
+                // 最后的推断：如果有数据库名且端口不是Redis默认端口，推测为SQL数据库
+                if (!config.database.isEmpty() && !config.database.contains(QRegularExpression("^\\d+$"))) {
+                    typeString = "MySQL"; // MySQL是最常见的SQL数据库
+                } else {
+                    typeString = "Redis"; // 默认
+                }
+            }
+
+            qDebug() << "Connection type corrected for" << config.name << "from" << configEntity.type << "to" << typeString;
+        }
+
+        Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
         Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
         if (connection) {
             m_connections[config.name] = connection;
@@ -1426,7 +1666,7 @@ void DatabaseTool::onEditConnection() {
         // 保存到SQLite
         QVariantMap configMap;
         configMap["name"] = newConfig.name;
-        configMap["type"] = "Redis";
+        configMap["type"] = newConfig.extraParams.value("connectionType", "Redis").toString();
         configMap["host"] = newConfig.host;
         configMap["port"] = newConfig.port;
         configMap["username"] = newConfig.username;
@@ -1483,7 +1723,7 @@ void DatabaseTool::onDeleteConnection() {
             updateConnectionStatus();
             m_statusLabel->setText("连接已删除: " + connectionName);
         } else {
-            QMessageBox::warning(this, "删除失败", "无法从数据库删除连接配置");
+            m_statusLabel->setText("❌ 无法从数据库删除连接配置");
         }
     }
 }

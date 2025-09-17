@@ -21,6 +21,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
+#include <QGridLayout>
 #include <QProgressBar>
 #include <QStatusBar>
 #include <QMenuBar>
@@ -34,6 +35,11 @@
 #include <QSettings>
 #include <QStyle>
 #include <QMetaType>
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QPropertyAnimation>
+#include <QGraphicsDropShadowEffect>
+#include <QRegularExpression>
 
 #include "../../common/dynamicobjectbase.h"
 #include "../../common/connx/Connection.h"
@@ -42,6 +48,68 @@
 // 不使用全局using namespace以避免命名冲突
 // using namespace Connx;
 // using namespace SqliteWrapper;
+
+// 现代化的连接类型列表项委托
+class ConnectionTypeDelegate : public QStyledItemDelegate {
+    Q_OBJECT
+
+public:
+    explicit ConnectionTypeDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+               const QModelIndex& index) const override {
+        painter->setRenderHint(QPainter::Antialiasing);
+
+        QRect rect = option.rect;
+        QString text = index.data(Qt::DisplayRole).toString();
+        QIcon icon = index.data(Qt::DecorationRole).value<QIcon>();
+
+        // 背景绘制
+        QColor backgroundColor;
+        if (option.state & QStyle::State_Selected) {
+            backgroundColor = QColor(52, 152, 219);  // #3498db
+        } else if (option.state & QStyle::State_MouseOver) {
+            backgroundColor = QColor(52, 152, 219, 102);  // 40% opacity
+        } else {
+            backgroundColor = QColor(255, 255, 255, 26);  // 10% opacity
+        }
+
+        painter->setBrush(backgroundColor);
+        painter->setPen(Qt::NoPen);
+        painter->drawRoundedRect(rect.adjusted(6, 3, -6, -3), 8, 8);
+
+        // 绘制阴影效果（选中时）
+        if (option.state & QStyle::State_Selected) {
+            painter->setBrush(QColor(0, 0, 0, 20));
+            painter->drawRoundedRect(rect.adjusted(8, 5, -4, -1), 8, 8);
+        }
+
+        // 文字绘制
+        QColor textColor = (option.state & QStyle::State_Selected) ?
+                          QColor(255, 255, 255) : QColor(236, 240, 241);
+        painter->setPen(textColor);
+
+        QFont font = painter->font();
+        font.setPointSize(11);
+        font.setWeight((option.state & QStyle::State_Selected) ? QFont::Medium : QFont::Normal);
+        painter->setFont(font);
+
+        QRect textRect = rect.adjusted(50, 0, -12, 0);
+        painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text);
+
+        // 图标绘制
+        if (!icon.isNull()) {
+            QRect iconRect(rect.left() + 18, rect.center().y() - 8, 16, 16);
+            icon.paint(painter, iconRect);
+        }
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        Q_UNUSED(option)
+        Q_UNUSED(index)
+        return QSize(180, 50);  // 固定尺寸
+    }
+};
 
 // 连接配置对话框
 class ConnectionDialog : public QDialog {
@@ -80,7 +148,7 @@ private:
     // 右侧面板
     QWidget* m_rightPanel;
     QVBoxLayout* m_rightLayout;
-    QFormLayout* m_formLayout;
+    QGridLayout* m_gridLayout;
     QWidget* m_formWidget;
     
     // 表单控件

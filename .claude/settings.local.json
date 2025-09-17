@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/projects/vcpkg/installed/x64-windows/include/**)",
+      "Read(//d/projects/vcpkg/installed/x64-windows/lib/**)",
+      "Bash(cmake:*)",
+      "Read(//d/projects/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
