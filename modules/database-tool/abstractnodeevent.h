@@ -128,7 +128,11 @@ public:
 
     // 获取父节点（倒数第二个节点）
     Node parentNode() const {
-        return m_nodes.size() < 2 ? Node() : m_nodes[m_nodes.size() - 2];
+        if (m_nodes.size() < 2) {
+            return Node();
+        }
+        int index = m_nodes.size() - 2;
+        return (index >= 0 && index < m_nodes.size()) ? m_nodes[index] : Node();
     }
 
     // 获取连接ID

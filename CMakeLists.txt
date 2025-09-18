@@ -1,35 +1,25 @@
 cmake_minimum_required(VERSION 3.10)
 project(lele-tools VERSION 0.1 LANGUAGES CXX)
 
-# 添加自定义模块路径
+# 添加自定义模块路径，告诉 CMake 去哪里找 Find*.cmake
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# 加载环境配置模块
+include(LoadEnvironment)
 
-
-# 默认环境
-set(ENVIRONMENT "台式机")
-
-
-# 构建 .env 文件路径
-set(ENV_FILE "${CMAKE_SOURCE_DIR}/.env.${ENVIRONMENT}")
-
-# 从环境配置中加载变量，实现nodejs的效果
-if(EXISTS "${ENV_FILE}")
-    file(STRINGS "${ENV_FILE}" ENV_LINES)  # 一行一行读
-
-    foreach(line IN LISTS ENV_LINES)
-        if(line MATCHES "^\\s*([^=]+)=(.+)$")
-            # 先赋值
-            set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
-            # 再打印变量名和值（双重解引用）
-            message(STATUS "${CMAKE_MATCH_1} = ${${CMAKE_MATCH_1}}")
-        endif()
-    endforeach()
-
-    message(STATUS "Loaded environment from ${ENV_FILE}")
-else()
-    message(WARNING "Environment file ${ENV_FILE} not found")
+# 设置默认环境（可通过命令行覆盖： -DENVIRONMENT=xxx）
+if(NOT DEFINED ENVIRONMENT)
+    set(ENVIRONMENT "台式机" CACHE STRING "Environment name for .env file")
 endif()
+
+# 加载环境文件（会自动设置为配置依赖，文件修改时会触发重新配置）
+load_environment_file("${ENVIRONMENT}")
+
+# 验证关键的环境变量是否存在（可选）
+# require_environment_variables(REDIS_PLUS_PLUS_INCLUDE_DIR REDIS_PLUS_PLUS_LIBRARY)
+
+# 设置默认值（如果某些变量未定义）
+# set_environment_default(SOME_VAR "default_value")
 
 set(CMAKE_AUTOMOC ON)   # 自动处理 moc (信号与槽)
 set(CMAKE_AUTORCC ON)   # 自动处理 qrc 资源文件
@@ -45,8 +35,7 @@ if(WIN32 AND MSVC)
 endif()
 
 
-# Redis 可选支持
-option(WITH_REDIS "Enable Redis support" ON)
+# Redis 可选支持已移至下方
 # OpenCV 可选支持
 option(WITH_OPENCV "Enable OpenCV support" ON)
 # MySQL 可选支持
@@ -81,55 +70,15 @@ endif()
 
 option(ENABLE_REDIS "Enable Redis support" ON)
 
+# Redis 支持检测
 if(ENABLE_REDIS)
-    message(STATUS "Checking for redis-plus-plus ...")
-
-    message(STATUS "REDIS_PLUS_PLUS_INCLUDE_DIR = ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
-    message(STATUS "REDIS_PLUS_PLUS_LIBRARY     = ${REDIS_PLUS_PLUS_LIBRARY}")
-    message(STATUS "HIREDIS_LIBRARY             = ${HIREDIS_LIBRARY}")
-
-
-    # 尝试多种方式查找redis-plus-plus
-    find_package(redis++ QUIET CONFIG)
-    
-    if(redis++_FOUND)
-        message(STATUS "redis-plus-plus found via CONFIG")
+    find_package(Redis)
+    if(Redis_FOUND)
         set(HAVE_REDIS TRUE)
+        message(STATUS "Redis support enabled")
     else()
-        # 如果CONFIG方式失败，尝试手动查找
-        # 直接指定vcpkg路径
-        # 检查文件是否存在
-        if(EXISTS "${REDIS_PLUS_PLUS_INCLUDE_DIR}/sw/redis++/redis++.h" AND EXISTS "${REDIS_PLUS_PLUS_LIBRARY}" AND EXISTS "${HIREDIS_LIBRARY}")
-            message(STATUS "redis-plus-plus found at: ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
-            message(STATUS "redis++ library: ${REDIS_PLUS_PLUS_LIBRARY}")
-            message(STATUS "hiredis library: ${HIREDIS_LIBRARY}")
-        else()
-            set(REDIS_PLUS_PLUS_INCLUDE_DIR "")
-            set(REDIS_PLUS_PLUS_LIBRARY "")
-            set(HIREDIS_LIBRARY "")
-        endif()
-        
-        if(REDIS_PLUS_PLUS_INCLUDE_DIR AND REDIS_PLUS_PLUS_LIBRARY)
-            message(STATUS "redis-plus-plus found manually")
-            message(STATUS "  Include: ${REDIS_PLUS_PLUS_INCLUDE_DIR}")
-            message(STATUS "  Library: ${REDIS_PLUS_PLUS_LIBRARY}")
-            set(HAVE_REDIS TRUE)
-            
-            # 创建导入目标
-            add_library(redis++::redis++ UNKNOWN IMPORTED)
-            set_target_properties(redis++::redis++ PROPERTIES
-                IMPORTED_LOCATION ${REDIS_PLUS_PLUS_LIBRARY}
-                INTERFACE_INCLUDE_DIRECTORIES ${REDIS_PLUS_PLUS_INCLUDE_DIR}
-                INTERFACE_LINK_LIBRARIES ${HIREDIS_LIBRARY}
-            )
-        else()
-            message(WARNING "redis-plus-plus not found. Building without Redis support.")
-            message(STATUS "To install redis-plus-plus:")
-            message(STATUS "  Windows: vcpkg install redis-plus-plus")
-            message(STATUS "  Linux: sudo apt-get install libhiredis-dev libsw-redis++-dev")
-            message(STATUS "  macOS: brew install redis-plus-plus")
-            set(HAVE_REDIS FALSE)
-        endif()
+        set(HAVE_REDIS FALSE)
+        message(WARNING "Redis support requested but redis-plus-plus not found")
     endif()
 else()
     message(STATUS "Redis support disabled")
@@ -251,7 +200,6 @@ set(PROJECT_SOURCES
         common/validator/myintvalidator.cpp
         ${TS_FILES}
         ${WINDOWS_RC_FILES}
-        common/connx/AbstractNodeEvent.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -321,16 +269,7 @@ endif()
 if(HAVE_REDIS)
     message(STATUS "Linking redis-plus-plus to target")
     target_compile_definitions(lele-tools PRIVATE WITH_REDIS_PLUS_PLUS)
-    
-    if(TARGET redis++::redis++)
-        target_link_libraries(lele-tools PRIVATE redis++::redis++)
-    elseif(TARGET redis++)
-        target_link_libraries(lele-tools PRIVATE redis++)
-    else()
-        message(WARNING "Redis target not found, linking manually")
-        target_include_directories(lele-tools PRIVATE ${REDIS_PLUS_PLUS_INCLUDE_DIR})
-        target_link_libraries(lele-tools PRIVATE ${REDIS_PLUS_PLUS_LIBRARY} ${HIREDIS_LIBRARY})
-    endif()
+    target_link_libraries(lele-tools PRIVATE Redis::Redis)
 endif()
 
 # 添加Windows Socket库 (Redis需要)
@@ -372,73 +311,19 @@ if(HAVE_MYSQL)
 endif()
 
 # Npcap/libpcap支持 (Traceroute工具需要)
+# Pcap 支持检测
 option(WITH_PCAP "Enable pcap support for network tools" ON)
 
 if(WITH_PCAP)
-    if(WIN32)
-        # Windows平台查找Npcap
-        # --- 允许用户手动指定路径 ---
-        set(PCAP_INCLUDE_DIR "" CACHE PATH "Npcap include directory (pcap.h)")
-        set(PCAP_LIBRARY "" CACHE FILEPATH "Npcap library (wpcap.lib)")
-        set(PACKET_LIBRARY "" CACHE FILEPATH "Packet library (packet.lib)")
-
-        # --- 配置目标 ---
-        if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
-            message(STATUS "Npcap found:")
-            message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
-            message(STATUS "  Library: ${PCAP_LIBRARY}")
-            set(HAVE_PCAP TRUE)
-            add_definitions(-DWITH_PCAP)
-            target_include_directories(lele-tools PRIVATE ${PCAP_INCLUDE_DIR})
-            target_link_libraries(lele-tools PRIVATE ${PCAP_LIBRARY})
-            if(PACKET_LIBRARY)
-                target_link_libraries(lele-tools PRIVATE ${PACKET_LIBRARY})
-            endif()
-        else()
-            message(WARNING "Npcap SDK not found. Traceroute tool will use Windows API fallback.")
-            message(STATUS "To enable full pcap functionality:")
-            message(STATUS "  1. Download Npcap from: https://npcap.com/")
-            message(STATUS "  2. Install with 'Install Npcap SDK' option checked")
-            message(STATUS "  3. Or download SDK separately from GitHub releases")
-
-            # 使用Windows系统API作为备用方案
-            message(STATUS "Using Windows ICMP API fallback")
-            set(HAVE_PCAP FALSE)
-            add_definitions(-DWITH_WINDOWS_ICMP)
-        endif()
+    find_package(Pcap)
+    if(Pcap_FOUND)
+        message(STATUS "Pcap support enabled")
+        target_link_libraries(lele-tools PRIVATE Pcap::Pcap)
     else()
-        # Linux/macOS平台查找libpcap
-        find_path(PCAP_INCLUDE_DIR
-            NAMES pcap/pcap.h pcap.h
-            PATHS /usr/include /usr/local/include
-            DOC "libpcap include directory"
-        )
-        
-        find_library(PCAP_LIBRARY
-            NAMES pcap
-            PATHS /usr/lib /usr/local/lib
-            DOC "libpcap library"
-        )
-        
-        if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)
-            message(STATUS "libpcap found:")
-            message(STATUS "  Include: ${PCAP_INCLUDE_DIR}")
-            message(STATUS "  Library: ${PCAP_LIBRARY}")
-            set(HAVE_PCAP TRUE)
-            add_definitions(-DWITH_PCAP)
-            target_include_directories(lele-tools PRIVATE ${PCAP_INCLUDE_DIR})
-            target_link_libraries(lele-tools PRIVATE ${PCAP_LIBRARY})
-        else()
-            message(WARNING "libpcap not found. Traceroute tool will be disabled.")
-            message(STATUS "To install libpcap:")
-            message(STATUS "  Ubuntu/Debian: sudo apt-get install libpcap-dev")
-            message(STATUS "  CentOS/RHEL: sudo yum install libpcap-devel")
-            message(STATUS "  macOS: brew install libpcap")
-            set(HAVE_PCAP FALSE)
-        endif()
+        message(WARNING "Pcap support requested but not available")
     endif()
 else()
-    message(STATUS "pcap support disabled")
+    message(STATUS "Pcap support disabled")
     set(HAVE_PCAP FALSE)
 endif()
 

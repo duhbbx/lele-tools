@@ -14,6 +14,8 @@
 
 {"xxx", "Telnet工具", "Telnet"},
 
+{"xxx", "Windows设置", "WindowsSettings"},
+
 {"xxx", "Hosts编辑(表格)", "HostsEditor"},
 
 {"xxx", "Hosts编辑(文本)", "SimpleHostsEditor"},

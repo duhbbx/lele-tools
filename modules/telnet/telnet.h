@@ -35,6 +35,7 @@ public slots:
     void onConnect();
     void onDisconnect();
     void onSendCommand();
+    void onSendSelectedCommand();
     void onClearOutput();
     void onSaveLog();
     void onHostChanged();
@@ -86,12 +87,11 @@ private:
     QGroupBox* commandGroup;
     QVBoxLayout* commandLayout;
     QHBoxLayout* commandInputLayout;
-    QLineEdit* commandEdit;
+    QTextEdit* commandEdit;
     QPushButton* sendBtn;
     QHBoxLayout* commandButtonLayout;
     QPushButton* clearBtn;
     QPushButton* saveLogBtn;
-    QComboBox* commonCommandsCombo;
     
     // 输出区域
     QGroupBox* outputGroup;

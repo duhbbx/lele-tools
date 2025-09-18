@@ -49,6 +49,7 @@
 #include "../../common/sqlite/ConnectionConfigTableManager.h"
 #include "abstractnodeevent.h"
 #include "nodeeventfactory.h"
+#include "databasetreemodel.h"
 
 // 不使用全局using namespace以避免命名冲突
 // using namespace Connx;
@@ -85,7 +86,8 @@ enum class DbNodeType {
 struct DbNodeData {
     DbNodeType type;
     QString id;           // 唯一标识符
-    QString name;         // 显示名称
+    QString name;         // 实际名称（不带emoji，用于查询等逻辑）
+    QString displayName;  // 显示名称（带emoji，用于UI显示）
     QString fullName;     // 完整名称（包含schema等）
     QString schema;       // 模式名
     QString database;     // 数据库名
@@ -114,6 +116,7 @@ public:
 private:
     void updateDisplay();
     QString getNodeIcon() const;
+    QString getNodeEmoji() const;
 
     DbNodeData m_nodeData;
 };
@@ -358,14 +361,13 @@ private:
     QLabel* m_rowsLabel;
 };
 
-// 数据库浏览器树
-class DatabaseTreeWidget : public QTreeWidget {
+// 高性能数据库浏览器树
+class DatabaseTreeWidget : public QTreeView {
     Q_OBJECT
 
 public:
     explicit DatabaseTreeWidget(QWidget* parent = nullptr);
-    
-    void setConnection(Connx::Connection* connection);
+
     void refreshConnection(const QString& connectionName);
     void addConnection(const QString& name, Connx::Connection* connection);
     void removeConnection(const QString& name);
@@ -377,36 +379,45 @@ signals:
     void disconnectionRequested(const QString& connectionName);
 
 private slots:
-    void onItemDoubleClicked(QTreeWidgetItem* item, int column);
-    void onItemExpanded(QTreeWidgetItem* item);
+    void onNodeDoubleClicked(const QModelIndex& index);
     void onCustomContextMenuRequested(const QPoint& pos);
+    void onNodeExpanded(const QModelIndex& index);
 
 private:
+    void setupUI();
     void setupContextMenu();
-    void loadDatabases(QTreeWidgetItem* connectionItem, Connx::Connection* connection);
+    void handleNodeDoubleClick(const QModelIndex& index);
+    void showNodeContextMenu(const QModelIndex& index, const QPoint& pos);
+
+    // Helper methods for tree operations
+    NodeChain buildNodeChainFromIndex(const QModelIndex& index);
+    void showExpandError(const QString& title, const QString& message);
+    NodeType convertDbNodeTypeToNodeType(DbNodeType dbNodeType);
+    bool canExpandNodeType(NodeType type);
+    bool canNodeExpand(NodeType nodeType);
+
+    // Deprecated methods (kept for compatibility)
+    void loadFolderContent(QTreeWidgetItem* folderItem, Connx::Connection* connection, const QString& database, DbNodeType folderType);
     void loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database);
     void loadRedisKeys(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database);
-    void loadFolderContent(QTreeWidgetItem* folderItem, Connx::Connection* connection, const QString& database, DbNodeType folderType);
     void refreshDatabase(QTreeWidgetItem* databaseItem);
     void flushDatabase(QTreeWidgetItem* databaseItem);
     void deleteKey(QTreeWidgetItem* keyItem);
-
-    // 新增：使用抽象事件系统的方法
-    NodeChain buildNodeChainFromTreeItem(QTreeWidgetItem* item);
-    Node createNodeFromTreeItem(QTreeWidgetItem* item);
-    NodeType convertDbNodeTypeToNodeType(DbNodeType dbNodeType);
-    DbNodeType convertNodeTypeToDbNodeType(NodeType nodeType);
+    void setConnection(Connx::Connection* connection);
     void updateTreeItemWithNodes(QTreeWidgetItem* parentItem, const QList<Node>& nodes);
     void populateTreeItemData(QTreeWidgetItem* item, const Node& node);
     void setNodeIcon(QTreeWidgetItem* item, NodeType nodeType);
-    bool canNodeExpand(NodeType nodeType);
+    NodeChain buildNodeChainFromTreeItem_DEPRECATED(QTreeWidgetItem* item);
+    Node createNodeFromTreeItem(QTreeWidgetItem* item);
+    DbNodeType convertNodeTypeToDbNodeType(NodeType nodeType);
     QString generateNodeTooltip(const Node& node);
-    QString getNodeTypeDisplayName(NodeType nodeType);
-    void showExpandError(const QString& title, const QString& message);
-    
-    QMap<QString, Connx::Connection*> m_connections;
-    QMap<QTreeWidgetItem*, QString> m_itemConnectionMap;
-    
+    QString getNodeTypeDisplayName(NodeType type);
+
+public:
+    DatabaseTreeModel* m_treeModel;  // Made public for access from DatabaseTool
+
+private:
+
     QMenu* m_contextMenu;
     QAction* m_connectAction;
     QAction* m_disconnectAction;

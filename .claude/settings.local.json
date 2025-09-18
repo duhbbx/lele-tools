@@ -8,7 +8,22 @@
       "Bash(grep:*)",
       "Bash(python:*)",
       "Bash(pip install:*)",
-      "Bash(dir)"
+      "Bash(dir)",
+      "Bash(rd:*)",
+      "Bash(powershell:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(awk:*)",
+      "Bash(.lele-tools.exe)",
+      "Bash(lele-tools.exe)",
+      "Bash(cmd /c:*)",
+      "Bash(dumpbin:*)",
+      "Bash(timeout 60 cmake --build build)",
+      "Bash(timeout 30 cmake --build build)",
+      "Bash(clang++:*)",
+      "Bash(g++:*)",
+      "Bash(timeout 20 cmake --build build)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []

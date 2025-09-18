@@ -5,6 +5,8 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QScrollBar>
+#include <QShortcut>
+#include <QTextCursor>
 
 REGISTER_DYNAMICOBJECT(Telnet);
 
@@ -28,7 +30,6 @@ Telnet::Telnet() : QWidget(nullptr), DynamicObjectBase(),
     connect(sendBtn, &QPushButton::clicked, this, &Telnet::onSendCommand);
     connect(clearBtn, &QPushButton::clicked, this, &Telnet::onClearOutput);
     connect(saveLogBtn, &QPushButton::clicked, this, &Telnet::onSaveLog);
-    connect(commandEdit, &QLineEdit::returnPressed, this, &Telnet::onSendCommand);
     
     hostEdit->setText(tr("127.0.0.1"));
     portSpinBox->setValue(23);
@@ -78,36 +79,143 @@ void Telnet::setupUI()
     setStyleSheet(R"(
         QPushButton {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            background-color: #f0f0f0;
-            border: 1px solid #cccccc;
-            border-radius: 0px;
-            padding: 6px 12px;
-            font-weight: bold;
-            font-size: 11pt;
+            background-color: #ffffff;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            font-size: 12pt;
+            min-width: 90px;
+            color: #333333;
+        }
+        QPushButton:hover {
+            background-color: #f5f5f5;
+            border-color: #d1d1d1;
+        }
+        QPushButton:pressed {
+            background-color: #e8e8e8;
+            border-color: #bfbfbf;
+        }
+        QGroupBox {
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            font-weight: 600;
+            font-size: 13pt;
+            border: 2px solid #e1e1e1;
+            border-radius: 12px;
+            margin-top: 12px;
+            padding-top: 15px;
+            background-color: #fafafa;
+            color: #333333;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            left: 15px;
+            padding: 0 8px 0 8px;
+            color: #2c3e50;
+        }
+        QLineEdit {
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12pt;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+        }
+        QLineEdit:focus {
+            border-color: #3498db;
+            background-color: #fcfcfc;
+        }
+        QSpinBox {
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12pt;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            background-color: #ffffff;
+            color: #333333;
             min-width: 80px;
         }
-        QPushButton:hover { background-color: #e0e0e0; }
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #cccccc;
-            border-radius: 0px;
-            margin-top: 1ex;
-            padding-top: 10px;
+        QSpinBox:focus {
+            border-color: #3498db;
+            background-color: #fcfcfc;
         }
-        QLineEdit, QSpinBox, QComboBox {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 4px 8px;
-            font-size: 11pt;
+        QSpinBox::up-button {
+            subcontrol-origin: border;
+            subcontrol-position: top right;
+            width: 20px;
+            border-left: 1px solid #e1e1e1;
+            border-bottom: 1px solid #e1e1e1;
+            background-color: #f8f8f8;
+            border-top-right-radius: 6px;
+        }
+        QSpinBox::down-button {
+            subcontrol-origin: border;
+            subcontrol-position: bottom right;
+            width: 20px;
+            border-left: 1px solid #e1e1e1;
+            border-top: 1px solid #e1e1e1;
+            background-color: #f8f8f8;
+            border-bottom-right-radius: 6px;
+        }
+        QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+            background-color: #e8e8e8;
+        }
+        QSpinBox::up-arrow {
+            image: none;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 6px solid #666666;
+            width: 0;
+            height: 0;
+        }
+        QSpinBox::down-arrow {
+            image: none;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 6px solid #666666;
+            width: 0;
+            height: 0;
         }
         QTextEdit {
-            border: 2px solid #dddddd;
-            border-radius: 0px;
-            padding: 8px;
-            font-family: 'Consolas', monospace;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 11pt;
             background-color: #1e1e1e;
             color: #ffffff;
+            selection-background-color: #3498db;
+        }
+        QTextEdit:focus {
+            border-color: #3498db;
+        }
+        QCheckBox {
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            font-size: 11pt;
+            color: #333333;
+            spacing: 8px;
+        }
+        QCheckBox::indicator {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #e1e1e1;
+            border-radius: 4px;
+            background-color: #ffffff;
+        }
+        QCheckBox::indicator:checked {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+        QCheckBox::indicator:checked {
+            image: none;
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+        QLabel {
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            font-size: 11pt;
+            color: #333333;
         }
     )");
 }
@@ -134,10 +242,50 @@ void Telnet::setupConnectionArea()
     
     connectionButtonLayout = new QHBoxLayout();
     connectBtn = new QPushButton(tr("🔗 连接"));
-    connectBtn->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-family: 'Microsoft YaHei'; }");
-    
+    connectBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 12pt;
+        }
+        QPushButton:hover {
+            background-color: #2ecc71;
+        }
+        QPushButton:pressed {
+            background-color: #219a52;
+        }
+        QPushButton:disabled {
+            background-color: #95a5a6;
+            color: #ecf0f1;
+        }
+    )");
+
     disconnectBtn = new QPushButton(tr("❌ 断开"));
-    disconnectBtn->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-family: 'Microsoft YaHei'; }");
+    disconnectBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 12pt;
+        }
+        QPushButton:hover {
+            background-color: #ec7063;
+        }
+        QPushButton:pressed {
+            background-color: #c0392b;
+        }
+        QPushButton:disabled {
+            background-color: #95a5a6;
+            color: #ecf0f1;
+        }
+    )");
     
     connectionButtonLayout->addWidget(connectBtn);
     connectionButtonLayout->addWidget(disconnectBtn);
@@ -156,33 +304,132 @@ void Telnet::setupCommandArea()
 {
     commandGroup = new QGroupBox(tr("⌨️ 命令输入"));
     commandLayout = new QVBoxLayout(commandGroup);
-    
-    commonCommandsCombo = new QComboBox();
-    commonCommandsCombo->addItems(QStringList() 
-        << tr("选择常用命令...") << "help" << "ls -la" << "pwd" << "whoami" << "exit");
-    
+
+    // 创建命令输入标签
+    QLabel* commandLabel = new QLabel(tr("输入命令 (支持多行):"));
+    commandLabel->setStyleSheet("font-weight: 600; color: #2c3e50; margin-bottom: 4px;");
+
+    // 多行命令输入框
+    commandEdit = new QTextEdit();
+    commandEdit->setPlaceholderText(tr("输入Telnet命令...\n支持多行输入，Ctrl+Enter发送"));
+    commandEdit->setMaximumHeight(120); // 限制高度
+    commandEdit->setStyleSheet(R"(
+        QTextEdit {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12pt;
+            line-height: 1.4;
+        }
+        QTextEdit:focus {
+            border-color: #3498db;
+            background-color: #34495e;
+        }
+    )");
+
+    // 按钮布局
     commandInputLayout = new QHBoxLayout();
-    commandEdit = new QLineEdit();
-    commandEdit->setPlaceholderText(tr("输入Telnet命令..."));
-    sendBtn = new QPushButton(tr("📤 发送"));
-    sendBtn->setStyleSheet("font-family: 'Microsoft YaHei';");
-    
-    commandInputLayout->addWidget(commandEdit);
+
+    // 发送按钮（发送全部）
+    sendBtn = new QPushButton(tr("📤 发送全部"));
+    sendBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 12pt;
+        }
+        QPushButton:hover {
+            background-color: #2ecc71;
+        }
+        QPushButton:pressed {
+            background-color: #219a52;
+        }
+    )");
+
+    // 发送选中按钮
+    QPushButton* sendSelectedBtn = new QPushButton(tr("📝 发送选中"));
+    sendSelectedBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 12pt;
+        }
+        QPushButton:hover {
+            background-color: #5dade2;
+        }
+        QPushButton:pressed {
+            background-color: #2980b9;
+        }
+    )");
+
     commandInputLayout->addWidget(sendBtn);
-    
+    commandInputLayout->addWidget(sendSelectedBtn);
+    commandInputLayout->addStretch();
+
     commandButtonLayout = new QHBoxLayout();
     clearBtn = new QPushButton(tr("🗑️ 清空"));
-    clearBtn->setStyleSheet("font-family: 'Microsoft YaHei';");
+    clearBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+        QPushButton:hover {
+            background-color: #ec7063;
+        }
+        QPushButton:pressed {
+            background-color: #c0392b;
+        }
+    )");
+
     saveLogBtn = new QPushButton(tr("💾 保存日志"));
-    saveLogBtn->setStyleSheet("font-family: 'Microsoft YaHei';");
-    
+    saveLogBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+        QPushButton:hover {
+            background-color: #af7ac5;
+        }
+        QPushButton:pressed {
+            background-color: #8e44ad;
+        }
+    )");
+
     commandButtonLayout->addWidget(clearBtn);
     commandButtonLayout->addWidget(saveLogBtn);
     commandButtonLayout->addStretch();
-    
-    commandLayout->addWidget(commonCommandsCombo);
+
+    // 添加到布局
+    commandLayout->addWidget(commandLabel);
+    commandLayout->addWidget(commandEdit);
     commandLayout->addLayout(commandInputLayout);
     commandLayout->addLayout(commandButtonLayout);
+
+    // 连接信号
+    connect(sendSelectedBtn, &QPushButton::clicked, this, &Telnet::onSendSelectedCommand);
+
+    // 添加快捷键支持
+    QShortcut* sendShortcut = new QShortcut(QKeySequence("Ctrl+Return"), commandEdit);
+    connect(sendShortcut, &QShortcut::activated, this, &Telnet::onSendCommand);
 }
 
 void Telnet::setupOutputArea()
@@ -210,16 +457,38 @@ void Telnet::setupOutputArea()
 void Telnet::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
-    
+
     statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 4px 8px; background: #f9f9f9; border-radius: 0px;");
-    
+    statusLabel->setStyleSheet(R"(
+        color: #2c3e50;
+        font-weight: 600;
+        padding: 6px 12px;
+        background: #ecf0f1;
+        border-radius: 6px;
+        border: 1px solid #bdc3c7;
+    )");
+
     connectionStatusLabel = new QLabel(tr("未连接"));
-    connectionStatusLabel->setStyleSheet("color: #f44336; font-weight: bold;");
-    
+    connectionStatusLabel->setStyleSheet(R"(
+        color: #e74c3c;
+        font-weight: 600;
+        padding: 6px 12px;
+        background: #fadbd8;
+        border-radius: 6px;
+        border: 1px solid #f1948a;
+    )");
+
     bytesLabel = new QLabel(tr("发送: 0B | 接收: 0B"));
-    bytesLabel->setStyleSheet("color: #666; font-size: 11pt;");
-    
+    bytesLabel->setStyleSheet(R"(
+        color: #7f8c8d;
+        font-size: 11pt;
+        font-weight: 500;
+        padding: 6px 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+    )");
+
     statusLayout->addWidget(statusLabel);
     statusLayout->addWidget(connectionStatusLabel);
     statusLayout->addStretch();
@@ -246,12 +515,44 @@ void Telnet::onDisconnect()
 
 void Telnet::onSendCommand()
 {
-    QString command = commandEdit->text();
+    QString command = commandEdit->toPlainText().trimmed();
     if (command.isEmpty() || !isConnected) return;
-    
-    sendCommand(command);
-    addToHistory(command);
+
+    // 按行分割命令并发送
+    QStringList lines = command.split('\n', Qt::SkipEmptyParts);
+    for (const QString& line : lines) {
+        if (!line.trimmed().isEmpty()) {
+            sendCommand(line.trimmed());
+            addToHistory(line.trimmed());
+        }
+    }
+
     commandEdit->clear();
+}
+
+void Telnet::onSendSelectedCommand()
+{
+    if (!isConnected) return;
+
+    QTextCursor cursor = commandEdit->textCursor();
+    QString selectedText = cursor.selectedText().trimmed();
+
+    if (selectedText.isEmpty()) {
+        // 如果没有选中文本，发送当前行
+        cursor.select(QTextCursor::LineUnderCursor);
+        selectedText = cursor.selectedText().trimmed();
+    }
+
+    if (!selectedText.isEmpty()) {
+        // 按行分割并发送
+        QStringList lines = selectedText.split('\n', Qt::SkipEmptyParts);
+        for (const QString& line : lines) {
+            if (!line.trimmed().isEmpty()) {
+                sendCommand(line.trimmed());
+                addToHistory(line.trimmed());
+            }
+        }
+    }
 }
 
 void Telnet::onClearOutput()
@@ -284,7 +585,14 @@ void Telnet::onSocketConnected()
     connectionTimer->stop();
     updateConnectionButtons(true);
     connectionStatusLabel->setText(tr("已连接"));
-    connectionStatusLabel->setStyleSheet("color: #4CAF50; font-weight: bold;");
+    connectionStatusLabel->setStyleSheet(R"(
+        color: #27ae60;
+        font-weight: 600;
+        padding: 6px 12px;
+        background: #d5f4e6;
+        border-radius: 6px;
+        border: 1px solid #82e0aa;
+    )");
     
     QString message = tr("成功连接到 %1:%2").arg(currentHost).arg(currentPort);
     appendOutput(message, "#4CAF50");
@@ -296,7 +604,14 @@ void Telnet::onSocketDisconnected()
     isConnected = false;
     updateConnectionButtons(false);
     connectionStatusLabel->setText(tr("未连接"));
-    connectionStatusLabel->setStyleSheet("color: #f44336; font-weight: bold;");
+    connectionStatusLabel->setStyleSheet(R"(
+        color: #e74c3c;
+        font-weight: 600;
+        padding: 6px 12px;
+        background: #fadbd8;
+        border-radius: 6px;
+        border: 1px solid #f1948a;
+    )");
     
     QString message = tr("连接已断开");
     appendOutput(message, "#f44336");
@@ -374,7 +689,25 @@ void Telnet::appendOutput(const QString& text, const QString& color)
 void Telnet::updateStatus(const QString& message, bool isError)
 {
     statusLabel->setText(message);
-    statusLabel->setStyleSheet(isError ? "color: red; font-weight: bold;" : "color: green; font-weight: bold;");
+    if (isError) {
+        statusLabel->setStyleSheet(R"(
+            color: #e74c3c;
+            font-weight: 600;
+            padding: 6px 12px;
+            background: #fadbd8;
+            border-radius: 6px;
+            border: 1px solid #f1948a;
+        )");
+    } else {
+        statusLabel->setStyleSheet(R"(
+            color: #27ae60;
+            font-weight: 600;
+            padding: 6px 12px;
+            background: #d5f4e6;
+            border-radius: 6px;
+            border: 1px solid #82e0aa;
+        )");
+    }
 }
 
 void Telnet::addToHistory(const QString& command)

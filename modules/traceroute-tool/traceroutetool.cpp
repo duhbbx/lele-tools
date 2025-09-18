@@ -16,6 +16,11 @@
 #include <windows.h>
 #include <icmpapi.h>
 #pragma comment(lib, "iphlpapi.lib")
+
+#ifdef WITH_PCAP
+#include <pcap.h>
+#endif
+
 #endif
 
 REGISTER_DYNAMICOBJECT(TracerouteTool);
@@ -96,7 +101,9 @@ bool TracerouteWorker::initializeWinsock()
     
     return true;
 }
+#endif
 
+#ifdef WITH_PCAP
 bool TracerouteWorker::initializeNpcap()
 {
     pcap_if_t *alldevs;
@@ -282,11 +289,18 @@ void TracerouteWorker::performTraceroute(const QString &target, int maxHops, int
 bool TracerouteWorker::sendICMPPacket(const QString &target, int ttl, int timeoutMs, RouteHop &hop)
 {
 #ifdef Q_OS_WIN
-    // 检查Npcap是否初始化
+    // 检查网络是否初始化
+#ifdef WITH_PCAP
     if (m_socket == INVALID_SOCKET || m_pcapHandle == nullptr) {
-        qDebug() << "Network not initialized";
+        qDebug() << "Network not initialized (Npcap)";
         return false;
     }
+#else
+    if (m_socket == INVALID_SOCKET) {
+        qDebug() << "Network not initialized (Raw socket)";
+        return false;
+    }
+#endif
     
     // 目标地址解析
     struct sockaddr_in targetAddr;

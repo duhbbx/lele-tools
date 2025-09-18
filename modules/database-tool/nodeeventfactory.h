@@ -4,6 +4,7 @@
 #include "abstractnodeevent.h"
 #include "mysqlexpandevent.h"
 #include "redisexpandevent.h"
+#include <QTreeWidgetItem>
 #include <memory>
 
 // 节点事件工厂类
