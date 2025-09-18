@@ -106,15 +106,15 @@ QList<DbHierarchyNode> DatabaseHierarchyManager::getHierarchy(Connx::ConnectionT
 bool DatabaseHierarchyManager::needsLazyLoading(DbNodeType nodeType) const {
     // 文件夹类型和数据库节点需要延迟加载
     return nodeType == DbNodeType::Database ||
-           nodeType == DbNodeType::Schema ||
-           nodeType == DbNodeType::TableFolder ||
-           nodeType == DbNodeType::ViewFolder ||
-           nodeType == DbNodeType::ProcedureFolder ||
-           nodeType == DbNodeType::FunctionFolder ||
-           nodeType == DbNodeType::TriggerFolder ||
-           nodeType == DbNodeType::IndexFolder ||
-           nodeType == DbNodeType::SequenceFolder ||
-           nodeType == DbNodeType::UserFolder;
+        nodeType == DbNodeType::Schema ||
+        nodeType == DbNodeType::TableFolder ||
+        nodeType == DbNodeType::ViewFolder ||
+        nodeType == DbNodeType::ProcedureFolder ||
+        nodeType == DbNodeType::FunctionFolder ||
+        nodeType == DbNodeType::TriggerFolder ||
+        nodeType == DbNodeType::IndexFolder ||
+        nodeType == DbNodeType::SequenceFolder ||
+        nodeType == DbNodeType::UserFolder;
 }
 
 QString DatabaseHierarchyManager::getNodeIcon(DbNodeType nodeType) const {
@@ -128,7 +128,6 @@ QString DatabaseHierarchyManager::getNodeDisplayName(DbNodeType nodeType) const 
 // SqlSyntaxHighlighter 实现
 SqlSyntaxHighlighter::SqlSyntaxHighlighter(QTextDocument* parent)
     : QSyntaxHighlighter(parent) {
-
     HighlightingRule rule;
 
     // SQL关键字格式
@@ -138,22 +137,22 @@ SqlSyntaxHighlighter::SqlSyntaxHighlighter(QTextDocument* parent)
     // SQL关键字列表
     QStringList keywordPatterns;
     keywordPatterns << "\\bSELECT\\b" << "\\bFROM\\b" << "\\bWHERE\\b" << "\\bINSERT\\b"
-                    << "\\bUPDATE\\b" << "\\bDELETE\\b" << "\\bCREATE\\b" << "\\bDROP\\b"
-                    << "\\bALTER\\b" << "\\bINDEX\\b" << "\\bTABLE\\b" << "\\bDATABASE\\b"
-                    << "\\bVIEW\\b" << "\\bPROCEDURE\\b" << "\\bFUNCTION\\b" << "\\bTRIGGER\\b"
-                    << "\\bJOIN\\b" << "\\bINNER\\b" << "\\bLEFT\\b" << "\\bRIGHT\\b"
-                    << "\\bOUTER\\b" << "\\bUNION\\b" << "\\bGROUP\\b" << "\\bORDER\\b"
-                    << "\\bBY\\b" << "\\bHAVING\\b" << "\\bLIMIT\\b" << "\\bOFFSET\\b"
-                    << "\\bDISTINCT\\b" << "\\bCOUNT\\b" << "\\bSUM\\b" << "\\bAVG\\b"
-                    << "\\bMIN\\b" << "\\bMAX\\b" << "\\bAS\\b" << "\\bON\\b"
-                    << "\\bAND\\b" << "\\bOR\\b" << "\\bNOT\\b" << "\\bIN\\b"
-                    << "\\bEXISTS\\b" << "\\bBETWEEN\\b" << "\\bLIKE\\b" << "\\bIS\\b"
-                    << "\\bNULL\\b" << "\\bTRUE\\b" << "\\bFALSE\\b" << "\\bCASE\\b"
-                    << "\\bWHEN\\b" << "\\bTHEN\\b" << "\\bELSE\\b" << "\\bEND\\b"
-                    << "\\bIF\\b" << "\\bELSEIF\\b" << "\\bBEGIN\\b" << "\\bCOMMIT\\b"
-                    << "\\bROLLBACK\\b" << "\\bTRANSACTION\\b" << "\\bSTART\\b";
+        << "\\bUPDATE\\b" << "\\bDELETE\\b" << "\\bCREATE\\b" << "\\bDROP\\b"
+        << "\\bALTER\\b" << "\\bINDEX\\b" << "\\bTABLE\\b" << "\\bDATABASE\\b"
+        << "\\bVIEW\\b" << "\\bPROCEDURE\\b" << "\\bFUNCTION\\b" << "\\bTRIGGER\\b"
+        << "\\bJOIN\\b" << "\\bINNER\\b" << "\\bLEFT\\b" << "\\bRIGHT\\b"
+        << "\\bOUTER\\b" << "\\bUNION\\b" << "\\bGROUP\\b" << "\\bORDER\\b"
+        << "\\bBY\\b" << "\\bHAVING\\b" << "\\bLIMIT\\b" << "\\bOFFSET\\b"
+        << "\\bDISTINCT\\b" << "\\bCOUNT\\b" << "\\bSUM\\b" << "\\bAVG\\b"
+        << "\\bMIN\\b" << "\\bMAX\\b" << "\\bAS\\b" << "\\bON\\b"
+        << "\\bAND\\b" << "\\bOR\\b" << "\\bNOT\\b" << "\\bIN\\b"
+        << "\\bEXISTS\\b" << "\\bBETWEEN\\b" << "\\bLIKE\\b" << "\\bIS\\b"
+        << "\\bNULL\\b" << "\\bTRUE\\b" << "\\bFALSE\\b" << "\\bCASE\\b"
+        << "\\bWHEN\\b" << "\\bTHEN\\b" << "\\bELSE\\b" << "\\bEND\\b"
+        << "\\bIF\\b" << "\\bELSEIF\\b" << "\\bBEGIN\\b" << "\\bCOMMIT\\b"
+        << "\\bROLLBACK\\b" << "\\bTRANSACTION\\b" << "\\bSTART\\b";
 
-    foreach (const QString &pattern, keywordPatterns) {
+    foreach(const QString &pattern, keywordPatterns) {
         rule.pattern = QRegularExpression(pattern, QRegularExpression::CaseInsensitiveOption);
         rule.format = keywordFormat;
         highlightingRules.append(rule);
@@ -186,8 +185,8 @@ SqlSyntaxHighlighter::SqlSyntaxHighlighter(QTextDocument* parent)
     operatorFormat.setForeground(QColor(212, 212, 212)); // 浅灰色
     QStringList operatorPatterns;
     operatorPatterns << "=" << "<>" << "!=" << "<" << ">" << "<=" << ">="
-                     << "\\+" << "-" << "\\*" << "/" << "%" << "\\|\\|";
-    foreach (const QString &pattern, operatorPatterns) {
+        << "\\+" << "-" << "\\*" << "/" << "%" << "\\|\\|";
+    foreach(const QString &pattern, operatorPatterns) {
         rule.pattern = QRegularExpression(pattern);
         rule.format = operatorFormat;
         highlightingRules.append(rule);
@@ -206,7 +205,7 @@ SqlSyntaxHighlighter::SqlSyntaxHighlighter(QTextDocument* parent)
 }
 
 void SqlSyntaxHighlighter::highlightBlock(const QString& text) {
-    foreach (const HighlightingRule &rule, highlightingRules) {
+    foreach(const HighlightingRule &rule, highlightingRules) {
         QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
         while (matchIterator.hasNext()) {
             QRegularExpressionMatch match = matchIterator.next();
@@ -260,44 +259,44 @@ QString DbTreeWidgetItem::getNodeIcon() const {
 
 QString DbTreeWidgetItem::getNodeEmoji() const {
     switch (m_nodeData.type) {
-        case DbNodeType::Connection:
-            return "🔗";
-        case DbNodeType::Database:
-            return "🗃️";
-        case DbNodeType::Schema:
-            return "📁";
-        case DbNodeType::TableFolder:
-        case DbNodeType::ViewFolder:
-        case DbNodeType::ProcedureFolder:
-        case DbNodeType::FunctionFolder:
-        case DbNodeType::TriggerFolder:
-        case DbNodeType::IndexFolder:
-        case DbNodeType::SequenceFolder:
-        case DbNodeType::UserFolder:
-            return "📁";
-        case DbNodeType::Table:
-            return "📋";
-        case DbNodeType::View:
-            return "👁";
-        case DbNodeType::Procedure:
-        case DbNodeType::Function:
-            return "⚡";
-        case DbNodeType::Trigger:
-            return "🔧";
-        case DbNodeType::Index:
-            return "🗂";
-        case DbNodeType::Sequence:
-            return "🔢";
-        case DbNodeType::User:
-            return "👤";
-        case DbNodeType::Column:
-            return "🏷";
-        case DbNodeType::Key:
-        case DbNodeType::RedisKey:
-            return "🔑";
-        case DbNodeType::Loading:
-        default:
-            return "";
+    case DbNodeType::Connection:
+        return "🔗";
+    case DbNodeType::Database:
+        return "🗃️";
+    case DbNodeType::Schema:
+        return "📁";
+    case DbNodeType::TableFolder:
+    case DbNodeType::ViewFolder:
+    case DbNodeType::ProcedureFolder:
+    case DbNodeType::FunctionFolder:
+    case DbNodeType::TriggerFolder:
+    case DbNodeType::IndexFolder:
+    case DbNodeType::SequenceFolder:
+    case DbNodeType::UserFolder:
+        return "📁";
+    case DbNodeType::Table:
+        return "📋";
+    case DbNodeType::View:
+        return "👁";
+    case DbNodeType::Procedure:
+    case DbNodeType::Function:
+        return "⚡";
+    case DbNodeType::Trigger:
+        return "🔧";
+    case DbNodeType::Index:
+        return "🗂";
+    case DbNodeType::Sequence:
+        return "🔢";
+    case DbNodeType::User:
+        return "👤";
+    case DbNodeType::Column:
+        return "🏷";
+    case DbNodeType::Key:
+    case DbNodeType::RedisKey:
+        return "🔑";
+    case DbNodeType::Loading:
+    default:
+        return "";
     }
 }
 
@@ -342,7 +341,7 @@ void ConnectionDialog::setupUI() {
     m_splitter->addWidget(m_rightPanel);
     m_splitter->setStretchFactor(0, 0); // 左侧固定
     m_splitter->setStretchFactor(1, 1); // 右侧拉伸
-    m_splitter->setSizes({220, 530}); // 调整合理的初始大小
+    m_splitter->setSizes({ 220, 530 }); // 调整合理的初始大小
 
     m_mainLayout->addWidget(m_splitter);
 
@@ -586,7 +585,7 @@ void ConnectionDialog::setupLeftPanel() {
     m_typeLabel = new QLabel(tr("数据库类型"));
     m_typeLabel->setObjectName("typeLabel");
     m_leftLayout->addWidget(m_typeLabel);
-    
+
     // 数据库类型列表
     m_typeList = new QListWidget();
     m_typeList->setMinimumWidth(180);
@@ -594,12 +593,12 @@ void ConnectionDialog::setupLeftPanel() {
 
     // 使用自定义委托代替纯QSS样式
     m_typeList->setItemDelegate(new ConnectionTypeDelegate(this));
-    
+
     // 添加数据库类型项
     QStringList types = Connx::ConnectionFactory::getSupportedTypes();
     for (const QString& type : types) {
         QListWidgetItem* item = new QListWidgetItem(type);
-        
+
         // 设置图标
         if (type == "Redis") {
             item->setIcon(style()->standardIcon(QStyle::SP_ComputerIcon));
@@ -614,10 +613,10 @@ void ConnectionDialog::setupLeftPanel() {
             item->setIcon(style()->standardIcon(QStyle::SP_FileIcon));
             item->setData(Qt::UserRole, type + "数据库");
         }
-        
+
         m_typeList->addItem(item);
     }
-    
+
     // 默认选择MySQL（如果可用），否则选择第一个
     m_currentType = "Redis"; // 默认fallback
     for (int i = 0; i < m_typeList->count(); ++i) {
@@ -631,10 +630,10 @@ void ConnectionDialog::setupLeftPanel() {
         m_typeList->setCurrentRow(0);
         m_currentType = m_typeList->item(0)->text();
     }
-    
-    QObject::connect(m_typeList, &QListWidget::currentTextChanged, 
-                    this, &ConnectionDialog::onConnectionTypeChanged);
-    
+
+    QObject::connect(m_typeList, &QListWidget::currentTextChanged,
+                     this, &ConnectionDialog::onConnectionTypeChanged);
+
     m_leftLayout->addWidget(m_typeList);
     m_leftLayout->addStretch();
 }
@@ -652,38 +651,38 @@ void ConnectionDialog::setupRightPanel() {
     m_gridLayout->setVerticalSpacing(18);
     m_gridLayout->setHorizontalSpacing(15);
     m_gridLayout->setColumnStretch(1, 1); // 第二列（输入控件）可拉伸
-    
+
     // 创建所有表单控件
     createFormControls();
-    
+
     m_rightLayout->addWidget(m_formWidget, 1);
-    
+
     // 底部按钮区域
     m_buttonWidget = new QWidget();
     m_buttonWidget->setFixedHeight(80);
     m_buttonLayout = new QHBoxLayout(m_buttonWidget);
-    
+
     // 测试连接按钮
     m_testBtn = new QPushButton(tr("🔍 测试连接"));
     m_testBtn->setObjectName("testBtn");
     QObject::connect(m_testBtn, &QPushButton::clicked, this, &ConnectionDialog::onTestConnection);
     m_buttonLayout->addWidget(m_testBtn);
-    
+
     m_buttonLayout->addStretch();
-    
+
     // 对话框按钮
     m_buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     QObject::connect(m_buttonBox, &QDialogButtonBox::accepted, this, &ConnectionDialog::onAccept);
     QObject::connect(m_buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
     m_buttonLayout->addWidget(m_buttonBox);
-    
+
     m_rightLayout->addWidget(m_buttonWidget);
-    
+
     // 状态标签
     m_statusLabel = new QLabel("");
     m_statusLabel->setObjectName("statusLabel");
     m_rightLayout->addWidget(m_statusLabel);
-    
+
     // 初始化表单
     updateFormForType(m_currentType);
 }
@@ -738,7 +737,7 @@ void ConnectionDialog::createFormControls() {
     // MySQL特有控件
     m_charsetLabel = new QLabel(tr("字符集:"));
     m_charsetCombo = new QComboBox();
-    m_charsetCombo->addItems({"utf8mb4", "utf8", "latin1", "gbk"});
+    m_charsetCombo->addItems({ "utf8mb4", "utf8", "latin1", "gbk" });
     m_charsetCombo->setCurrentText("utf8mb4");
     m_charsetCombo->setFixedHeight(CONTROL_HEIGHT);
 }
@@ -754,7 +753,7 @@ void ConnectionDialog::setConnectionConfig(const Connx::ConnectionConfig& config
             break;
         }
     }
-    
+
     m_hostEdit->setText(config.host);
     m_portSpin->setValue(config.port);
     m_usernameEdit->setText(config.username);
@@ -822,7 +821,6 @@ void ConnectionDialog::updateFormForType(const QString& type) {
 
         m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
         m_gridLayout->addWidget(m_sslCheck, row++, 1);
-
     } else if (type == "MySQL" || type == "PostgreSQL") {
         // SQL数据库表单
         m_passwordEdit->setPlaceholderText(tr("数据库密码"));
@@ -847,7 +845,6 @@ void ConnectionDialog::updateFormForType(const QString& type) {
 
         m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
         m_gridLayout->addWidget(m_sslCheck, row++, 1);
-
     } else {
         // 其他数据库类型的通用表单
         m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignTop);
@@ -881,29 +878,29 @@ void ConnectionDialog::onTestConnection() {
     if (!validateInput()) {
         return;
     }
-    
+
     m_testBtn->setEnabled(false);
     m_statusLabel->setText(tr("正在测试连接..."));
-    
+
     Connx::ConnectionConfig config = getConnectionConfig();
     Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(m_currentType);
-    
+
     Connx::Connection* testConn = Connx::ConnectionFactory::createConnection(type, config);
     if (!testConn) {
         m_statusLabel->setText(tr("❌ 不支持的数据库类型"));
         m_testBtn->setEnabled(true);
         return;
     }
-    
+
     bool success = testConn->connectToServer();
-    
+
     if (success) {
         m_statusLabel->setText(tr("✅ 连接成功"));
         testConn->disconnectFromServer();
     } else {
         m_statusLabel->setText("❌ 连接失败: " + testConn->getLastError());
     }
-    
+
     testConn->deleteLater();
     m_testBtn->setEnabled(true);
 }
@@ -936,7 +933,7 @@ bool ConnectionDialog::validateInput() {
 DatabaseTreeWidget::DatabaseTreeWidget(QWidget* parent) : QTreeView(parent) {
     // 创建高性能树模型
     m_treeModel = new DatabaseTreeModel(this);
-    setModel(m_treeModel);
+    QTreeView::setModel(m_treeModel);
 
     setupUI();
     setupContextMenu();
@@ -972,7 +969,7 @@ void DatabaseTreeWidget::setupUI() {
 
 void DatabaseTreeWidget::setupContextMenu() {
     m_contextMenu = new QMenu(this);
-    
+
     m_connectAction = new QAction("🔌 连接", this);
     m_disconnectAction = new QAction("🔌 断开连接", this);
     m_refreshAction = new QAction("🔄 刷新连接", this);
@@ -981,7 +978,7 @@ void DatabaseTreeWidget::setupContextMenu() {
     m_deleteKeyAction = new QAction("❌ 删除键", this);
     m_deleteAction = new QAction("🗑️ 删除连接", this);
     m_newQueryAction = new QAction("📝 新建查询", this);
-    
+
     m_contextMenu->addAction(m_connectAction);
     m_contextMenu->addAction(m_disconnectAction);
     m_contextMenu->addSeparator();
@@ -995,8 +992,11 @@ void DatabaseTreeWidget::setupContextMenu() {
 }
 
 void DatabaseTreeWidget::addConnection(const QString& name, Connx::Connection* connection) {
+    qDebug() << "DatabaseTreeWidget::addConnection called with name:" << name;
     // 通过模型添加连接
     m_treeModel->addConnection(name, connection);
+    qDebug() << "Model addConnection finished, expanding all for testing";
+    expandAll(); // 临时添加，用于测试
 }
 
 void DatabaseTreeWidget::onNodeDoubleClicked(const QModelIndex& index) {
@@ -1043,11 +1043,13 @@ void DatabaseTreeWidget::handleNodeDoubleClick(const QModelIndex& index) {
 }
 
 void DatabaseTreeWidget::onNodeExpanded(const QModelIndex& index) {
-    if (!index.isValid()) return;
+    if (!index.isValid())
+        return;
 
     // 获取节点信息
     DatabaseTreeNode* node = m_treeModel->getNode(index);
-    if (!node) return;
+    if (!node)
+        return;
 
     qDebug() << "展开节点:" << node->displayName;
 
@@ -1084,11 +1086,13 @@ void DatabaseTreeWidget::onCustomContextMenuRequested(const QPoint& pos) {
 }
 
 void DatabaseTreeWidget::showNodeContextMenu(const QModelIndex& index, const QPoint& pos) {
-    if (!index.isValid()) return;
+    if (!index.isValid())
+        return;
 
     // 从模型获取节点信息
     DatabaseTreeNode* node = m_treeModel->getNode(index);
-    if (!node) return;
+    if (!node)
+        return;
 
     // 根据节点类型启用/禁用菜单项
     m_connectAction->setVisible(node->type == NodeType::Connection);
@@ -1099,8 +1103,8 @@ void DatabaseTreeWidget::showNodeContextMenu(const QModelIndex& index, const QPo
     m_flushDatabaseAction->setVisible(node->type == NodeType::Database || node->type == NodeType::RedisDatabase);
     m_deleteKeyAction->setVisible(node->type == NodeType::RedisKey);
     m_newQueryAction->setVisible(node->type == NodeType::Connection ||
-                                 node->type == NodeType::Database ||
-                                 node->type == NodeType::RedisDatabase);
+        node->type == NodeType::Database ||
+        node->type == NodeType::RedisDatabase);
 
     // 连接信号槽
     QObject::disconnect(m_refreshDatabaseAction, nullptr, nullptr, nullptr);
@@ -1173,29 +1177,29 @@ void QueryTab::setupUI() {
     m_layout = new QVBoxLayout(this);
     m_layout->setContentsMargins(5, 5, 5, 5);
     m_layout->setSpacing(5);
-    
+
     // 工具栏
     m_toolbar = new QToolBar();
     m_toolbar->setIconSize(QSize(16, 16));
-    
+
     m_executeAction = new QAction("▶️ 执行", this);
     m_executeAction->setShortcut(QKeySequence("F5"));
     m_executeAction->setToolTip("执行查询 (F5)");
     QObject::connect(m_executeAction, &QAction::triggered, this, &QueryTab::onExecuteClicked);
     m_toolbar->addAction(m_executeAction);
-    
+
     m_clearAction = new QAction("🗑️ 清空", this);
     m_clearAction->setToolTip("清空查询");
     QObject::connect(m_clearAction, &QAction::triggered, this, &QueryTab::onClearClicked);
     m_toolbar->addAction(m_clearAction);
-    
+
     m_formatAction = new QAction("🎨 格式化", this);
     m_formatAction->setToolTip("格式化查询");
     QObject::connect(m_formatAction, &QAction::triggered, this, &QueryTab::onFormatClicked);
     m_toolbar->addAction(m_formatAction);
-    
+
     m_layout->addWidget(m_toolbar);
-    
+
     // 查询编辑器
     m_queryEdit = new QTextEdit();
     m_queryEdit->setFont(QFont("Consolas", 11));
@@ -1209,10 +1213,10 @@ void QueryTab::setupUI() {
     m_syntaxHighlighter = new SqlSyntaxHighlighter(m_queryEdit->document());
 
     m_layout->addWidget(m_queryEdit);
-    
+
     // 结果区域
     m_resultTabs = new QTabWidget();
-    
+
     // 结果表格
     m_resultTable = new QTableWidget();
     m_resultTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -1226,26 +1230,26 @@ void QueryTab::setupUI() {
     m_resultTable->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 
     m_resultTabs->addTab(m_resultTable, tr("📊 结果"));
-    
+
     // 消息文本
     m_messagesText = new QTextEdit();
     m_messagesText->setReadOnly(true);
     m_messagesText->setFont(QFont("Consolas", 10));
     m_resultTabs->addTab(m_messagesText, tr("📝 消息"));
-    
+
     m_layout->addWidget(m_resultTabs, 1); // 拉伸因子为1
-    
+
     // 状态栏
     QHBoxLayout* statusLayout = new QHBoxLayout();
     m_statusLabel = new QLabel(tr("就绪"));
     m_timeLabel = new QLabel(tr("执行时间: -"));
     m_rowsLabel = new QLabel(tr("行数: 0"));
-    
+
     statusLayout->addWidget(m_statusLabel);
     statusLayout->addStretch();
     statusLayout->addWidget(m_timeLabel);
     statusLayout->addWidget(m_rowsLabel);
-    
+
     m_layout->addLayout(statusLayout);
 }
 
@@ -1303,8 +1307,9 @@ void QueryTab::onClearClicked() const {
 void QueryTab::onFormatClicked() const {
     // Redis命令格式化（简单实现）
     QString query = m_queryEdit->toPlainText().trimmed();
-    if (query.isEmpty()) return;
-    
+    if (query.isEmpty())
+        return;
+
     // 转换为大写并格式化
     QStringList parts = query.split(' ', Qt::SkipEmptyParts);
     if (!parts.isEmpty()) {
@@ -1313,7 +1318,7 @@ void QueryTab::onFormatClicked() const {
     }
 }
 
-void QueryTab::updateResults(const Connx::QueryResult& result) {
+void QueryTab::updateResults(const Connx::QueryResult& result) const {
     m_timeLabel->setText(tr("执行时间: %1ms").arg(result.executionTime));
 
     if (result.success) {
@@ -1405,7 +1410,7 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
                 QVariantList list = firstData.toList();
                 m_resultTable->setRowCount(list.size());
                 m_resultTable->setColumnCount(1);
-                m_resultTable->setHorizontalHeaderLabels({"值"});
+                m_resultTable->setHorizontalHeaderLabels({ "值" });
 
                 for (int i = 0; i < list.size(); ++i) {
                     QTableWidgetItem* item = new QTableWidgetItem(list[i].toString());
@@ -1418,7 +1423,7 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
                 // 单一结果（非数组）
                 m_resultTable->setRowCount(1);
                 m_resultTable->setColumnCount(1);
-                m_resultTable->setHorizontalHeaderLabels({"结果"});
+                m_resultTable->setHorizontalHeaderLabels({ "结果" });
 
                 QTableWidgetItem* item = new QTableWidgetItem(firstData.toString());
                 item->setFlags(item->flags() & ~Qt::ItemIsEditable);
@@ -1433,12 +1438,12 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
         }
 
         m_messagesText->append(tr("[%1] 命令执行成功")
-                              .arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
+            .arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
     } else {
         m_statusLabel->setText(tr("❌ 执行失败"));
         m_messagesText->append(tr("[%1] 错误: %2")
-                              .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
-                              .arg(result.errorMessage));
+                               .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
+                               .arg(result.errorMessage));
 
         m_resultTable->setRowCount(0);
         m_resultTable->setColumnCount(0);
@@ -1449,17 +1454,16 @@ void QueryTab::updateResults(const Connx::QueryResult& result) {
 // DatabaseTool 主类实现
 DatabaseTool::DatabaseTool(QWidget* parent)
     : QWidget(parent), DynamicObjectBase(), m_currentItem(nullptr) {
-    
     // 初始化连接配置表管理器
     m_configManager = new SqliteWrapper::ConnectionConfigTableManager(this);
-    
+
     setupUI();
     loadConnections();
 }
 
 DatabaseTool::~DatabaseTool() {
     saveConnections();
-    
+
     // 清理连接
     for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
         it.value()->disconnectFromServer();
@@ -1471,41 +1475,66 @@ void DatabaseTool::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(5, 5, 5, 5);
     m_mainLayout->setSpacing(5);
-    
+
     setupToolbar();
-    
+
     // 主分割器 - 左右布局
     m_mainSplitter = new QSplitter(Qt::Horizontal);
-    
+
     // 左侧连接树
     m_treeWidget = new DatabaseTreeWidget();
     m_treeWidget->setMaximumWidth(300);
     m_treeWidget->setMinimumWidth(200);
-    
-    QObject::connect(m_treeWidget, &DatabaseTreeWidget::connectionRequested,
-            this, &DatabaseTool::onConnectToDatabase);
-    QObject::connect(m_treeWidget, &DatabaseTreeWidget::tableDoubleClicked,
-            this, &DatabaseTool::onTableDoubleClicked);
-    QObject::connect(m_treeWidget, &DatabaseTreeWidget::keyDoubleClicked,
-            this, &DatabaseTool::onKeyDoubleClicked);
-    
+
+    // QSS 样式
+    m_treeWidget->setStyleSheet(R"(
+    QTreeView {
+        background-color: #f9f9f9;   /* 背景颜色 */
+        border: 1px solid #cccccc;   /* 外边框 */
+    }
+    QTreeView::item {
+        padding: 4px;                /* 项目内边距 */
+    }
+    QTreeView::item:selected {
+        background-color: #0078d7;   /* 选中背景 */
+        color: white;                /* 选中字体颜色 */
+    }
+    QTreeView::branch:closed:has-children {
+        image: url(:/icons/branch-closed.png);
+    }
+    QTreeView::branch:open:has-children {
+        image: url(:/icons/branch-open.png);
+    }
+)");
+
+
+    QObject::connect(m_treeWidget, &DatabaseTreeWidget::connectionRequested, this, &DatabaseTool::onConnectToDatabase);
+    QObject::connect(m_treeWidget, &DatabaseTreeWidget::tableDoubleClicked, this, &DatabaseTool::onTableDoubleClicked);
+    QObject::connect(m_treeWidget, &DatabaseTreeWidget::keyDoubleClicked, this, &DatabaseTool::onKeyDoubleClicked);
+
     // 右侧查询标签页
     m_tabWidget = new QTabWidget();
     m_tabWidget->setTabsClosable(true);
     m_tabWidget->setMovable(true);
-    
+
     QObject::connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, &DatabaseTool::onCloseTab);
     QObject::connect(m_tabWidget, &QTabWidget::currentChanged, this, &DatabaseTool::onTabChanged);
-    
+
     m_mainSplitter->addWidget(m_treeWidget);
     m_mainSplitter->addWidget(m_tabWidget);
+    // 设置分割器比例 - 给左侧一些空间
+    m_mainSplitter->setSizes(QList { 250, 800 });
     m_mainSplitter->setStretchFactor(0, 0); // 左侧固定
     m_mainSplitter->setStretchFactor(1, 1); // 右侧拉伸
-    
+
+    // 确保树控件可见
+    m_treeWidget->show();
+    m_treeWidget->setVisible(true);
+
     m_mainLayout->addWidget(m_mainSplitter, 1);
-    
+
     setupStatusBar();
-    
+
     // 设置样式
     setStyleSheet(R"(
         QToolBar {
@@ -1513,15 +1542,15 @@ void DatabaseTool::setupUI() {
             background: #f8f9fa;
             spacing: 3px;
         }
-        QTreeWidget {
+        QTreeView {
             border: 1px solid #ddd;
             background: white;
         }
-        QTreeWidget::item {
+        QTreeView::item {
             height: 24px;
             padding: 2px;
         }
-        QTreeWidget::item:selected {
+        QTreeView::item:selected {
             background: #007acc;
             color: white;
         }
@@ -1544,56 +1573,56 @@ void DatabaseTool::setupUI() {
 void DatabaseTool::setupToolbar() {
     m_toolbar = new QToolBar();
     m_toolbar->setFixedHeight(40);
-    
+
     m_newConnectionAction = new QAction("➕ 新建连接", this);
     QObject::connect(m_newConnectionAction, &QAction::triggered, this, &DatabaseTool::onNewConnection);
     m_toolbar->addAction(m_newConnectionAction);
-    
+
     m_editConnectionAction = new QAction("✏️ 编辑连接", this);
     QObject::connect(m_editConnectionAction, &QAction::triggered, this, &DatabaseTool::onEditConnection);
     m_toolbar->addAction(m_editConnectionAction);
-    
+
     m_deleteConnectionAction = new QAction("🗑️ 删除连接", this);
     QObject::connect(m_deleteConnectionAction, &QAction::triggered, this, &DatabaseTool::onDeleteConnection);
     m_toolbar->addAction(m_deleteConnectionAction);
-    
+
     m_toolbar->addSeparator();
-    
+
     m_connectAction = new QAction("🔌 连接", this);
     QObject::connect(m_connectAction, &QAction::triggered, this, &DatabaseTool::onConnectToDatabase);
     m_toolbar->addAction(m_connectAction);
-    
+
     m_disconnectAction = new QAction("🔌 断开", this);
     QObject::connect(m_disconnectAction, &QAction::triggered, this, &DatabaseTool::onDisconnectFromDatabase);
     m_toolbar->addAction(m_disconnectAction);
-    
+
     m_refreshAction = new QAction("🔄 刷新", this);
     QObject::connect(m_refreshAction, &QAction::triggered, this, &DatabaseTool::onRefreshConnections);
     m_toolbar->addAction(m_refreshAction);
-    
+
     m_toolbar->addSeparator();
-    
+
     m_newQueryAction = new QAction("📝 新建查询", this);
     QObject::connect(m_newQueryAction, &QAction::triggered, this, &DatabaseTool::onNewQuery);
     m_toolbar->addAction(m_newQueryAction);
-    
+
     m_mainLayout->addWidget(m_toolbar);
 }
 
 void DatabaseTool::setupStatusBar() {
     m_statusBar = new QWidget();
     m_statusBar->setFixedHeight(25);
-    
+
     QHBoxLayout* statusLayout = new QHBoxLayout(m_statusBar);
     statusLayout->setContentsMargins(5, 2, 5, 2);
-    
+
     m_statusLabel = new QLabel(tr("就绪"));
     m_connectionCountLabel = new QLabel(tr("连接数: 0"));
-    
+
     statusLayout->addWidget(m_statusLabel);
     statusLayout->addStretch();
     statusLayout->addWidget(m_connectionCountLabel);
-    
+
     m_mainLayout->addWidget(m_statusBar);
 }
 
@@ -1601,14 +1630,14 @@ void DatabaseTool::onNewConnection() {
     ConnectionDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         Connx::ConnectionConfig config = dialog.getConnectionConfig();
-        
+
         if (m_connectionConfigs.contains(config.name)) {
             m_statusLabel->setText(tr("❌ 连接名称已存在，请使用不同的名称"));
             return;
         }
-        
+
         m_connectionConfigs[config.name] = config;
-        
+
         // 保存到SQLite数据库
         SqliteWrapper::ConnectionConfigEntity configEntity;
         configEntity.name = config.name;
@@ -1623,13 +1652,13 @@ void DatabaseTool::onNewConnection() {
         configEntity.extraParams = config.extraParams;
         configEntity.createdAt = QDateTime::currentDateTime();
         configEntity.updatedAt = QDateTime::currentDateTime();
-        
+
         bool saved = m_configManager->saveConfig(configEntity);
         if (!saved) {
             m_statusLabel->setText(tr("❌ 无法保存连接配置到数据库"));
             return;
         }
-        
+
         // 创建连接对象
         QString typeString = config.extraParams.value("connectionType", "Redis").toString();
         Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
@@ -1637,12 +1666,12 @@ void DatabaseTool::onNewConnection() {
         if (connection) {
             m_connections[config.name] = connection;
             m_treeWidget->addConnection(config.name, connection);
-            
+
             QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](Connx::ConnectionState state) {
                 onConnectionStateChanged(config.name, state);
             });
         }
-        
+
         updateConnectionStatus();
         m_statusLabel->setText("连接已保存: " + config.name);
     }
@@ -1651,7 +1680,7 @@ void DatabaseTool::onNewConnection() {
 void DatabaseTool::onNewQuery() {
     // 创建新查询标签页
     QString connectionName = "默认";
-    
+
     // 如果有选中的连接，使用该连接
     QModelIndex currentIdx = m_treeWidget->currentIndex();
     if (currentIdx.isValid()) {
@@ -1668,7 +1697,7 @@ void DatabaseTool::onNewQuery() {
             }
         }
     }
-    
+
     QueryTab* tab = createQueryTab(connectionName);
     if (tab) {
         int index = m_tabWidget->addTab(tab, tr("查询 %1").arg(m_tabWidget->count() + 1));
@@ -1678,16 +1707,16 @@ void DatabaseTool::onNewQuery() {
 
 QueryTab* DatabaseTool::createQueryTab(const QString& connectionName) {
     Connx::Connection* connection = m_connections.value(connectionName, nullptr);
-    
+
     QueryTab* tab = new QueryTab(connection);
-    
+
     QObject::connect(tab, &QueryTab::titleChanged, [this, tab](const QString& title) {
         int index = m_tabWidget->indexOf(tab);
         if (index >= 0) {
             m_tabWidget->setTabText(index, title);
         }
     });
-    
+
     return tab;
 }
 
@@ -1700,7 +1729,7 @@ void DatabaseTool::onCloseTab(int index) {
 void DatabaseTool::loadConnections() {
     // 从SQLite加载所有连接配置
     QList<SqliteWrapper::ConnectionConfigEntity> configs = m_configManager->getAllConfigs();
-    
+
     for (const SqliteWrapper::ConnectionConfigEntity& configEntity : configs) {
         Connx::ConnectionConfig config;
         config.name = configEntity.name;
@@ -1712,16 +1741,14 @@ void DatabaseTool::loadConnections() {
         config.timeout = configEntity.timeout;
         config.useSSL = configEntity.useSSL;
         config.extraParams = configEntity.extraParams;
-        
+
         m_connectionConfigs[config.name] = config;
-        
+
         // 创建连接对象
         QString typeString = configEntity.type;
 
         // 修复历史数据中可能错误的连接类型
-        if (typeString.isEmpty() || typeString == "Unknown" ||
-            (typeString == "Redis" && config.port != 6379 && !config.database.contains(QRegularExpression("^\\d+$")))) {
-
+        if (typeString.isEmpty() || typeString == "Unknown" || (typeString == "Redis" && config.port != 6379 && !config.database.contains(QRegularExpression("^\\d+$")))) {
             // 根据端口和配置推断连接类型
             if (config.port == 3306 && !config.database.isEmpty()) {
                 typeString = "MySQL";
@@ -1743,18 +1770,17 @@ void DatabaseTool::loadConnections() {
             qDebug() << "Connection type corrected for" << config.name << "from" << configEntity.type << "to" << typeString;
         }
 
-        Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
-        Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
-        if (connection) {
+        const Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
+        if (Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config)) {
             m_connections[config.name] = connection;
             m_treeWidget->addConnection(config.name, connection);
-            
-            QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](Connx::ConnectionState state) {
+
+            QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](const Connx::ConnectionState state) {
                 onConnectionStateChanged(config.name, state);
             });
         }
     }
-    
+
     updateConnectionStatus();
     m_statusLabel->setText(tr("已加载 %1 个连接配置").arg(configs.size()));
 }
@@ -1764,28 +1790,31 @@ void DatabaseTool::saveConnections() {
     qDebug() << "连接配置已持久化到SQLite数据库";
 }
 
-void DatabaseTool::updateConnectionStatus() {
+void DatabaseTool::updateConnectionStatus() const {
     m_connectionCountLabel->setText(tr("连接数: %1").arg(m_connections.size()));
 }
 
 void DatabaseTool::onConnectToDatabase() {
     QModelIndex currentIdx = m_treeWidget->currentIndex();
     DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
-    if (!current) return;
-    
-    if (!current || current->type != NodeType::Connection) return;
+    if (!current)
+        return;
+
+    if (!current || current->type != NodeType::Connection)
+        return;
 
     QString connectionName = current->name;
-    if (!m_connections.contains(connectionName)) return;
-    
+    if (!m_connections.contains(connectionName))
+        return;
+
     Connx::Connection* connection = m_connections[connectionName];
     if (connection->isConnected()) {
         m_statusLabel->setText("已连接到: " + connectionName);
         return;
     }
-    
+
     m_statusLabel->setText(tr("正在连接..."));
-    
+
     bool success = connection->connectToServer();
     if (success) {
         m_statusLabel->setText("✅ 连接成功: " + connectionName);
@@ -1825,22 +1854,25 @@ void DatabaseTool::onConnectionStateChanged(const QString& name, Connx::Connecti
 void DatabaseTool::onEditConnection() {
     QModelIndex currentIdx = m_treeWidget->currentIndex();
     DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
-    if (!current) return;
-    
-    if (!current || current->type != NodeType::Connection) return;
+    if (!current)
+        return;
+
+    if (!current || current->type != NodeType::Connection)
+        return;
 
     QString connectionName = current->name;
-    if (!m_connectionConfigs.contains(connectionName)) return;
-    
+    if (!m_connectionConfigs.contains(connectionName))
+        return;
+
     Connx::ConnectionConfig config = m_connectionConfigs[connectionName];
-    
+
     ConnectionDialog dialog(config, this);
     if (dialog.exec() == QDialog::Accepted) {
         Connx::ConnectionConfig newConfig = dialog.getConnectionConfig();
-        
+
         // 更新配置
         m_connectionConfigs[connectionName] = newConfig;
-        
+
         // 保存到SQLite
         QVariantMap configMap;
         configMap["name"] = newConfig.name;
@@ -1853,7 +1885,7 @@ void DatabaseTool::onEditConnection() {
         configMap["timeout"] = newConfig.timeout;
         configMap["useSSL"] = newConfig.useSSL;
         configMap["extraParams"] = QVariant::fromValue(newConfig.extraParams);
-        
+
         // 将configMap转换为ConnectionConfigEntity
         SqliteWrapper::ConnectionConfigEntity entity;
         entity.name = connectionName;
@@ -1866,7 +1898,7 @@ void DatabaseTool::onEditConnection() {
         entity.timeout = configMap["timeout"].toInt();
         entity.useSSL = configMap["useSSL"].toBool();
         entity.extraParams = configMap["extraParams"].toMap();
-        
+
         m_configManager->updateConfig(connectionName, entity);
         m_statusLabel->setText("连接已更新: " + connectionName);
     }
@@ -1875,16 +1907,18 @@ void DatabaseTool::onEditConnection() {
 void DatabaseTool::onDeleteConnection() {
     QModelIndex currentIdx = m_treeWidget->currentIndex();
     DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
-    if (!current) return;
-    
-    if (!current || current->type != NodeType::Connection) return;
+    if (!current)
+        return;
+
+    if (!current || current->type != NodeType::Connection)
+        return;
 
     QString connectionName = current->name;
-    
-    int ret = QMessageBox::question(this, "删除连接", 
-                                   tr("确定要删除连接 '%1' 吗？").arg(connectionName),
-                                   QMessageBox::Yes | QMessageBox::No);
-    
+
+    int ret = QMessageBox::question(this, "删除连接",
+                                    tr("确定要删除连接 '%1' 吗？").arg(connectionName),
+                                    QMessageBox::Yes | QMessageBox::No);
+
     if (ret == QMessageBox::Yes) {
         // 从SQLite删除
         if (m_configManager->deleteConfigByName(connectionName)) {
@@ -1894,10 +1928,10 @@ void DatabaseTool::onDeleteConnection() {
                 m_connections[connectionName]->deleteLater();
                 m_connections.remove(connectionName);
             }
-            
+
             m_connectionConfigs.remove(connectionName);
             m_treeWidget->removeConnection(connectionName);
-            
+
             updateConnectionStatus();
             m_statusLabel->setText("连接已删除: " + connectionName);
         } else {
@@ -1909,13 +1943,16 @@ void DatabaseTool::onDeleteConnection() {
 void DatabaseTool::onDisconnectFromDatabase() {
     QModelIndex currentIdx = m_treeWidget->currentIndex();
     DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
-    if (!current) return;
-    
-    if (!current || current->type != NodeType::Connection) return;
+    if (!current)
+        return;
+
+    if (!current || current->type != NodeType::Connection)
+        return;
 
     QString connectionName = current->name;
-    if (!m_connections.contains(connectionName)) return;
-    
+    if (!m_connections.contains(connectionName))
+        return;
+
     Connx::Connection* connection = m_connections[connectionName];
     if (connection->isConnected()) {
         connection->disconnectFromServer();
@@ -1927,25 +1964,25 @@ void DatabaseTool::onDisconnectFromDatabase() {
 void DatabaseTool::onRefreshConnections() {
     // 重新加载所有连接配置
     m_connectionConfigs.clear();
-    
+
     // 清理现有连接
     for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
         it.value()->disconnectFromServer();
         it.value()->deleteLater();
     }
     m_connections.clear();
-    
+
     // 清空树
     // 清空模型数据 - 在 Model/View 架构中由模型处理
     // m_treeWidget->m_treeModel->clear(); // TODO: 实现模型的 clear 方法
-    
+
     // 重新加载
     loadConnections();
-    
+
     m_statusLabel->setText(tr("连接列表已刷新"));
 }
 
-void DatabaseTool::onTabChanged(int index) { 
+void DatabaseTool::onTabChanged(int index) {
     Q_UNUSED(index)
     // 可以在这里添加标签页切换的逻辑
 }
@@ -1985,51 +2022,51 @@ Node DatabaseTreeWidget::createNodeFromTreeItem(QTreeWidgetItem* item) {
 
 NodeType DatabaseTreeWidget::convertDbNodeTypeToNodeType(DbNodeType dbNodeType) {
     switch (dbNodeType) {
-        case DbNodeType::Connection: return NodeType::Connection;
-        case DbNodeType::Database: return NodeType::Database;
-        case DbNodeType::Schema: return NodeType::Schema;
-        case DbNodeType::TableFolder: return NodeType::TableFolder;
-        case DbNodeType::Table: return NodeType::Table;
-        case DbNodeType::ViewFolder: return NodeType::ViewFolder;
-        case DbNodeType::View: return NodeType::View;
-        case DbNodeType::ProcedureFolder: return NodeType::ProcedureFolder;
-        case DbNodeType::Procedure: return NodeType::Procedure;
-        case DbNodeType::FunctionFolder: return NodeType::FunctionFolder;
-        case DbNodeType::Function: return NodeType::Function;
-        case DbNodeType::TriggerFolder: return NodeType::TriggerFolder;
-        case DbNodeType::Trigger: return NodeType::Trigger;
-        case DbNodeType::IndexFolder: return NodeType::IndexFolder;
-        case DbNodeType::Index: return NodeType::Index;
-        case DbNodeType::SequenceFolder: return NodeType::SequenceFolder;
-        case DbNodeType::Sequence: return NodeType::Sequence;
-        case DbNodeType::UserFolder: return NodeType::UserFolder;
-        case DbNodeType::User: return NodeType::User;
-        case DbNodeType::Column: return NodeType::Column;
-        case DbNodeType::Key: return NodeType::Key;
-        case DbNodeType::RedisKey: return NodeType::RedisKey;
-        default: return NodeType::Unknown;
+    case DbNodeType::Connection: return NodeType::Connection;
+    case DbNodeType::Database: return NodeType::Database;
+    case DbNodeType::Schema: return NodeType::Schema;
+    case DbNodeType::TableFolder: return NodeType::TableFolder;
+    case DbNodeType::Table: return NodeType::Table;
+    case DbNodeType::ViewFolder: return NodeType::ViewFolder;
+    case DbNodeType::View: return NodeType::View;
+    case DbNodeType::ProcedureFolder: return NodeType::ProcedureFolder;
+    case DbNodeType::Procedure: return NodeType::Procedure;
+    case DbNodeType::FunctionFolder: return NodeType::FunctionFolder;
+    case DbNodeType::Function: return NodeType::Function;
+    case DbNodeType::TriggerFolder: return NodeType::TriggerFolder;
+    case DbNodeType::Trigger: return NodeType::Trigger;
+    case DbNodeType::IndexFolder: return NodeType::IndexFolder;
+    case DbNodeType::Index: return NodeType::Index;
+    case DbNodeType::SequenceFolder: return NodeType::SequenceFolder;
+    case DbNodeType::Sequence: return NodeType::Sequence;
+    case DbNodeType::UserFolder: return NodeType::UserFolder;
+    case DbNodeType::User: return NodeType::User;
+    case DbNodeType::Column: return NodeType::Column;
+    case DbNodeType::Key: return NodeType::Key;
+    case DbNodeType::RedisKey: return NodeType::RedisKey;
+    default: return NodeType::Unknown;
     }
 }
 
 bool DatabaseTreeWidget::canExpandNodeType(NodeType type) {
     switch (type) {
-        case NodeType::Connection:
-        case NodeType::Database:
-        case NodeType::RedisDatabase:
-        case NodeType::TableFolder:
-        case NodeType::ViewFolder:
-        case NodeType::ProcedureFolder:
-        case NodeType::FunctionFolder:
-        case NodeType::TriggerFolder:
-        case NodeType::IndexFolder:
-        case NodeType::SequenceFolder:
-        case NodeType::UserFolder:
-        case NodeType::Table:
-        case NodeType::View:
-        case NodeType::RedisKeyFolder:
-            return true;
-        default:
-            return false;
+    case NodeType::Connection:
+    case NodeType::Database:
+    case NodeType::RedisDatabase:
+    case NodeType::TableFolder:
+    case NodeType::ViewFolder:
+    case NodeType::ProcedureFolder:
+    case NodeType::FunctionFolder:
+    case NodeType::TriggerFolder:
+    case NodeType::IndexFolder:
+    case NodeType::SequenceFolder:
+    case NodeType::UserFolder:
+    case NodeType::Table:
+    case NodeType::View:
+    case NodeType::RedisKeyFolder:
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -2048,29 +2085,29 @@ void DatabaseTreeWidget::populateTreeItemData(QTreeWidgetItem* item, const Node&
 
 DbNodeType DatabaseTreeWidget::convertNodeTypeToDbNodeType(NodeType nodeType) {
     switch (nodeType) {
-        case NodeType::Connection: return DbNodeType::Connection;
-        case NodeType::Database: return DbNodeType::Database;
-        case NodeType::Schema: return DbNodeType::Schema;
-        case NodeType::TableFolder: return DbNodeType::TableFolder;
-        case NodeType::Table: return DbNodeType::Table;
-        case NodeType::ViewFolder: return DbNodeType::ViewFolder;
-        case NodeType::View: return DbNodeType::View;
-        case NodeType::ProcedureFolder: return DbNodeType::ProcedureFolder;
-        case NodeType::Procedure: return DbNodeType::Procedure;
-        case NodeType::FunctionFolder: return DbNodeType::FunctionFolder;
-        case NodeType::Function: return DbNodeType::Function;
-        case NodeType::TriggerFolder: return DbNodeType::TriggerFolder;
-        case NodeType::Trigger: return DbNodeType::Trigger;
-        case NodeType::IndexFolder: return DbNodeType::IndexFolder;
-        case NodeType::Index: return DbNodeType::Index;
-        case NodeType::SequenceFolder: return DbNodeType::SequenceFolder;
-        case NodeType::Sequence: return DbNodeType::Sequence;
-        case NodeType::UserFolder: return DbNodeType::UserFolder;
-        case NodeType::User: return DbNodeType::User;
-        case NodeType::Column: return DbNodeType::Column;
-        case NodeType::Key: return DbNodeType::Key;
-        case NodeType::RedisKey: return DbNodeType::RedisKey;
-        default: return DbNodeType::Loading; // 使用Loading作为默认值
+    case NodeType::Connection: return DbNodeType::Connection;
+    case NodeType::Database: return DbNodeType::Database;
+    case NodeType::Schema: return DbNodeType::Schema;
+    case NodeType::TableFolder: return DbNodeType::TableFolder;
+    case NodeType::Table: return DbNodeType::Table;
+    case NodeType::ViewFolder: return DbNodeType::ViewFolder;
+    case NodeType::View: return DbNodeType::View;
+    case NodeType::ProcedureFolder: return DbNodeType::ProcedureFolder;
+    case NodeType::Procedure: return DbNodeType::Procedure;
+    case NodeType::FunctionFolder: return DbNodeType::FunctionFolder;
+    case NodeType::Function: return DbNodeType::Function;
+    case NodeType::TriggerFolder: return DbNodeType::TriggerFolder;
+    case NodeType::Trigger: return DbNodeType::Trigger;
+    case NodeType::IndexFolder: return DbNodeType::IndexFolder;
+    case NodeType::Index: return DbNodeType::Index;
+    case NodeType::SequenceFolder: return DbNodeType::SequenceFolder;
+    case NodeType::Sequence: return DbNodeType::Sequence;
+    case NodeType::UserFolder: return DbNodeType::UserFolder;
+    case NodeType::User: return DbNodeType::User;
+    case NodeType::Column: return DbNodeType::Column;
+    case NodeType::Key: return DbNodeType::Key;
+    case NodeType::RedisKey: return DbNodeType::RedisKey;
+    default: return DbNodeType::Loading; // 使用Loading作为默认值
     }
 }
 
@@ -2082,23 +2119,23 @@ void DatabaseTreeWidget::setNodeIcon(QTreeWidgetItem* item, NodeType nodeType) {
 
 bool DatabaseTreeWidget::canNodeExpand(NodeType nodeType) {
     switch (nodeType) {
-        case NodeType::Connection:
-        case NodeType::Database:
-        case NodeType::RedisDatabase:
-        case NodeType::TableFolder:
-        case NodeType::ViewFolder:
-        case NodeType::ProcedureFolder:
-        case NodeType::FunctionFolder:
-        case NodeType::TriggerFolder:
-        case NodeType::IndexFolder:
-        case NodeType::SequenceFolder:
-        case NodeType::UserFolder:
-        case NodeType::Table:
-        case NodeType::View:
-        case NodeType::RedisKeyFolder:
-            return true;
-        default:
-            return false;
+    case NodeType::Connection:
+    case NodeType::Database:
+    case NodeType::RedisDatabase:
+    case NodeType::TableFolder:
+    case NodeType::ViewFolder:
+    case NodeType::ProcedureFolder:
+    case NodeType::FunctionFolder:
+    case NodeType::TriggerFolder:
+    case NodeType::IndexFolder:
+    case NodeType::SequenceFolder:
+    case NodeType::UserFolder:
+    case NodeType::Table:
+    case NodeType::View:
+    case NodeType::RedisKeyFolder:
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -2124,32 +2161,30 @@ QString DatabaseTreeWidget::generateNodeTooltip(const Node& node) {
 
 QString DatabaseTreeWidget::getNodeTypeDisplayName(NodeType nodeType) {
     switch (nodeType) {
-        case NodeType::Connection: return tr("连接");
-        case NodeType::Database: return tr("数据库");
-        case NodeType::Schema: return tr("模式");
-        case NodeType::TableFolder: return tr("表文件夹");
-        case NodeType::Table: return tr("表");
-        case NodeType::ViewFolder: return tr("视图文件夹");
-        case NodeType::View: return tr("视图");
-        case NodeType::ProcedureFolder: return tr("存储过程文件夹");
-        case NodeType::Procedure: return tr("存储过程");
-        case NodeType::FunctionFolder: return tr("函数文件夹");
-        case NodeType::Function: return tr("函数");
-        case NodeType::TriggerFolder: return tr("触发器文件夹");
-        case NodeType::Trigger: return tr("触发器");
-        case NodeType::IndexFolder: return tr("索引文件夹");
-        case NodeType::Index: return tr("索引");
-        case NodeType::SequenceFolder: return tr("序列文件夹");
-        case NodeType::Sequence: return tr("序列");
-        case NodeType::UserFolder: return tr("用户文件夹");
-        case NodeType::User: return tr("用户");
-        case NodeType::Column: return tr("列");
-        case NodeType::Key: return tr("键");
-        case NodeType::RedisDatabase: return tr("Redis数据库");
-        case NodeType::RedisKey: return tr("Redis键");
-        case NodeType::RedisKeyFolder: return tr("Redis键文件夹");
-        default: return tr("未知");
+    case NodeType::Connection: return tr("连接");
+    case NodeType::Database: return tr("数据库");
+    case NodeType::Schema: return tr("模式");
+    case NodeType::TableFolder: return tr("表文件夹");
+    case NodeType::Table: return tr("表");
+    case NodeType::ViewFolder: return tr("视图文件夹");
+    case NodeType::View: return tr("视图");
+    case NodeType::ProcedureFolder: return tr("存储过程文件夹");
+    case NodeType::Procedure: return tr("存储过程");
+    case NodeType::FunctionFolder: return tr("函数文件夹");
+    case NodeType::Function: return tr("函数");
+    case NodeType::TriggerFolder: return tr("触发器文件夹");
+    case NodeType::Trigger: return tr("触发器");
+    case NodeType::IndexFolder: return tr("索引文件夹");
+    case NodeType::Index: return tr("索引");
+    case NodeType::SequenceFolder: return tr("序列文件夹");
+    case NodeType::Sequence: return tr("序列");
+    case NodeType::UserFolder: return tr("用户文件夹");
+    case NodeType::User: return tr("用户");
+    case NodeType::Column: return tr("列");
+    case NodeType::Key: return tr("键");
+    case NodeType::RedisDatabase: return tr("Redis数据库");
+    case NodeType::RedisKey: return tr("Redis键");
+    case NodeType::RedisKeyFolder: return tr("Redis键文件夹");
+    default: return tr("未知");
     }
 }
-
-

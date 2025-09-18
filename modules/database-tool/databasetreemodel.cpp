@@ -152,7 +152,11 @@ QModelIndex DatabaseTreeModel::parent(const QModelIndex& index) const {
 
 int DatabaseTreeModel::rowCount(const QModelIndex& parent) const {
     DatabaseTreeNode* parentNode = getNode(parent);
-    return parentNode ? parentNode->children.size() : 0;
+    int count = parentNode ? parentNode->children.size() : 0;
+    qDebug() << "rowCount(): parent valid:" << parent.isValid()
+             << "parentNode:" << (parentNode ? parentNode->name : "null")
+             << "children count:" << count;
+    return count;
 }
 
 int DatabaseTreeModel::columnCount(const QModelIndex& parent) const {
@@ -167,12 +171,16 @@ QVariant DatabaseTreeModel::data(const QModelIndex& index, int role) const {
 
     DatabaseTreeNode* node = getNode(index);
     if (!node) {
+        qDebug() << "data(): node is null for index" << index;
         return QVariant();
     }
 
     switch (role) {
-        case Qt::DisplayRole:
-            return node->displayName.isEmpty() ? node->name : node->displayName;
+        case Qt::DisplayRole: {
+            QString displayText = node->displayName.isEmpty() ? node->name : node->displayName;
+            qDebug() << "data(): DisplayRole for node" << node->name << "returning:" << displayText;
+            return displayText;
+        }
 
         case Qt::ToolTipRole: {
             QString tooltip = node->name;
@@ -291,6 +299,8 @@ void DatabaseTreeModel::fetchMore(const QModelIndex& parent) {
 }
 
 void DatabaseTreeModel::addConnection(const QString& name, Connx::Connection* connection) {
+    qDebug() << "DatabaseTreeModel::addConnection called with name:" << name;
+
     m_connections[name] = connection;
     m_loader->setConnection(name, connection);
 
@@ -300,10 +310,17 @@ void DatabaseTreeModel::addConnection(const QString& name, Connx::Connection* co
     connectionNode.name = name;
     connectionNode.type = NodeType::Connection;
 
+    qDebug() << "Adding connection node to model, current children count:" << m_rootNode->children.size();
+
     beginInsertNodes(m_rootNode.get(), m_rootNode->children.size(), m_rootNode->children.size());
     DatabaseTreeNode* connNode = createNode(connectionNode, m_rootNode.get());
     m_connectionNodes[name] = connNode;
     endInsertNodes();
+
+    qDebug() << "Connection added, new children count:" << m_rootNode->children.size();
+    qDebug() << "Connection node displayName:" << connNode->displayName;
+
+    qDebug() << "强制刷新整个模型............";
 }
 
 void DatabaseTreeModel::removeConnection(const QString& name) {
@@ -445,8 +462,11 @@ DatabaseTreeNode* DatabaseTreeModel::createNode(const Node& nodeData, DatabaseTr
 
     if (parent) {
         parent->children.append(node);
+        qDebug() << "createNode: added node" << node->name << "to parent, parent now has" << parent->children.size() << "children";
     }
 
+    qDebug() << "createNode: created node" << node->name << "type:" << (int)node->type
+             << "displayName:" << node->displayName;
     return node;
 }
 
@@ -630,10 +650,13 @@ void DatabaseTreeModel::clearNodeCache() {
 
 void DatabaseTreeModel::beginInsertNodes(DatabaseTreeNode* parent, int first, int last) {
     QModelIndex parentIndex = getNodeIndex(parent);
+    qDebug() << "beginInsertNodes: parent valid:" << parentIndex.isValid()
+             << "first:" << first << "last:" << last;
     beginInsertRows(parentIndex, first, last);
 }
 
 void DatabaseTreeModel::endInsertNodes() {
+    qDebug() << "endInsertNodes: calling endInsertRows()";
     endInsertRows();
 }
 

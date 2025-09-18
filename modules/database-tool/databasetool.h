@@ -335,7 +335,7 @@ private slots:
 
 private:
     void setupUI();
-    void updateResults(const Connx::QueryResult& result);
+    void updateResults(const Connx::QueryResult& result) const;
     
     Connx::Connection* m_connection;
     QVBoxLayout* m_layout;
@@ -456,8 +456,8 @@ private:
     void setupToolbar();
     void setupStatusBar();
     void loadConnections();
-    void saveConnections();
-    void updateConnectionStatus();
+    static void saveConnections();
+    void updateConnectionStatus() const;
     
     QueryTab* createQueryTab(const QString& connectionName);
     QueryTab* getCurrentQueryTab();

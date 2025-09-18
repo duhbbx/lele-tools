@@ -23,7 +23,10 @@
       "Bash(clang++:*)",
       "Bash(g++:*)",
       "Bash(timeout 20 cmake --build build)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(./lele-tools.exe)",
+      "Bash(start:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
