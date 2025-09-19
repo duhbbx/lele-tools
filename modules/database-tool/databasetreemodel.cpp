@@ -101,13 +101,15 @@ void DatabaseTreeLoader::onLoadFinished() {
 DatabaseTreeModel::DatabaseTreeModel(QObject* parent)
     : QAbstractItemModel(parent)
     , m_rootNode(std::make_unique<DatabaseTreeNode>())
-    , m_loader(new DatabaseTreeLoader(this))
+    , m_loader(nullptr) // 禁用loader进行测试
     , m_nodeCache(1000) // 缓存1000个节点的数据
-    , m_lazyLoadingEnabled(true)
+    , m_lazyLoadingEnabled(false) // 禁用懒加载
     , m_loadBatchSize(100)
     , m_filterEnabled(false) {
 
-    setupConnections();
+
+    qDebug() << "DatabaseTreeModel constructor: loader disabled for testing";
+    setupConnections(); // 暂时禁用
     loadRootNodes();
 }
 
@@ -116,24 +118,38 @@ DatabaseTreeModel::~DatabaseTreeModel() {
 }
 
 void DatabaseTreeModel::setupConnections() {
-    connect(m_loader, &DatabaseTreeLoader::nodeChildrenLoaded,
-            this, &DatabaseTreeModel::onNodeChildrenLoaded);
-    connect(m_loader, &DatabaseTreeLoader::nodeLoadFailed,
-            this, &DatabaseTreeModel::onNodeLoadFailed);
+    connect(m_loader, &DatabaseTreeLoader::nodeChildrenLoaded, this, &DatabaseTreeModel::onNodeChildrenLoaded);
+    connect(m_loader, &DatabaseTreeLoader::nodeLoadFailed, this, &DatabaseTreeModel::onNodeLoadFailed);
 }
 
-QModelIndex DatabaseTreeModel::index(int row, int column, const QModelIndex& parent) const {
-    if (!hasIndex(row, column, parent)) {
+QModelIndex DatabaseTreeModel::index(const int row, const int column, const QModelIndex& parent) const {
+    qDebug() << "=== index() called: row=" << row << "column=" << column << "parent valid=" << parent.isValid();
+
+    // 检查hasIndex
+    bool hasIndexResult = hasIndex(row, column, parent);
+    qDebug() << "hasIndex(" << row << "," << column << ", parent_valid=" << parent.isValid() << ") =" << hasIndexResult;
+    if (!hasIndexResult) {
+        qDebug() << "index(): hasIndex returned false, returning invalid";
         return QModelIndex();
     }
 
     DatabaseTreeNode* parentNode = getNode(parent);
-    if (!parentNode || row >= parentNode->children.size()) {
+    qDebug() << "parentNode:" << (void*)parentNode << (parentNode ? parentNode->name : "null");
+    if (!parentNode) {
+        qDebug() << "index(): parentNode is null, returning invalid";
         return QModelIndex();
     }
 
-    DatabaseTreeNode* childNode = parentNode->children.at(row);
-    return createIndex(row, column, childNode);
+    qDebug() << "parentNode->children.size():" << parentNode->children.size();
+    if (row >= 0 && row < parentNode->children.size()) {
+        DatabaseTreeNode* childNode = parentNode->children.at(row);
+        QModelIndex result = createIndex(row, column, childNode);
+        qDebug() << "Created index for row" << row << "node:" << childNode->name << "result valid:" << result.isValid();
+        return result;
+    }
+
+    qDebug() << "index(): row out of range, returning invalid index";
+    return QModelIndex();
 }
 
 QModelIndex DatabaseTreeModel::parent(const QModelIndex& index) const {
@@ -152,85 +168,67 @@ QModelIndex DatabaseTreeModel::parent(const QModelIndex& index) const {
 
 int DatabaseTreeModel::rowCount(const QModelIndex& parent) const {
     DatabaseTreeNode* parentNode = getNode(parent);
-    int count = parentNode ? parentNode->children.size() : 0;
-    qDebug() << "rowCount(): parent valid:" << parent.isValid()
-             << "parentNode:" << (parentNode ? parentNode->name : "null")
-             << "children count:" << count;
+    if (!parentNode) {
+        qDebug() << "rowCount: parentNode is null";
+        return 0;
+    }
+
+    int count = parentNode->children.size();
+    qDebug() << "rowCount for" << (parent.isValid() ? parentNode->name : "root") << ":" << count;
     return count;
 }
 
 int DatabaseTreeModel::columnCount(const QModelIndex& parent) const {
     Q_UNUSED(parent)
+    qDebug() << "columnCount() called, returning 1";
     return 1; // 单列显示
 }
 
-QVariant DatabaseTreeModel::data(const QModelIndex& index, int role) const {
+/**
+ * @param index 指定了视图（QTreeView）想要的数据位置。它包含
+ *              row() → 第几行
+ *              column() → 第几列
+ *              parent() → 父节点的 QModelIndex
+ * @param role 表示请求的数据类型。Qt 里有很多 角色 (Role)，常用的有
+ *             Qt::DisplayRole → 显示在单元格里的文本
+ *             Qt::DecorationRole → 图标、前景图
+ *             Qt::ToolTipRole → 鼠标悬停提示
+ *             Qt::BackgroundRole → 背景颜色
+ *             Qt::FontRole → 字体
+ *             Qt::CheckStateRole → 复选框状态
+ * @return 返回的数据类型用 QVariant（Qt 的万能容器，能存字符串、整数、颜色、图标等）。
+ */
+QVariant DatabaseTreeModel::data(const QModelIndex& index, const int role) const {
+    qDebug() << "=== data() called: index valid=" << index.isValid() << "role=" << role;
+
     if (!index.isValid()) {
+        qDebug() << "data(): index is invalid, returning empty QVariant";
         return QVariant();
     }
 
+    qDebug() << "data(): index row=" << index.row() << "column=" << index.column();
+
     DatabaseTreeNode* node = getNode(index);
+    qDebug() << "data(): node=" << (void*)node << (node ? node->name : "null");
     if (!node) {
-        qDebug() << "data(): node is null for index" << index;
+        qDebug() << "data(): node is null for index row" << index.row();
         return QVariant();
     }
 
     switch (role) {
-        case Qt::DisplayRole: {
-            QString displayText = node->displayName.isEmpty() ? node->name : node->displayName;
-            qDebug() << "data(): DisplayRole for node" << node->name << "returning:" << displayText;
-            return displayText;
-        }
+    case Qt::DisplayRole:
+        qDebug() << "data(): returning display text:" << node->displayName;
+        return node->displayName;
 
-        case Qt::ToolTipRole: {
-            QString tooltip = node->name;
-            if (!node->database.isEmpty()) {
-                tooltip += QString("\n数据库: %1").arg(node->database);
-            }
-            if (!node->schema.isEmpty()) {
-                tooltip += QString("\n模式: %1").arg(node->schema);
-            }
-            if (node->isLoading) {
-                tooltip += "\n正在加载...";
-            }
-            return tooltip;
-        }
+    case Qt::SizeHintRole: {
+        QSize size(200, 25); // 明确设置项目尺寸：宽200px，高25px
+        qDebug() << "data(): returning size hint:" << size;
+        return size;
+    }
 
-        case Qt::DecorationRole:
-            return QIcon(getNodeIcon(node->type));
-
-        case Qt::FontRole: {
-            QFont font;
-            if (node->isLoading) {
-                font.setItalic(true);
-            }
-            if (node->type == NodeType::Connection) {
-                font.setBold(true);
-            }
-            return font;
-        }
-
-        case Qt::ForegroundRole: {
-            if (node->isLoading) {
-                return QApplication::palette().color(QPalette::Disabled, QPalette::Text);
-            }
-            break;
-        }
-
-        case Qt::UserRole:
-            return static_cast<int>(node->type);
-
-        case Qt::UserRole + 1:
-            return node->id;
-
-        case Qt::UserRole + 2:
-            return node->database;
-
-        case Qt::UserRole + 3:
-            return node->connectionId;
-
-        default:
-            break;
+    default:
+        qDebug() << "data(): using default for role:" << role;
+        break;
     }
 
     return QVariant();
@@ -244,7 +242,7 @@ Qt::ItemFlags DatabaseTreeModel::flags(const QModelIndex& index) const {
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
-QVariant DatabaseTreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant DatabaseTreeModel::headerData(const int section, const Qt::Orientation orientation, const int role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
         switch (section) {
             case 0:
@@ -299,28 +297,37 @@ void DatabaseTreeModel::fetchMore(const QModelIndex& parent) {
 }
 
 void DatabaseTreeModel::addConnection(const QString& name, Connx::Connection* connection) {
-    qDebug() << "DatabaseTreeModel::addConnection called with name:" << name;
+    qDebug() << "=== DatabaseTreeModel::addConnection:" << name;
 
     m_connections[name] = connection;
-    m_loader->setConnection(name, connection);
 
-    // 创建连接节点
-    Node connectionNode;
-    connectionNode.id = name;
-    connectionNode.name = name;
-    connectionNode.type = NodeType::Connection;
+    // 检查根节点
+    qDebug() << "Root node before adding:" << m_rootNode.get();
+    qDebug() << "Root children count before:" << (m_rootNode ? m_rootNode->children.size() : -1);
 
-    qDebug() << "Adding connection node to model, current children count:" << m_rootNode->children.size();
+    // 使用正确的insertRows信号而不是resetModel
+    const int row = m_rootNode->children.size(); // 新行的位置
 
-    beginInsertNodes(m_rootNode.get(), m_rootNode->children.size(), m_rootNode->children.size());
-    DatabaseTreeNode* connNode = createNode(connectionNode, m_rootNode.get());
+    qDebug() << "Calling beginInsertRows: parent=invalid, first=" << row << "last=" << row;
+    beginInsertRows(QModelIndex(), row, row); // 在根节点下插入
+
+    // 创建并插入节点
+    const auto connNode = new DatabaseTreeNode();
+    connNode->id = name;
+    connNode->name = name;
+    connNode->displayName = name; // 去掉emoji
+    connNode->type = NodeType::Connection;
+    connNode->parent = m_rootNode.get();
+
+    m_rootNode->children.append(connNode);
     m_connectionNodes[name] = connNode;
-    endInsertNodes();
 
-    qDebug() << "Connection added, new children count:" << m_rootNode->children.size();
-    qDebug() << "Connection node displayName:" << connNode->displayName;
+    qDebug() << "Created connection node:" << (void*)connNode << "name:" << connNode->name;
+    qDebug() << "Root children count after:" << m_rootNode->children.size();
 
-    qDebug() << "强制刷新整个模型............";
+    // 通知视图插入完成
+    endInsertRows();
+    qDebug() << "endInsertRows completed";
 }
 
 void DatabaseTreeModel::removeConnection(const QString& name) {
@@ -462,7 +469,7 @@ DatabaseTreeNode* DatabaseTreeModel::createNode(const Node& nodeData, DatabaseTr
 
     if (parent) {
         parent->children.append(node);
-        qDebug() << "createNode: added node" << node->name << "to parent, parent now has" << parent->children.size() << "children";
+        // qDebug() << "createNode: added node" << node->name << "to parent, parent now has" << parent->children.size() << "children";
     }
 
     qDebug() << "createNode: created node" << node->name << "type:" << (int)node->type
@@ -510,7 +517,7 @@ bool DatabaseTreeModel::nodeCanExpand(NodeType type) const {
     }
 }
 
-QString DatabaseTreeModel::getNodeIcon(NodeType type) const {
+QString DatabaseTreeModel::getNodeIcon(NodeType type) {
     // 返回图标路径，可以根据需要调整
     switch (type) {
         case NodeType::Connection:
@@ -648,15 +655,12 @@ void DatabaseTreeModel::clearNodeCache() {
     m_nodeCache.clear();
 }
 
-void DatabaseTreeModel::beginInsertNodes(DatabaseTreeNode* parent, int first, int last) {
-    QModelIndex parentIndex = getNodeIndex(parent);
-    qDebug() << "beginInsertNodes: parent valid:" << parentIndex.isValid()
-             << "first:" << first << "last:" << last;
+void DatabaseTreeModel::beginInsertNodes(DatabaseTreeNode* parent, const int first, const int last) {
+    const QModelIndex parentIndex = getNodeIndex(parent);
     beginInsertRows(parentIndex, first, last);
 }
 
 void DatabaseTreeModel::endInsertNodes() {
-    qDebug() << "endInsertNodes: calling endInsertRows()";
     endInsertRows();
 }
 
@@ -688,170 +692,3 @@ void DatabaseTreeModel::clearFilter() {
     // TODO: 清除过滤
 }
 
-// DatabaseTreeView 实现
-DatabaseTreeView::DatabaseTreeView(QWidget* parent)
-    : QTreeView(parent)
-    , m_model(nullptr) {
-
-    setupPerformanceOptimizations();
-}
-
-void DatabaseTreeView::setModel(DatabaseTreeModel* model) {
-    m_model = model;
-    QTreeView::setModel(model);
-
-    if (model) {
-        connect(model, &DatabaseTreeModel::nodeLoadStarted,
-                this, &DatabaseTreeView::onLoadStarted);
-        connect(model, &DatabaseTreeModel::nodeLoadFinished,
-                this, &DatabaseTreeView::onLoadFinished);
-        connect(this, &QTreeView::expanded, this, &DatabaseTreeView::onExpanded);
-        connect(this, &QTreeView::collapsed, this, &DatabaseTreeView::onCollapsed);
-    }
-}
-
-DatabaseTreeModel* DatabaseTreeView::databaseModel() const {
-    return m_model;
-}
-
-void DatabaseTreeView::setupPerformanceOptimizations() {
-    // 启用性能优化选项
-    setUniformRowHeights(true);               // 统一行高，提升性能
-    setAlternatingRowColors(false);           // 禁用交替行颜色
-    setRootIsDecorated(true);                 // 显示根节点装饰
-    setItemsExpandable(true);                 // 允许展开
-    setExpandsOnDoubleClick(false);           // 禁用双击展开，使用自定义逻辑
-    setHeaderHidden(true);                    // 隐藏表头
-
-    // 选择模式
-    setSelectionMode(QAbstractItemView::SingleSelection);
-    setSelectionBehavior(QAbstractItemView::SelectRows);
-
-    // 设置样式
-    setStyleSheet(R"(
-        QTreeView {
-            border: 1px solid #e1e1e1;
-            border-radius: 6px;
-            background-color: #ffffff;
-            selection-background-color: #3498db;
-            show-decoration-selected: 1;
-        }
-        QTreeView::item {
-            height: 28px;
-            padding: 2px 8px;
-            border: none;
-        }
-        QTreeView::item:hover {
-            background-color: #f0f8ff;
-        }
-        QTreeView::item:selected {
-            background-color: #3498db;
-            color: white;
-        }
-        QTreeView::branch:has-children:!has-siblings:closed,
-        QTreeView::branch:closed:has-children:has-siblings {
-            border-image: none;
-            image: url(:/icons/branch-closed.png);
-        }
-        QTreeView::branch:open:has-children:!has-siblings,
-        QTreeView::branch:open:has-children:has-siblings {
-            border-image: none;
-            image: url(:/icons/branch-open.png);
-        }
-    )");
-}
-
-void DatabaseTreeView::setVirtualizationEnabled(bool enabled) {
-    // Qt的QTreeView默认就是虚拟化的
-    Q_UNUSED(enabled)
-}
-
-void DatabaseTreeView::setUniformRowHeights(bool uniform) {
-    QTreeView::setUniformRowHeights(uniform);
-}
-
-void DatabaseTreeView::setItemsExpandable(bool expandable) {
-    QTreeView::setItemsExpandable(expandable);
-}
-
-void DatabaseTreeView::mouseDoubleClickEvent(QMouseEvent* event) {
-    QModelIndex index = indexAt(event->pos());
-    if (index.isValid()) {
-        emit nodeDoubleClicked(index);
-    }
-    // 不调用基类的实现，避免默认的展开行为
-}
-
-void DatabaseTreeView::contextMenuEvent(QContextMenuEvent* event) {
-    QModelIndex index = indexAt(event->pos());
-    emit nodeContextMenuRequested(index, event->globalPos());
-}
-
-void DatabaseTreeView::keyPressEvent(QKeyEvent* event) {
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        QModelIndex current = currentIndex();
-        if (current.isValid()) {
-            emit nodeDoubleClicked(current);
-        }
-        return;
-    }
-    QTreeView::keyPressEvent(event);
-}
-
-void DatabaseTreeView::onExpanded(const QModelIndex& index) {
-    if (m_model) {
-        // 当节点展开时，确保数据已加载
-        if (m_model->canFetchMore(index)) {
-            m_model->fetchMore(index);
-        }
-    }
-}
-
-void DatabaseTreeView::onCollapsed(const QModelIndex& index) {
-    // 节点折叠时的处理逻辑
-    Q_UNUSED(index)
-}
-
-void DatabaseTreeView::onLoadStarted(const QModelIndex& index) {
-    updateLoadingState(index, true);
-}
-
-void DatabaseTreeView::onLoadFinished(const QModelIndex& index) {
-    updateLoadingState(index, false);
-}
-
-void DatabaseTreeView::updateLoadingState(const QModelIndex& index, bool loading) {
-    m_loadingStates[index] = loading;
-    update(index); // 触发重绘
-}
-
-void DatabaseTreeView::searchNodes(const QString& text) {
-    if (m_model) {
-        m_model->setFilter(text);
-    }
-}
-
-void DatabaseTreeView::clearSearch() {
-    if (m_model) {
-        m_model->clearFilter();
-    }
-}
-
-void DatabaseTreeView::expandToNode(const QModelIndex& index) {
-    if (!index.isValid()) {
-        return;
-    }
-
-    // 展开到指定节点的路径
-    QModelIndex current = index.parent();
-    while (current.isValid()) {
-        expand(current);
-        current = current.parent();
-    }
-
-    // 滚动到目标节点
-    scrollTo(index, QAbstractItemView::EnsureVisible);
-    setCurrentIndex(index);
-}
-
-// MOC include removed - not needed since classes are in header

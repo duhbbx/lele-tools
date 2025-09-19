@@ -14,6 +14,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QTimer>
+#include <QStringListModel>
 
 // 移除全局using namespace以避免命名冲突
 // using namespace SqliteWrapper;
@@ -126,8 +127,7 @@ QString DatabaseHierarchyManager::getNodeDisplayName(DbNodeType nodeType) const 
 }
 
 // SqlSyntaxHighlighter 实现
-SqlSyntaxHighlighter::SqlSyntaxHighlighter(QTextDocument* parent)
-    : QSyntaxHighlighter(parent) {
+SqlSyntaxHighlighter::SqlSyntaxHighlighter(QTextDocument* parent) : QSyntaxHighlighter(parent) {
     HighlightingRule rule;
 
     // SQL关键字格式
@@ -742,7 +742,7 @@ void ConnectionDialog::createFormControls() {
     m_charsetCombo->setFixedHeight(CONTROL_HEIGHT);
 }
 
-void ConnectionDialog::setConnectionConfig(const Connx::ConnectionConfig& config) {
+void ConnectionDialog::setConnectionConfig(const Connx::ConnectionConfig& config) const {
     m_nameEdit->setText(config.name);
 
     // 根据配置确定类型并选择
@@ -764,12 +764,12 @@ void ConnectionDialog::setConnectionConfig(const Connx::ConnectionConfig& config
 }
 
 void ConnectionDialog::onConnectionTypeChanged() {
-    QString selectedType = m_typeList->currentItem() ? m_typeList->currentItem()->text() : "Redis";
+    const QString selectedType = m_typeList->currentItem() ? m_typeList->currentItem()->text() : "Redis";
     m_currentType = selectedType;
     updateFormForType(selectedType);
 }
 
-void ConnectionDialog::updateFormForType(const QString& type) {
+void ConnectionDialog::updateFormForType(const QString& type) const {
     // 清空现有网格布局
     QLayoutItem* item;
     while ((item = m_gridLayout->takeAt(0)) != nullptr) {
@@ -929,25 +929,21 @@ bool ConnectionDialog::validateInput() {
     return true;
 }
 
-// DatabaseTreeWidget 实现
-DatabaseTreeWidget::DatabaseTreeWidget(QWidget* parent) : QTreeView(parent) {
-    // 创建高性能树模型
-    m_treeModel = new DatabaseTreeModel(this);
-    QTreeView::setModel(m_treeModel);
+// DatabaseTreeView 实现
+DatabaseTreeView::DatabaseTreeView(QWidget* parent) : QTreeView(parent) {
 
     setupUI();
     setupContextMenu();
 
     // 连接信号
-    connect(this, &QTreeView::doubleClicked, this, &DatabaseTreeWidget::onNodeDoubleClicked);
-    connect(this, &QTreeView::customContextMenuRequested, this, &DatabaseTreeWidget::onCustomContextMenuRequested);
-    connect(this, &QTreeView::expanded, this, &DatabaseTreeWidget::onNodeExpanded);
+    connect(this, &QTreeView::doubleClicked, this, &DatabaseTreeView::onNodeDoubleClicked);
+    connect(this, &QTreeView::customContextMenuRequested, this, &DatabaseTreeView::onCustomContextMenuRequested);
+    connect(this, &QTreeView::expanded, this, &DatabaseTreeView::onNodeExpanded);
 }
 
-void DatabaseTreeWidget::setupUI() {
+void DatabaseTreeView::setupUI() {
     // 设置头部
     header()->hide();
-
     // 基本属性
     setContextMenuPolicy(Qt::CustomContextMenu);
     setRootIsDecorated(true);
@@ -967,7 +963,7 @@ void DatabaseTreeWidget::setupUI() {
     setUpdatesEnabled(true);
 }
 
-void DatabaseTreeWidget::setupContextMenu() {
+void DatabaseTreeView::setupContextMenu() {
     m_contextMenu = new QMenu(this);
 
     m_connectAction = new QAction("🔌 连接", this);
@@ -991,15 +987,11 @@ void DatabaseTreeWidget::setupContextMenu() {
     m_contextMenu->addAction(m_deleteAction);
 }
 
-void DatabaseTreeWidget::addConnection(const QString& name, Connx::Connection* connection) {
-    qDebug() << "DatabaseTreeWidget::addConnection called with name:" << name;
-    // 通过模型添加连接
+void DatabaseTreeView::addConnection(const QString& name, Connx::Connection* connection) const {
     m_treeModel->addConnection(name, connection);
-    qDebug() << "Model addConnection finished, expanding all for testing";
-    expandAll(); // 临时添加，用于测试
 }
 
-void DatabaseTreeWidget::onNodeDoubleClicked(const QModelIndex& index) {
+void DatabaseTreeView::onNodeDoubleClicked(const QModelIndex& index) {
     if (!index.isValid()) {
         return;
     }
@@ -1007,7 +999,7 @@ void DatabaseTreeWidget::onNodeDoubleClicked(const QModelIndex& index) {
     handleNodeDoubleClick(index);
 }
 
-void DatabaseTreeWidget::handleNodeDoubleClick(const QModelIndex& index) {
+void DatabaseTreeView::handleNodeDoubleClick(const QModelIndex& index) {
     if (!index.isValid()) {
         return;
     }
@@ -1042,7 +1034,7 @@ void DatabaseTreeWidget::handleNodeDoubleClick(const QModelIndex& index) {
     }
 }
 
-void DatabaseTreeWidget::onNodeExpanded(const QModelIndex& index) {
+void DatabaseTreeView::onNodeExpanded(const QModelIndex& index) {
     if (!index.isValid())
         return;
 
@@ -1056,12 +1048,12 @@ void DatabaseTreeWidget::onNodeExpanded(const QModelIndex& index) {
     // 模型会自动处理数据加载，这里只需要记录日志或做一些UI更新
 }
 
-void DatabaseTreeWidget::showExpandError(const QString& title, const QString& message) {
+void DatabaseTreeView::showExpandError(const QString& title, const QString& message) {
     QMessageBox::warning(this, title, message);
 }
 
 
-void DatabaseTreeWidget::loadFolderContent(QTreeWidgetItem* folderItem, Connx::Connection* connection, const QString& database, DbNodeType folderType) {
+void DatabaseTreeView::loadFolderContent(QTreeWidgetItem* folderItem, Connx::Connection* connection, const QString& database, DbNodeType folderType) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(folderItem)
     Q_UNUSED(connection)
@@ -1069,14 +1061,14 @@ void DatabaseTreeWidget::loadFolderContent(QTreeWidgetItem* folderItem, Connx::C
     Q_UNUSED(folderType)
 }
 
-void DatabaseTreeWidget::loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
+void DatabaseTreeView::loadTables(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(databaseItem)
     Q_UNUSED(connection)
     Q_UNUSED(database)
 }
 
-void DatabaseTreeWidget::onCustomContextMenuRequested(const QPoint& pos) {
+void DatabaseTreeView::onCustomContextMenuRequested(const QPoint& pos) {
     QModelIndex index = indexAt(pos);
     if (!index.isValid()) {
         return;
@@ -1085,7 +1077,7 @@ void DatabaseTreeWidget::onCustomContextMenuRequested(const QPoint& pos) {
     showNodeContextMenu(index, pos);
 }
 
-void DatabaseTreeWidget::showNodeContextMenu(const QModelIndex& index, const QPoint& pos) {
+void DatabaseTreeView::showNodeContextMenu(const QModelIndex& index, const QPoint& pos) {
     if (!index.isValid())
         return;
 
@@ -1130,39 +1122,39 @@ void DatabaseTreeWidget::showNodeContextMenu(const QModelIndex& index, const QPo
     m_contextMenu->exec(mapToGlobal(pos));
 }
 
-void DatabaseTreeWidget::loadRedisKeys(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
+void DatabaseTreeView::loadRedisKeys(QTreeWidgetItem* databaseItem, Connx::Connection* connection, const QString& database) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(databaseItem)
     Q_UNUSED(connection)
     Q_UNUSED(database)
 }
 
-void DatabaseTreeWidget::refreshDatabase(QTreeWidgetItem* databaseItem) {
+void DatabaseTreeView::refreshDatabase(QTreeWidgetItem* databaseItem) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(databaseItem)
 }
 
-void DatabaseTreeWidget::flushDatabase(QTreeWidgetItem* databaseItem) {
+void DatabaseTreeView::flushDatabase(QTreeWidgetItem* databaseItem) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(databaseItem)
 }
 
-void DatabaseTreeWidget::deleteKey(QTreeWidgetItem* keyItem) {
+void DatabaseTreeView::deleteKey(QTreeWidgetItem* keyItem) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(keyItem)
 }
 
-void DatabaseTreeWidget::setConnection(Connx::Connection* connection) {
+void DatabaseTreeView::setConnection(Connx::Connection* connection) {
     // 简化实现
     Q_UNUSED(connection)
 }
 
-void DatabaseTreeWidget::refreshConnection(const QString& connectionName) {
+void DatabaseTreeView::refreshConnection(const QString& connectionName) {
     // 通过模型刷新连接
     m_treeModel->refreshConnection(connectionName);
 }
 
-void DatabaseTreeWidget::removeConnection(const QString& name) {
+void DatabaseTreeView::removeConnection(const QString& name) {
     // 通过模型移除连接
     m_treeModel->removeConnection(name);
 }
@@ -1437,14 +1429,10 @@ void QueryTab::updateResults(const Connx::QueryResult& result) const {
             m_rowsLabel->setText(tr("行数: 0"));
         }
 
-        m_messagesText->append(tr("[%1] 命令执行成功")
-            .arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
+        m_messagesText->append(tr("[%1] 命令执行成功").arg(QDateTime::currentDateTime().toString("hh:mm:ss")));
     } else {
         m_statusLabel->setText(tr("❌ 执行失败"));
-        m_messagesText->append(tr("[%1] 错误: %2")
-                               .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
-                               .arg(result.errorMessage));
-
+        m_messagesText->append(tr("[%1] 错误: %2").arg(QDateTime::currentDateTime().toString("hh:mm:ss")).arg(result.errorMessage));
         m_resultTable->setRowCount(0);
         m_resultTable->setColumnCount(0);
         m_rowsLabel->setText(tr("行数: 0"));
@@ -1452,8 +1440,7 @@ void QueryTab::updateResults(const Connx::QueryResult& result) const {
 }
 
 // DatabaseTool 主类实现
-DatabaseTool::DatabaseTool(QWidget* parent)
-    : QWidget(parent), DynamicObjectBase(), m_currentItem(nullptr) {
+DatabaseTool::DatabaseTool(QWidget* parent) : QWidget(parent), DynamicObjectBase(), m_currentItem(nullptr) {
     // 初始化连接配置表管理器
     m_configManager = new SqliteWrapper::ConnectionConfigTableManager(this);
 
@@ -1482,35 +1469,22 @@ void DatabaseTool::setupUI() {
     m_mainSplitter = new QSplitter(Qt::Horizontal);
 
     // 左侧连接树
-    m_treeWidget = new DatabaseTreeWidget();
-    m_treeWidget->setMaximumWidth(300);
-    m_treeWidget->setMinimumWidth(200);
+    m_treeView = new DatabaseTreeView(m_mainSplitter);
 
-    // QSS 样式
-    m_treeWidget->setStyleSheet(R"(
-    QTreeView {
-        background-color: #f9f9f9;   /* 背景颜色 */
-        border: 1px solid #cccccc;   /* 外边框 */
-    }
-    QTreeView::item {
-        padding: 4px;                /* 项目内边距 */
-    }
-    QTreeView::item:selected {
-        background-color: #0078d7;   /* 选中背景 */
-        color: white;                /* 选中字体颜色 */
-    }
-    QTreeView::branch:closed:has-children {
-        image: url(:/icons/branch-closed.png);
-    }
-    QTreeView::branch:open:has-children {
-        image: url(:/icons/branch-open.png);
-    }
-)");
+    // 创建高性能树模型
+    const auto m_treeModel = new DatabaseTreeModel(this);
+    m_treeView->m_treeModel = m_treeModel;
+    m_treeView->setModel(m_treeModel);
 
+    // 强制设置基本显示属性
+    m_treeView->setVisible(true);
+    m_treeView->setMinimumHeight(100);
+    m_treeView->setMinimumWidth(100);
+    m_treeView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QObject::connect(m_treeWidget, &DatabaseTreeWidget::connectionRequested, this, &DatabaseTool::onConnectToDatabase);
-    QObject::connect(m_treeWidget, &DatabaseTreeWidget::tableDoubleClicked, this, &DatabaseTool::onTableDoubleClicked);
-    QObject::connect(m_treeWidget, &DatabaseTreeWidget::keyDoubleClicked, this, &DatabaseTool::onKeyDoubleClicked);
+    QObject::connect(m_treeView, &DatabaseTreeView::connectionRequested, this, &DatabaseTool::onConnectToDatabase);
+    QObject::connect(m_treeView, &DatabaseTreeView::tableDoubleClicked, this, &DatabaseTool::onTableDoubleClicked);
+    QObject::connect(m_treeView, &DatabaseTreeView::keyDoubleClicked, this, &DatabaseTool::onKeyDoubleClicked);
 
     // 右侧查询标签页
     m_tabWidget = new QTabWidget();
@@ -1520,54 +1494,16 @@ void DatabaseTool::setupUI() {
     QObject::connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, &DatabaseTool::onCloseTab);
     QObject::connect(m_tabWidget, &QTabWidget::currentChanged, this, &DatabaseTool::onTabChanged);
 
-    m_mainSplitter->addWidget(m_treeWidget);
+    m_mainSplitter->addWidget(m_treeView);
     m_mainSplitter->addWidget(m_tabWidget);
     // 设置分割器比例 - 给左侧一些空间
-    m_mainSplitter->setSizes(QList { 250, 800 });
-    m_mainSplitter->setStretchFactor(0, 0); // 左侧固定
-    m_mainSplitter->setStretchFactor(1, 1); // 右侧拉伸
-
-    // 确保树控件可见
-    m_treeWidget->show();
-    m_treeWidget->setVisible(true);
+    // m_mainSplitter->setSizes(QList { 250, 800 });
+    // m_mainSplitter->setStretchFactor(0, 0); // 左侧固定
+    // m_mainSplitter->setStretchFactor(1, 1); // 右侧拉伸
 
     m_mainLayout->addWidget(m_mainSplitter, 1);
 
     setupStatusBar();
-
-    // 设置样式
-    setStyleSheet(R"(
-        QToolBar {
-            border: 1px solid #ddd;
-            background: #f8f9fa;
-            spacing: 3px;
-        }
-        QTreeView {
-            border: 1px solid #ddd;
-            background: white;
-        }
-        QTreeView::item {
-            height: 24px;
-            padding: 2px;
-        }
-        QTreeView::item:selected {
-            background: #007acc;
-            color: white;
-        }
-        QTabWidget::pane {
-            border: 1px solid #ddd;
-            background: white;
-        }
-        QTabBar::tab {
-            background: #f1f1f1;
-            padding: 8px 12px;
-            margin-right: 2px;
-        }
-        QTabBar::tab:selected {
-            background: white;
-            border-bottom: 2px solid #007acc;
-        }
-    )");
 }
 
 void DatabaseTool::setupToolbar() {
@@ -1665,7 +1601,7 @@ void DatabaseTool::onNewConnection() {
         Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
         if (connection) {
             m_connections[config.name] = connection;
-            m_treeWidget->addConnection(config.name, connection);
+            m_treeView->addConnection(config.name, connection);
 
             QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](Connx::ConnectionState state) {
                 onConnectionStateChanged(config.name, state);
@@ -1682,10 +1618,9 @@ void DatabaseTool::onNewQuery() {
     QString connectionName = "默认";
 
     // 如果有选中的连接，使用该连接
-    QModelIndex currentIdx = m_treeWidget->currentIndex();
+    const QModelIndex currentIdx = m_treeView->currentIndex();
     if (currentIdx.isValid()) {
-        DatabaseTreeNode* current = m_treeWidget->m_treeModel->getNode(currentIdx);
-        if (current && current->type == NodeType::Connection) {
+        if (const DatabaseTreeNode* current = m_treeView->m_treeModel->getNode(currentIdx); current && current->type == NodeType::Connection) {
             connectionName = current->name;
         } else if (current) {
             // 找到父连接
@@ -1720,7 +1655,7 @@ QueryTab* DatabaseTool::createQueryTab(const QString& connectionName) {
     return tab;
 }
 
-void DatabaseTool::onCloseTab(int index) {
+void DatabaseTool::onCloseTab(int index) const {
     QWidget* tab = m_tabWidget->widget(index);
     m_tabWidget->removeTab(index);
     tab->deleteLater();
@@ -1773,7 +1708,7 @@ void DatabaseTool::loadConnections() {
         const Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
         if (Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config)) {
             m_connections[config.name] = connection;
-            m_treeWidget->addConnection(config.name, connection);
+            m_treeView->addConnection(config.name, connection);
 
             QObject::connect(connection, &Connx::Connection::stateChanged, [this, config](const Connx::ConnectionState state) {
                 onConnectionStateChanged(config.name, state);
@@ -1795,8 +1730,8 @@ void DatabaseTool::updateConnectionStatus() const {
 }
 
 void DatabaseTool::onConnectToDatabase() {
-    QModelIndex currentIdx = m_treeWidget->currentIndex();
-    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
+    QModelIndex currentIdx = m_treeView->currentIndex();
+    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeView->m_treeModel->getNode(currentIdx) : nullptr;
     if (!current)
         return;
 
@@ -1818,7 +1753,7 @@ void DatabaseTool::onConnectToDatabase() {
     bool success = connection->connectToServer();
     if (success) {
         m_statusLabel->setText("✅ 连接成功: " + connectionName);
-        m_treeWidget->refreshConnection(connectionName);
+        m_treeView->refreshConnection(connectionName);
     } else {
         m_statusLabel->setText("❌ 连接失败: " + connection->getLastError());
     }
@@ -1852,8 +1787,8 @@ void DatabaseTool::onConnectionStateChanged(const QString& name, Connx::Connecti
 
 // 其他槽函数实现
 void DatabaseTool::onEditConnection() {
-    QModelIndex currentIdx = m_treeWidget->currentIndex();
-    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
+    QModelIndex currentIdx = m_treeView->currentIndex();
+    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeView->m_treeModel->getNode(currentIdx) : nullptr;
     if (!current)
         return;
 
@@ -1905,8 +1840,8 @@ void DatabaseTool::onEditConnection() {
 }
 
 void DatabaseTool::onDeleteConnection() {
-    QModelIndex currentIdx = m_treeWidget->currentIndex();
-    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
+    QModelIndex currentIdx = m_treeView->currentIndex();
+    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeView->m_treeModel->getNode(currentIdx) : nullptr;
     if (!current)
         return;
 
@@ -1930,7 +1865,7 @@ void DatabaseTool::onDeleteConnection() {
             }
 
             m_connectionConfigs.remove(connectionName);
-            m_treeWidget->removeConnection(connectionName);
+            m_treeView->removeConnection(connectionName);
 
             updateConnectionStatus();
             m_statusLabel->setText("连接已删除: " + connectionName);
@@ -1941,8 +1876,8 @@ void DatabaseTool::onDeleteConnection() {
 }
 
 void DatabaseTool::onDisconnectFromDatabase() {
-    QModelIndex currentIdx = m_treeWidget->currentIndex();
-    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeWidget->m_treeModel->getNode(currentIdx) : nullptr;
+    QModelIndex currentIdx = m_treeView->currentIndex();
+    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeView->m_treeModel->getNode(currentIdx) : nullptr;
     if (!current)
         return;
 
@@ -1957,7 +1892,7 @@ void DatabaseTool::onDisconnectFromDatabase() {
     if (connection->isConnected()) {
         connection->disconnectFromServer();
         m_statusLabel->setText("已断开连接: " + connectionName);
-        m_treeWidget->refreshConnection(connectionName);
+        m_treeView->refreshConnection(connectionName);
     }
 }
 
@@ -1991,9 +1926,9 @@ QueryTab* DatabaseTool::getCurrentQueryTab() {
     return qobject_cast<QueryTab*>(m_tabWidget->currentWidget());
 }
 
-// DatabaseTreeWidget 新增的辅助方法实现
+// DatabaseTreeView 新增的辅助方法实现
 
-NodeChain DatabaseTreeWidget::buildNodeChainFromIndex(const QModelIndex& index) {
+NodeChain DatabaseTreeView::buildNodeChainFromIndex(const QModelIndex& index) {
     if (!index.isValid()) {
         return NodeChain();
     }
@@ -2008,19 +1943,19 @@ NodeChain DatabaseTreeWidget::buildNodeChainFromIndex(const QModelIndex& index) 
 }
 
 // 重命名的旧方法，现在用作占位符
-NodeChain DatabaseTreeWidget::buildNodeChainFromTreeItem_DEPRECATED(QTreeWidgetItem* item) {
+NodeChain DatabaseTreeView::buildNodeChainFromTreeItem_DEPRECATED(QTreeWidgetItem* item) {
     Q_UNUSED(item)
     return NodeChain(); // 简化实现
 }
 
-Node DatabaseTreeWidget::createNodeFromTreeItem(QTreeWidgetItem* item) {
+Node DatabaseTreeView::createNodeFromTreeItem(QTreeWidgetItem* item) {
     // Deprecated: 简化实现避免编译错误
     Q_UNUSED(item)
     return Node();
 }
 
 
-NodeType DatabaseTreeWidget::convertDbNodeTypeToNodeType(DbNodeType dbNodeType) {
+NodeType DatabaseTreeView::convertDbNodeTypeToNodeType(DbNodeType dbNodeType) {
     switch (dbNodeType) {
     case DbNodeType::Connection: return NodeType::Connection;
     case DbNodeType::Database: return NodeType::Database;
@@ -2048,7 +1983,7 @@ NodeType DatabaseTreeWidget::convertDbNodeTypeToNodeType(DbNodeType dbNodeType) 
     }
 }
 
-bool DatabaseTreeWidget::canExpandNodeType(NodeType type) {
+bool DatabaseTreeView::canExpandNodeType(NodeType type) {
     switch (type) {
     case NodeType::Connection:
     case NodeType::Database:
@@ -2070,20 +2005,20 @@ bool DatabaseTreeWidget::canExpandNodeType(NodeType type) {
     }
 }
 
-void DatabaseTreeWidget::updateTreeItemWithNodes(QTreeWidgetItem* parentItem, const QList<Node>& nodes) {
+void DatabaseTreeView::updateTreeItemWithNodes(QTreeWidgetItem* parentItem, const QList<Node>& nodes) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(parentItem)
     Q_UNUSED(nodes)
 }
 
 
-void DatabaseTreeWidget::populateTreeItemData(QTreeWidgetItem* item, const Node& node) {
+void DatabaseTreeView::populateTreeItemData(QTreeWidgetItem* item, const Node& node) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(item)
     Q_UNUSED(node)
 }
 
-DbNodeType DatabaseTreeWidget::convertNodeTypeToDbNodeType(NodeType nodeType) {
+DbNodeType DatabaseTreeView::convertNodeTypeToDbNodeType(NodeType nodeType) {
     switch (nodeType) {
     case NodeType::Connection: return DbNodeType::Connection;
     case NodeType::Database: return DbNodeType::Database;
@@ -2111,13 +2046,13 @@ DbNodeType DatabaseTreeWidget::convertNodeTypeToDbNodeType(NodeType nodeType) {
     }
 }
 
-void DatabaseTreeWidget::setNodeIcon(QTreeWidgetItem* item, NodeType nodeType) {
+void DatabaseTreeView::setNodeIcon(QTreeWidgetItem* item, NodeType nodeType) {
     // Deprecated: Model/View architecture handles this automatically
     Q_UNUSED(item)
     Q_UNUSED(nodeType)
 }
 
-bool DatabaseTreeWidget::canNodeExpand(NodeType nodeType) {
+bool DatabaseTreeView::canNodeExpand(NodeType nodeType) {
     switch (nodeType) {
     case NodeType::Connection:
     case NodeType::Database:
@@ -2139,7 +2074,7 @@ bool DatabaseTreeWidget::canNodeExpand(NodeType nodeType) {
     }
 }
 
-QString DatabaseTreeWidget::generateNodeTooltip(const Node& node) {
+QString DatabaseTreeView::generateNodeTooltip(const Node& node) {
     QStringList parts;
 
     parts << tr("类型: %1").arg(getNodeTypeDisplayName(node.type));
@@ -2159,7 +2094,7 @@ QString DatabaseTreeWidget::generateNodeTooltip(const Node& node) {
     return parts.join("\n");
 }
 
-QString DatabaseTreeWidget::getNodeTypeDisplayName(NodeType nodeType) {
+QString DatabaseTreeView::getNodeTypeDisplayName(NodeType nodeType) {
     switch (nodeType) {
     case NodeType::Connection: return tr("连接");
     case NodeType::Database: return tr("数据库");

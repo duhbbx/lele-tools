@@ -90,7 +90,7 @@ struct DatabaseTreeNode {
 
     // 获取根节点
     DatabaseTreeNode* root() {
-        DatabaseTreeNode* r = this;
+        auto r = this;
         while (r->parent) {
             r = r->parent;
         }
@@ -153,7 +153,7 @@ private:
 };
 
 // 高性能数据库树模型
-class DatabaseTreeModel : public QAbstractItemModel {
+class DatabaseTreeModel final : public QAbstractItemModel {
     Q_OBJECT
 
 public:
@@ -210,11 +210,11 @@ private:
     DatabaseTreeNode* createNode(const Node& nodeData, DatabaseTreeNode* parent = nullptr);
     void updateNodeData(DatabaseTreeNode* node, const Node& nodeData);
     bool nodeCanExpand(NodeType type) const;
-    QString getNodeIcon(NodeType type) const;
+    static QString getNodeIcon(NodeType type);
     QString getNodeEmoji(NodeType type) const;
 
     // 数据加载
-    void loadRootNodes();
+    static void loadRootNodes();
     void loadNodeChildren(DatabaseTreeNode* node);
     void processLoadedChildren(DatabaseTreeNode* parent, const QList<Node>& children);
 
@@ -249,47 +249,5 @@ private:
     mutable QMutex m_modelMutex;
 };
 
-// 高性能数据库树视图
-class DatabaseTreeView : public QTreeView {
-    Q_OBJECT
-
-public:
-    explicit DatabaseTreeView(QWidget* parent = nullptr);
-
-    void setModel(DatabaseTreeModel* model);
-    DatabaseTreeModel* databaseModel() const;
-
-    // 性能优化设置
-    void setVirtualizationEnabled(bool enabled);
-    void setUniformRowHeights(bool uniform);
-    void setItemsExpandable(bool expandable);
-
-    // 搜索功能
-    void searchNodes(const QString& text);
-    void clearSearch();
-    void expandToNode(const QModelIndex& index);
-
-signals:
-    void nodeDoubleClicked(const QModelIndex& index);
-    void nodeContextMenuRequested(const QModelIndex& index, const QPoint& pos);
-
-protected:
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
-    void contextMenuEvent(QContextMenuEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
-
-private slots:
-    void onExpanded(const QModelIndex& index);
-    void onCollapsed(const QModelIndex& index);
-    void onLoadStarted(const QModelIndex& index);
-    void onLoadFinished(const QModelIndex& index);
-
-private:
-    void setupPerformanceOptimizations();
-    void updateLoadingState(const QModelIndex& index, bool loading);
-
-    DatabaseTreeModel* m_model;
-    QHash<QModelIndex, bool> m_loadingStates;
-};
 
 #endif // DATABASETREEMODEL_H

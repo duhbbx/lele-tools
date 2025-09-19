@@ -26,6 +26,8 @@
 
 {"xxx", "数据库连接工具", "DatabaseTool"},
 
+{"xxx", "IP地址查询", "IpLookupTool"},
+
 {"xxx", "Pdf合并", "PdfMerge"},
 
 {"xxx", "正则测试工具", "RegExTest"},
@@ -81,3 +83,11 @@
 {"xxx", "富文本记事本", "Notepad"},
 
 {"xxx", "媒体文件管理", "MediaManager"},
+
+{"xxx", "图片加水印", "ImageWatermark"},
+
+{"xxx", "WHOIS查询", "WhoisTool"},
+
+{"xxx", "文件对比", "FileCompareTool"},
+
+{"xxx", "血型遗传规律", "BloodTypeTool"},

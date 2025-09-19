@@ -254,7 +254,7 @@ public:
     explicit ConnectionDialog(const Connx::ConnectionConfig& config, QWidget* parent = nullptr);
     
     Connx::ConnectionConfig getConnectionConfig() const;
-    void setConnectionConfig(const Connx::ConnectionConfig& config);
+    void setConnectionConfig(const Connx::ConnectionConfig& config) const;
 
 private slots:
     void onConnectionTypeChanged();
@@ -266,7 +266,7 @@ private:
     void setupLeftPanel();
     void setupRightPanel();
     void createFormControls();
-    void updateFormForType(const QString& type);
+    void updateFormForType(const QString& type) const;
     bool validateInput();
     
     // 主布局
@@ -362,14 +362,14 @@ private:
 };
 
 // 高性能数据库浏览器树
-class DatabaseTreeWidget : public QTreeView {
+class DatabaseTreeView : public QTreeView {
     Q_OBJECT
 
 public:
-    explicit DatabaseTreeWidget(QWidget* parent = nullptr);
+    explicit DatabaseTreeView(QWidget* parent = nullptr);
 
     void refreshConnection(const QString& connectionName);
-    void addConnection(const QString& name, Connx::Connection* connection);
+    void addConnection(const QString& name, Connx::Connection* connection) const;
     void removeConnection(const QString& name);
 
 signals:
@@ -430,12 +430,12 @@ private:
 };
 
 // 主数据库工具类
-class DatabaseTool : public QWidget, public DynamicObjectBase {
+class DatabaseTool final : public QWidget, public DynamicObjectBase {
     Q_OBJECT
 
 public:
     explicit DatabaseTool(QWidget* parent = nullptr);
-    ~DatabaseTool();
+    ~DatabaseTool() override;
 
 private slots:
     void onNewConnection();
@@ -445,7 +445,7 @@ private slots:
     void onDisconnectFromDatabase();
     void onRefreshConnections();
     void onNewQuery();
-    void onCloseTab(int index);
+    void onCloseTab(int index) const;
     void onTabChanged(int index);
     void onConnectionStateChanged(const QString& name, Connx::ConnectionState state);
     void onTableDoubleClicked(const QString& connectionName, const QString& database, const QString& table);
@@ -477,7 +477,7 @@ private:
     QAction* m_newQueryAction;
     
     // 左侧连接树
-    DatabaseTreeWidget* m_treeWidget;
+    DatabaseTreeView* m_treeView;
     
     // 右侧查询标签页
     QTabWidget* m_tabWidget;
