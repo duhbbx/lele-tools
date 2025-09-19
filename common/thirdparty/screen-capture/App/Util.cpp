@@ -4,11 +4,48 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <ShellScalingApi.h>
+#include <QGuiApplication>
+#include <QMutex>
+#include <QDateTime>
+#include <algorithm>
 
 #include "Util.h"
 #include "Lang.h"
 #include "Logger.h"
 #include "App.h"
+
+// 屏幕缓存相关的静态变量
+static QList<QScreen*> s_cachedScreens;
+static QMutex s_screenCacheMutex;
+static bool s_screenCacheValid = false;
+static bool s_screenMonitoringSetup = false;
+
+// GDI资源缓存结构体定义
+struct GDIResourceCache {
+    HDC hScreen;
+    HDC hMemoryDC;
+    HBITMAP hBitmap;
+    int width;
+    int height;
+    bool isValid;
+};
+
+// GDI资源缓存相关的静态变量
+static GDIResourceCache s_gdiCache = {nullptr, nullptr, nullptr, 0, 0, false};
+static QMutex s_gdiCacheMutex;
+
+// 截图结果缓存结构
+struct ScreenshotCache {
+    QImage image;
+    int x, y, w, h;
+    qint64 timestamp;
+    bool isValid;
+};
+
+// 截图结果缓存相关的静态变量
+static ScreenshotCache s_screenshotCache = {QImage(), 0, 0, 0, 0, 0, false};
+static QMutex s_screenshotCacheMutex;
+static const int CACHE_VALID_MS = 100; // 缓存有效期100毫秒
 
 QFont* Util::getIconFont(const int& fontSize)
 {
@@ -97,57 +134,96 @@ QFont* Util::getTextFont(const int& fontSize)
  * @param h 截图区域的高度（像素）
  * @return QImage 截取的图像，格式为ARGB32_Premultiplied
  */
+// GDI资源缓存实现
+void Util::initializeGDICache()
+{
+    QMutexLocker locker(&s_gdiCacheMutex);
+    if (!s_gdiCache.isValid) {
+        s_gdiCache.hScreen = GetDC(NULL);
+        if (s_gdiCache.hScreen) {
+            s_gdiCache.isValid = true;
+            LOG_DEBUG(MODULE_APP, "GDI缓存初始化成功");
+        } else {
+            LOG_ERROR(MODULE_APP, "GDI缓存初始化失败");
+        }
+    }
+}
+
+void Util::cleanupGDICache()
+{
+    QMutexLocker locker(&s_gdiCacheMutex);
+    if (s_gdiCache.isValid) {
+        if (s_gdiCache.hScreen) {
+            ReleaseDC(NULL, s_gdiCache.hScreen);
+            s_gdiCache.hScreen = nullptr;
+        }
+        if (s_gdiCache.hMemoryDC) {
+            DeleteDC(s_gdiCache.hMemoryDC);
+            s_gdiCache.hMemoryDC = nullptr;
+        }
+        if (s_gdiCache.hBitmap) {
+            DeleteObject(s_gdiCache.hBitmap);
+            s_gdiCache.hBitmap = nullptr;
+        }
+        s_gdiCache.isValid = false;
+        LOG_DEBUG(MODULE_APP, "GDI缓存已清理");
+    }
+}
+
 QImage Util::printScreen(const int& x, const int& y, const int& w, const int& h)
 {
-    LOG_INFO(MODULE_APP, QString("=== 开始截屏操作 ==="));
-    LOG_INFO(MODULE_APP, QString("截屏区域: 位置=(%1,%2), 大小=%3x%4").arg(x).arg(y).arg(w).arg(h));
-    
-    // 第1步：获取屏幕设备上下文
-    // GetDC(NULL) 获取整个屏幕的设备上下文
-    HDC hScreen = GetDC(NULL);
+    // 第1步：获取屏幕设备上下文（优先使用缓存）
+    HDC hScreen = nullptr;
+
+    // 快速检查缓存是否可用
+    if (s_gdiCache.isValid && s_gdiCache.hScreen) {
+        hScreen = s_gdiCache.hScreen;
+    } else {
+        // 缓存不可用时直接获取
+        hScreen = GetDC(NULL);
+    }
+
     if (!hScreen) {
-        LOG_ERROR(MODULE_APP, "获取屏幕设备上下文失败");
         return QImage();
     }
-    LOG_DEBUG(MODULE_APP, "成功获取屏幕设备上下文");
     
     // 第2步：创建兼容的内存设备上下文
     // 用于在内存中进行绘图操作，而不是直接在屏幕上绘图
     HDC hDC = CreateCompatibleDC(hScreen);
     if (!hDC) {
-        LOG_ERROR(MODULE_APP, "创建兼容设备上下文失败");
-        ReleaseDC(NULL, hScreen);
+        // 只有在非缓存的情况下才释放hScreen
+        if (!s_gdiCache.isValid || !s_gdiCache.hScreen) {
+            ReleaseDC(NULL, hScreen);
+        }
         return QImage();
     }
-    LOG_DEBUG(MODULE_APP, "成功创建兼容设备上下文");
-    
+
     // 第3步：创建与屏幕兼容的位图
-    // 这个位图将用来存储截取的屏幕内容
     HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, w, h);
     if (!hBitmap) {
-        LOG_ERROR(MODULE_APP, "创建兼容位图失败");
         DeleteDC(hDC);
-        ReleaseDC(NULL, hScreen);
+        if (!s_gdiCache.isValid || !s_gdiCache.hScreen) {
+            ReleaseDC(NULL, hScreen);
+        }
         return QImage();
     }
-    LOG_DEBUG(MODULE_APP, QString("成功创建 %1x%2 的兼容位图").arg(w).arg(h));
-    
+
     // 第4步：将位图选入设备上下文
-    // SelectObject返回之前选中的对象，我们立即删除它以避免内存泄漏
     HGDIOBJ oldBitmap = SelectObject(hDC, hBitmap);
     if (oldBitmap) {
         DeleteObject(oldBitmap);
     }
-    LOG_DEBUG(MODULE_APP, "位图已选入设备上下文");
     
-    // 第5步：执行位块传输（BitBlt）
-    // 将屏幕上指定区域的像素数据复制到内存位图中
-    // SRCCOPY表示直接复制源像素，不进行任何混合操作
+    // 第5步：执行位块传输（BitBlt）- 简化版本
     BOOL bRet = BitBlt(hDC, 0, 0, w, h, hScreen, x, y, SRCCOPY);
+
     if (!bRet) {
-        LOG_ERROR(MODULE_APP, "位块传输(BitBlt)操作失败");
-    } else {
-        LOG_DEBUG(MODULE_APP, "位块传输操作成功完成");
+        DeleteDC(hDC);
+        DeleteObject(hBitmap);
+        if (!s_gdiCache.isValid || !s_gdiCache.hScreen) {
+            ReleaseDC(NULL, hScreen);
+        }
+        return QImage();
     }
     
     // 第6步：创建QImage对象
@@ -183,8 +259,8 @@ QImage Util::printScreen(const int& x, const int& y, const int& w, const int& h)
     // 按照创建的逆序释放所有资源，避免内存泄漏
     DeleteDC(hDC);              // 删除内存设备上下文
     DeleteObject(hBitmap);      // 删除位图对象
-    ReleaseDC(NULL, hScreen);   // 释放屏幕设备上下文
-    LOG_DEBUG(MODULE_APP, "所有GDI资源已清理完成");
+    // 注意：不释放缓存的hScreen，它会在应用程序退出时统一清理
+    LOG_DEBUG(MODULE_APP, "临时GDI资源已清理完成");
     
     // 验证最终图像
     if (img.isNull()) {
@@ -192,8 +268,21 @@ QImage Util::printScreen(const int& x, const int& y, const int& w, const int& h)
     } else {
         LOG_INFO(MODULE_APP, QString("截屏成功完成: 图像大小=%1x%2, 字节数=%3")
                  .arg(img.width()).arg(img.height()).arg(img.sizeInBytes()));
+
+        // 更新截图缓存
+        {
+            QMutexLocker locker(&s_screenshotCacheMutex);
+            s_screenshotCache.image = img;
+            s_screenshotCache.x = x;
+            s_screenshotCache.y = y;
+            s_screenshotCache.w = w;
+            s_screenshotCache.h = h;
+            s_screenshotCache.timestamp = QDateTime::currentMSecsSinceEpoch();
+            s_screenshotCache.isValid = true;
+            LOG_DEBUG(MODULE_APP, "截图结果已缓存");
+        }
     }
-    
+
     LOG_INFO(MODULE_APP, QString("=== 截屏操作完成 ==="));
     return img;
 }
@@ -236,9 +325,69 @@ bool Util::isImagePath(const QString& path)
     }
     return false;
 }
+// 屏幕缓存实现
+QList<QScreen*> Util::getCachedScreens()
+{
+    QMutexLocker locker(&s_screenCacheMutex);
+
+    // 设置监控（只做一次）
+    if (!s_screenMonitoringSetup) {
+        setupScreenChangeMonitoring();
+        s_screenMonitoringSetup = true;
+    }
+
+    // 如果缓存无效，重新获取
+    if (!s_screenCacheValid) {
+        s_cachedScreens = QGuiApplication::screens();
+        s_screenCacheValid = true;
+        LOG_DEBUG(MODULE_APP, QString("屏幕缓存已更新，共 %1 个屏幕").arg(s_cachedScreens.size()));
+    }
+
+    return s_cachedScreens;
+}
+
+void Util::invalidateScreenCache()
+{
+    QMutexLocker locker(&s_screenCacheMutex);
+    s_screenCacheValid = false;
+    LOG_DEBUG(MODULE_APP, "屏幕缓存已失效，下次访问时将重新获取");
+}
+
+void Util::setupScreenChangeMonitoring()
+{
+    // 获取QGuiApplication实例
+    QGuiApplication* app = qobject_cast<QGuiApplication*>(QGuiApplication::instance());
+    if (!app) {
+        LOG_WARNING(MODULE_APP, "无法获取QGuiApplication实例，屏幕监控设置失败");
+        return;
+    }
+
+    // 监听屏幕变化事件
+    QObject::connect(app, &QGuiApplication::screenAdded,
+                     [](QScreen*) {
+                         LOG_INFO(MODULE_APP, "检测到屏幕添加，失效屏幕缓存");
+                         invalidateScreenCache();
+                     });
+
+    QObject::connect(app, &QGuiApplication::screenRemoved,
+                     [](QScreen*) {
+                         LOG_INFO(MODULE_APP, "检测到屏幕移除，失效屏幕缓存");
+                         invalidateScreenCache();
+                     });
+
+    // 监听主屏幕变化
+    QObject::connect(app, &QGuiApplication::primaryScreenChanged,
+                     [](QScreen*) {
+                         LOG_INFO(MODULE_APP, "检测到主屏幕变化，失效屏幕缓存");
+                         invalidateScreenCache();
+                     });
+
+    LOG_DEBUG(MODULE_APP, "屏幕变化监控已设置");
+}
+
 bool Util::posInScreen(const int& x, const int& y)
 {
-    QList<QScreen*> screens = QGuiApplication::screens();
+    QList<QScreen*> screens = getCachedScreens();
     for (QScreen* screen : screens) {
         if (screen->geometry().contains(x, y)) {
             return true;
@@ -246,9 +395,10 @@ bool Util::posInScreen(const int& x, const int& y)
     }
     return false;
 }
+
 QScreen* Util::getScreen(const int& x, const int& y)
 {
-    QList<QScreen*> screens = QGuiApplication::screens();
+    QList<QScreen*> screens = getCachedScreens();
     for (QScreen* screen : screens) {
         if (screen->geometry().contains(x, y)) {
             return screen;

@@ -2,6 +2,7 @@
 
 #include <QMouseEvent>
 #include <QImage>
+#include <QScreen>
 
 class Util
 {
@@ -16,5 +17,15 @@ public:
 	static bool saveToFile(const QImage& img);
 	static void imgToClipboard(const QImage& image);
 	static bool isImagePath(const QString& path);
+
+	// GDI资源缓存相关（公共接口）
+	static void initializeGDICache();
+	static void cleanupGDICache();
+
+private:
+	// 屏幕缓存相关
+	static QList<QScreen*> getCachedScreens();
+	static void invalidateScreenCache();
+	static void setupScreenChangeMonitoring();
 };
 

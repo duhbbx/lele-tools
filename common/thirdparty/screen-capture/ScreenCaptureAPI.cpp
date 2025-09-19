@@ -52,10 +52,13 @@ ScreenCaptureAPI::ScreenCaptureAPI(QObject* parent)
     , m_timeoutTimer(nullptr)
 {
     LOG_INFO("ScreenCaptureAPI", "=== ScreenCaptureAPI构造函数开始 ===");
-    
+
     // 初始化默认配置
     m_config = CaptureConfig();
-    
+
+    // 初始化GDI缓存以提高截图性能
+    Util::initializeGDICache();
+
     // 创建超时定时器
     m_timeoutTimer = new QTimer(this);
     m_timeoutTimer->setSingleShot(true);
@@ -64,17 +67,20 @@ ScreenCaptureAPI::ScreenCaptureAPI(QObject* parent)
         cancelCapture();
         emit captureCompleted(CaptureResult::Timeout, QImage());
     });
-    
+
     LOG_INFO("ScreenCaptureAPI", "=== ScreenCaptureAPI构造函数完成 ===");
 }
 
 ScreenCaptureAPI::~ScreenCaptureAPI()
 {
     LOG_INFO("ScreenCaptureAPI", "=== ScreenCaptureAPI析构函数开始 ===");
-    
+
     // 清理资源
     cleanupCapture();
-    
+
+    // 清理GDI缓存
+    Util::cleanupGDICache();
+
     LOG_INFO("ScreenCaptureAPI", "=== ScreenCaptureAPI析构函数完成 ===");
 }
 

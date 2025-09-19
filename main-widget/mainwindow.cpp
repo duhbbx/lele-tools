@@ -853,8 +853,8 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
     if (msg->message == WM_HOTKEY) {
         if (msg->wParam == HOTKEY_ID) {
             qDebug() << "系统级F1热键被触发";
-            // 在主线程中调用截图功能
-            QMetaObject::invokeMethod(this, "startScreenCapture", Qt::QueuedConnection);
+            // 性能优化：使用DirectConnection立即调用，而不是排队
+            QMetaObject::invokeMethod(this, "startScreenCapture", Qt::DirectConnection);
             return true;
         }
     }
@@ -1139,13 +1139,24 @@ void MainWindow::changeLanguage(const QString& language) {
 
 void MainWindow::setupScreenCapture() {
     qDebug() << "设置截图功能...";
-    
+
 #ifdef WITH_SCREEN_CAPTURE
     // 创建截图API实例
     m_screenCapture = new ScreenCaptureAPI(this);
 
     // 连接截图完成信号
     connect(m_screenCapture, &ScreenCaptureAPI::captureCompleted, this, &MainWindow::onCaptureCompleted);
+
+    // 性能优化：预设置默认配置，减少后续处理时间
+    ScreenCaptureAPI::CaptureConfig defaultConfig;
+    defaultConfig.mode = ScreenCaptureAPI::CaptureMode::SelectArea;
+    defaultConfig.includeDecorations = false;
+    defaultConfig.hideCursor = false;
+    defaultConfig.quality = 95;
+    defaultConfig.format = "PNG";
+    defaultConfig.timeoutMs = 0;
+    m_screenCapture->setDefaultConfig(defaultConfig);
+    qDebug() << "截图默认配置已设置";
 #endif
 
     // 注册系统级全局快捷键F1
@@ -1175,27 +1186,20 @@ void MainWindow::startScreenCapture() {
     qDebug() << "F1快捷键被触发，开始截图...";
 
 #ifdef WITH_SCREEN_CAPTURE
-    // 隐藏主窗口，避免影响截图
+    // 性能优化：立即隐藏主窗口并强制刷新
     this->hide();
-
-    // TODO YANGXU 这个已经去掉了短暂延迟，确保窗口完全隐藏
+    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
     // 设置截图模式为显示工具栏
     App::setCustomCap(2); // 2 = 显示工具栏进行编辑
 
     qDebug() << "开始截图，将显示工具栏";
 
-    // 配置截图参数
-    ScreenCaptureAPI::CaptureConfig config;
-    config.mode = ScreenCaptureAPI::CaptureMode::SelectArea; // 选择区域模式
-    config.includeDecorations = false; // 不包含窗口装饰
-    config.hideCursor = false; // 显示鼠标光标
-    config.quality = 100; // 最高质量
-    config.format = "PNG"; // PNG格式
-    config.timeoutMs = 0; // 禁用超时，允许用户慢慢编辑
+    // 性能优化：直接使用预设的默认配置，无需重新配置
+    qDebug() << "使用预设配置启动截图";
 
-    // 开始截图
-    if (!m_screenCapture->startCapture(config)) {
+    // 开始截图（使用预设的默认配置）
+    if (!m_screenCapture->startCapture()) {
         qDebug() << "启动截图失败";
         // 如果截图失败，重新显示主窗口
         this->show();
