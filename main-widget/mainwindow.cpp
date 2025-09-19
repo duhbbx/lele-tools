@@ -188,10 +188,21 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 void MainWindow::itemClickedSlot(QListWidgetItem* item) {
-    QString stringValue = item->data(Qt::UserRole).toString();
+    QString className = item->data(Qt::UserRole).toString();
     QString title = item->data(Qt::DisplayRole).toString();
-    DynamicObjectBase* object = DynamicObjectFactory::Instance()->CreateObject(stringValue.toStdString());
 
+    // 检查是否已经有相同标题的标签页
+    for (int i = 0; i < rightTabWidget->count(); ++i) {
+        if (rightTabWidget->tabText(i) == title) {
+            // 如果已存在，直接切换到该标签页
+            rightTabWidget->setCurrentIndex(i);
+            this->setWindowTitle(QString("乐乐的工具箱 - %1").arg(title));
+            return;
+        }
+    }
+
+    // 创建新的工具对象（每次都创建新实例，避免widget父容器冲突）
+    DynamicObjectBase* object = DynamicObjectFactory::Instance()->CreateObject(className.toStdString());
     if (!object) {
         // 创建一个错误提示对话框
         QMessageBox errorBox;
@@ -203,27 +214,19 @@ void MainWindow::itemClickedSlot(QListWidgetItem* item) {
         return;
     }
 
-    QWidget* widget = dynamic_cast<QWidget*>(object);
-    if (widget) {
-        // 检查是否已经有相同标题的标签页
-        for (int i = 0; i < rightTabWidget->count(); ++i) {
-            if (rightTabWidget->tabText(i) == title) {
-                // 如果已存在，切换到该标签页
-                rightTabWidget->setCurrentIndex(i);
-                return;
-            }
-        }
-
-        // 添加新的工具页面作为标签页
-        int index = rightTabWidget->addTab(widget, title);
-        rightTabWidget->setCurrentIndex(index);
-
-        // 更新窗口标题显示当前工具
-        this->setWindowTitle(QString("乐乐的工具箱 - %1").arg(title));
-
-        // 更新下拉菜单
-        updateTabDropdownMenu();
+    auto* widget = dynamic_cast<QWidget*>(object);
+    if (!widget) {
+        return;
     }
+    // 添加新的工具页面作为标签页
+    const int index = rightTabWidget->addTab(widget, title);
+    rightTabWidget->setCurrentIndex(index);
+
+    // 更新窗口标题显示当前工具
+    this->setWindowTitle(QString("乐乐的工具箱 - %1").arg(title));
+
+    // 更新下拉菜单
+    updateTabDropdownMenu();
 }
 
 void MainWindow::createTitleBar() {
