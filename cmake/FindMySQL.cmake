@@ -13,7 +13,7 @@
 
 # 尝试查找MySQL
 find_path(MySQL_INCLUDE_DIR
-    NAMES mysql.h
+    NAMES mysql.h mysql/mysql.h mysqlx/xapi.h
     HINTS
         ${MySQL_ROOT_DIR}
         $ENV{MySQL_ROOT_DIR}
@@ -35,6 +35,7 @@ find_path(MySQL_INCLUDE_DIR
         "C:/Program Files (x86)/MySQL/MySQL Server 8.0/include"
         "C:/Program Files (x86)/MySQL/MySQL Server 5.7/include"
         "C:/mysql/include"
+        "C:/mysql-connector/include"
     PATH_SUFFIXES
         mysql
         include
@@ -43,7 +44,7 @@ find_path(MySQL_INCLUDE_DIR
 
 # 查找库文件
 find_library(MySQL_LIBRARY
-    NAMES mysqlclient mysql libmysql libmysqlclient
+    NAMES mysqlclient mysql libmysql libmysqlclient mysqlcppconn8 mysqlcppconn
     HINTS
         ${MySQL_ROOT_DIR}
         $ENV{MySQL_ROOT_DIR}
@@ -64,6 +65,7 @@ find_library(MySQL_LIBRARY
         "C:/Program Files (x86)/MySQL/MySQL Server 8.0/lib"
         "C:/Program Files (x86)/MySQL/MySQL Server 5.7/lib"
         "C:/mysql/lib"
+        "C:/mysql-connector/lib64"
     PATH_SUFFIXES
         mysql
         lib
@@ -81,6 +83,7 @@ if(WIN32)
             "C:/vcpkg/installed/x64-windows/lib"
             "C:/Program Files/MySQL/MySQL Server 8.0/lib"
             "C:/Program Files/MySQL/MySQL Server 5.7/lib"
+            "C:/mysql-connector/lib64"
     )
 
     find_library(MySQL_CRYPTO_LIBRARY
@@ -93,6 +96,7 @@ if(WIN32)
             "C:/vcpkg/installed/x64-windows/lib"
             "C:/Program Files/MySQL/MySQL Server 8.0/lib"
             "C:/Program Files/MySQL/MySQL Server 5.7/lib"
+            "C:/mysql-connector/lib64"
     )
 endif()
 

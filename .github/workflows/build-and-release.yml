@@ -799,7 +799,7 @@ jobs:
             "-DCMAKE_PREFIX_PATH=$CMakePrefixPath",                                 # Qt / OpenCV / vcpkg 路径
             "-DPCAP_INCLUDE_DIR=$npcapDir\Include",                                 # Npcap Include
             "-DPCAP_LIBRARY=$npcapDir\Lib\x64\wpcap.lib",                           # Npcap wpcap.lib
-            "-DPACKET_LIBRARY=$npcapDir\Lib\x64\packet.lib"                         # Packet.lib
+            "-DPACKET_LIBRARY=$npcapDir\Lib\x64\packet.lib",                        # Packet.lib
             "-DENVIRONMENT=prod"                                                    # 环境
         )
         
@@ -818,11 +818,21 @@ jobs:
             $CMakeArgs += "-DWITH_OPENCV=OFF"                       # 禁用OpenCV功能
         }
 
-        # 配置MySQL支持（如果vcpkg可用）
-        if ($VcpkgToolchain -and (Test-Path $VcpkgToolchain)) {
+        # 配置MySQL支持
+        $MySQLPath = "C:\mysql-connector"
+        if ((Test-Path $MySQLPath) -or ($VcpkgToolchain -and (Test-Path $VcpkgToolchain))) {
             $CMakeArgs += "-DWITH_MYSQL=ON"                         # 启用MySQL功能
+
+            # 如果有直接安装的MySQL Connector，指定路径
+            if (Test-Path $MySQLPath) {
+                $CMakeArgs += "-DMYSQL_INCLUDE_DIR=$MySQLPath\include"
+                $CMakeArgs += "-DMYSQL_LIB_DIR=$MySQLPath\lib64"
+                $CMakeArgs += "-DMYSQL_ROOT_DIR=$MySQLPath"
+                Write-Host "Using MySQL Connector at: $MySQLPath" -ForegroundColor Green
+            }
         } else {
             $CMakeArgs += "-DWITH_MYSQL=OFF"                        # 禁用MySQL功能
+            Write-Host "[WARNING] MySQL Connector not found, disabling MySQL support" -ForegroundColor Yellow
         }
         
         Write-Host "Running cmake with args: $($CMakeArgs -join ' ')" -ForegroundColor Yellow
