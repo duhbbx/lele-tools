@@ -8,12 +8,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(LoadEnvironment)
 
 # 设置默认环境（可通过命令行覆盖： -DENVIRONMENT=xxx）
-if(NOT DEFINED ENVIRONMENT)
+if(DEFINED ENVIRONMENT)
     set(ENVIRONMENT "台式机" CACHE STRING "Environment name for .env file")
+    # 加载环境文件（会自动设置为配置依赖，文件修改时会触发重新配置）
+    load_environment_file("${ENVIRONMENT}")
 endif()
-
-# 加载环境文件（会自动设置为配置依赖，文件修改时会触发重新配置）
-load_environment_file("${ENVIRONMENT}")
 
 # 验证关键的环境变量是否存在（可选）
 # require_environment_variables(REDIS_PLUS_PLUS_INCLUDE_DIR REDIS_PLUS_PLUS_LIBRARY)

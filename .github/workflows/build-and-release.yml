@@ -319,32 +319,54 @@ jobs:
         try {
             # 使用MySQL官方预编译的Windows安装包
             Write-Host "Downloading MySQL Connector/C++ pre-built binaries..." -ForegroundColor Yellow
-            $MySQLUrl = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
+            # 使用最新版本的MySQL Connector/C++ 9.4.0
+            $MySQLUrl = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-9.4.0-winx64.zip"
             $MySQLZip = "mysql-connector.zip"
 
             # 下载MySQL Connector（带重试机制）
             $maxRetries = 3
             $retryCount = 0
-            while ($retryCount -lt $maxRetries) {
-                try {
-                    Write-Host "Downloading MySQL Connector (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
-                    Invoke-WebRequest -Uri $MySQLUrl -OutFile $MySQLZip -UseBasicParsing -TimeoutSec 300
+            $downloadSuccess = $false
 
-                    # 验证下载文件大小
-                    $fileSize = (Get-Item $MySQLZip).Length
-                    Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Yellow
+            # 主要下载链接
+            $urls = @(
+                $MySQLUrl,
+                "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"  # 备用版本
+            )
 
-                    if ($fileSize -lt 1MB) {
-                        throw "Downloaded file too small, possibly corrupted"
+            foreach ($url in $urls) {
+                if ($downloadSuccess) { break }
+                Write-Host "Trying download from: $url" -ForegroundColor Yellow
+
+                $retryCount = 0
+                while ($retryCount -lt $maxRetries -and -not $downloadSuccess) {
+                    try {
+                        Write-Host "Downloading MySQL Connector (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
+                        Invoke-WebRequest -Uri $url -OutFile $MySQLZip -UseBasicParsing -TimeoutSec 300
+                        # 验证下载文件大小
+                        $fileSize = (Get-Item $MySQLZip).Length
+                        Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Yellow
+
+                        if ($fileSize -lt 1MB) {
+                            throw "Downloaded file too small, possibly corrupted"
+                        }
+
+                        $downloadSuccess = $true
+                        break
+                    } catch {
+                        $retryCount++
+                        if ($retryCount -eq $maxRetries) {
+                            Write-Host "Failed to download from $url after $maxRetries attempts" -ForegroundColor Red
+                            break
+                        }
+                        Write-Host "Download failed, retrying in 10 seconds..." -ForegroundColor Yellow
+                        Start-Sleep -Seconds 10
                     }
-
-                    break
-                } catch {
-                    $retryCount++
-                    if ($retryCount -eq $maxRetries) { throw }
-                    Write-Host "Download failed, retrying in 10 seconds..." -ForegroundColor Yellow
-                    Start-Sleep -Seconds 10
                 }
+            }
+
+            if (-not $downloadSuccess) {
+                throw "Failed to download MySQL Connector from all sources"
             }
 
             # 解压MySQL Connector
