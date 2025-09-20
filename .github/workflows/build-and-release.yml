@@ -305,16 +305,49 @@ jobs:
       id: mysql-cache
       with:
         path: C:\mysql-connector
-        key: ${{ runner.os }}-mysql-connector-8.0.33-v1
+        key: ${{ runner.os }}-mysql-connector-9.4.0-v1
         restore-keys: |
-          ${{ runner.os }}-mysql-connector-8.0.33
+          ${{ runner.os }}-mysql-connector-9.4.0
+          ${{ runner.os }}-mysql-connector-8.0.33-v1
           ${{ runner.os }}-mysql-connector
 
     - name: Setup MySQL Connector/C++
-      if: steps.mysql-cache.outputs.cache-hit != 'true'
       shell: powershell
       run: |
         Write-Host "Setting up MySQL Connector/C++..." -ForegroundColor Green
+
+        # 检查是否已经安装（缓存命中）
+        $MySQLPath = "C:\mysql-connector"
+        if (Test-Path $MySQLPath) {
+            Write-Host "[OK] MySQL Connector found in cache: $MySQLPath" -ForegroundColor Green
+
+            # 验证关键文件是否存在
+            $keyFiles = @(
+                "$MySQLPath\include\mysqlx\xapi.h",
+                "$MySQLPath\include\mysql\mysql.h",
+                "$MySQLPath\lib64\mysqlcppconn8.lib"
+            )
+
+            $allFound = $true
+            foreach ($file in $keyFiles) {
+                if (Test-Path $file) {
+                    Write-Host "[OK] Found: $file" -ForegroundColor Green
+                } else {
+                    Write-Host "[ERROR] Missing critical file: $file" -ForegroundColor Red
+                    $allFound = $false
+                }
+            }
+
+            if ($allFound) {
+                Write-Host "[OK] MySQL Connector cache validation passed" -ForegroundColor Green
+                exit 0  # 成功退出，跳过下载
+            } else {
+                Write-Host "[WARNING] MySQL Connector cache corrupted, will re-download" -ForegroundColor Yellow
+                Remove-Item $MySQLPath -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        Write-Host "Downloading MySQL Connector/C++..." -ForegroundColor Yellow
 
         try {
             # 使用MySQL官方预编译的Windows安装包
@@ -423,35 +456,62 @@ jobs:
             Remove-Item $MySQLZip -Force -ErrorAction SilentlyContinue
 
         } catch {
-            Write-Host "Failed to install MySQL Connector: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "MySQL Connector is optional for this build, continuing without it..." -ForegroundColor Yellow
-
-            # 创建最小的mysql目录防止构建失败
-            New-Item -ItemType Directory -Path "C:\mysql-connector\include\mysql" -Force | Out-Null
-            $dummyMySQLContent = "// Dummy MySQL header for builds without MySQL"
-            $dummyMySQLContent | Out-File -FilePath "C:\mysql-connector\include\mysql\mysql.h" -Encoding UTF8
-
-            Write-Host "Created dummy MySQL structure for build compatibility" -ForegroundColor Yellow
+            Write-Host "CRITICAL ERROR: Failed to install MySQL Connector: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "MySQL Connector is REQUIRED for this project!" -ForegroundColor Red
+            throw "MySQL Connector installation failed - Build cannot continue"
         }
+
+        # 最终验证MySQL安装
+        Write-Host "Verifying MySQL Connector installation..." -ForegroundColor Yellow
+        $MySQLPath = "C:\mysql-connector"
+
+        # 必需文件列表
+        $requiredFiles = @(
+            "$MySQLPath\include\mysqlx\xapi.h",
+            "$MySQLPath\include\mysql\mysql.h",
+            "$MySQLPath\lib64\mysqlcppconn8.lib"
+        )
+
+        $missingFiles = @()
+        foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+                $missingFiles += $file
+                Write-Host "[ERROR] Required file missing: $file" -ForegroundColor Red
+            } else {
+                Write-Host "[OK] Found required file: $file" -ForegroundColor Green
+            }
+        }
+
+        if ($missingFiles.Count -gt 0) {
+            Write-Host "CRITICAL ERROR: MySQL Connector installation incomplete!" -ForegroundColor Red
+            Write-Host "Missing $($missingFiles.Count) required files" -ForegroundColor Red
+            throw "MySQL Connector verification failed - Required files missing"
+        }
+
+        Write-Host "[OK] MySQL Connector installation verified successfully" -ForegroundColor Green
 
     - name: Configure MySQL Environment
       shell: powershell
       run: |
         $MySQLPath = "C:\mysql-connector"
-        if (Test-Path $MySQLPath) {
-            Write-Host "[OK] Configuring MySQL Connector environment..." -ForegroundColor Green
 
-            # 设置MySQL环境变量供后续步骤使用
-            echo "MYSQL_DIR=$MySQLPath" >> $env:GITHUB_ENV
+        # MySQL必须存在
+        if (-not (Test-Path $MySQLPath)) {
+            throw "CRITICAL ERROR: MySQL Connector not found at $MySQLPath - This should not happen!"
+        }
 
-            # 添加MySQL bin目录到PATH（如果存在）
-            $MySQLBinPath = "$MySQLPath\lib64"
-            if (Test-Path $MySQLBinPath) {
-                echo "$MySQLBinPath" >> $env:GITHUB_PATH
-                Write-Host "[OK] Added MySQL lib64 to PATH: $MySQLBinPath" -ForegroundColor Green
-            }
+        Write-Host "[OK] Configuring MySQL Connector environment..." -ForegroundColor Green
+
+        # 设置MySQL环境变量供后续步骤使用
+        echo "MYSQL_DIR=$MySQLPath" >> $env:GITHUB_ENV
+
+        # 添加MySQL lib目录到PATH
+        $MySQLBinPath = "$MySQLPath\lib64"
+        if (Test-Path $MySQLBinPath) {
+            echo "$MySQLBinPath" >> $env:GITHUB_PATH
+            Write-Host "[OK] Added MySQL lib64 to PATH: $MySQLBinPath" -ForegroundColor Green
         } else {
-            Write-Host "[WARNING] MySQL Connector not found, building without MySQL support" -ForegroundColor Yellow
+            throw "CRITICAL ERROR: MySQL lib64 directory not found at $MySQLBinPath"
         }
 
 
@@ -818,22 +878,20 @@ jobs:
             $CMakeArgs += "-DWITH_OPENCV=OFF"                       # 禁用OpenCV功能
         }
 
-        # 配置MySQL支持
+        # 配置MySQL支持（必需）
         $MySQLPath = "C:\mysql-connector"
-        if ((Test-Path $MySQLPath) -or ($VcpkgToolchain -and (Test-Path $VcpkgToolchain))) {
-            $CMakeArgs += "-DWITH_MYSQL=ON"                         # 启用MySQL功能
 
-            # 如果有直接安装的MySQL Connector，指定路径
-            if (Test-Path $MySQLPath) {
-                $CMakeArgs += "-DMYSQL_INCLUDE_DIR=$MySQLPath\include"
-                $CMakeArgs += "-DMYSQL_LIB_DIR=$MySQLPath\lib64"
-                $CMakeArgs += "-DMYSQL_ROOT_DIR=$MySQLPath"
-                Write-Host "Using MySQL Connector at: $MySQLPath" -ForegroundColor Green
-            }
-        } else {
-            $CMakeArgs += "-DWITH_MYSQL=OFF"                        # 禁用MySQL功能
-            Write-Host "[WARNING] MySQL Connector not found, disabling MySQL support" -ForegroundColor Yellow
+        # 验证MySQL Connector存在
+        if (-not (Test-Path $MySQLPath)) {
+            throw "CRITICAL ERROR: MySQL Connector not found at $MySQLPath - Build cannot continue"
         }
+
+        Write-Host "Configuring MySQL Connector for CMake..." -ForegroundColor Green
+        $CMakeArgs += "-DWITH_MYSQL=ON"                             # 启用MySQL功能（必需）
+        $CMakeArgs += "-DMYSQL_INCLUDE_DIR=$MySQLPath\include"      # MySQL头文件路径
+        $CMakeArgs += "-DMYSQL_LIB_DIR=$MySQLPath\lib64"            # MySQL库路径
+        $CMakeArgs += "-DMYSQL_ROOT_DIR=$MySQLPath"                 # MySQL根目录
+        Write-Host "[OK] MySQL Connector configured at: $MySQLPath" -ForegroundColor Green
         
         Write-Host "Running cmake with args: $($CMakeArgs -join ' ')" -ForegroundColor Yellow
         & cmake @CMakeArgs    # 执行CMake配置
