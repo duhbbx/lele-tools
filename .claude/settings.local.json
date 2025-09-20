@@ -28,7 +28,8 @@
       "Bash(start:*)",
       "Bash(taskkill:*)",
       "Bash(timeout 30 cmake --build build-test)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
