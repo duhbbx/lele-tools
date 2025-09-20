@@ -45,7 +45,7 @@ jobs:
   # Windows构建任务
   # 负责构建Windows版本的可执行文件、安装包和便携包
   build-windows:
-    runs-on: windows-latest    # 使用最新的Windows虚拟机
+    runs-on: windows-latest    # Use latest Windows virtual machine
     
     steps:
     # 步骤1: 检出源代码
@@ -639,16 +639,16 @@ jobs:
         # 显示缓存大小估算
         Write-Host "`n=== 预估下载时间节省 ===" -ForegroundColor Cyan
         if ($npcapCacheHit -eq "true") {
-            Write-Host "Npcap SDK: 节省 ~30 秒" -ForegroundColor Green
+            Write-Host "Npcap SDK: save ~30 seconds" -ForegroundColor Green
         }
         if ($opencvCacheHit -eq "true") {
-            Write-Host "OpenCV: 节省 ~2-5 分钟" -ForegroundColor Green
+            Write-Host "OpenCV: save ~2-5 minutes" -ForegroundColor Green
         }
         if ($mysqlCacheHit -eq "true") {
-            Write-Host "MySQL Connector: 节省 ~1-2 分钟" -ForegroundColor Green
+            Write-Host "MySQL Connector: save ~1-2 minutes" -ForegroundColor Green
         }
         if ($vcpkgCacheHit -eq "true") {
-            Write-Host "vcpkg依赖: 节省 ~5-8 分钟" -ForegroundColor Green
+            Write-Host "vcpkg dependencies: save ~5-8 minutes" -ForegroundColor Green
         }
 
     - name: Set version
