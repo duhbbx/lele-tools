@@ -45,7 +45,7 @@ jobs:
   # Windows构建任务
   # 负责构建Windows版本的可执行文件、安装包和便携包
   build-windows:
-    runs-on: windows-latest    # 使用最新的Windows虚拟机
+    runs-on: windows-latest    # Use latest Windows virtual machine
     
     steps:
     # 步骤1: 检出源代码
@@ -91,25 +91,25 @@ jobs:
       run: |
         $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
         if (Test-Path $destDir) {
-            Write-Host "✅ Npcap SDK directory exists: $destDir" -ForegroundColor Green
+            Write-Host "[OK] Npcap SDK directory exists: $destDir" -ForegroundColor Green
 
             # 检查关键文件
             $includeDir = "$destDir\Include"
             $libDir = "$destDir\Lib\x64"
 
             if (Test-Path "$includeDir\pcap.h") {
-                Write-Host "✅ Found pcap.h" -ForegroundColor Green
+                Write-Host "[OK] Found pcap.h" -ForegroundColor Green
             } else {
-                Write-Host "❌ pcap.h not found" -ForegroundColor Red
+                Write-Host "[ERROR] pcap.h not found" -ForegroundColor Red
             }
 
             if (Test-Path "$libDir\wpcap.lib") {
-                Write-Host "✅ Found wpcap.lib" -ForegroundColor Green
+                Write-Host "[OK] Found wpcap.lib" -ForegroundColor Green
             } else {
-                Write-Host "❌ wpcap.lib not found" -ForegroundColor Red
+                Write-Host "[ERROR] wpcap.lib not found" -ForegroundColor Red
             }
         } else {
-            Write-Host "❌ Npcap SDK directory not found!" -ForegroundColor Red
+            Write-Host "[ERROR] Npcap SDK directory not found!" -ForegroundColor Red
             exit 1
         }
 
@@ -133,137 +133,149 @@ jobs:
         Write-Host "Setting up OpenCV ${{ env.OPENCV_VERSION }}..." -ForegroundColor Green
 
         try {
-            # Use vcpkg to install OpenCV for more reliable installation
-            Write-Host "Installing OpenCV via vcpkg..." -ForegroundColor Yellow
+            # 直接使用OpenCV官方预编译的exe安装包
+            Write-Host "Downloading OpenCV pre-built binaries..." -ForegroundColor Yellow
+            $OpenCVUrl = "https://github.com/opencv/opencv/releases/download/${{ env.OPENCV_VERSION }}/opencv-${{ env.OPENCV_VERSION }}-windows.exe"
+            $OpenCVInstaller = "opencv-installer.exe"
 
-            # Ensure vcpkg is available
-            if (!(Test-Path "C:\vcpkg\vcpkg.exe")) {
-                Write-Host "❌ vcpkg not found, using alternative method" -ForegroundColor Red
+            # 下载OpenCV安装包（带重试机制）
+            $maxRetries = 3
+            $retryCount = 0
+            while ($retryCount -lt $maxRetries) {
+                try {
+                    Write-Host "Downloading OpenCV (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
+                    Invoke-WebRequest -Uri $OpenCVUrl -OutFile $OpenCVInstaller -UseBasicParsing -TimeoutSec 300
 
-                # Fallback: Download pre-built OpenCV from reliable source
-                Write-Host "Using pre-built OpenCV binaries..." -ForegroundColor Yellow
-                $OpenCVUrl = "https://sourceforge.net/projects/opencvlibrary/files/4.10.0/opencv-4.10.0-windows.exe/download"
-                $OpenCVInstaller = "opencv-installer.exe"
+                    # 验证下载文件大小
+                    $fileSize = (Get-Item $OpenCVInstaller).Length
+                    Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Yellow
 
-                # Download with retry logic
-                $maxRetries = 3
-                $retryCount = 0
-                while ($retryCount -lt $maxRetries) {
-                    try {
-                        Write-Host "Downloading OpenCV (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
-                        Invoke-WebRequest -Uri $OpenCVUrl -OutFile $OpenCVInstaller -UseBasicParsing -TimeoutSec 300
-                        break
-                    } catch {
-                        $retryCount++
-                        if ($retryCount -eq $maxRetries) { throw }
-                        Write-Host "Download failed, retrying in 10 seconds..." -ForegroundColor Yellow
-                        Start-Sleep -Seconds 10
+                    if ($fileSize -lt 1MB) {
+                        throw "Downloaded file too small, possibly corrupted"
                     }
+
+                    break
+                } catch {
+                    $retryCount++
+                    if ($retryCount -eq $maxRetries) { throw }
+                    Write-Host "Download failed, retrying in 10 seconds..." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 10
+                }
+            }
+
+            # 使用7-Zip解压（OpenCV exe实际上是自解压压缩包）
+            Write-Host "Extracting OpenCV..." -ForegroundColor Yellow
+
+            # 首先尝试直接执行自解压
+            try {
+                Write-Host "Trying direct extraction..." -ForegroundColor Yellow
+                # OpenCV官方exe使用的是7-Zip SFX格式，需要使用 -o 参数指定输出目录
+                $extractArgs = @("-oC:\", "-y")
+                $process = Start-Process -FilePath $OpenCVInstaller -ArgumentList $extractArgs -Wait -PassThru -NoNewWindow
+
+                if ($process.ExitCode -ne 0) {
+                    throw "Self-extraction failed with exit code: $($process.ExitCode)"
                 }
 
-                # Extract using different methods
-                Write-Host "Extracting OpenCV..." -ForegroundColor Yellow
+                Write-Host "[OK] Direct extraction successful" -ForegroundColor Green
+            } catch {
+                Write-Host "Direct extraction failed, trying 7-Zip..." -ForegroundColor Yellow
 
-                # Method 1: Try as self-extracting archive
-                try {
-                    $process = Start-Process -FilePath $OpenCVInstaller -ArgumentList "-gm2", "-InstDir=C:\opencv" -Wait -PassThru -NoNewWindow
-                    if ($process.ExitCode -ne 0) {
-                        throw "Self-extraction failed"
-                    }
-                } catch {
-                    Write-Host "Self-extraction failed, trying alternative..." -ForegroundColor Yellow
-
-                    # Method 2: Rename and extract as zip
+                # 尝试使用7-Zip
+                $7zipPath = "${env:ProgramFiles}\7-Zip\7z.exe"
+                if (Test-Path $7zipPath) {
+                    & $7zipPath x $OpenCVInstaller "-oC:\" -y
+                    Write-Host "[OK] 7-Zip extraction completed" -ForegroundColor Green
+                } else {
+                    # 最后尝试：重命名为zip文件并解压
+                    Write-Host "7-Zip not found, trying PowerShell extraction..." -ForegroundColor Yellow
                     $tempZip = "opencv-temp.zip"
                     Copy-Item $OpenCVInstaller $tempZip
 
-                    # Create opencv directory structure manually
-                    New-Item -ItemType Directory -Path "C:\opencv" -Force | Out-Null
-
                     try {
-                        Expand-Archive -Path $tempZip -DestinationPath "C:\" -Force
-
-                        # Move files if they were extracted to a subdirectory
-                        $extractedPaths = @(
-                            "C:\opencv-${{ env.OPENCV_VERSION }}-windows",
-                            "C:\opencv-4.10.0-windows",
-                            "C:\opencv-${{ env.OPENCV_VERSION }}",
-                            "C:\opencv"
-                        )
-
-                        foreach ($path in $extractedPaths) {
-                            if (Test-Path $path -and $path -ne "C:\opencv") {
-                                Write-Host "Moving from $path to C:\opencv" -ForegroundColor Yellow
-                                Get-ChildItem $path | Move-Item -Destination "C:\opencv" -Force
-                                Remove-Item $path -Force -Recurse -ErrorAction SilentlyContinue
-                                break
-                            }
-                        }
+                        Add-Type -AssemblyName System.IO.Compression.FileSystem
+                        [System.IO.Compression.ZipFile]::ExtractToDirectory($tempZip, "C:\")
+                        Write-Host "[OK] PowerShell extraction completed" -ForegroundColor Green
                     } finally {
                         Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
                     }
                 }
+            }
 
-                Remove-Item $OpenCVInstaller -Force -ErrorAction SilentlyContinue
-            } else {
-                # Use vcpkg to install OpenCV
-                Write-Host "Installing OpenCV via vcpkg..." -ForegroundColor Yellow
-                & "C:\vcpkg\vcpkg.exe" install opencv4:x64-windows --triplet=x64-windows
+            # 检查并移动文件到正确位置
+            $possiblePaths = @(
+                "C:\opencv-${{ env.OPENCV_VERSION }}-windows",
+                "C:\opencv-4.10.0-windows",
+                "C:\opencv"
+            )
 
-                # Create symlink to expected location
-                if (Test-Path "C:\vcpkg\installed\x64-windows\include\opencv2") {
-                    New-Item -ItemType Directory -Path "C:\opencv\build" -Force | Out-Null
-                    New-Item -ItemType SymbolicLink -Path "C:\opencv\build\include" -Target "C:\vcpkg\installed\x64-windows\include" -Force | Out-Null
-                    New-Item -ItemType SymbolicLink -Path "C:\opencv\build\x64" -Target "C:\vcpkg\installed\x64-windows" -Force | Out-Null
+            $foundPath = $null
+            foreach ($path in $possiblePaths) {
+                if (Test-Path $path) {
+                    $foundPath = $path
+                    Write-Host "Found OpenCV at: $path" -ForegroundColor Green
+                    break
                 }
             }
 
-            # Verify installation
+            if ($foundPath -and $foundPath -ne "C:\opencv") {
+                Write-Host "Moving OpenCV from $foundPath to C:\opencv..." -ForegroundColor Yellow
+                if (Test-Path "C:\opencv") {
+                    Remove-Item "C:\opencv" -Recurse -Force
+                }
+                Move-Item $foundPath "C:\opencv"
+            }
+
+            # 验证安装
             $OpenCVPath = "C:\opencv"
             if (Test-Path $OpenCVPath) {
-                Write-Host "✅ OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
+                Write-Host "[OK] OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
 
-                # Check for different possible locations
-                $possibleIncludes = @(
+                # 验证关键文件
+                $keyFiles = @(
                     "$OpenCVPath\build\include\opencv2\opencv.hpp",
-                    "$OpenCVPath\include\opencv2\opencv.hpp",
-                    "$OpenCVPath\opencv2\opencv.hpp"
+                    "$OpenCVPath\build\x64\vc16\lib\opencv_world*.lib"
                 )
 
-                $foundInclude = $false
-                foreach ($include in $possibleIncludes) {
-                    if (Test-Path $include) {
-                        Write-Host "✅ OpenCV headers found at: $include" -ForegroundColor Green
-                        $foundInclude = $true
-                        break
+                $allFound = $true
+                foreach ($pattern in $keyFiles) {
+                    $files = Get-ChildItem $pattern -ErrorAction SilentlyContinue
+                    if ($files) {
+                        Write-Host "[OK] Found: $($files[0].FullName)" -ForegroundColor Green
+                    } else {
+                        Write-Host "[WARNING] Missing: $pattern" -ForegroundColor Yellow
+                        $allFound = $false
                     }
                 }
 
-                if (-not $foundInclude) {
-                    Write-Host "⚠️ OpenCV headers not found at expected locations" -ForegroundColor Yellow
-                    Write-Host "Searching for opencv headers..." -ForegroundColor Yellow
-                    Get-ChildItem -Path $OpenCVPath -Recurse -Filter "opencv.hpp" -ErrorAction SilentlyContinue | ForEach-Object {
-                        Write-Host "  Found: $($_.FullName)" -ForegroundColor Gray
-                    }
+                if ($allFound) {
+                    Write-Host "[OK] OpenCV installation verification passed" -ForegroundColor Green
+                } else {
+                    Write-Host "[WARNING] Some OpenCV files may be missing" -ForegroundColor Yellow
                 }
 
-                # List directory structure for debugging
-                Write-Host "OpenCV directory structure:" -ForegroundColor Yellow
-                Get-ChildItem -Path $OpenCVPath -ErrorAction SilentlyContinue | ForEach-Object {
-                    Write-Host "  $($_.Name)" -ForegroundColor Gray
+                # 显示目录结构用于调试
+                Write-Host "OpenCV directory structure:" -ForegroundColor Cyan
+                Get-ChildItem $OpenCVPath -Directory | Select-Object -First 5 | ForEach-Object {
+                    Write-Host "  [DIR] $($_.Name)" -ForegroundColor Gray
                 }
             } else {
-                Write-Host "❌ OpenCV directory not created" -ForegroundColor Red
-                throw "OpenCV installation failed"
+                throw "OpenCV directory not found after extraction"
             }
-        }
-        catch {
-            Write-Host "❌ Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Red
+
+            # 清理安装包
+            Remove-Item $OpenCVInstaller -Force -ErrorAction SilentlyContinue
+
+        } catch {
+            Write-Host "Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Red
             Write-Host "OpenCV is optional for this build, continuing without it..." -ForegroundColor Yellow
 
-            # Create minimal opencv directory to prevent build failures
+            # 创建最小的opencv目录防止构建失败
             New-Item -ItemType Directory -Path "C:\opencv\build\include\opencv2" -Force | Out-Null
-            "// Dummy OpenCV header for builds without OpenCV" | Out-File -FilePath "C:\opencv\build\include\opencv2\opencv.hpp" -Encoding UTF8
+            $dummyContent = "// Dummy OpenCV header for builds without OpenCV"
+            $dummyContent | Out-File -FilePath "C:\opencv\build\include\opencv2\opencv.hpp" -Encoding UTF8
+
+            Write-Host "Created dummy OpenCV structure for build compatibility" -ForegroundColor Yellow
         }
 
     - name: Configure OpenCV Environment
@@ -271,7 +283,7 @@ jobs:
       run: |
         $OpenCVPath = "C:\opencv"
         if (Test-Path $OpenCVPath) {
-            Write-Host "✅ Configuring OpenCV environment..." -ForegroundColor Green
+            Write-Host "[OK] Configuring OpenCV environment..." -ForegroundColor Green
 
             # Set environment variable for later steps
             echo "OPENCV_DIR=C:\opencv\build" >> $env:GITHUB_ENV
@@ -280,14 +292,148 @@ jobs:
             $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
             if (Test-Path $OpenCVBinPath) {
                 echo "$OpenCVBinPath" >> $env:GITHUB_PATH
-                Write-Host "✅ Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
+                Write-Host "[OK] Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
             }
         } else {
-            Write-Host "⚠️ OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
+            Write-Host "[WARNING] OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
+        }
+
+    # 步骤3: 缓存和安装MySQL Connector/C++
+    # MySQL Connector/C++是MySQL官方的C++客户端库，用于数据库连接
+    - name: Cache MySQL Connector
+      uses: actions/cache@v4
+      id: mysql-cache
+      with:
+        path: C:\mysql-connector
+        key: ${{ runner.os }}-mysql-connector-8.0.33-v1
+        restore-keys: |
+          ${{ runner.os }}-mysql-connector-8.0.33
+          ${{ runner.os }}-mysql-connector
+
+    - name: Setup MySQL Connector/C++
+      if: steps.mysql-cache.outputs.cache-hit != 'true'
+      shell: powershell
+      run: |
+        Write-Host "Setting up MySQL Connector/C++..." -ForegroundColor Green
+
+        try {
+            # 使用MySQL官方预编译的Windows安装包
+            Write-Host "Downloading MySQL Connector/C++ pre-built binaries..." -ForegroundColor Yellow
+            $MySQLUrl = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
+            $MySQLZip = "mysql-connector.zip"
+
+            # 下载MySQL Connector（带重试机制）
+            $maxRetries = 3
+            $retryCount = 0
+            while ($retryCount -lt $maxRetries) {
+                try {
+                    Write-Host "Downloading MySQL Connector (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
+                    Invoke-WebRequest -Uri $MySQLUrl -OutFile $MySQLZip -UseBasicParsing -TimeoutSec 300
+
+                    # 验证下载文件大小
+                    $fileSize = (Get-Item $MySQLZip).Length
+                    Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Yellow
+
+                    if ($fileSize -lt 1MB) {
+                        throw "Downloaded file too small, possibly corrupted"
+                    }
+
+                    break
+                } catch {
+                    $retryCount++
+                    if ($retryCount -eq $maxRetries) { throw }
+                    Write-Host "Download failed, retrying in 10 seconds..." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 10
+                }
+            }
+
+            # 解压MySQL Connector
+            Write-Host "Extracting MySQL Connector..." -ForegroundColor Yellow
+            New-Item -ItemType Directory -Path "C:\mysql-connector" -Force | Out-Null
+            Expand-Archive -Path $MySQLZip -DestinationPath "C:\temp-mysql" -Force
+
+            # 查找解压后的目录并移动到标准位置
+            $extractedDir = Get-ChildItem "C:\temp-mysql" -Directory | Select-Object -First 1
+            if ($extractedDir) {
+                Write-Host "Moving MySQL Connector from $($extractedDir.FullName) to C:\mysql-connector..." -ForegroundColor Yellow
+                Get-ChildItem $extractedDir.FullName | Move-Item -Destination "C:\mysql-connector" -Force
+                Remove-Item "C:\temp-mysql" -Recurse -Force
+            }
+
+            # 验证安装
+            $MySQLPath = "C:\mysql-connector"
+            if (Test-Path $MySQLPath) {
+                Write-Host "[OK] MySQL Connector installed successfully at: $MySQLPath" -ForegroundColor Green
+
+                # 验证关键文件
+                $keyFiles = @(
+                    "$MySQLPath\include\mysqlx\xapi.h",
+                    "$MySQLPath\include\mysql\mysql.h",
+                    "$MySQLPath\lib64\mysqlcppconn8.lib"
+                )
+
+                $allFound = $true
+                foreach ($file in $keyFiles) {
+                    if (Test-Path $file) {
+                        Write-Host "[OK] Found: $file" -ForegroundColor Green
+                    } else {
+                        Write-Host "[WARNING] Missing: $file" -ForegroundColor Yellow
+                        $allFound = $false
+                    }
+                }
+
+                if ($allFound) {
+                    Write-Host "[OK] MySQL Connector installation verification passed" -ForegroundColor Green
+                } else {
+                    Write-Host "[WARNING] Some MySQL Connector files may be missing" -ForegroundColor Yellow
+                }
+
+                # 显示目录结构用于调试
+                Write-Host "MySQL Connector directory structure:" -ForegroundColor Cyan
+                Get-ChildItem $MySQLPath -Directory | ForEach-Object {
+                    Write-Host "  [DIR] $($_.Name)" -ForegroundColor Gray
+                }
+            } else {
+                throw "MySQL Connector directory not found after extraction"
+            }
+
+            # 清理下载文件
+            Remove-Item $MySQLZip -Force -ErrorAction SilentlyContinue
+
+        } catch {
+            Write-Host "Failed to install MySQL Connector: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "MySQL Connector is optional for this build, continuing without it..." -ForegroundColor Yellow
+
+            # 创建最小的mysql目录防止构建失败
+            New-Item -ItemType Directory -Path "C:\mysql-connector\include\mysql" -Force | Out-Null
+            $dummyMySQLContent = "// Dummy MySQL header for builds without MySQL"
+            $dummyMySQLContent | Out-File -FilePath "C:\mysql-connector\include\mysql\mysql.h" -Encoding UTF8
+
+            Write-Host "Created dummy MySQL structure for build compatibility" -ForegroundColor Yellow
+        }
+
+    - name: Configure MySQL Environment
+      shell: powershell
+      run: |
+        $MySQLPath = "C:\mysql-connector"
+        if (Test-Path $MySQLPath) {
+            Write-Host "[OK] Configuring MySQL Connector environment..." -ForegroundColor Green
+
+            # 设置MySQL环境变量供后续步骤使用
+            echo "MYSQL_DIR=$MySQLPath" >> $env:GITHUB_ENV
+
+            # 添加MySQL bin目录到PATH（如果存在）
+            $MySQLBinPath = "$MySQLPath\lib64"
+            if (Test-Path $MySQLBinPath) {
+                echo "$MySQLBinPath" >> $env:GITHUB_PATH
+                Write-Host "[OK] Added MySQL lib64 to PATH: $MySQLBinPath" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "[WARNING] MySQL Connector not found, building without MySQL support" -ForegroundColor Yellow
         }
 
 
-    # 步骤3: 安装Qt开发框架
+    # 步骤4: 安装Qt开发框架
     # Qt是GUI应用程序的核心依赖，包含界面组件和多媒体功能
     - name: Setup Qt
       uses: jurplel/install-qt-action@v3    # 使用第三方Action安装Qt
@@ -402,10 +548,10 @@ jobs:
           !C:\vcpkg\.git
           !C:\vcpkg\buildtrees
           !C:\vcpkg\downloads
-        key: ${{ runner.os }}-vcpkg-redis-mysql-v2-${{ hashFiles('**/vcpkg.json', '**/CMakeLists.txt') }}
+        key: ${{ runner.os }}-vcpkg-redis-v3-${{ hashFiles('**/vcpkg.json', '**/CMakeLists.txt') }}
         restore-keys: |
-          ${{ runner.os }}-vcpkg-redis-mysql-v2
-          ${{ runner.os }}-vcpkg-redis-mysql
+          ${{ runner.os }}-vcpkg-redis-v2
+          ${{ runner.os }}-vcpkg-redis
           ${{ runner.os }}-vcpkg
           
     # 步骤6: 安装vcpkg和数据库依赖（仅在缓存未命中时执行）
@@ -427,9 +573,7 @@ jobs:
         Write-Host "Installing redis-plus-plus..." -ForegroundColor Yellow
         .\vcpkg.exe install redis-plus-plus:x64-windows    # 安装64位Windows版本
 
-        # 安装MySQL客户端库
-        Write-Host "Installing MySQL client library..." -ForegroundColor Yellow
-        .\vcpkg.exe install libmysql:x64-windows           # 安装64位Windows版本
+        # 注意：MySQL Connector现在通过官方预编译包安装，不再使用vcpkg编译
 
         Write-Host "vcpkg dependencies installed successfully!" -ForegroundColor Green
         
@@ -458,42 +602,53 @@ jobs:
     - name: Cache Status Report
       shell: powershell
       run: |
-        Write-Host "=== 缓存状态报告 ===" -ForegroundColor Cyan
+        Write-Host "=== Cache Status Report ===" -ForegroundColor Cyan
 
         # Npcap SDK 缓存状态
         $npcapCacheHit = "${{ steps.npcap-cache.outputs.cache-hit }}"
         if ($npcapCacheHit -eq "true") {
-            Write-Host "✅ Npcap SDK: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] Npcap SDK: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ Npcap SDK: 缓存未命中，重新下载" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] Npcap SDK: Cache Miss, Re-downloading" -ForegroundColor Yellow
         }
 
         # OpenCV 缓存状态
         $opencvCacheHit = "${{ steps.opencv-cache.outputs.cache-hit }}"
         if ($opencvCacheHit -eq "true") {
-            Write-Host "✅ OpenCV: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] OpenCV: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ OpenCV: 缓存未命中，重新下载" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] OpenCV: Cache Miss, Re-downloading" -ForegroundColor Yellow
+        }
+
+        # MySQL Connector 缓存状态
+        $mysqlCacheHit = "${{ steps.mysql-cache.outputs.cache-hit }}"
+        if ($mysqlCacheHit -eq "true") {
+            Write-Host "[OK] MySQL Connector: Cache Hit" -ForegroundColor Green
+        } else {
+            Write-Host "[DOWNLOAD] MySQL Connector: Cache Miss, Re-downloading" -ForegroundColor Yellow
         }
 
         # vcpkg 缓存状态
         $vcpkgCacheHit = "${{ steps.vcpkg-cache.outputs.cache-hit }}"
         if ($vcpkgCacheHit -eq "true") {
-            Write-Host "✅ vcpkg: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] vcpkg: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ vcpkg: 缓存未命中，重新构建" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] vcpkg: Cache Miss, Rebuilding" -ForegroundColor Yellow
         }
 
         # 显示缓存大小估算
-        Write-Host "`n=== 预估下载时间节省 ===" -ForegroundColor Cyan
+        Write-Host "`n=== Estimated Download Time Savings ===" -ForegroundColor Cyan
         if ($npcapCacheHit -eq "true") {
-            Write-Host "Npcap SDK: 节省 ~30 秒" -ForegroundColor Green
+            Write-Host "Npcap SDK: save ~30 seconds" -ForegroundColor Green
         }
         if ($opencvCacheHit -eq "true") {
-            Write-Host "OpenCV: 节省 ~2-5 分钟" -ForegroundColor Green
+            Write-Host "OpenCV: save ~2-5 minutes" -ForegroundColor Green
+        }
+        if ($mysqlCacheHit -eq "true") {
+            Write-Host "MySQL Connector: save ~1-2 minutes" -ForegroundColor Green
         }
         if ($vcpkgCacheHit -eq "true") {
-            Write-Host "vcpkg依赖: 节省 ~10-15 分钟" -ForegroundColor Green
+            Write-Host "vcpkg dependencies: save ~5-8 minutes" -ForegroundColor Green
         }
 
     - name: Set version
