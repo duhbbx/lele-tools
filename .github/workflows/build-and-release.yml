@@ -91,25 +91,25 @@ jobs:
       run: |
         $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
         if (Test-Path $destDir) {
-            Write-Host "✅ Npcap SDK directory exists: $destDir" -ForegroundColor Green
+            Write-Host "[OK] Npcap SDK directory exists: $destDir" -ForegroundColor Green
 
             # 检查关键文件
             $includeDir = "$destDir\Include"
             $libDir = "$destDir\Lib\x64"
 
             if (Test-Path "$includeDir\pcap.h") {
-                Write-Host "✅ Found pcap.h" -ForegroundColor Green
+                Write-Host "[OK] Found pcap.h" -ForegroundColor Green
             } else {
-                Write-Host "❌ pcap.h not found" -ForegroundColor Red
+                Write-Host "[ERROR] pcap.h not found" -ForegroundColor Red
             }
 
             if (Test-Path "$libDir\wpcap.lib") {
-                Write-Host "✅ Found wpcap.lib" -ForegroundColor Green
+                Write-Host "[OK] Found wpcap.lib" -ForegroundColor Green
             } else {
-                Write-Host "❌ wpcap.lib not found" -ForegroundColor Red
+                Write-Host "[ERROR] wpcap.lib not found" -ForegroundColor Red
             }
         } else {
-            Write-Host "❌ Npcap SDK directory not found!" -ForegroundColor Red
+            Write-Host "[ERROR] Npcap SDK directory not found!" -ForegroundColor Red
             exit 1
         }
 
@@ -177,7 +177,7 @@ jobs:
                     throw "Self-extraction failed with exit code: $($process.ExitCode)"
                 }
 
-                Write-Host "✅ Direct extraction successful" -ForegroundColor Green
+                Write-Host "[OK] Direct extraction successful" -ForegroundColor Green
             } catch {
                 Write-Host "Direct extraction failed, trying 7-Zip..." -ForegroundColor Yellow
 
@@ -185,7 +185,7 @@ jobs:
                 $7zipPath = "${env:ProgramFiles}\7-Zip\7z.exe"
                 if (Test-Path $7zipPath) {
                     & $7zipPath x $OpenCVInstaller "-oC:\" -y
-                    Write-Host "✅ 7-Zip extraction completed" -ForegroundColor Green
+                    Write-Host "[OK] 7-Zip extraction completed" -ForegroundColor Green
                 } else {
                     # 最后尝试：重命名为zip文件并解压
                     Write-Host "7-Zip not found, trying PowerShell extraction..." -ForegroundColor Yellow
@@ -195,7 +195,7 @@ jobs:
                     try {
                         Add-Type -AssemblyName System.IO.Compression.FileSystem
                         [System.IO.Compression.ZipFile]::ExtractToDirectory($tempZip, "C:\")
-                        Write-Host "✅ PowerShell extraction completed" -ForegroundColor Green
+                        Write-Host "[OK] PowerShell extraction completed" -ForegroundColor Green
                     } finally {
                         Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
                     }
@@ -229,7 +229,7 @@ jobs:
             # 验证安装
             $OpenCVPath = "C:\opencv"
             if (Test-Path $OpenCVPath) {
-                Write-Host "✅ OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
+                Write-Host "[OK] OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
 
                 # 验证关键文件
                 $keyFiles = @(
@@ -241,17 +241,17 @@ jobs:
                 foreach ($pattern in $keyFiles) {
                     $files = Get-ChildItem $pattern -ErrorAction SilentlyContinue
                     if ($files) {
-                        Write-Host "✅ Found: $($files[0].FullName)" -ForegroundColor Green
+                        Write-Host "[OK] Found: $($files[0].FullName)" -ForegroundColor Green
                     } else {
-                        Write-Host "⚠️ Missing: $pattern" -ForegroundColor Yellow
+                        Write-Host "[WARNING] Missing: $pattern" -ForegroundColor Yellow
                         $allFound = $false
                     }
                 }
 
                 if ($allFound) {
-                    Write-Host "✅ OpenCV installation verification passed" -ForegroundColor Green
+                    Write-Host "[OK] OpenCV installation verification passed" -ForegroundColor Green
                 } else {
-                    Write-Host "⚠️ Some OpenCV files may be missing" -ForegroundColor Yellow
+                    Write-Host "[WARNING] Some OpenCV files may be missing" -ForegroundColor Yellow
                 }
 
                 # 显示目录结构用于调试
@@ -283,7 +283,7 @@ jobs:
       run: |
         $OpenCVPath = "C:\opencv"
         if (Test-Path $OpenCVPath) {
-            Write-Host "✅ Configuring OpenCV environment..." -ForegroundColor Green
+            Write-Host "[OK] Configuring OpenCV environment..." -ForegroundColor Green
 
             # Set environment variable for later steps
             echo "OPENCV_DIR=C:\opencv\build" >> $env:GITHUB_ENV
@@ -292,10 +292,10 @@ jobs:
             $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
             if (Test-Path $OpenCVBinPath) {
                 echo "$OpenCVBinPath" >> $env:GITHUB_PATH
-                Write-Host "✅ Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
+                Write-Host "[OK] Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
             }
         } else {
-            Write-Host "⚠️ OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
+            Write-Host "[WARNING] OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
         }
 
     # 步骤3: 缓存和安装MySQL Connector/C++
@@ -363,7 +363,7 @@ jobs:
             # 验证安装
             $MySQLPath = "C:\mysql-connector"
             if (Test-Path $MySQLPath) {
-                Write-Host "✅ MySQL Connector installed successfully at: $MySQLPath" -ForegroundColor Green
+                Write-Host "[OK] MySQL Connector installed successfully at: $MySQLPath" -ForegroundColor Green
 
                 # 验证关键文件
                 $keyFiles = @(
@@ -375,17 +375,17 @@ jobs:
                 $allFound = $true
                 foreach ($file in $keyFiles) {
                     if (Test-Path $file) {
-                        Write-Host "✅ Found: $file" -ForegroundColor Green
+                        Write-Host "[OK] Found: $file" -ForegroundColor Green
                     } else {
-                        Write-Host "⚠️ Missing: $file" -ForegroundColor Yellow
+                        Write-Host "[WARNING] Missing: $file" -ForegroundColor Yellow
                         $allFound = $false
                     }
                 }
 
                 if ($allFound) {
-                    Write-Host "✅ MySQL Connector installation verification passed" -ForegroundColor Green
+                    Write-Host "[OK] MySQL Connector installation verification passed" -ForegroundColor Green
                 } else {
-                    Write-Host "⚠️ Some MySQL Connector files may be missing" -ForegroundColor Yellow
+                    Write-Host "[WARNING] Some MySQL Connector files may be missing" -ForegroundColor Yellow
                 }
 
                 # 显示目录结构用于调试
@@ -417,7 +417,7 @@ jobs:
       run: |
         $MySQLPath = "C:\mysql-connector"
         if (Test-Path $MySQLPath) {
-            Write-Host "✅ Configuring MySQL Connector environment..." -ForegroundColor Green
+            Write-Host "[OK] Configuring MySQL Connector environment..." -ForegroundColor Green
 
             # 设置MySQL环境变量供后续步骤使用
             echo "MYSQL_DIR=$MySQLPath" >> $env:GITHUB_ENV
@@ -426,10 +426,10 @@ jobs:
             $MySQLBinPath = "$MySQLPath\lib64"
             if (Test-Path $MySQLBinPath) {
                 echo "$MySQLBinPath" >> $env:GITHUB_PATH
-                Write-Host "✅ Added MySQL lib64 to PATH: $MySQLBinPath" -ForegroundColor Green
+                Write-Host "[OK] Added MySQL lib64 to PATH: $MySQLBinPath" -ForegroundColor Green
             }
         } else {
-            Write-Host "⚠️ MySQL Connector not found, building without MySQL support" -ForegroundColor Yellow
+            Write-Host "[WARNING] MySQL Connector not found, building without MySQL support" -ForegroundColor Yellow
         }
 
 
@@ -602,42 +602,42 @@ jobs:
     - name: Cache Status Report
       shell: powershell
       run: |
-        Write-Host "=== 缓存状态报告 ===" -ForegroundColor Cyan
+        Write-Host "=== Cache Status Report ===" -ForegroundColor Cyan
 
         # Npcap SDK 缓存状态
         $npcapCacheHit = "${{ steps.npcap-cache.outputs.cache-hit }}"
         if ($npcapCacheHit -eq "true") {
-            Write-Host "✅ Npcap SDK: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] Npcap SDK: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ Npcap SDK: 缓存未命中，重新下载" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] Npcap SDK: Cache Miss, Re-downloading" -ForegroundColor Yellow
         }
 
         # OpenCV 缓存状态
         $opencvCacheHit = "${{ steps.opencv-cache.outputs.cache-hit }}"
         if ($opencvCacheHit -eq "true") {
-            Write-Host "✅ OpenCV: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] OpenCV: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ OpenCV: 缓存未命中，重新下载" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] OpenCV: Cache Miss, Re-downloading" -ForegroundColor Yellow
         }
 
         # MySQL Connector 缓存状态
         $mysqlCacheHit = "${{ steps.mysql-cache.outputs.cache-hit }}"
         if ($mysqlCacheHit -eq "true") {
-            Write-Host "✅ MySQL Connector: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] MySQL Connector: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ MySQL Connector: 缓存未命中，重新下载" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] MySQL Connector: Cache Miss, Re-downloading" -ForegroundColor Yellow
         }
 
         # vcpkg 缓存状态
         $vcpkgCacheHit = "${{ steps.vcpkg-cache.outputs.cache-hit }}"
         if ($vcpkgCacheHit -eq "true") {
-            Write-Host "✅ vcpkg: 缓存命中" -ForegroundColor Green
+            Write-Host "[OK] vcpkg: Cache Hit" -ForegroundColor Green
         } else {
-            Write-Host "⬇️ vcpkg: 缓存未命中，重新构建" -ForegroundColor Yellow
+            Write-Host "[DOWNLOAD] vcpkg: Cache Miss, Rebuilding" -ForegroundColor Yellow
         }
 
         # 显示缓存大小估算
-        Write-Host "`n=== 预估下载时间节省 ===" -ForegroundColor Cyan
+        Write-Host "`n=== Estimated Download Time Savings ===" -ForegroundColor Cyan
         if ($npcapCacheHit -eq "true") {
             Write-Host "Npcap SDK: save ~30 seconds" -ForegroundColor Green
         }
