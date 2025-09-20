@@ -778,6 +778,7 @@ jobs:
             "-DPCAP_INCLUDE_DIR=$npcapDir\Include",                                 # Npcap Include
             "-DPCAP_LIBRARY=$npcapDir\Lib\x64\wpcap.lib",                           # Npcap wpcap.lib
             "-DPACKET_LIBRARY=$npcapDir\Lib\x64\packet.lib"                         # Packet.lib
+            "-DENVIRONMENT=prod"                                                    # 环境
         )
         
         # 配置Redis支持（如果vcpkg可用）
