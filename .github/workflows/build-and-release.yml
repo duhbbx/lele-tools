@@ -169,7 +169,8 @@ jobs:
             # 首先尝试直接执行自解压
             try {
                 Write-Host "Trying direct extraction..." -ForegroundColor Yellow
-                $extractArgs = @("/S", "/D=C:\opencv")
+                # OpenCV官方exe使用的是7-Zip SFX格式，需要使用 -o 参数指定输出目录
+                $extractArgs = @("-oC:\", "-y")
                 $process = Start-Process -FilePath $OpenCVInstaller -ArgumentList $extractArgs -Wait -PassThru -NoNewWindow
 
                 if ($process.ExitCode -ne 0) {
