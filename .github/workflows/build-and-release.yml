@@ -256,7 +256,7 @@ jobs:
                 # 显示目录结构用于调试
                 Write-Host "OpenCV directory structure:" -ForegroundColor Cyan
                 Get-ChildItem $OpenCVPath -Directory | Select-Object -First 5 | ForEach-Object {
-                    Write-Host "  📁 $($_.Name)" -ForegroundColor Gray
+                    Write-Host "  [DIR] $($_.Name)" -ForegroundColor Gray
                 }
             } else {
                 throw "OpenCV directory not found after extraction"
@@ -266,12 +266,13 @@ jobs:
             Remove-Item $OpenCVInstaller -Force -ErrorAction SilentlyContinue
 
         } catch {
-            Write-Host "❌ Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Red
             Write-Host "OpenCV is optional for this build, continuing without it..." -ForegroundColor Yellow
 
             # 创建最小的opencv目录防止构建失败
             New-Item -ItemType Directory -Path "C:\opencv\build\include\opencv2" -Force | Out-Null
-            "// Dummy OpenCV header for builds without OpenCV" | Out-File -FilePath "C:\opencv\build\include\opencv2\opencv.hpp" -Encoding UTF8
+            $dummyContent = "// Dummy OpenCV header for builds without OpenCV"
+            $dummyContent | Out-File -FilePath "C:\opencv\build\include\opencv2\opencv.hpp" -Encoding UTF8
 
             Write-Host "Created dummy OpenCV structure for build compatibility" -ForegroundColor Yellow
         }
@@ -389,7 +390,7 @@ jobs:
                 # 显示目录结构用于调试
                 Write-Host "MySQL Connector directory structure:" -ForegroundColor Cyan
                 Get-ChildItem $MySQLPath -Directory | ForEach-Object {
-                    Write-Host "  📁 $($_.Name)" -ForegroundColor Gray
+                    Write-Host "  [DIR] $($_.Name)" -ForegroundColor Gray
                 }
             } else {
                 throw "MySQL Connector directory not found after extraction"
@@ -399,12 +400,13 @@ jobs:
             Remove-Item $MySQLZip -Force -ErrorAction SilentlyContinue
 
         } catch {
-            Write-Host "❌ Failed to install MySQL Connector: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Failed to install MySQL Connector: $($_.Exception.Message)" -ForegroundColor Red
             Write-Host "MySQL Connector is optional for this build, continuing without it..." -ForegroundColor Yellow
 
             # 创建最小的mysql目录防止构建失败
             New-Item -ItemType Directory -Path "C:\mysql-connector\include\mysql" -Force | Out-Null
-            "// Dummy MySQL header for builds without MySQL" | Out-File -FilePath "C:\mysql-connector\include\mysql\mysql.h" -Encoding UTF8
+            $dummyMySQLContent = "// Dummy MySQL header for builds without MySQL"
+            $dummyMySQLContent | Out-File -FilePath "C:\mysql-connector\include\mysql\mysql.h" -Encoding UTF8
 
             Write-Host "Created dummy MySQL structure for build compatibility" -ForegroundColor Yellow
         }
