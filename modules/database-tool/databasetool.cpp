@@ -1497,9 +1497,9 @@ void DatabaseTool::setupUI() {
     m_mainSplitter->addWidget(m_treeView);
     m_mainSplitter->addWidget(m_tabWidget);
     // 设置分割器比例 - 给左侧一些空间
-    // m_mainSplitter->setSizes(QList { 250, 800 });
-    // m_mainSplitter->setStretchFactor(0, 0); // 左侧固定
-    // m_mainSplitter->setStretchFactor(1, 1); // 右侧拉伸
+    m_mainSplitter->setSizes(QList { 250, 800 });
+    m_mainSplitter->setStretchFactor(0, 0); // 左侧固定
+    m_mainSplitter->setStretchFactor(1, 1); // 右侧拉伸
 
     m_mainLayout->addWidget(m_mainSplitter, 1);
 
@@ -1598,8 +1598,7 @@ void DatabaseTool::onNewConnection() {
         // 创建连接对象
         QString typeString = config.extraParams.value("connectionType", "Redis").toString();
         Connx::ConnectionType type = Connx::ConnectionFactory::getTypeFromString(typeString);
-        Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config);
-        if (connection) {
+        if (Connx::Connection* connection = Connx::ConnectionFactory::createConnection(type, config)) {
             m_connections[config.name] = connection;
             m_treeView->addConnection(config.name, connection);
 

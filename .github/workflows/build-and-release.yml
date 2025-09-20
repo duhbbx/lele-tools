@@ -53,26 +53,65 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 下载 Npcap SDK（也可以换成 WinPcap SDK）
+    # 缓存 Npcap SDK
+    - name: Cache Npcap SDK
+      uses: actions/cache@v4
+      id: npcap-cache
+      with:
+        path: ${{ github.workspace }}/npcap-sdk
+        key: ${{ runner.os }}-npcap-sdk-1.15-v1
+        restore-keys: |
+          ${{ runner.os }}-npcap-sdk-1.15
+          ${{ runner.os }}-npcap-sdk
+
+    # 下载 Npcap SDK（仅在缓存未命中时执行）
     - name: Download Npcap SDK
+      if: steps.npcap-cache.outputs.cache-hit != 'true'
       shell: powershell
       run: |
         $url = "https://npcap.com/dist/npcap-sdk-1.15.zip"
         $zipFile = "$env:GITHUB_WORKSPACE\npcap-sdk.zip"
         $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
-    
-        Write-Host "Downloading Npcap SDK from $url ..."
+
+        Write-Host "Downloading Npcap SDK from $url ..." -ForegroundColor Green
         Invoke-WebRequest -Uri $url -OutFile $zipFile
-    
-        Write-Host "Downloaded file size: $(Get-Item $zipFile).Length bytes"
-    
-        Write-Host "Expanding archive to $destDir ..."
+
+        Write-Host "Downloaded file size: $(Get-Item $zipFile).Length bytes" -ForegroundColor Yellow
+
+        Write-Host "Expanding archive to $destDir ..." -ForegroundColor Green
         Expand-Archive $zipFile -DestinationPath $destDir
-    
-        Write-Host "Listing extracted files:"
-        Get-ChildItem -Recurse $destDir | ForEach-Object { Write-Host $_.FullName }
-    
-        Write-Host "Npcap SDK download and extraction complete."
+
+        Write-Host "Npcap SDK download and extraction complete." -ForegroundColor Green
+
+        # 清理下载的ZIP文件
+        Remove-Item $zipFile -Force
+
+    - name: Verify Npcap SDK
+      shell: powershell
+      run: |
+        $destDir = "$env:GITHUB_WORKSPACE\npcap-sdk"
+        if (Test-Path $destDir) {
+            Write-Host "✅ Npcap SDK directory exists: $destDir" -ForegroundColor Green
+
+            # 检查关键文件
+            $includeDir = "$destDir\Include"
+            $libDir = "$destDir\Lib\x64"
+
+            if (Test-Path "$includeDir\pcap.h") {
+                Write-Host "✅ Found pcap.h" -ForegroundColor Green
+            } else {
+                Write-Host "❌ pcap.h not found" -ForegroundColor Red
+            }
+
+            if (Test-Path "$libDir\wpcap.lib") {
+                Write-Host "✅ Found wpcap.lib" -ForegroundColor Green
+            } else {
+                Write-Host "❌ wpcap.lib not found" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "❌ Npcap SDK directory not found!" -ForegroundColor Red
+            exit 1
+        }
       
       
     # 步骤2: 安装Qt开发框架
@@ -185,10 +224,16 @@ jobs:
       uses: actions/cache@v4
       id: vcpkg-cache
       with:
-        path: C:\vcpkg                                          # 缓存整个vcpkg目录
-        key: ${{ runner.os }}-vcpkg-redis-mysql-v1             # 缓存键（包含OS和版本）
-        restore-keys: |                                         # 备用缓存键
-          ${{ runner.os }}-vcpkg-
+        path: |
+          C:\vcpkg
+          !C:\vcpkg\.git
+          !C:\vcpkg\buildtrees
+          !C:\vcpkg\downloads
+        key: ${{ runner.os }}-vcpkg-redis-mysql-v2-${{ hashFiles('**/vcpkg.json', '**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-redis-mysql-v2
+          ${{ runner.os }}-vcpkg-redis-mysql
+          ${{ runner.os }}-vcpkg
           
     # 步骤6: 安装vcpkg和数据库依赖（仅在缓存未命中时执行）
     # Redis-plus-plus: C++ Redis客户端库，用于Redis数据库连接功能
@@ -224,44 +269,47 @@ jobs:
         echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
         echo "VCPKG_INSTALLED_DIR=C:\vcpkg\installed\x64-windows" >> $env:GITHUB_ENV
         
+    # 缓存 OpenCV
+    - name: Cache OpenCV
+      uses: actions/cache@v4
+      id: opencv-cache
+      with:
+        path: C:\opencv
+        key: ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}-v1
+        restore-keys: |
+          ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}
+          ${{ runner.os }}-opencv
+
     - name: Setup OpenCV
+      if: steps.opencv-cache.outputs.cache-hit != 'true'
       shell: powershell
       run: |
         Write-Host "Setting up OpenCV ${{ env.OPENCV_VERSION }}..." -ForegroundColor Green
-        
+
         # Download OpenCV pre-built binaries
         $OpenCVUrl = "https://github.com/opencv/opencv/releases/download/${{ env.OPENCV_VERSION }}/opencv-${{ env.OPENCV_VERSION }}-windows.exe"
         $OpenCVInstaller = "opencv-installer.exe"
-        
+
         try {
             Write-Host "Downloading OpenCV from: $OpenCVUrl" -ForegroundColor Yellow
             Invoke-WebRequest -Uri $OpenCVUrl -OutFile $OpenCVInstaller -UseBasicParsing
-            
+
             Write-Host "Extracting OpenCV..." -ForegroundColor Yellow
             # OpenCV Windows installer is a self-extracting archive
             Start-Process -FilePath $OpenCVInstaller -ArgumentList "-o", "C:\", "-y" -Wait -NoNewWindow
-            
+
             # Verify installation
             $OpenCVPath = "C:\opencv"
             if (Test-Path $OpenCVPath) {
-                Write-Host "OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
-                
-                # Set environment variable for later steps
-                echo "OPENCV_DIR=C:\opencv\build" >> $env:GITHUB_ENV
-                
-                # Add OpenCV bin to PATH for runtime
-                $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
-                if (Test-Path $OpenCVBinPath) {
-                    echo "$OpenCVBinPath" >> $env:GITHUB_PATH
-                    Write-Host "Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
-                }
+                Write-Host "✅ OpenCV installed successfully at: $OpenCVPath" -ForegroundColor Green
             } else {
-                Write-Host "WARNING: OpenCV installation not found" -ForegroundColor Yellow
+                Write-Host "❌ OpenCV installation failed" -ForegroundColor Red
+                throw "OpenCV installation failed"
             }
         }
         catch {
-            Write-Host "WARNING: Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Yellow
-            Write-Host "Continuing without OpenCV..." -ForegroundColor Yellow
+            Write-Host "❌ Failed to install OpenCV: $($_.Exception.Message)" -ForegroundColor Red
+            throw "OpenCV installation failed"
         }
         finally {
             # Clean up installer
@@ -269,17 +317,81 @@ jobs:
                 Remove-Item $OpenCVInstaller -Force
             }
         }
+
+    - name: Configure OpenCV Environment
+      shell: powershell
+      run: |
+        $OpenCVPath = "C:\opencv"
+        if (Test-Path $OpenCVPath) {
+            Write-Host "✅ Configuring OpenCV environment..." -ForegroundColor Green
+
+            # Set environment variable for later steps
+            echo "OPENCV_DIR=C:\opencv\build" >> $env:GITHUB_ENV
+
+            # Add OpenCV bin to PATH for runtime
+            $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
+            if (Test-Path $OpenCVBinPath) {
+                echo "$OpenCVBinPath" >> $env:GITHUB_PATH
+                Write-Host "✅ Added OpenCV bin to PATH: $OpenCVBinPath" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "⚠️ OpenCV not found, building without OpenCV support" -ForegroundColor Yellow
+        }
         
-    - name: Cache Qt, vcpkg and tools
+    # 统一缓存构建工具和依赖（除了已单独缓存的项目）
+    - name: Cache Build Tools
       uses: actions/cache@v4
       with:
         path: |
           ${{ runner.workspace }}/Qt
           C:/Qt
-          C:/opencv
-          C:/vcpkg
-        key: ${{ runner.os }}-qt-${{ env.QT_VERSION }}-opencv-${{ env.OPENCV_VERSION }}-vcpkg-cache-v2
-        
+        key: ${{ runner.os }}-qt-${{ env.QT_VERSION_WINDOWS }}-build-tools-v3
+        restore-keys: |
+          ${{ runner.os }}-qt-${{ env.QT_VERSION_WINDOWS }}
+          ${{ runner.os }}-qt
+
+    # 缓存状态报告
+    - name: Cache Status Report
+      shell: powershell
+      run: |
+        Write-Host "=== 缓存状态报告 ===" -ForegroundColor Cyan
+
+        # Npcap SDK 缓存状态
+        $npcapCacheHit = "${{ steps.npcap-cache.outputs.cache-hit }}"
+        if ($npcapCacheHit -eq "true") {
+            Write-Host "✅ Npcap SDK: 缓存命中" -ForegroundColor Green
+        } else {
+            Write-Host "⬇️ Npcap SDK: 缓存未命中，重新下载" -ForegroundColor Yellow
+        }
+
+        # OpenCV 缓存状态
+        $opencvCacheHit = "${{ steps.opencv-cache.outputs.cache-hit }}"
+        if ($opencvCacheHit -eq "true") {
+            Write-Host "✅ OpenCV: 缓存命中" -ForegroundColor Green
+        } else {
+            Write-Host "⬇️ OpenCV: 缓存未命中，重新下载" -ForegroundColor Yellow
+        }
+
+        # vcpkg 缓存状态
+        $vcpkgCacheHit = "${{ steps.vcpkg-cache.outputs.cache-hit }}"
+        if ($vcpkgCacheHit -eq "true") {
+            Write-Host "✅ vcpkg: 缓存命中" -ForegroundColor Green
+        } else {
+            Write-Host "⬇️ vcpkg: 缓存未命中，重新构建" -ForegroundColor Yellow
+        }
+
+        # 显示缓存大小估算
+        Write-Host "`n=== 预估下载时间节省 ===" -ForegroundColor Cyan
+        if ($npcapCacheHit -eq "true") {
+            Write-Host "Npcap SDK: 节省 ~30 秒" -ForegroundColor Green
+        }
+        if ($opencvCacheHit -eq "true") {
+            Write-Host "OpenCV: 节省 ~2-5 分钟" -ForegroundColor Green
+        }
+        if ($vcpkgCacheHit -eq "true") {
+            Write-Host "vcpkg依赖: 节省 ~10-15 分钟" -ForegroundColor Green
+        }
+
     - name: Set version
       id: version
       shell: powershell
@@ -902,19 +1014,24 @@ jobs:
         pip install aqtinstall
         python -m aqt install-qt linux desktop ${{ env.QT_VERSION_LINUX }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
         
-    - name: Cache redis-plus-plus
+    # Linux 依赖缓存优化
+    - name: Cache system dependencies
       uses: actions/cache@v4
-      id: redis-cache
+      id: system-deps-cache
       with:
         path: |
+          /var/cache/apt/archives
           /usr/local/lib/libredis++*
           /usr/local/lib/libhiredis*
           /usr/local/include/hiredis
           /usr/local/include/sw
-        key: ${{ runner.os }}-hiredis-redis-plus-plus-v2
+        key: ${{ runner.os }}-system-deps-redis-opencv-mysql-v3
+        restore-keys: |
+          ${{ runner.os }}-system-deps-redis-opencv-mysql
+          ${{ runner.os }}-system-deps
         
     - name: Setup redis-plus-plus
-      if: steps.redis-cache.outputs.cache-hit != 'true'
+      if: steps.system-deps-cache.outputs.cache-hit != 'true'
       run: |
         echo "Installing hiredis and redis-plus-plus from source..."
         

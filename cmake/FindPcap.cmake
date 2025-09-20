@@ -26,12 +26,21 @@ set(Pcap_LIBRARIES "")
 set(HAVE_PCAP FALSE)
 set(WITH_WINDOWS_ICMP FALSE)
 
+# Allow manual specification of Npcap SDK path
+set(NPCAP_SDK_ROOT "" CACHE PATH "Path to Npcap SDK root directory")
+
 # Platform-specific detection
 if(WIN32)
     message(STATUS "Looking for Npcap SDK on Windows...")
 
-    # Get hints from environment variables
+    # Get hints from environment variables and cache
     set(NPCAP_SDK_HINTS "")
+
+    # Prioritize manually specified path
+    if(NPCAP_SDK_ROOT)
+        list(APPEND NPCAP_SDK_HINTS "${NPCAP_SDK_ROOT}")
+        message(STATUS "Using manually specified NPCAP_SDK_ROOT: ${NPCAP_SDK_ROOT}")
+    endif()
 
     if(DEFINED ENV{NPCAP_SDK_PATH})
         list(APPEND NPCAP_SDK_HINTS "$ENV{NPCAP_SDK_PATH}")
@@ -41,17 +50,104 @@ if(WIN32)
         list(APPEND NPCAP_SDK_HINTS "$ENV{PCAP_ROOT}")
     endif()
 
+    # Check for other potential environment variables
+    foreach(env_var IN ITEMS "NPCAP_ROOT" "NPCAP_DIR" "WINPCAP_DIR" "PCAP_DIR")
+        if(DEFINED ENV{${env_var}})
+            list(APPEND NPCAP_SDK_HINTS "$ENV{${env_var}}")
+            message(STATUS "Found environment variable ${env_var}: $ENV{${env_var}}")
+        endif()
+    endforeach()
+
     # Add common installation paths
     list(APPEND NPCAP_SDK_HINTS
+        # GitHub Actions CI environment
+        "${CMAKE_CURRENT_SOURCE_DIR}/npcap-sdk"
+        "D:/a/lele-tools/lele-tools/npcap-sdk"
+        "${CMAKE_SOURCE_DIR}/npcap-sdk"
+
+        # Local development paths
         "C:/npcap-sdk-1.15"
         "C:/npcap-sdk-1.14"
         "C:/npcap-sdk-1.13"
         "C:/npcap-sdk"
+
+        # System installation paths
         "C:/Program Files/Npcap/sdk"
         "C:/Program Files (x86)/Npcap/sdk"
+
+        # Project dependency paths
         "${CMAKE_CURRENT_SOURCE_DIR}/third_party/npcap-sdk"
         "${CMAKE_CURRENT_SOURCE_DIR}/deps/npcap-sdk"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/npcap-sdk"
+        "${CMAKE_BINARY_DIR}/npcap-sdk"
+
+        # Relative to source directory
+        "${CMAKE_SOURCE_DIR}/../npcap-sdk"
+        "${CMAKE_SOURCE_DIR}/../../npcap-sdk"
     )
+
+    # Add dynamic path detection for CI environments
+    if(DEFINED ENV{GITHUB_WORKSPACE})
+        list(APPEND NPCAP_SDK_HINTS
+            "$ENV{GITHUB_WORKSPACE}/npcap-sdk"
+            "$ENV{GITHUB_ACTIONS_HOME}/npcap-sdk"
+        )
+        message(STATUS "GitHub Actions environment detected, adding CI-specific paths")
+    endif()
+
+    # Add environment-specific paths based on common CI patterns
+    if(DEFINED ENV{CI} OR DEFINED ENV{GITHUB_ACTIONS})
+        message(STATUS "CI environment detected, adding additional search paths")
+
+        # Common CI patterns
+        list(APPEND NPCAP_SDK_HINTS
+            "${CMAKE_SOURCE_DIR}/npcap-sdk"
+            "${CMAKE_BINARY_DIR}/../npcap-sdk"
+            "${CMAKE_CURRENT_BINARY_DIR}/npcap-sdk"
+
+            # Different drive letters on Windows CI
+            "D:/npcap-sdk"
+            "C:/npcap-sdk"
+
+            # GitHub Actions specific patterns
+            "D:/a/${PROJECT_NAME}/${PROJECT_NAME}/npcap-sdk"
+            "C:/a/${PROJECT_NAME}/${PROJECT_NAME}/npcap-sdk"
+        )
+    endif()
+
+    # Add current working directory relative paths
+    get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
+    list(APPEND NPCAP_SDK_HINTS
+        "${CURRENT_DIR}/npcap-sdk"
+        "${CURRENT_DIR}/../npcap-sdk"
+    )
+
+    # Auto-detect npcap-sdk directories in common locations
+    set(AUTO_DETECT_PATHS
+        "C:/"
+        "D:/"
+        "${CMAKE_SOURCE_DIR}/.."
+        "${CMAKE_SOURCE_DIR}/../.."
+    )
+
+    foreach(base_path IN LISTS AUTO_DETECT_PATHS)
+        if(EXISTS "${base_path}")
+            file(GLOB npcap_dirs "${base_path}/npcap-sdk*")
+            foreach(dir IN LISTS npcap_dirs)
+                if(IS_DIRECTORY "${dir}")
+                    list(APPEND NPCAP_SDK_HINTS "${dir}")
+                endif()
+            endforeach()
+        endif()
+    endforeach()
+
+    # Debug: Print search paths (only if CMAKE_FIND_DEBUG_MODE is enabled)
+    if(CMAKE_FIND_DEBUG_MODE)
+        message(STATUS "Searching for Npcap in the following locations:")
+        foreach(hint IN LISTS NPCAP_SDK_HINTS)
+            message(STATUS "  - ${hint}")
+        endforeach()
+    endif()
 
     # Find Npcap include directory
     find_path(PCAP_INCLUDE_DIR
@@ -63,6 +159,14 @@ if(WIN32)
         DOC "Npcap include directory"
     )
 
+    if(CMAKE_FIND_DEBUG_MODE)
+        if(PCAP_INCLUDE_DIR)
+            message(STATUS "Found Npcap include directory: ${PCAP_INCLUDE_DIR}")
+        else()
+            message(STATUS "Npcap include directory not found")
+        endif()
+    endif()
+
     # Determine library architecture
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(NPCAP_LIB_SUFFIX "x64")
@@ -71,6 +175,10 @@ if(WIN32)
     endif()
 
     # Find wpcap library
+    if(CMAKE_FIND_DEBUG_MODE)
+        message(STATUS "Searching for wpcap library with architecture suffix: ${NPCAP_LIB_SUFFIX}")
+    endif()
+
     find_library(PCAP_LIBRARY
         NAMES wpcap
         HINTS
@@ -79,6 +187,14 @@ if(WIN32)
         PATH_SUFFIXES "Lib/${NPCAP_LIB_SUFFIX}" "Lib/x64" "Lib" "lib"
         DOC "Npcap wpcap library"
     )
+
+    if(CMAKE_FIND_DEBUG_MODE)
+        if(PCAP_LIBRARY)
+            message(STATUS "Found wpcap library: ${PCAP_LIBRARY}")
+        else()
+            message(STATUS "wpcap library not found")
+        endif()
+    endif()
 
     # Find packet library
     find_library(PACKET_LIBRARY
@@ -89,6 +205,14 @@ if(WIN32)
         PATH_SUFFIXES "Lib/${NPCAP_LIB_SUFFIX}" "Lib/x64" "Lib" "lib"
         DOC "Npcap packet library"
     )
+
+    if(CMAKE_FIND_DEBUG_MODE)
+        if(PACKET_LIBRARY)
+            message(STATUS "Found packet library: ${PACKET_LIBRARY}")
+        else()
+            message(STATUS "packet library not found (optional)")
+        endif()
+    endif()
 
     # Check if we found the required components
     if(PCAP_INCLUDE_DIR AND PCAP_LIBRARY)

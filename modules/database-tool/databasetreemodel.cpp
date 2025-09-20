@@ -322,7 +322,7 @@ void DatabaseTreeModel::addConnection(const QString& name, Connx::Connection* co
     m_rootNode->children.append(connNode);
     m_connectionNodes[name] = connNode;
 
-    qDebug() << "Created connection node:" << (void*)connNode << "name:" << connNode->name;
+    qDebug() << "Created connection node:" << connNode << "name:" << connNode->name;
     qDebug() << "Root children count after:" << m_rootNode->children.size();
 
     // 通知视图插入完成

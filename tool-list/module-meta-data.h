@@ -91,3 +91,7 @@
 {"xxx", "文件对比", "FileCompareTool"},
 
 {"xxx", "血型遗传规律", "BloodTypeTool"},
+
+{"xxx", "端口占用查看", "PortScanner"},
+
+{"xxx", "改键工具", "KeyRemapper"},
