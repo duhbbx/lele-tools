@@ -40,6 +40,8 @@ find_path(MySQL_INCLUDE_DIR
         mysql
         include
         include/mysql
+        include/mysqlx
+        include/jdbc
 )
 
 # 查找库文件
@@ -69,6 +71,7 @@ find_library(MySQL_LIBRARY
     PATH_SUFFIXES
         mysql
         lib
+        lib64
 )
 
 # Windows上可能需要额外的库
@@ -98,6 +101,36 @@ if(WIN32)
             "C:/Program Files/MySQL/MySQL Server 5.7/lib"
             "C:/mysql-connector/lib64"
     )
+endif()
+
+# 如果没有找到，尝试更灵活的搜索方式
+if(NOT MySQL_INCLUDE_DIR OR NOT MySQL_LIBRARY)
+    message(STATUS "Standard MySQL search failed, trying flexible search...")
+
+    # 尝试查找MySQL Connector/C++的头文件
+    find_path(MySQL_INCLUDE_DIR
+        NAMES mysqlx/xapi.h jdbc/mysql_connection.h mysql.h
+        PATHS
+            "C:/mysql-connector/include"
+            ${CMAKE_PREFIX_PATH}/include
+            "C:/vcpkg/installed/x64-windows/include"
+        NO_DEFAULT_PATH
+    )
+
+    # 尝试查找MySQL Connector/C++的库文件
+    find_library(MySQL_LIBRARY
+        NAMES mysqlcppconn8 mysqlcppconn
+        PATHS
+            "C:/mysql-connector/lib64"
+            "C:/mysql-connector/lib"
+            ${CMAKE_PREFIX_PATH}/lib
+            "C:/vcpkg/installed/x64-windows/lib"
+        NO_DEFAULT_PATH
+    )
+
+    if(MySQL_INCLUDE_DIR AND MySQL_LIBRARY)
+        message(STATUS "Found MySQL using flexible search")
+    endif()
 endif()
 
 # 检查是否找到所有必需组件

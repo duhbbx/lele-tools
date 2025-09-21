@@ -321,28 +321,51 @@ jobs:
         if (Test-Path $MySQLPath) {
             Write-Host "[OK] MySQL Connector found in cache: $MySQLPath" -ForegroundColor Green
 
-            # 验证关键文件是否存在
-            $keyFiles = @(
+            # 快速验证缓存的关键文件
+            $cacheValid = $true
+
+            # 检查基本目录结构
+            if (-not (Test-Path "$MySQLPath\include") -or (-not (Test-Path "$MySQLPath\lib64") -and -not (Test-Path "$MySQLPath\lib"))) {
+                $cacheValid = $false
+                Write-Host "[WARNING] Cache missing basic directory structure" -ForegroundColor Yellow
+            }
+
+            # 检查是否有任何头文件
+            $hasHeaders = $false
+            $quickHeaderCheck = @(
                 "$MySQLPath\include\mysqlx\xapi.h",
                 "$MySQLPath\include\mysql\mysql.h",
-                "$MySQLPath\lib64\mysqlcppconn8.lib"
+                "$MySQLPath\include\mysql.h"
             )
-
-            $allFound = $true
-            foreach ($file in $keyFiles) {
-                if (Test-Path $file) {
-                    Write-Host "[OK] Found: $file" -ForegroundColor Green
-                } else {
-                    Write-Host "[ERROR] Missing critical file: $file" -ForegroundColor Red
-                    $allFound = $false
+            foreach ($header in $quickHeaderCheck) {
+                if (Test-Path $header) {
+                    $hasHeaders = $true
+                    Write-Host "[OK] Found cached header: $header" -ForegroundColor Green
+                    break
                 }
             }
 
-            if ($allFound) {
+            # 检查是否有任何库文件
+            $hasLibs = $false
+            $quickLibCheck = @(
+                "$MySQLPath\lib64\mysqlcppconn8.lib",
+                "$MySQLPath\lib64\mysqlcppconn.lib",
+                "$MySQLPath\lib\mysqlcppconn8.lib"
+            )
+            foreach ($lib in $quickLibCheck) {
+                if (Test-Path $lib) {
+                    $hasLibs = $true
+                    Write-Host "[OK] Found cached library: $lib" -ForegroundColor Green
+                    break
+                }
+            }
+
+            if ($cacheValid -and $hasHeaders -and $hasLibs) {
                 Write-Host "[OK] MySQL Connector cache validation passed" -ForegroundColor Green
                 exit 0  # 成功退出，跳过下载
             } else {
-                Write-Host "[WARNING] MySQL Connector cache corrupted, will re-download" -ForegroundColor Yellow
+                Write-Host "[WARNING] MySQL Connector cache incomplete, will re-download" -ForegroundColor Yellow
+                Write-Host "  Cache valid: $cacheValid, Has headers: $hasHeaders, Has libs: $hasLibs" -ForegroundColor Gray
                 Remove-Item $MySQLPath -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
@@ -502,10 +525,28 @@ jobs:
                     Write-Host "[WARNING] Some MySQL Connector files may be missing" -ForegroundColor Yellow
                 }
 
-                # 显示目录结构用于调试
+                # 显示详细目录结构用于调试
                 Write-Host "MySQL Connector directory structure:" -ForegroundColor Cyan
                 Get-ChildItem $MySQLPath -Directory | ForEach-Object {
                     Write-Host "  [DIR] $($_.Name)" -ForegroundColor Gray
+
+                    # 显示重要子目录的内容
+                    if ($_.Name -eq "include") {
+                        Write-Host "    Include subdirectories:" -ForegroundColor Gray
+                        Get-ChildItem $_.FullName -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                            Write-Host "      [DIR] $($_.Name)" -ForegroundColor DarkGray
+                        }
+                        Write-Host "    Include files:" -ForegroundColor Gray
+                        Get-ChildItem $_.FullName -File -ErrorAction SilentlyContinue | Select-Object -First 5 | ForEach-Object {
+                            Write-Host "      [FILE] $($_.Name)" -ForegroundColor DarkGray
+                        }
+                    }
+                    if ($_.Name -eq "lib64") {
+                        Write-Host "    Lib64 files:" -ForegroundColor Gray
+                        Get-ChildItem $_.FullName -File -ErrorAction SilentlyContinue | ForEach-Object {
+                            Write-Host "      [FILE] $($_.Name)" -ForegroundColor DarkGray
+                        }
+                    }
                 }
             } else {
                 throw "MySQL Connector directory not found after extraction"
@@ -524,27 +565,82 @@ jobs:
         Write-Host "Verifying MySQL Connector installation..." -ForegroundColor Yellow
         $MySQLPath = "C:\mysql-connector"
 
-        # 必需文件列表
-        $requiredFiles = @(
+        # 检查MySQL Connector文件结构和必需文件
+        Write-Host "Analyzing MySQL Connector file structure..." -ForegroundColor Yellow
+
+        # 可能的头文件位置
+        $possibleHeaders = @(
             "$MySQLPath\include\mysqlx\xapi.h",
             "$MySQLPath\include\mysql\mysql.h",
-            "$MySQLPath\lib64\mysqlcppconn8.lib"
+            "$MySQLPath\include\mysql.h",
+            "$MySQLPath\include\jdbc\mysql_connection.h"
         )
 
-        $missingFiles = @()
-        foreach ($file in $requiredFiles) {
-            if (-not (Test-Path $file)) {
-                $missingFiles += $file
-                Write-Host "[ERROR] Required file missing: $file" -ForegroundColor Red
-            } else {
-                Write-Host "[OK] Found required file: $file" -ForegroundColor Green
+        # 可能的库文件位置
+        $possibleLibs = @(
+            "$MySQLPath\lib64\mysqlcppconn8.lib",
+            "$MySQLPath\lib64\mysqlcppconn.lib",
+            "$MySQLPath\lib64\mysql.lib",
+            "$MySQLPath\lib64\libmysql.lib",
+            "$MySQLPath\lib\mysqlcppconn8.lib",
+            "$MySQLPath\lib\mysqlcppconn.lib"
+        )
+
+        # 查找实际存在的文件
+        $foundHeaders = @()
+        $foundLibs = @()
+
+        foreach ($header in $possibleHeaders) {
+            if (Test-Path $header) {
+                $foundHeaders += $header
+                Write-Host "[OK] Found header: $header" -ForegroundColor Green
             }
         }
 
-        if ($missingFiles.Count -gt 0) {
+        foreach ($lib in $possibleLibs) {
+            if (Test-Path $lib) {
+                $foundLibs += $lib
+                Write-Host "[OK] Found library: $lib" -ForegroundColor Green
+            }
+        }
+
+        # 验证安装的完整性
+        $installationValid = $true
+        $issues = @()
+
+        # 必须至少有一个头文件
+        if ($foundHeaders.Count -eq 0) {
+            $issues += "No MySQL header files found"
+            $installationValid = $false
+        }
+
+        # 必须至少有一个库文件
+        if ($foundLibs.Count -eq 0) {
+            $issues += "No MySQL library files found"
+            $installationValid = $false
+        }
+
+        # 检查include目录是否存在
+        if (-not (Test-Path "$MySQLPath\include")) {
+            $issues += "Include directory missing"
+            $installationValid = $false
+        }
+
+        # 检查lib目录是否存在（lib64或lib）
+        if (-not (Test-Path "$MySQLPath\lib64") -and -not (Test-Path "$MySQLPath\lib")) {
+            $issues += "Library directory missing (neither lib64 nor lib found)"
+            $installationValid = $false
+        }
+
+        if (-not $installationValid) {
             Write-Host "CRITICAL ERROR: MySQL Connector installation incomplete!" -ForegroundColor Red
-            Write-Host "Missing $($missingFiles.Count) required files" -ForegroundColor Red
-            throw "MySQL Connector verification failed - Required files missing"
+            Write-Host "Issues found:" -ForegroundColor Red
+            foreach ($issue in $issues) {
+                Write-Host "  - $issue" -ForegroundColor Red
+            }
+            Write-Host "Found headers: $($foundHeaders.Count)" -ForegroundColor Yellow
+            Write-Host "Found libraries: $($foundLibs.Count)" -ForegroundColor Yellow
+            throw "MySQL Connector verification failed - Installation incomplete"
         }
 
         Write-Host "[OK] MySQL Connector installation verified successfully" -ForegroundColor Green
