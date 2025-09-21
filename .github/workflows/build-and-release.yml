@@ -1390,12 +1390,55 @@ jobs:
         # Copy Redis DLL files if they exist
         $VcpkgBinPath = "$env:VCPKG_INSTALLED_DIR\bin"
         if (Test-Path $VcpkgBinPath) {
-            $RedisDlls = Get-ChildItem -Path $VcpkgBinPath -Filter "*.dll" | 
+            $RedisDlls = Get-ChildItem -Path $VcpkgBinPath -Filter "*.dll" |
                 Where-Object { $_.Name -like "*redis*" -or $_.Name -like "*hiredis*" }
-            
+
             foreach ($dll in $RedisDlls) {
                 Copy-Item -Path $dll.FullName -Destination $DataDir -Force
                 Write-Host "  Copied Redis DLL: $($dll.Name)" -ForegroundColor Green
+            }
+        }
+
+        # Copy OpenCV DLL files
+        $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
+        if (Test-Path $OpenCVBinPath) {
+            Write-Host "Copying OpenCV DLL files..." -ForegroundColor Yellow
+            $OpenCVDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "*.dll"
+
+            foreach ($dll in $OpenCVDlls) {
+                try {
+                    Copy-Item -Path $dll.FullName -Destination $DataDir -Force
+                    Write-Host "  Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+                } catch {
+                    Write-Host "  Warning: Failed to copy OpenCV DLL: $($dll.Name)" -ForegroundColor Yellow
+                }
+            }
+        } else {
+            Write-Host "  Warning: OpenCV bin directory not found: $OpenCVBinPath" -ForegroundColor Yellow
+        }
+
+        # Copy MySQL Connector DLL files
+        $MySQLBinPaths = @(
+            "C:\mysql-connector\lib64",
+            "C:\mysql-connector\bin"
+        )
+
+        foreach ($binPath in $MySQLBinPaths) {
+            if (Test-Path $binPath) {
+                Write-Host "Copying MySQL DLL files from $binPath..." -ForegroundColor Yellow
+                $MySQLDlls = Get-ChildItem -Path $binPath -Filter "*.dll" |
+                    Where-Object { $_.Name -like "*mysql*" -or $_.Name -like "*ssl*" -or $_.Name -like "*crypto*" }
+
+                foreach ($dll in $MySQLDlls) {
+                    try {
+                        Copy-Item -Path $dll.FullName -Destination $DataDir -Force
+                        Write-Host "  Copied MySQL DLL: $($dll.Name)" -ForegroundColor Green
+                    } catch {
+                        Write-Host "  Warning: Failed to copy MySQL DLL: $($dll.Name)" -ForegroundColor Yellow
+                    }
+                }
+            } else {
+                Write-Host "  Info: MySQL bin directory not found: $binPath" -ForegroundColor Gray
             }
         }
         
