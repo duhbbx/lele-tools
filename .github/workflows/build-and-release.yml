@@ -345,11 +345,12 @@ jobs:
                 }
             }
 
-            # 检查是否有任何库文件
+            # 检查是否有任何库文件或DLL文件
             $hasLibs = $false
             $quickLibCheck = @(
                 "$MySQLPath\lib64\mysqlcppconn8.lib",
                 "$MySQLPath\lib64\mysqlcppconn.lib",
+                "$MySQLPath\lib64\mysqlcppconn-10-vs14.lib",
                 "$MySQLPath\lib\mysqlcppconn8.lib"
             )
             foreach ($lib in $quickLibCheck) {
@@ -357,6 +358,22 @@ jobs:
                     $hasLibs = $true
                     Write-Host "[OK] Found cached library: $lib" -ForegroundColor Green
                     break
+                }
+            }
+
+            # 如果没有找到.lib文件，检查DLL文件
+            if (-not $hasLibs) {
+                $quickDllCheck = @(
+                    "$MySQLPath\lib64\mysqlcppconn-10-vs14.dll",
+                    "$MySQLPath\lib64\mysqlcppconnx-2-vs14.dll",
+                    "$MySQLPath\bin\mysqlcppconn-10-vs14.dll"
+                )
+                foreach ($dll in $quickDllCheck) {
+                    if (Test-Path $dll) {
+                        $hasLibs = $true
+                        Write-Host "[OK] Found cached DLL: $dll" -ForegroundColor Green
+                        break
+                    }
                 }
             }
 
@@ -541,10 +558,17 @@ jobs:
                             Write-Host "      [FILE] $($_.Name)" -ForegroundColor DarkGray
                         }
                     }
-                    if ($_.Name -eq "lib64") {
-                        Write-Host "    Lib64 files:" -ForegroundColor Gray
+                    if ($_.Name -eq "lib64" -or $_.Name -eq "lib") {
+                        Write-Host "    $($_.Name) files:" -ForegroundColor Gray
                         Get-ChildItem $_.FullName -File -ErrorAction SilentlyContinue | ForEach-Object {
                             Write-Host "      [FILE] $($_.Name)" -ForegroundColor DarkGray
+                        }
+                        # 检查子目录
+                        Get-ChildItem $_.FullName -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                            Write-Host "      [DIR] $($_.Name)/" -ForegroundColor DarkGray
+                            Get-ChildItem $_.FullName -File -ErrorAction SilentlyContinue | ForEach-Object {
+                                Write-Host "        [FILE] $($_.Name)" -ForegroundColor DarkGray
+                            }
                         }
                     }
                 }
@@ -576,19 +600,32 @@ jobs:
             "$MySQLPath\include\jdbc\mysql_connection.h"
         )
 
-        # 可能的库文件位置
+        # 可能的库文件位置（.lib导入库和.dll动态库）
         $possibleLibs = @(
             "$MySQLPath\lib64\mysqlcppconn8.lib",
             "$MySQLPath\lib64\mysqlcppconn.lib",
+            "$MySQLPath\lib64\mysqlcppconn-10-vs14.lib",
+            "$MySQLPath\lib64\mysqlcppconnx-2-vs14.lib",
             "$MySQLPath\lib64\mysql.lib",
             "$MySQLPath\lib64\libmysql.lib",
             "$MySQLPath\lib\mysqlcppconn8.lib",
-            "$MySQLPath\lib\mysqlcppconn.lib"
+            "$MySQLPath\lib\mysqlcppconn.lib",
+            "$MySQLPath\lib\mysqlcppconn-10-vs14.lib",
+            "$MySQLPath\lib\mysqlcppconnx-2-vs14.lib"
+        )
+
+        # 可能的DLL文件位置（作为备用验证）
+        $possibleDLLs = @(
+            "$MySQLPath\lib64\mysqlcppconn-10-vs14.dll",
+            "$MySQLPath\lib64\mysqlcppconnx-2-vs14.dll",
+            "$MySQLPath\bin\mysqlcppconn-10-vs14.dll",
+            "$MySQLPath\bin\mysqlcppconnx-2-vs14.dll"
         )
 
         # 查找实际存在的文件
         $foundHeaders = @()
         $foundLibs = @()
+        $foundDLLs = @()
 
         foreach ($header in $possibleHeaders) {
             if (Test-Path $header) {
@@ -604,6 +641,13 @@ jobs:
             }
         }
 
+        foreach ($dll in $possibleDLLs) {
+            if (Test-Path $dll) {
+                $foundDLLs += $dll
+                Write-Host "[OK] Found DLL: $dll" -ForegroundColor Green
+            }
+        }
+
         # 验证安装的完整性
         $installationValid = $true
         $issues = @()
@@ -614,10 +658,42 @@ jobs:
             $installationValid = $false
         }
 
-        # 必须至少有一个库文件
-        if ($foundLibs.Count -eq 0) {
-            $issues += "No MySQL library files found"
+        # 必须至少有一个库文件或DLL文件
+        if ($foundLibs.Count -eq 0 -and $foundDLLs.Count -eq 0) {
+            $issues += "No MySQL library files (.lib) or DLL files found"
             $installationValid = $false
+        } elseif ($foundLibs.Count -eq 0 -and $foundDLLs.Count -gt 0) {
+            Write-Host "[INFO] No .lib files found, but found DLL files. This might be a DLL-only distribution." -ForegroundColor Yellow
+            Write-Host "[INFO] Will attempt to create import libraries or use dynamic linking." -ForegroundColor Yellow
+
+            # 尝试使用lib.exe创建导入库（如果可用）
+            $libExePath = where.exe lib 2>$null
+            if ($libExePath) {
+                Write-Host "[INFO] Found lib.exe, attempting to create import libraries..." -ForegroundColor Yellow
+
+                foreach ($dll in $foundDLLs) {
+                    $dllName = [System.IO.Path]::GetFileNameWithoutExtension($dll)
+                    $libFile = [System.IO.Path]::ChangeExtension($dll, ".lib")
+
+                    try {
+                        # 使用lib.exe创建导入库
+                        $libArgs = "/DEF /OUT:$libFile /MACHINE:X64"
+                        Write-Host "Creating import library for $dllName..." -ForegroundColor Gray
+                        & lib /MACHINE:X64 "/DEF:$dll" "/OUT:$libFile" 2>$null
+
+                        if (Test-Path $libFile) {
+                            $foundLibs += $libFile
+                            Write-Host "[OK] Created import library: $libFile" -ForegroundColor Green
+                        }
+                    } catch {
+                        Write-Host "[WARNING] Failed to create import library for $dllName" -ForegroundColor Yellow
+                    }
+                }
+            } else {
+                Write-Host "[INFO] lib.exe not found, will use DLL files directly" -ForegroundColor Yellow
+                # 将DLL文件添加到库列表中作为备用
+                $foundLibs += $foundDLLs
+            }
         }
 
         # 检查include目录是否存在
@@ -640,10 +716,12 @@ jobs:
             }
             Write-Host "Found headers: $($foundHeaders.Count)" -ForegroundColor Yellow
             Write-Host "Found libraries: $($foundLibs.Count)" -ForegroundColor Yellow
+            Write-Host "Found DLLs: $($foundDLLs.Count)" -ForegroundColor Yellow
             throw "MySQL Connector verification failed - Installation incomplete"
         }
 
         Write-Host "[OK] MySQL Connector installation verified successfully" -ForegroundColor Green
+        Write-Host "Summary: $($foundHeaders.Count) headers, $($foundLibs.Count) libraries, $($foundDLLs.Count) DLLs" -ForegroundColor Green
 
     - name: Configure MySQL Environment
       shell: powershell

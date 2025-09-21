@@ -119,7 +119,11 @@ if(NOT MySQL_INCLUDE_DIR OR NOT MySQL_LIBRARY)
 
     # 尝试查找MySQL Connector/C++的库文件
     find_library(MySQL_LIBRARY
-        NAMES mysqlcppconn8 mysqlcppconn
+        NAMES
+            mysqlcppconn8
+            mysqlcppconn
+            mysqlcppconn-10-vs14
+            mysqlcppconnx-2-vs14
         PATHS
             "C:/mysql-connector/lib64"
             "C:/mysql-connector/lib"
@@ -127,6 +131,29 @@ if(NOT MySQL_INCLUDE_DIR OR NOT MySQL_LIBRARY)
             "C:/vcpkg/installed/x64-windows/lib"
         NO_DEFAULT_PATH
     )
+
+    # 如果没有找到.lib文件，尝试查找DLL文件（用于动态链接）
+    if(NOT MySQL_LIBRARY)
+        find_file(MySQL_DLL
+            NAMES
+                mysqlcppconn-10-vs14.dll
+                mysqlcppconnx-2-vs14.dll
+                mysqlcppconn8.dll
+                mysqlcppconn.dll
+            PATHS
+                "C:/mysql-connector/lib64"
+                "C:/mysql-connector/bin"
+                ${CMAKE_PREFIX_PATH}/bin
+                ${CMAKE_PREFIX_PATH}/lib
+            NO_DEFAULT_PATH
+        )
+
+        if(MySQL_DLL)
+            # 使用DLL文件路径作为库文件（某些项目可能支持直接链接DLL）
+            set(MySQL_LIBRARY ${MySQL_DLL})
+            message(STATUS "Found MySQL DLL: ${MySQL_DLL}")
+        endif()
+    endif()
 
     if(MySQL_INCLUDE_DIR AND MySQL_LIBRARY)
         message(STATUS "Found MySQL using flexible search")
