@@ -68,10 +68,12 @@ find_library(MySQL_LIBRARY
         "C:/Program Files (x86)/MySQL/MySQL Server 5.7/lib"
         "C:/mysql/lib"
         "C:/mysql-connector/lib64"
+        "C:/mysql-connector/lib64/vs14"
     PATH_SUFFIXES
         mysql
         lib
         lib64
+        vs14
 )
 
 # Windows上可能需要额外的库
@@ -87,6 +89,7 @@ if(WIN32)
             "C:/Program Files/MySQL/MySQL Server 8.0/lib"
             "C:/Program Files/MySQL/MySQL Server 5.7/lib"
             "C:/mysql-connector/lib64"
+            "C:/mysql-connector/lib64/vs14"
     )
 
     find_library(MySQL_CRYPTO_LIBRARY
@@ -100,6 +103,7 @@ if(WIN32)
             "C:/Program Files/MySQL/MySQL Server 8.0/lib"
             "C:/Program Files/MySQL/MySQL Server 5.7/lib"
             "C:/mysql-connector/lib64"
+            "C:/mysql-connector/lib64/vs14"
     )
 endif()
 
@@ -124,8 +128,11 @@ if(NOT MySQL_INCLUDE_DIR OR NOT MySQL_LIBRARY)
             mysqlcppconn
             mysqlcppconn-10-vs14
             mysqlcppconnx-2-vs14
+            mysqlcppconn-static
+            mysqlcppconnx-static
         PATHS
             "C:/mysql-connector/lib64"
+            "C:/mysql-connector/lib64/vs14"
             "C:/mysql-connector/lib"
             ${CMAKE_PREFIX_PATH}/lib
             "C:/vcpkg/installed/x64-windows/lib"

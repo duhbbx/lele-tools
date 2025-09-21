@@ -120,17 +120,51 @@ jobs:
       id: opencv-cache
       with:
         path: C:\opencv
-        key: ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}-v2
+        key: ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}-v3
         restore-keys: |
+          ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}-v2
           ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}-v1
           ${{ runner.os }}-opencv-${{ env.OPENCV_VERSION }}
           ${{ runner.os }}-opencv
 
     - name: Setup OpenCV
-      if: steps.opencv-cache.outputs.cache-hit != 'true'
       shell: powershell
       run: |
         Write-Host "Setting up OpenCV ${{ env.OPENCV_VERSION }}..." -ForegroundColor Green
+
+        # 检查是否已经安装（缓存命中）
+        $OpenCVPath = "C:\opencv"
+        if (Test-Path $OpenCVPath) {
+            Write-Host "[OK] OpenCV found in cache: $OpenCVPath" -ForegroundColor Green
+
+            # 验证关键文件是否存在
+            $keyFiles = @(
+                "$OpenCVPath\build\include\opencv2\opencv.hpp",
+                "$OpenCVPath\build\x64\vc16\lib\opencv_world*.lib",
+                "$OpenCVPath\build\x64\vc16\bin\opencv_world*.dll"
+            )
+
+            $allFound = $true
+            foreach ($pattern in $keyFiles) {
+                $files = Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue
+                if ($files.Count -gt 0) {
+                    Write-Host "[OK] Found: $($files[0].FullName)" -ForegroundColor Green
+                } else {
+                    Write-Host "[ERROR] Missing critical files matching: $pattern" -ForegroundColor Red
+                    $allFound = $false
+                }
+            }
+
+            if ($allFound) {
+                Write-Host "[OK] OpenCV cache validation passed" -ForegroundColor Green
+                exit 0  # 成功退出，跳过下载
+            } else {
+                Write-Host "[WARNING] OpenCV cache corrupted, will re-download" -ForegroundColor Yellow
+                Remove-Item $OpenCVPath -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        Write-Host "Downloading OpenCV..." -ForegroundColor Yellow
 
         try {
             # 直接使用OpenCV官方预编译的exe安装包
@@ -278,6 +312,29 @@ jobs:
             Write-Host "Created dummy OpenCV structure for build compatibility" -ForegroundColor Yellow
         }
 
+        # 最终验证OpenCV安装（确保缓存状态正确）
+        Write-Host "Final OpenCV verification..." -ForegroundColor Yellow
+        $OpenCVPath = "C:\opencv"
+
+        # 检查关键文件
+        $criticalFiles = @(
+            "$OpenCVPath\build\include\opencv2\opencv.hpp"
+        )
+
+        $opencvWorking = $true
+        foreach ($file in $criticalFiles) {
+            if (-not (Test-Path $file)) {
+                $opencvWorking = $false
+                Write-Host "[WARNING] OpenCV critical file missing: $file" -ForegroundColor Yellow
+            }
+        }
+
+        if ($opencvWorking) {
+            Write-Host "[OK] OpenCV final verification passed" -ForegroundColor Green
+        } else {
+            Write-Host "[WARNING] OpenCV installation incomplete, will use dummy structure" -ForegroundColor Yellow
+        }
+
     - name: Configure OpenCV Environment
       shell: powershell
       run: |
@@ -351,6 +408,8 @@ jobs:
                 "$MySQLPath\lib64\mysqlcppconn8.lib",
                 "$MySQLPath\lib64\mysqlcppconn.lib",
                 "$MySQLPath\lib64\mysqlcppconn-10-vs14.lib",
+                "$MySQLPath\lib64\vs14\mysqlcppconn.lib",
+                "$MySQLPath\lib64\vs14\mysqlcppconnx.lib",
                 "$MySQLPath\lib\mysqlcppconn8.lib"
             )
             foreach ($lib in $quickLibCheck) {
@@ -606,6 +665,10 @@ jobs:
             "$MySQLPath\lib64\mysqlcppconn.lib",
             "$MySQLPath\lib64\mysqlcppconn-10-vs14.lib",
             "$MySQLPath\lib64\mysqlcppconnx-2-vs14.lib",
+            "$MySQLPath\lib64\vs14\mysqlcppconn.lib",
+            "$MySQLPath\lib64\vs14\mysqlcppconnx.lib",
+            "$MySQLPath\lib64\vs14\mysqlcppconn-static.lib",
+            "$MySQLPath\lib64\vs14\mysqlcppconnx-static.lib",
             "$MySQLPath\lib64\mysql.lib",
             "$MySQLPath\lib64\libmysql.lib",
             "$MySQLPath\lib\mysqlcppconn8.lib",
@@ -667,7 +730,12 @@ jobs:
             Write-Host "[INFO] Will attempt to create import libraries or use dynamic linking." -ForegroundColor Yellow
 
             # 尝试使用lib.exe创建导入库（如果可用）
-            $libExePath = where.exe lib 2>$null
+            $libExePath = $null
+            try {
+                $libExePath = (Get-Command lib.exe -ErrorAction SilentlyContinue).Source
+            } catch {
+                # lib.exe not found in PATH
+            }
             if ($libExePath) {
                 Write-Host "[INFO] Found lib.exe, attempting to create import libraries..." -ForegroundColor Yellow
 
