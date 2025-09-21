@@ -361,21 +361,48 @@ jobs:
             $retryCount = 0
             $downloadSuccess = $false
 
-            # 主要下载链接
-            $urls = @(
-                $MySQLUrl,
-                "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"  # 备用版本
+            # 下载源列表（按优先级排序）
+            $downloadSources = @(
+                @{
+                    url = "https://cdn.mysql.com/Downloads/Connector-C++/mysql-connector-c++-9.4.0-winx64.zip"
+                    description = "MySQL CDN (9.4.0)"
+                },
+                @{
+                    url = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-9.4.0-winx64.zip"
+                    description = "MySQL Official (9.4.0)"
+                },
+                @{
+                    url = "https://cdn.mysql.com/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
+                    description = "MySQL CDN (8.0.33 fallback)"
+                },
+                @{
+                    url = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
+                    description = "MySQL Official (8.0.33 fallback)"
+                },
+                @{
+                    url = "https://archive.mariadb.org/connector-c++-9.4.0/mysql-connector-c++-9.4.0-winx64.zip"
+                    description = "MariaDB Archive Mirror (9.4.0)"
+                },
+                @{
+                    url = "https://downloads.mysql.com/archives/get/p/19/file/mysql-connector-c%2B%2B-8.0.33-winx64.zip"
+                    description = "MySQL Archives (8.0.33)"
+                }
             )
 
-            foreach ($url in $urls) {
+            foreach ($source in $downloadSources) {
                 if ($downloadSuccess) { break }
-                Write-Host "Trying download from: $url" -ForegroundColor Yellow
+                Write-Host "Trying download from: $($source.description)" -ForegroundColor Yellow
+                Write-Host "URL: $($source.url)" -ForegroundColor Gray
 
                 $retryCount = 0
                 while ($retryCount -lt $maxRetries -and -not $downloadSuccess) {
                     try {
                         Write-Host "Downloading MySQL Connector (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
-                        Invoke-WebRequest -Uri $url -OutFile $MySQLZip -UseBasicParsing -TimeoutSec 300
+
+                        # 使用更强健的下载参数
+                        $webClient = New-Object System.Net.WebClient
+                        $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                        $webClient.DownloadFile($source.url, $MySQLZip)
                         # 验证下载文件大小
                         $fileSize = (Get-Item $MySQLZip).Length
                         Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Yellow
@@ -388,18 +415,50 @@ jobs:
                         break
                     } catch {
                         $retryCount++
+                        Write-Host "Download attempt failed: $($_.Exception.Message)" -ForegroundColor Red
                         if ($retryCount -eq $maxRetries) {
-                            Write-Host "Failed to download from $url after $maxRetries attempts" -ForegroundColor Red
+                            Write-Host "Failed to download from $($source.description) after $maxRetries attempts" -ForegroundColor Red
                             break
                         }
-                        Write-Host "Download failed, retrying in 10 seconds..." -ForegroundColor Yellow
+                        Write-Host "Retrying in 10 seconds..." -ForegroundColor Yellow
                         Start-Sleep -Seconds 10
+                    } finally {
+                        if ($webClient) {
+                            $webClient.Dispose()
+                        }
                     }
                 }
             }
 
             if (-not $downloadSuccess) {
-                throw "Failed to download MySQL Connector from all sources"
+                Write-Host "All primary sources failed. Trying final backup methods..." -ForegroundColor Yellow
+
+                # 最后尝试：使用curl命令（通常更好的重定向处理）
+                try {
+                    $curlUrl = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
+                    Write-Host "Trying with curl: $curlUrl" -ForegroundColor Yellow
+                    & curl -L -o $MySQLZip $curlUrl --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+                    if ($LASTEXITCODE -eq 0 -and (Test-Path $MySQLZip)) {
+                        $fileSize = (Get-Item $MySQLZip).Length
+                        if ($fileSize -gt 1MB) {
+                            Write-Host "[OK] Successfully downloaded with curl: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Green
+                            $downloadSuccess = $true
+                        }
+                    }
+                } catch {
+                    Write-Host "Curl download also failed: $($_.Exception.Message)" -ForegroundColor Red
+                }
+            }
+
+            if (-not $downloadSuccess) {
+                Write-Host "CRITICAL ERROR: Failed to download MySQL Connector from all sources" -ForegroundColor Red
+                Write-Host "This includes:" -ForegroundColor Red
+                foreach ($source in $downloadSources) {
+                    Write-Host "  - $($source.description)" -ForegroundColor Red
+                }
+                Write-Host "  - Curl backup method" -ForegroundColor Red
+                throw "MySQL Connector download failed - Build cannot continue"
             }
 
             # 解压MySQL Connector
