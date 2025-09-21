@@ -70,6 +70,8 @@
 
 {"xxx", "OpenCV示例", "OpenCvDemo"},
 
+{"xxx", "OpenCV图像处理", "OpenCvImageProcessor"},
+
 {"xxx", "摄像头工具", "CameraTool"},
 
 {"xxx", "终端工具", "TerminalTool"},
