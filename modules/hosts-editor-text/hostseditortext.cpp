@@ -68,7 +68,7 @@ void SimpleHostsEditor::setupUI()
             padding: 8px 16px;
             border-radius: 0px;
             border: 1px solid #ccc;
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: bold;
             min-width: 80px;
             background-color: #f8f9fa;
@@ -101,7 +101,7 @@ void SimpleHostsEditor::setupUI()
         }
         QTextEdit {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 11pt;
+            font-size: 10pt;
             border: 2px solid #ced4da;
             border-radius: 0px;
             background-color: white;
@@ -113,7 +113,7 @@ void SimpleHostsEditor::setupUI()
         }
         QLabel {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
         }
     )");
 }

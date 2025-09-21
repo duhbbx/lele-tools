@@ -122,7 +122,7 @@ void XmlFormatter::setupToolbar() {
     clearBtn = new QPushButton(tr("🗑️ 清空"));
     copyBtn = new QPushButton(tr("📋 复制"));
     statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; font-size: 11pt; padding: 6px 12px; background: #f9f9f9; border: 1px solid #ddd;");
+    statusLabel->setStyleSheet("color: #666; font-weight: bold; font-size: 10pt; padding: 6px 12px; background: #f9f9f9; border: 1px solid #ddd;");
 
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);
@@ -140,7 +140,7 @@ void XmlFormatter::setupInputOutput() {
     inputLayout = new QVBoxLayout(inputWidget);
 
     inputLabel = new QLabel(tr("📝 XML输入"));
-    inputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
+    inputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
 
     inputTextEdit = new QTextEdit();
     inputTextEdit->setPlaceholderText(tr("请输入要格式化的XML数据..."));
@@ -153,7 +153,7 @@ void XmlFormatter::setupInputOutput() {
     outputLayout = new QVBoxLayout(outputWidget);
 
     outputLabel = new QLabel(tr("📄 格式化结果"));
-    outputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
+    outputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
 
     outputTextEdit = new QPlainTextEdit();
     outputTextEdit->setReadOnly(true);

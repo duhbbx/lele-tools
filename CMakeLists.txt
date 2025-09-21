@@ -336,6 +336,28 @@ else()
     target_compile_definitions(lele-tools PRIVATE WITHOUT_PCAP)
 endif()
 
+# LibSSH 支持 (SSH客户端和SFTP功能)
+option(WITH_LIBSSH "Enable LibSSH support for SSH and SFTP" ON)
+
+if(WITH_LIBSSH)
+    find_package(LibSSH QUIET)
+    if(LibSSH_FOUND)
+        message(STATUS "LibSSH support enabled - SSH and SFTP functionality available")
+        target_link_libraries(lele-tools PRIVATE LibSSH::LibSSH)
+        target_compile_definitions(lele-tools PRIVATE WITH_LIBSSH)
+        set(HAVE_LIBSSH TRUE)
+    else()
+        message(STATUS "LibSSH not found - SSH and SFTP tools will be disabled")
+        message(STATUS "  To enable SSH functionality, install libssh-dev or set LibSSH_ROOT_DIR")
+        target_compile_definitions(lele-tools PRIVATE WITHOUT_LIBSSH)
+        set(HAVE_LIBSSH FALSE)
+    endif()
+else()
+    message(STATUS "LibSSH support disabled")
+    target_compile_definitions(lele-tools PRIVATE WITHOUT_LIBSSH)
+    set(HAVE_LIBSSH FALSE)
+endif()
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.

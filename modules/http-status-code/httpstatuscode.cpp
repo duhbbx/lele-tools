@@ -231,7 +231,7 @@ void HttpStatusCode::setupDetailsArea()
     
     // RFC标准
     rfcLabel = new QLabel(tr("RFC标准: --"));
-    rfcLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
+    rfcLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
     detailsLayout->addWidget(rfcLabel);
 }
 

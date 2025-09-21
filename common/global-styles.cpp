@@ -4,7 +4,7 @@ QString GlobalStyles::getCheckBoxStyle() {
     return R"(
         QCheckBox {
             spacing: 10px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             padding: 2px;
@@ -64,7 +64,7 @@ QString GlobalStyles::getButtonStyle() {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             padding: 4px 8px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             color: #333333;
             min-height: 16px;
@@ -98,7 +98,7 @@ QString GlobalStyles::getInputStyle() {
         QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
             border: 2px solid #e1e5e9;
             padding: 2px 2px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             background-color: white;
             color: #333333;
@@ -106,7 +106,7 @@ QString GlobalStyles::getInputStyle() {
         QTextEdit, QPlainTextEdit {
             border: 2px solid #e1e5e9;
             padding: 4px 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-family: Consolas;
             background-color: white;
             color: #333333;
@@ -127,7 +127,7 @@ QString GlobalStyles::getGlobalStyle() {
     return QString(R"(
         QWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
             color: #333333;
         }
         QGroupBox {
@@ -157,12 +157,12 @@ QString GlobalStyles::getGlobalStyle() {
         QTableWidget {
             border: 1px solid #dee2e6;
             gridline-color: #e9ecef;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
         }
         QTableWidget::item {
             padding: 4px 8px;
-            font-size: 11pt;
+            font-size: 10pt;
             border-bottom: 1px solid #e9ecef;
         }
         QTableWidget::item:selected {
@@ -174,10 +174,10 @@ QString GlobalStyles::getGlobalStyle() {
             border: 1px solid #dee2e6;
             padding: 4px 8px;
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QLabel {
-            font-size: 11pt;
+            font-size: 10pt;
         }
     )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle();
 }

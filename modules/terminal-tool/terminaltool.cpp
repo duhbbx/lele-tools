@@ -62,7 +62,7 @@ IntegratedTerminal::IntegratedTerminal(QWidget *parent)
             border: 1px solid #333333;
             selection-background-color: #444444;
             font-family: '%1', 'Consolas', 'Source Code Pro', 'Monaco', monospace;
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: normal;
         }
         QScrollBar:vertical {

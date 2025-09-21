@@ -376,7 +376,7 @@ void ConnectionDialog::setupUI() {
             padding: 10px 12px;
             border: 2px solid #e9ecef;
             border-radius: 6px;
-            font-size: 11pt;
+            font-size: 10pt;
             height: 40px;
             min-width: 200px;
             background: white;
@@ -427,7 +427,7 @@ void ConnectionDialog::setupUI() {
             height: 0px;
         }
         QCheckBox {
-            font-size: 11pt;
+            font-size: 10pt;
             color: #2c3e50;
         }
         QCheckBox::indicator {
@@ -442,7 +442,7 @@ void ConnectionDialog::setupUI() {
         }
         QPushButton {
             padding: 10px 20px;
-            font-size: 11pt;
+            font-size: 10pt;
             border: none;
             border-radius: 6px;
             font-weight: 500;
@@ -475,7 +475,7 @@ void ConnectionDialog::setupUI() {
             background: #7f8c8d;
         }
         QLabel {
-            font-size: 11pt;
+            font-size: 10pt;
             color: #2c3e50;
             font-weight: 500;
         }

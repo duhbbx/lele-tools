@@ -63,7 +63,7 @@ public:
         editor->setStyleSheet(
             "QLineEdit {"
             "    padding: 2px;"
-            "    font-size: 11pt;"
+            "    font-size: 10pt;"
             "    border: 2px solid #2196f3;"
             "    border-radius: 3px;"
             "    background-color: white;"

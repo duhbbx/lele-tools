@@ -209,7 +209,7 @@ void YamlFormatter::setupToolbar()
     copyBtn = new QPushButton(tr("📋 复制"));
 
     statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 11pt;");
+    statusLabel->setStyleSheet("color: #666; padding: 6px 12px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-size: 10pt;");
     
     toolbarLayout->addWidget(formatBtn);
     toolbarLayout->addWidget(minifyBtn);

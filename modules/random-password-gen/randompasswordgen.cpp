@@ -223,7 +223,7 @@ void RandomPasswordGen::setupPasswordSettings()
     
     strengthDescription = new QLabel(tr("请选择字符集并设置密码长度"));
     strengthDescription->setAlignment(Qt::AlignCenter);
-    strengthDescription->setStyleSheet("color: #666; font-size: 11pt;");
+    strengthDescription->setStyleSheet("color: #666; font-size: 10pt;");
     strengthDescription->setWordWrap(true);
     
     strengthLayout->addWidget(strengthBar);

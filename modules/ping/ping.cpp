@@ -162,7 +162,7 @@ void Ping::setupResultsArea() {
     resultsLayout = new QVBoxLayout(resultsWidget);
 
     resultsLabel = new QLabel(tr("📊 Ping结果"));
-    resultsLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
+    resultsLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
 
     resultsTable = new QTableWidget();
     resultsTable->setColumnCount(6);

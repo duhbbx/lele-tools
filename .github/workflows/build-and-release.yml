@@ -815,8 +815,103 @@ jobs:
             throw "CRITICAL ERROR: MySQL lib64 directory not found at $MySQLBinPath"
         }
 
+    # 步骤4: 使用vcpkg安装LibSSH
+    # LibSSH是SSH客户端库，用于SSH连接和SFTP文件传输
+    - name: Cache vcpkg
+      uses: actions/cache@v4
+      id: vcpkg-cache
+      with:
+        path: |
+          ${{ env.VCPKG_INSTALLED_DIR }}
+          ${{ env.VCPKG_DOWNLOADS }}
+        key: ${{ runner.os }}-vcpkg-libssh-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json') }}-v2
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-libssh-v2
+          ${{ runner.os }}-vcpkg-libssh
+          ${{ runner.os }}-vcpkg-v2
 
-    # 步骤4: 安装Qt开发框架
+    - name: Setup vcpkg and install LibSSH
+      shell: powershell
+      run: |
+        Write-Host "Setting up vcpkg and installing LibSSH..." -ForegroundColor Green
+
+        # 检查vcpkg是否已存在
+        $VcpkgPath = "$env:VCPKG_ROOT"
+        if (-not (Test-Path "$VcpkgPath\vcpkg.exe")) {
+            Write-Host "Installing vcpkg..." -ForegroundColor Yellow
+
+            # 克隆vcpkg（如果不存在）
+            if (-not (Test-Path $VcpkgPath)) {
+                git clone https://github.com/microsoft/vcpkg.git $VcpkgPath
+            }
+
+            # 运行bootstrap脚本
+            & "$VcpkgPath\bootstrap-vcpkg.bat" -disableMetrics
+
+            if ($LASTEXITCODE -ne 0) {
+                throw "vcpkg bootstrap failed"
+            }
+        } else {
+            Write-Host "[OK] vcpkg already installed" -ForegroundColor Green
+        }
+
+        # 检查LibSSH是否已安装
+        $LibSSHIncludePath = "$env:VCPKG_INSTALLED_DIR\include\libssh\libssh.h"
+        $LibSSHLibPath = "$env:VCPKG_INSTALLED_DIR\lib\ssh.lib"
+
+        if ((Test-Path $LibSSHIncludePath) -and (Test-Path $LibSSHLibPath)) {
+            Write-Host "[OK] LibSSH already installed via vcpkg" -ForegroundColor Green
+        } else {
+            Write-Host "Installing LibSSH via vcpkg..." -ForegroundColor Yellow
+
+            # 设置vcpkg三元组
+            $triplet = "x64-windows"
+
+            # 安装LibSSH
+            & "$VcpkgPath\vcpkg.exe" install libssh:$triplet
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "[ERROR] LibSSH installation failed" -ForegroundColor Red
+                throw "vcpkg install libssh failed"
+            }
+
+            Write-Host "[OK] LibSSH installed successfully" -ForegroundColor Green
+        }
+
+        # 验证安装结果
+        Write-Host "Verifying LibSSH installation..." -ForegroundColor Yellow
+
+        $verificationPaths = @(
+            @{ Path = "$env:VCPKG_INSTALLED_DIR\include\libssh\libssh.h"; Type = "Header" },
+            @{ Path = "$env:VCPKG_INSTALLED_DIR\lib\ssh.lib"; Type = "Library" },
+            @{ Path = "$env:VCPKG_INSTALLED_DIR\bin\ssh.dll"; Type = "DLL" }
+        )
+
+        $allFound = $true
+        foreach ($item in $verificationPaths) {
+            if (Test-Path $item.Path) {
+                Write-Host "[OK] Found $($item.Type): $($item.Path)" -ForegroundColor Green
+            } else {
+                Write-Host "[WARNING] Missing $($item.Type): $($item.Path)" -ForegroundColor Yellow
+                if ($item.Type -ne "DLL") {  # DLL可能在不同位置，不是关键错误
+                    $allFound = $false
+                }
+            }
+        }
+
+        if ($allFound) {
+            Write-Host "[OK] LibSSH installation verification passed" -ForegroundColor Green
+        } else {
+            Write-Host "[WARNING] Some LibSSH components missing, but continuing..." -ForegroundColor Yellow
+        }
+
+        # 设置CMake变量
+        echo "CMAKE_PREFIX_PATH=$env:VCPKG_INSTALLED_DIR" >> $env:GITHUB_ENV
+        echo "VCPKG_TARGET_TRIPLET=x64-windows" >> $env:GITHUB_ENV
+
+        Write-Host "[OK] LibSSH setup completed via vcpkg" -ForegroundColor Green
+
+    # 步骤5: 安装Qt开发框架
     # Qt是GUI应用程序的核心依赖，包含界面组件和多媒体功能
     - name: Setup Qt
       uses: jurplel/install-qt-action@v3    # 使用第三方Action安装Qt
@@ -910,7 +1005,7 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v2    # 微软官方Action
       
-    # 步骤4: 安装CMake构建系统和Ninja构建工具
+    # 步骤5: 安装CMake构建系统和Ninja构建工具
     # CMake: 跨平台构建系统，生成构建文件
     # Ninja: 快速的并行构建工具，比MSBuild更高效
     - name: Setup CMake and Ninja
@@ -1397,6 +1492,24 @@ jobs:
                 Copy-Item -Path $dll.FullName -Destination $DataDir -Force
                 Write-Host "  Copied Redis DLL: $($dll.Name)" -ForegroundColor Green
             }
+        }
+
+        # Copy LibSSH DLL files if they exist
+        if (Test-Path $VcpkgBinPath) {
+            Write-Host "Checking for LibSSH DLL files..." -ForegroundColor Yellow
+            $LibSSHDlls = Get-ChildItem -Path $VcpkgBinPath -Filter "*.dll" |
+                Where-Object { $_.Name -like "*ssh*" -or $_.Name -like "*crypto*" -or $_.Name -like "*ssl*" }
+
+            foreach ($dll in $LibSSHDlls) {
+                try {
+                    Copy-Item -Path $dll.FullName -Destination $DataDir -Force
+                    Write-Host "  Copied LibSSH DLL: $($dll.Name)" -ForegroundColor Green
+                } catch {
+                    Write-Host "  Warning: Failed to copy LibSSH DLL: $($dll.Name)" -ForegroundColor Yellow
+                }
+            }
+        } else {
+            Write-Host "  Info: vcpkg bin directory not found: $VcpkgBinPath" -ForegroundColor Gray
         }
 
         # Copy OpenCV DLL files

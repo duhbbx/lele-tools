@@ -215,7 +215,7 @@ void JsonFormatter::setupInputArea() {
     inputLayout->setSpacing(8);
 
     inputLabel = new QLabel(tr("📝 JSON输入"));
-    inputLabel->setStyleSheet("font-weight: bold; font-size: 11pt; color: #333;");
+    inputLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
 
     inputTextEdit = new QTextEdit();
     inputTextEdit->setPlaceholderText(tr("请输入要格式化的JSON数据..."));

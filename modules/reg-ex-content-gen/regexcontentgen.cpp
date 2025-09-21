@@ -145,7 +145,7 @@ void RegExContentGen::setupInputArea()
     regexInput->setMinimumHeight(40);
     
     statusLabel = new QLabel(tr("请输入正则表达式"));
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt; padding: 4px;");
+    statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt; padding: 4px;");
     
     inputLayout->addWidget(regexLabel);
     inputLayout->addWidget(regexInput);
@@ -638,7 +638,7 @@ void RegExContentGen::onClearAll()
     copyBtn->setEnabled(false);
     exportBtn->setEnabled(false);
     statusLabel->setText(tr("已清空结果"));
-    statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
+    statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
 }
 
 void RegExContentGen::onCopyResults()
@@ -671,7 +671,7 @@ void RegExContentGen::onRegexChanged()
     QString regex = regexInput->text().trimmed();
     if (regex.isEmpty()) {
         statusLabel->setText(tr("请输入正则表达式"));
-        statusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
+        statusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
         generateBtn->setEnabled(false);
     } else {
         // 简单验证正则表达式

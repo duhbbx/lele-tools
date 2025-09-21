@@ -251,7 +251,7 @@ void TorrentFileAnalysis::setupUI()
             padding: 8px 16px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: normal;
             min-width: 80px;
             background-color: #f8f9fa;
@@ -287,7 +287,7 @@ void TorrentFileAnalysis::setupUI()
             padding: 8px;
             border: 2px solid #ced4da;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
         }
         QLineEdit:focus {
@@ -296,20 +296,20 @@ void TorrentFileAnalysis::setupUI()
         }
         QLabel {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QTextEdit, QPlainTextEdit {
             font-family: 'Consolas', 'Monaco', monospace;
             border: 2px solid #dee2e6;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
         }
         QTreeWidget, QTableWidget {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             border: 2px solid #dee2e6;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             gridline-color: #dee2e6;
             background-color: white;
             alternate-background-color: #f8f9fa;

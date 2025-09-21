@@ -32,7 +32,8 @@
       "Bash(git commit:*)",
       "WebSearch",
       "Bash(cd:*)",
-      "Bash(timeout 30 cmake --build build --target lele-tools)"
+      "Bash(timeout 30 cmake --build build --target lele-tools)",
+      "Bash(timeout 120 cmake --build build)"
     ],
     "deny": [],
     "ask": []

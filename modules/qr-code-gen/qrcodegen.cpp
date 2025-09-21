@@ -470,7 +470,7 @@ void QrCodeGen::setupUI()
             padding: 8px 16px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: normal;
             min-width: 80px;
             background-color: #f8f9fa;
@@ -506,7 +506,7 @@ void QrCodeGen::setupUI()
             padding: 8px;
             border: 2px solid #ced4da;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
         }
         QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
@@ -518,17 +518,17 @@ void QrCodeGen::setupUI()
             padding: 6px;
             border: 2px solid #ced4da;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
             min-width: 80px;
         }
         QLabel {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QCheckBox, QRadioButton {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QTabWidget::pane {
             border: 2px solid #dee2e6;
@@ -927,7 +927,7 @@ void QrCodeGen::setupBatchArea()
     batchResultLayout->addLayout(batchButtonLayout);
     
     batchStatusLabel = new QLabel(tr("就绪"));
-    batchStatusLabel->setStyleSheet("color: #6c757d; font-size: 11pt;");
+    batchStatusLabel->setStyleSheet("color: #6c757d; font-size: 10pt;");
     batchResultLayout->addWidget(batchStatusLabel);
     
     batchSplitter->addWidget(batchResultGroup);

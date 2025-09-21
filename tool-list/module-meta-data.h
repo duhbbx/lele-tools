@@ -72,6 +72,8 @@
 
 {"xxx", "OpenCV图像处理", "OpenCvImageProcessor"},
 
+{"xxx", "SSH客户端", "SSHClient"},
+
 {"xxx", "摄像头工具", "CameraTool"},
 
 {"xxx", "终端工具", "TerminalTool"},

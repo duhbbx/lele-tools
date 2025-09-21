@@ -182,7 +182,7 @@ void Telnet::setupUI()
             border-radius: 8px;
             padding: 12px;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: #1e1e1e;
             color: #ffffff;
             selection-background-color: #3498db;
@@ -192,7 +192,7 @@ void Telnet::setupUI()
         }
         QCheckBox {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
             color: #333333;
             spacing: 8px;
         }
@@ -214,7 +214,7 @@ void Telnet::setupUI()
         }
         QLabel {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
             color: #333333;
         }
     )");
@@ -481,7 +481,7 @@ void Telnet::setupStatusArea()
     bytesLabel = new QLabel(tr("发送: 0B | 接收: 0B"));
     bytesLabel->setStyleSheet(R"(
         color: #7f8c8d;
-        font-size: 11pt;
+        font-size: 10pt;
         font-weight: 500;
         padding: 6px 12px;
         background: #f8f9fa;

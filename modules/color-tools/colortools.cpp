@@ -503,7 +503,7 @@ void ColorTools::setupUI()
             padding: 8px 16px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: normal;
             min-width: 80px;
             background-color: #f8f9fa;
@@ -539,7 +539,7 @@ void ColorTools::setupUI()
             padding: 6px;
             border: 2px solid #ced4da;
             border-radius: 4px;
-            font-size: 11pt;
+            font-size: 10pt;
             background-color: white;
         }
         QLineEdit:focus, QSpinBox:focus {
@@ -548,7 +548,7 @@ void ColorTools::setupUI()
         }
         QLabel {
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QTabWidget::pane {
             border: 2px solid #dee2e6;
