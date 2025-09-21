@@ -29,7 +29,8 @@
       "Bash(taskkill:*)",
       "Bash(timeout 30 cmake --build build-test)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

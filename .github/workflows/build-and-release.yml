@@ -39,7 +39,7 @@ env:
   QT_VERSION_LINUX: '6.5.3'     # Linux平台Qt版本（LTS稳定版）
   CMAKE_VERSION: '3.28'          # CMake构建工具版本
   MSVC_VERSION: '2022'           # Visual Studio编译器版本
-  OPENCV_VERSION: '4.10.0'       # OpenCV计算机视觉库版本（可选）
+  OPENCV_VERSION: '4.12.0'       # OpenCV计算机视觉库版本（可选）
 
 jobs:
   # Windows构建任务
@@ -239,7 +239,7 @@ jobs:
             # 检查并移动文件到正确位置
             $possiblePaths = @(
                 "C:\opencv-${{ env.OPENCV_VERSION }}-windows",
-                "C:\opencv-4.10.0-windows",
+                "C:\opencv-4.12.0-windows",
                 "C:\opencv"
             )
 
@@ -1441,7 +1441,40 @@ jobs:
                 Write-Host "  Info: MySQL bin directory not found: $binPath" -ForegroundColor Gray
             }
         }
-        
+
+        # Copy Npcap/WinPcap DLL files (optional for network tools)
+        $NpcapPaths = @(
+            "C:\Windows\System32\Npcap",        # Npcap installation directory
+            "C:\Windows\System32",               # May contain wpcap.dll
+            "C:\WinPcap"                        # Legacy WinPcap directory
+        )
+
+        $PcapDllFound = $false
+        foreach ($npcapPath in $NpcapPaths) {
+            if (Test-Path $npcapPath) {
+                Write-Host "Checking for pcap DLLs in $npcapPath..." -ForegroundColor Yellow
+
+                # Look for wpcap.dll and packet.dll
+                $PcapDlls = Get-ChildItem -Path $npcapPath -Filter "*.dll" |
+                    Where-Object { $_.Name -like "*wpcap*" -or $_.Name -like "*packet*" }
+
+                foreach ($dll in $PcapDlls) {
+                    try {
+                        Copy-Item -Path $dll.FullName -Destination $DataDir -Force
+                        Write-Host "  Copied Npcap DLL: $($dll.Name)" -ForegroundColor Green
+                        $PcapDllFound = $true
+                    } catch {
+                        Write-Host "  Warning: Failed to copy Npcap DLL: $($dll.Name)" -ForegroundColor Yellow
+                    }
+                }
+            }
+        }
+
+        if (-not $PcapDllFound) {
+            Write-Host "  Info: No Npcap/WinPcap DLLs found - network capture features will use fallback methods" -ForegroundColor Gray
+            Write-Host "  Note: Npcap can be installed from https://npcap.com/ for enhanced network functionality" -ForegroundColor Gray
+        }
+
         # Copy Qt directories
         $QtDirs = @('platforms', 'imageformats', 'styles', 'translations', 'iconengines', 'generic', 'networkinformation', 'tls')
         foreach ($qtDir in $QtDirs) {

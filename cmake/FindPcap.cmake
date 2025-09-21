@@ -249,22 +249,24 @@ if(WIN32)
             endif()
         endif()
     else()
-        # Fallback to Windows ICMP API
+        # Fallback to Windows ICMP API - this is a graceful fallback, not an error
         set(WITH_WINDOWS_ICMP TRUE)
-        message(STATUS "Npcap SDK not found. Will use Windows ICMP API fallback.")
+        message(STATUS "Npcap not found. Network tools will use Windows ICMP API fallback.")
+        message(STATUS "  For enhanced network capture, install Npcap from: https://npcap.com/")
 
         # Create a pseudo-target for Windows ICMP API
         if(NOT TARGET Pcap::Pcap)
             add_library(Pcap::Pcap INTERFACE IMPORTED)
             set_target_properties(Pcap::Pcap PROPERTIES
-                INTERFACE_COMPILE_DEFINITIONS "WITH_WINDOWS_ICMP"
+                INTERFACE_COMPILE_DEFINITIONS "WITH_WINDOWS_ICMP;WITHOUT_PCAP"
                 INTERFACE_LINK_LIBRARIES "iphlpapi;ws2_32"
             )
         endif()
 
-        # Set as found but with fallback
+        # Set as found but with fallback - this allows graceful operation
         set(Pcap_FOUND TRUE)
         set(Pcap_LIBRARIES "iphlpapi;ws2_32")
+        set(HAVE_PCAP FALSE)  # Distinguish between real pcap and fallback
     endif()
 
 else()
@@ -332,27 +334,31 @@ else()
                 INTERFACE_COMPILE_DEFINITIONS "WITH_PCAP"
             )
         endif()
+    else()
+        # Unix systems without pcap - create fallback interface
+        set(Pcap_FOUND TRUE)  # Allow graceful operation
+        set(HAVE_PCAP FALSE)
+        message(STATUS "libpcap not found - network tools will have limited functionality")
+
+        # Create a minimal interface for Unix systems without pcap
+        if(NOT TARGET Pcap::Pcap)
+            add_library(Pcap::Pcap INTERFACE IMPORTED)
+            set_target_properties(Pcap::Pcap PROPERTIES
+                INTERFACE_COMPILE_DEFINITIONS "WITHOUT_PCAP"
+            )
+        endif()
     endif()
 endif()
 
-# Handle standard arguments
-if(WIN32 AND WITH_WINDOWS_ICMP)
-    # Special case for Windows with ICMP fallback
-    find_package_handle_standard_args(Pcap
-        DEFAULT_MSG
-        REQUIRED_VARS WITH_WINDOWS_ICMP
-    )
-else()
-    # Normal case
-    find_package_handle_standard_args(Pcap
-        FOUND_VAR Pcap_FOUND
-        REQUIRED_VARS Pcap_INCLUDE_DIRS Pcap_LIBRARIES
-        FAIL_MESSAGE "Could not find pcap library."
-    )
-endif()
+# Handle standard arguments - always succeed but provide informative messages
+find_package_handle_standard_args(Pcap
+    FOUND_VAR Pcap_FOUND
+    REQUIRED_VARS Pcap_FOUND  # We set this to TRUE above, so it always succeeds
+    FAIL_MESSAGE "Pcap module loaded with fallback methods."
+)
 
-# Provide installation instructions if not found
-if(NOT Pcap_FOUND AND NOT WITH_WINDOWS_ICMP)
+# Provide installation instructions if pcap is not actually available
+if(NOT HAVE_PCAP)
     message(STATUS "To install pcap:")
     if(WIN32)
         message(STATUS "  Windows:")
@@ -376,16 +382,13 @@ if(NOT Pcap_FOUND AND NOT WITH_WINDOWS_ICMP)
 endif()
 
 # Export variables for compatibility
-if(Pcap_FOUND OR WITH_WINDOWS_ICMP)
-    set(PCAP_FOUND TRUE)
+set(PCAP_FOUND TRUE)  # Always true for graceful operation
 
-    # Set compile definitions based on what we found
-    if(HAVE_PCAP)
-        add_compile_definitions(WITH_PCAP)
-    elseif(WITH_WINDOWS_ICMP)
-        add_compile_definitions(WITH_WINDOWS_ICMP)
-    endif()
-endif()
+# Export HAVE_PCAP to parent scope so CMakeLists.txt can use it
+set(HAVE_PCAP ${HAVE_PCAP} PARENT_SCOPE)
+
+# Note: Compile definitions are set in the imported target properties
+# Parent CMakeLists.txt should check HAVE_PCAP for conditional compilation
 
 # Mark cache variables as advanced
 mark_as_advanced(PCAP_INCLUDE_DIR PCAP_LIBRARY PACKET_LIBRARY)

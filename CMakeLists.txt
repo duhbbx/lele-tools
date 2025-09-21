@@ -309,21 +309,31 @@ if(HAVE_MYSQL)
     endif()
 endif()
 
-# Npcap/libpcap支持 (Traceroute工具需要)
-# Pcap 支持检测
-option(WITH_PCAP "Enable pcap support for network tools" ON)
+# Npcap/libpcap支持 (网络工具的可选功能)
+# Pcap 支持检测 - 可选依赖，不影响主要功能
+option(WITH_PCAP "Enable pcap support for enhanced network tools" ON)
 
 if(WITH_PCAP)
-    find_package(Pcap)
+    find_package(Pcap QUIET)
     if(Pcap_FOUND)
-        message(STATUS "Pcap support enabled")
+        message(STATUS "Pcap support enabled - enhanced network capture available")
         target_link_libraries(lele-tools PRIVATE Pcap::Pcap)
+        set(HAVE_PCAP TRUE)
     else()
-        message(WARNING "Pcap support requested but not available")
+        message(STATUS "Pcap not found - network tools will use system fallback methods")
+        message(STATUS "  To enable enhanced network capture, install Npcap from https://npcap.com/")
+        set(HAVE_PCAP FALSE)
     endif()
 else()
     message(STATUS "Pcap support disabled")
     set(HAVE_PCAP FALSE)
+endif()
+
+# 确保无论是否找到Pcap，都定义相关宏
+if(HAVE_PCAP)
+    target_compile_definitions(lele-tools PRIVATE WITH_PCAP)
+else()
+    target_compile_definitions(lele-tools PRIVATE WITHOUT_PCAP)
 endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
