@@ -133,32 +133,32 @@ YamlFormatter::YamlFormatter() : QWidget(nullptr), DynamicObjectBase(), isValidY
     connect(indentSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &YamlFormatter::onIndentChanged);
     
     // 设置默认示例
-    QString sampleYaml = R"(---
+    QString sampleYaml = tr(R"(---
 # 乐乐工具箱配置示例
 app:
   name: "乐乐的工具箱"
   version: "1.0.0"
   debug: true
-  
+
 database:
   host: "localhost"
   port: 5432
   name: "lele_tools"
-  
+
 features:
   - "JSON格式化"
-  - "XML格式化" 
+  - "XML格式化"
   - "YAML格式化"
   - "正则测试"
   - "密码生成"
-  
+
 settings:
   theme: "light"
   language: "zh-CN"
   auto_save: true
   max_history: 100
   timeout: null
-...)";
+...)");
     
     inputTextEdit->setPlainText(sampleYaml);
     onFormatYaml();
@@ -222,7 +222,7 @@ void YamlFormatter::setupToolbar()
 
 void YamlFormatter::setupOptions()
 {
-    optionsGroup = new QGroupBox("⚙️ 格式选项");
+    optionsGroup = new QGroupBox(tr("⚙️ 格式选项"));
     // optionsGroup->setFixedHeight(60);
     optionsGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
     optionsLayout = new QHBoxLayout(optionsGroup);
@@ -231,12 +231,14 @@ void YamlFormatter::setupOptions()
     
     indentLabel = new QLabel(tr("缩进空格:"));
     indentSpinBox = new QSpinBox();
+    indentSpinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
     indentSpinBox->setRange(2, 8);
     indentSpinBox->setValue(2);
     indentSpinBox->setFixedWidth(60);
     
-    sortKeysCheck = new QCheckBox("排序键名");
-    flowStyleCheck = new QCheckBox("流式风格");
+    sortKeysCheck = new QCheckBox(tr("排序键名"));
+    flowStyleCheck = new QCheckBox(tr("流式风格"));
     
     optionsLayout->addWidget(indentLabel);
     optionsLayout->addWidget(indentSpinBox);
@@ -288,13 +290,13 @@ void YamlFormatter::onInputTextChanged()
 {
     QString text = inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        updateStatus("输入为空", false);
+        updateStatus(tr("输入为空"), false);
         return;
     }
     
     QString errorMessage;
     isValidYaml = validateYamlString(text, errorMessage);
-    updateStatus(isValidYaml ? "YAML格式看起来正确" : QString("YAML格式可能有问题: %1").arg(errorMessage), !isValidYaml);
+    updateStatus(isValidYaml ? tr("YAML格式看起来正确") : tr("YAML格式可能有问题: %1").arg(errorMessage), !isValidYaml);
 }
 
 void YamlFormatter::onFormatYaml()
@@ -305,7 +307,7 @@ void YamlFormatter::onFormatYaml()
     int indent = indentSpinBox->value();
     QString formatted = formatYamlString(text, indent);
     outputTextEdit->setPlainText(formatted);
-    updateStatus("YAML格式化完成", false);
+    updateStatus(tr("YAML格式化完成"), false);
 }
 
 void YamlFormatter::onMinifyYaml()
@@ -315,7 +317,7 @@ void YamlFormatter::onMinifyYaml()
     
     QString minified = minifyYamlString(text);
     outputTextEdit->setPlainText(minified);
-    updateStatus("YAML压缩完成", false);
+    updateStatus(tr("YAML压缩完成"), false);
 }
 
 void YamlFormatter::onValidateYaml()
@@ -325,14 +327,14 @@ void YamlFormatter::onValidateYaml()
     
     QString errorMessage;
     bool isValid = validateYamlString(text, errorMessage);
-    QMessageBox::information(this, "验证结果", isValid ? "✅ YAML格式正确！" : QString("⚠️ YAML可能有格式问题:\n%1").arg(errorMessage));
+    QMessageBox::information(this, tr("验证结果"), isValid ? tr("✅ YAML格式正确！") : tr("⚠️ YAML可能有格式问题:\n%1").arg(errorMessage));
 }
 
 void YamlFormatter::onClearAll()
 {
     inputTextEdit->clear();
     outputTextEdit->clear();
-    updateStatus("已清空所有内容", false);
+    updateStatus(tr("已清空所有内容"), false);
 }
 
 void YamlFormatter::onCopyFormatted()
@@ -340,7 +342,7 @@ void YamlFormatter::onCopyFormatted()
     QString text = outputTextEdit->toPlainText();
     if (!text.isEmpty()) {
         QApplication::clipboard()->setText(text);
-        updateStatus("已复制到剪贴板", false);
+        updateStatus(tr("已复制到剪贴板"), false);
     }
 }
 
@@ -429,13 +431,13 @@ bool YamlFormatter::validateYamlString(const QString& yaml, QString& errorMessag
         if (trimmed.contains(':')) {
             QStringList parts = trimmed.split(':', Qt::KeepEmptyParts);
             if (parts.size() < 2) {
-                errorMessage = QString("第%1行: 键值对格式不正确").arg(lineNumber);
+                errorMessage = tr("第%1行: 键值对格式不正确").arg(lineNumber);
                 return false;
             }
         }
         
         if (line.startsWith('\t')) {
-            errorMessage = QString("第%1行: 建议使用空格而不是制表符缩进").arg(lineNumber);
+            errorMessage = tr("第%1行: 建议使用空格而不是制表符缩进").arg(lineNumber);
             return false;
         }
     }

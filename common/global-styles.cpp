@@ -95,7 +95,7 @@ QString GlobalStyles::getButtonStyle() {
 
 QString GlobalStyles::getInputStyle() {
     return R"(
-        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+        QLineEdit, QDoubleSpinBox, QComboBox {
             border: 2px solid #e1e5e9;
             padding: 2px 2px;
             font-size: 10pt;
@@ -111,15 +111,39 @@ QString GlobalStyles::getInputStyle() {
             background-color: white;
             color: #333333;
         }
-        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {
             border-color: #4CAF50;
             outline: none;
         }
-        QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
+        QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
             background-color: #f5f5f5;
             color: #999999;
             border-color: #e0e0e0;
         }
+
+  QSpinBox {
+        border: 1px solid #cccccc;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 13px;
+        background-color: #ffffff;
+        selection-background-color: #2563eb; /* Fluent 蓝色 */
+    }
+    QSpinBox:focus {
+        border: 1px solid #2563eb;
+    }
+    QSpinBox::up-button, QSpinBox::down-button {
+        width: 18px;
+        border-left: 1px solid #e0e0e0;
+        background-color: transparent;
+    }
+    QSpinBox::up-button:hover {
+        background-color: #f3f4f6;
+    }
+    QSpinBox::down-button:hover {
+        background-color: #f3f4f6;
+    }
+
     )";
 }
 

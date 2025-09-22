@@ -643,31 +643,46 @@ void DateTimeUtil::updateTimestampConversion()
         timestampResult->clear();
         return;
     }
-    
+
     bool ok;
     qint64 timestamp = timestampStr.toLongLong(&ok);
     if (!ok) {
         timestampResult->setText(tr("❌ 无效的时间戳格式"));
         return;
     }
-    
-    // 根据单位转换
+
+    // 根据单位转换并添加范围检查
     QString unit = timestampUnitCombo->currentText();
     QDateTime dateTime;
-    
+
     if (unit == "秒") {
+        // 秒级时间戳范围检查：1970-01-01 到 2038-01-19 (32位) 或更大范围 (64位)
+        if (timestamp < 0 || timestamp > 2147483647LL * 2) { // 扩展到约2106年
+            timestampResult->setText(tr("❌ 时间戳超出有效范围"));
+            return;
+        }
         dateTime = QDateTime::fromSecsSinceEpoch(timestamp);
     } else if (unit == "毫秒") {
+        // 毫秒级时间戳范围检查
+        if (timestamp < 0 || timestamp > 2147483647LL * 2000) { // 对应秒级时间戳的范围
+            timestampResult->setText(tr("❌ 时间戳超出有效范围"));
+            return;
+        }
         dateTime = QDateTime::fromMSecsSinceEpoch(timestamp);
     } else if (unit == "微秒") {
+        // 微秒级时间戳范围检查
+        if (timestamp < 0 || timestamp > 2147483647LL * 2000000) { // 对应秒级时间戳的范围
+            timestampResult->setText(tr("❌ 时间戳超出有效范围"));
+            return;
+        }
         dateTime = QDateTime::fromMSecsSinceEpoch(timestamp / 1000);
     }
-    
+
     if (!dateTime.isValid()) {
         timestampResult->setText(tr("❌ 时间戳超出有效范围"));
         return;
     }
-    
+
     QStringList formats = getCommonFormats(dateTime);
     timestampResult->setText(formats.join("\n"));
 }

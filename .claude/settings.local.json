@@ -34,7 +34,9 @@
       "Bash(cd:*)",
       "Bash(timeout 30 cmake --build build --target lele-tools)",
       "Bash(timeout 120 cmake --build build)",
-      "Read(//c/Qt/6.9.1/msvc2022_64/include/**)"
+      "Read(//c/Qt/6.9.1/msvc2022_64/include/**)",
+      "WebFetch(domain:github.com)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

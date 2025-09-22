@@ -89,7 +89,8 @@ private:
     QHBoxLayout* commandInputLayout;
     QTextEdit* commandEdit;
     QPushButton* sendBtn;
-    QHBoxLayout* commandButtonLayout;
+
+    QPushButton* sendSelectedBtn;
     QPushButton* clearBtn;
     QPushButton* saveLogBtn;
     

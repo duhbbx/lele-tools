@@ -103,3 +103,5 @@
 {"xxx", "端口占用查看", "PortScanner"},
 
 {"xxx", "改键工具", "KeyRemapper"},
+
+{"xxx", "汉字字帖生成器", "ChineseCopybook"},
