@@ -74,6 +74,10 @@
 
 {"xxx", "SSH客户端", "SSHClient"},
 
+{"xxx", "FTP客户端", "FTPClient"},
+
+{"xxx", "FTP服务器", "FTPServer"},
+
 {"xxx", "摄像头工具", "CameraTool"},
 
 {"xxx", "终端工具", "TerminalTool"},

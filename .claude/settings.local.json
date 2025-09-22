@@ -33,7 +33,8 @@
       "WebSearch",
       "Bash(cd:*)",
       "Bash(timeout 30 cmake --build build --target lele-tools)",
-      "Bash(timeout 120 cmake --build build)"
+      "Bash(timeout 120 cmake --build build)",
+      "Read(//c/Qt/6.9.1/msvc2022_64/include/**)"
     ],
     "deny": [],
     "ask": []
