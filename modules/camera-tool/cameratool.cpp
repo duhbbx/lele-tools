@@ -37,10 +37,10 @@ CameraTool::CameraTool(QWidget *parent)
     m_captureSession = new QMediaCaptureSession(this);
     m_captureSession->setVideoOutput(m_videoWidget);
     
-    logMessage("摄像头工具初始化完成");
+    logMessage(tr("摄像头工具初始化完成"));
 #else
-    logMessage("Qt Multimedia模块不可用，摄像头功能已禁用");
-    logMessage("请安装Qt Multimedia模块以启用摄像头功能");
+    logMessage(tr("Qt Multimedia模块不可用，摄像头功能已禁用"));
+    logMessage(tr("请安装Qt Multimedia模块以启用摄像头功能"));
     
     // 禁用所有摄像头相关控件
     m_startBtn->setEnabled(false);
@@ -114,7 +114,7 @@ void CameraTool::setupUI()
 
 void CameraTool::setupCameraControls()
 {
-    m_cameraGroup = new QGroupBox("摄像头控制", this);
+    m_cameraGroup = new QGroupBox(tr("摄像头控制"), this);
     QVBoxLayout *layout = new QVBoxLayout(m_cameraGroup);
     layout->setSpacing(8);
     
@@ -168,7 +168,7 @@ void CameraTool::setupCameraControls()
 
 void CameraTool::setupPreviewArea()
 {
-    m_previewGroup = new QGroupBox("摄像头预览", this);
+    m_previewGroup = new QGroupBox(tr("摄像头预览"), this);
     QVBoxLayout *layout = new QVBoxLayout(m_previewGroup);
     
 #ifdef WITH_QT_MULTIMEDIA
@@ -198,7 +198,7 @@ void CameraTool::setupPreviewArea()
 
 void CameraTool::setupCaptureControls()
 {
-    m_captureGroup = new QGroupBox("拍照录制", this);
+    m_captureGroup = new QGroupBox(tr("拍照录制"), this);
     QVBoxLayout *layout = new QVBoxLayout(m_captureGroup);
     layout->setSpacing(8);
     
@@ -232,7 +232,7 @@ void CameraTool::setupCaptureControls()
 
 void CameraTool::setupScreenshotControls()
 {
-    m_screenshotGroup = new QGroupBox("屏幕截图", this);
+    m_screenshotGroup = new QGroupBox(tr("屏幕截图"), this);
     QVBoxLayout *layout = new QVBoxLayout(m_screenshotGroup);
     layout->setSpacing(8);
     
@@ -264,7 +264,7 @@ void CameraTool::setupScreenshotControls()
 
 void CameraTool::setupSettingsArea()
 {
-    m_settingsGroup = new QGroupBox("设置", this);
+    m_settingsGroup = new QGroupBox(tr("设置"), this);
     QVBoxLayout *layout = new QVBoxLayout(m_settingsGroup);
     layout->setSpacing(8);
     
@@ -303,7 +303,7 @@ void CameraTool::setupSettingsArea()
 
 void CameraTool::setupStatusArea()
 {
-    m_statusGroup = new QGroupBox("状态信息", this);
+    m_statusGroup = new QGroupBox(tr("状态信息"), this);
     QVBoxLayout *layout = new QVBoxLayout(m_statusGroup);
     
     // 设备统计
@@ -328,7 +328,7 @@ void CameraTool::refreshCameraList()
     if (cameras.isEmpty()) {
         m_cameraCombo->addItem("未找到摄像头设备");
         m_startBtn->setEnabled(false);
-        logMessage("未检测到摄像头设备");
+        logMessage(tr("未检测到摄像头设备"));
     } else {
         for (const QCameraDevice &cameraDevice : cameras) {
             QString displayName = cameraDevice.description();
@@ -338,14 +338,14 @@ void CameraTool::refreshCameraList()
             m_cameraCombo->addItem(displayName, QVariant::fromValue(cameraDevice));
         }
         m_startBtn->setEnabled(true);
-        logMessage(QString("检测到 %1 个摄像头设备").arg(cameras.size()));
+        logMessage(QString(tr("检测到 %1 个摄像头设备")).arg(cameras.size()));
     }
     
     updateCameraInfo();
 #else
     m_cameraCombo->clear();
-    m_cameraCombo->addItem("Qt Multimedia不可用");
-    logMessage("Qt Multimedia模块不可用，无法枚举摄像头设备");
+    m_cameraCombo->addItem(tr("Qt Multimedia不可用"));
+    logMessage(tr("Qt Multimedia模块不可用，无法枚举摄像头设备"));
 #endif
 }
 
@@ -469,7 +469,7 @@ void CameraTool::loadSettings()
 // 槽函数实现
 void CameraTool::onRefreshCamerasClicked()
 {
-    logMessage("刷新摄像头设备列表...");
+    logMessage(tr("刷新摄像头设备列表..."));
     refreshCameraList();
 }
 
@@ -485,7 +485,7 @@ void CameraTool::onCameraSelectionChanged()
         QVariant cameraData = m_cameraCombo->itemData(index);
         if (cameraData.canConvert<QCameraDevice>()) {
             QCameraDevice device = cameraData.value<QCameraDevice>();
-            logMessage(QString("选择摄像头: %1").arg(device.description()));
+            logMessage(QString(tr("选择摄像头: %1")).arg(device.description()));
         }
     }
 }
@@ -537,11 +537,11 @@ void CameraTool::onStartCameraClicked()
         // 启动摄像头
         m_camera->start();
         
-        logMessage(QString("正在启动摄像头: %1").arg(device.description()));
+        logMessage(QString(tr("正在启动摄像头: %1")).arg(device.description()));
         
     } catch (const std::exception& e) {
-        QMessageBox::critical(this, "错误", QString("启动摄像头失败: %1").arg(e.what()));
-        logMessage(QString("启动摄像头失败: %1").arg(e.what()));
+        QMessageBox::critical(this, tr("错误"), QString(tr("启动摄像头失败: %1")).arg(e.what()));
+        logMessage(QString(tr("启动摄像头失败: %1")).arg(e.what()));
     }
 }
 
@@ -549,7 +549,7 @@ void CameraTool::onStopCameraClicked()
 {
     if (m_camera && m_camera->isActive()) {
         m_camera->stop();
-        logMessage("摄像头已关闭");
+        logMessage(tr("摄像头已关闭"));
     }
 }
 
