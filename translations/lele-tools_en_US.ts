@@ -281,6 +281,15 @@
     </message>
 </context>
 <context>
+    <name>BarcodePreview</name>
+    <message>
+        <source>条形码预览区域
+点击生成按钮生成条形码</source>
+<translation>Barcode Preview Area
+Click the Generate button to create the barcode</translation>
+    </message>
+</context>
+<context>
     <name>Base64EncodeDecode</name>
     <message>
         <source>Hello, 乐乐的工具箱！
@@ -805,22 +814,21 @@ Recipient → Acceptable Donor
         <source>内容已保存</source>
         <translation>Content Saved</translation>
     </message>
-<message>
-    <source>📋 复制内容</source>
-    <translation>📋 Copy Content</translation>
-</message>
-<message>
-    <source>💾 保存内容</source>
-    <translation>💾 Save Content</translation>
-</message>
-<message>
-    <source>ABO血型系统</source>
-    <translation>ABO Blood Type System</translation>
-</message>
-
+    <message>
+        <source>📋 复制内容</source>
+        <translation>📋 Copy Content</translation>
+    </message>
+    <message>
+        <source>💾 保存内容</source>
+        <translation>💾 Save Content</translation>
+    </message>
+    <message>
+        <source>ABO血型系统</source>
+        <translation>ABO Blood Type System</translation>
+    </message>
     <message>
         <source>ABO血型系统的介绍内容</source>
-<translation>ABO blood type system is one of the most important blood type systems, discovered by Austrian scientist Landsteiner in 1900.
+        <translation>ABO blood type system is one of the most important blood type systems, discovered by Austrian scientist Landsteiner in 1900.
 
 🔬 Basic Principles:
 • Type A: A antigen on red blood cells, anti-B antibody in serum
@@ -840,7 +848,7 @@ ABO blood type is determined by the ABO gene on chromosome 9, which has three ma
     </message>
     <message>
         <source>Rh血型系统的介绍</source>
-<translation>The Rh blood group system is the second most important blood group system, discovered by Landsteiner and Wiener in 1940.
+        <translation>The Rh blood group system is the second most important blood group system, discovered by Landsteiner and Wiener in 1940.
 
 🔬 Basic Principles:
 • Rh positive (Rh+): D antigen present on red blood cells
@@ -860,11 +868,10 @@ The Rh blood type is mainly determined by the D gene:
 📊 Population Distribution:
 • Chinese population: Rh positive (99.7%), Rh negative (0.3%)
 • European population: Rh positive (85%), Rh negative (15%)</translation>
-
     </message>
     <message>
         <source>血型遗传遵循孟德尔遗传定律</source>
-<translation>Blood type inheritance follows Mendelian laws, exhibiting both codominant and recessive patterns.
+        <translation>Blood type inheritance follows Mendelian laws, exhibiting both codominant and recessive patterns.
 
 🧬 ABO Inheritance:
 • A and B alleles are dominant over the O allele
@@ -872,7 +879,7 @@ The Rh blood type is mainly determined by the D gene:
 • Possible genotypes: AA, AO (Type A), BB, BO (Type B), AB (Type AB), OO (Type O)
 
 📋 Inheritance Combination Table:
-Parents' blood types → Possible children's blood types
+Parents&apos; blood types → Possible children&apos;s blood types
 • A × A → A, O
 • A × B → A, B, AB, O
 • A × AB → A, B, AB
@@ -890,100 +897,6 @@ Parents' blood types → Possible children's blood types
 • Genotype dd → Rh negative
 • Children of Rh-negative parents will always be Rh negative
 • Children of Rh-positive parents may be Rh negative</translation>
-    </message>
-    <message>
-        <source>血型配型是安全输血的基础，不相容的血型会导致严重的输血反应。
-
-🩸 ABO配型原则:
-• 同型输血：最安全的选择
-• O型红细胞：可输给任何ABO血型(万能供血者)
-• AB型患者：可接受任何ABO血型的红细胞(万能受血者)
-• A型：可接受A型和O型
-• B型：可接受B型和O型
-
-⚡ Rh配型原则:
-• Rh阳性：可接受Rh阳性和Rh阴性
-• Rh阴性：只能接受Rh阴性
-• Rh阴性患者输入Rh阳性血液会产生抗D抗体
-
-📋 完整配型表:
-受血者 → 可接受的供血者
-• A+ → A+, A-, O+, O-
-• A- → A-, O-
-• B+ → B+, B-, O+, O-
-• B- → B-, O-
-• AB+ → 所有血型
-• AB- → A-, B-, AB-, O-
-• O+ → O+, O-
-• O- → O-
-
-⚠️ 注意事项:
-• 首次输血相对安全，多次输血需要更严格的配型
-• 除ABO和Rh外，还有其他血型系统需要考虑</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>血型和疾病的介绍</source>
-<translation>Studies show that different blood types are associated with susceptibility to certain diseases.
-
-🔬 Type A Blood:
-• Relatively higher risk of gastric cancer
-• Increased risk of cardiovascular diseases
-• Stronger resistance to pox viruses
-
-🔬 Type B Blood:
-• Relatively higher risk of diabetes
-• Stronger resistance to tuberculosis
-• Lower risk of urinary tract infections
-
-🔬 Type AB Blood:
-• Higher risk of memory decline
-• Relatively lower risk of heart disease
-• Increased risk of certain cancers
-
-🔬 Type O Blood:
-• Higher risk of gastric and duodenal ulcers
-• Stronger resistance to malaria
-• Longer blood clotting time
-
-⚠️ Important Reminders:
-• The association between blood type and disease is only statistical
-• Blood type alone cannot predict disease
-• Lifestyle and environmental factors are more important
-• Regular check-ups and a healthy lifestyle are key to disease prevention</translation>
-
-    </message>
-    <message>
-        <source>血型检测方法的介绍</source>
-<translation>Blood type testing is a fundamental item in medical examinations, with multiple testing methods available.
-
-🧪 Forward Typing (Cell Typing):
-• Detect unknown antigens on red blood cells using known antibodies
-• Anti-A serum + red cells: agglutination indicates Type A
-• Anti-B serum + red cells: agglutination indicates Type B
-• Agglutination with both indicates Type AB, no agglutination indicates Type O
-
-🧪 Reverse Typing (Serum Typing):
-• Detect unknown antibodies in serum using known red cells
-• Type A cells + serum: agglutination indicates anti-A antibodies
-• Type B cells + serum: agglutination indicates anti-B antibodies
-
-🔬 Rh Testing:
-• Anti-D serum + red cells
-• Agglutination indicates Rh positive, no agglutination indicates Rh negative
-• Weak D testing: indirect antiglobulin test
-
-📋 Quality Control:
-• Forward and reverse typing results must match
-• Use positive and negative controls
-• Regularly calibrate test reagents
-• Follow strict operating procedures
-
-🏥 Clinical Significance:
-• Pre-transfusion compatibility testing
-• Screening for hemolytic disease of the newborn
-• Organ transplantation matching
-• Assistance in paternity testing</translation>
     </message>
     <message>
         <source>成功</source>

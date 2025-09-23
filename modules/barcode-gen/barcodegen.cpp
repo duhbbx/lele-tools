@@ -54,7 +54,7 @@ void BarcodePreview::paintEvent(QPaintEvent *event)
     } else {
         // 显示提示文字
         painter.setPen(QColor(150, 150, 150));
-        painter.drawText(rect, Qt::AlignCenter, "条形码预览区域\n点击生成按钮生成条形码");
+        painter.drawText(rect, Qt::AlignCenter, tr("条形码预览区域\n点击生成按钮生成条形码"));
     }
 }
 
