@@ -103,6 +103,12 @@ QString GlobalStyles::getInputStyle() {
             background-color: white;
             color: #333333;
         }
+        QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+            width: 0px;
+            height: 0px;
+            border: none;
+            background: transparent;
+        }
         QTextEdit, QPlainTextEdit {
             border: 2px solid #e1e5e9;
             padding: 4px 4px;
@@ -133,15 +139,10 @@ QString GlobalStyles::getInputStyle() {
         border: 1px solid #2563eb;
     }
     QSpinBox::up-button, QSpinBox::down-button {
-        width: 18px;
-        border-left: 1px solid #e0e0e0;
-        background-color: transparent;
-    }
-    QSpinBox::up-button:hover {
-        background-color: #f3f4f6;
-    }
-    QSpinBox::down-button:hover {
-        background-color: #f3f4f6;
+        width: 0px;
+        height: 0px;
+        border: none;
+        background: transparent;
     }
 
     )";
