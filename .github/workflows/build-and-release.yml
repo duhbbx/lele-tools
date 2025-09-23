@@ -836,7 +836,7 @@ jobs:
         Write-Host "Setting up vcpkg and installing LibSSH..." -ForegroundColor Green
 
         # 检查vcpkg是否已存在
-        $VcpkgPath = "$env:VCPKG_ROOT"
+        $VcpkgPath = "C:\vcpkg"
         if (-not (Test-Path "$VcpkgPath\vcpkg.exe")) {
             Write-Host "Installing vcpkg..." -ForegroundColor Yellow
 
@@ -1223,7 +1223,7 @@ jobs:
         
         # 检查vcpkg安装状态
         # vcpkg提供Redis-plus-plus库，是数据库功能的核心依赖
-        $VcpkgPath = $env:VCPKG_ROOT
+        $VcpkgPath = "C:\vcpkg"
         $VcpkgToolchain = ""
         if ($VcpkgPath -and (Test-Path $VcpkgPath)) {
             $VcpkgToolchain = "$VcpkgPath\scripts\buildsystems\vcpkg.cmake"
