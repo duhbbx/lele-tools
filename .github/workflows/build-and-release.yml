@@ -822,8 +822,8 @@ jobs:
       id: vcpkg-cache
       with:
         path: |
-          C:\vcpkg\installed\x64-windows
-          C:\vcpkg\downloads
+          C:/vcpkg/installed/x64-windows
+          C:/vcpkg/downloads
         key: ${{ runner.os }}-vcpkg-libssh-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json') }}-v2
         restore-keys: |
           ${{ runner.os }}-vcpkg-libssh-v2
