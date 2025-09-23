@@ -87,3 +87,5 @@ LeleToolsInstaller*.exe
 cmake-build-debug-visual-studio
 build-mysql
 cmake-build-claude
+
+nul
