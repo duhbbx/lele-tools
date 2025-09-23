@@ -1516,18 +1516,63 @@ jobs:
         $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
         if (Test-Path $OpenCVBinPath) {
             Write-Host "Copying OpenCV DLL files..." -ForegroundColor Yellow
-            $OpenCVDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "*.dll"
 
-            foreach ($dll in $OpenCVDlls) {
+            # List all DLL files first for debugging
+            $AllDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "*.dll"
+            Write-Host "Available OpenCV DLLs in $OpenCVBinPath :" -ForegroundColor Cyan
+            foreach ($dll in $AllDlls) {
+                Write-Host "  $($dll.Name)" -ForegroundColor Gray
+            }
+
+            # Copy all OpenCV DLL files
+            foreach ($dll in $AllDlls) {
                 try {
                     Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                    Write-Host "  Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+                    Write-Host "  ✓ Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
                 } catch {
-                    Write-Host "  Warning: Failed to copy OpenCV DLL: $($dll.Name)" -ForegroundColor Yellow
+                    Write-Host "  ✗ Failed to copy OpenCV DLL: $($dll.Name) - $($_.Exception.Message)" -ForegroundColor Red
                 }
+            }
+
+            # Verify OpenCV DLLs were copied
+            $CopiedOpenCVDlls = Get-ChildItem -Path $DataDir -Filter "*opencv*.dll"
+            Write-Host "OpenCV DLLs copied to portable package: $($CopiedOpenCVDlls.Count)" -ForegroundColor Cyan
+            foreach ($dll in $CopiedOpenCVDlls) {
+                Write-Host "  ✓ $($dll.Name)" -ForegroundColor Green
             }
         } else {
             Write-Host "  Warning: OpenCV bin directory not found: $OpenCVBinPath" -ForegroundColor Yellow
+            Write-Host "  Attempting alternative OpenCV paths..." -ForegroundColor Yellow
+
+            # Try alternative OpenCV paths
+            $AlternativePaths = @(
+                "C:\opencv\build\x64\vc15\bin",
+                "C:\opencv\build\bin",
+                "C:\opencv\x64\vc16\bin",
+                "C:\opencv\x64\vc15\bin"
+            )
+
+            $found = $false
+            foreach ($altPath in $AlternativePaths) {
+                if (Test-Path $altPath) {
+                    Write-Host "  Found alternative OpenCV path: $altPath" -ForegroundColor Yellow
+                    $OpenCVDlls = Get-ChildItem -Path $altPath -Filter "*opencv*.dll"
+                    foreach ($dll in $OpenCVDlls) {
+                        try {
+                            Copy-Item -Path $dll.FullName -Destination $DataDir -Force
+                            Write-Host "  ✓ Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+                            $found = $true
+                        } catch {
+                            Write-Host "  ✗ Failed to copy OpenCV DLL: $($dll.Name)" -ForegroundColor Red
+                        }
+                    }
+                    break
+                }
+            }
+
+            if (-not $found) {
+                Write-Host "  ⚠️  No OpenCV DLLs found in any location - portable package will be missing OpenCV support" -ForegroundColor Yellow
+            }
         }
 
         # Copy MySQL Connector DLL files
