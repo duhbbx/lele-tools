@@ -146,29 +146,77 @@ Write-Host "OK Qt dependencies deployed!" -ForegroundColor Green
 # Deploy OpenCV dependencies if available
 if (Test-Path $OpenCVPath) {
     Write-Host "Deploying OpenCV dependencies..." -ForegroundColor Yellow
-    
+
     $OpenCVBinPath = Join-Path $OpenCVPath "x64\vc16\bin"  # VS2019/2022 compatible
     if (-not (Test-Path $OpenCVBinPath)) {
         $OpenCVBinPath = Join-Path $OpenCVPath "x64\vc15\bin"  # VS2017 fallback
     }
-    
+
     if (Test-Path $OpenCVBinPath) {
-        $OpenCVDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "opencv_*.dll"
+        # List all DLL files first for debugging
+        $AllDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "*.dll"
+        Write-Host "Available OpenCV DLLs in $OpenCVBinPath :" -ForegroundColor Cyan
+        foreach ($dll in $AllDlls) {
+            Write-Host "  $($dll.Name)" -ForegroundColor Gray
+        }
+
         $ExeDir = $ExeFile.DirectoryName
-        
-        foreach ($dll in $OpenCVDlls) {
+        $copiedCount = 0
+
+        foreach ($dll in $AllDlls) {
             try {
                 Copy-Item -Path $dll.FullName -Destination $ExeDir -Force
-                Write-Host "  Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+                Write-Host "  ✓ Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+                $copiedCount++
             }
             catch {
-                Write-Host "  Warning: Failed to copy $($dll.Name)" -ForegroundColor Yellow
+                Write-Host "  ✗ Failed to copy $($dll.Name) - $($_.Exception.Message)" -ForegroundColor Red
             }
         }
-        
-        Write-Host "OK OpenCV dependencies deployed!" -ForegroundColor Green
+
+        Write-Host "OK OpenCV dependencies deployed! ($copiedCount DLLs copied)" -ForegroundColor Green
+
+        # Verify OpenCV DLLs were copied
+        $CopiedOpenCVDlls = Get-ChildItem -Path $ExeDir -Filter "*opencv*.dll"
+        Write-Host "OpenCV DLLs in executable directory: $($CopiedOpenCVDlls.Count)" -ForegroundColor Cyan
+        foreach ($dll in $CopiedOpenCVDlls) {
+            Write-Host "  ✓ $($dll.Name)" -ForegroundColor Green
+        }
     } else {
         Write-Host "WARNING: OpenCV bin directory not found at $OpenCVBinPath" -ForegroundColor Yellow
+        Write-Host "Attempting alternative OpenCV paths..." -ForegroundColor Yellow
+
+        # Try alternative OpenCV paths
+        $AlternativePaths = @(
+            "$OpenCVPath\build\x64\vc16\bin",
+            "$OpenCVPath\build\x64\vc15\bin",
+            "$OpenCVPath\build\bin",
+            "$OpenCVPath\bin"
+        )
+
+        $found = $false
+        foreach ($altPath in $AlternativePaths) {
+            if (Test-Path $altPath) {
+                Write-Host "  Found alternative OpenCV path: $altPath" -ForegroundColor Yellow
+                $OpenCVDlls = Get-ChildItem -Path $altPath -Filter "*opencv*.dll"
+                $ExeDir = $ExeFile.DirectoryName
+
+                foreach ($dll in $OpenCVDlls) {
+                    try {
+                        Copy-Item -Path $dll.FullName -Destination $ExeDir -Force
+                        Write-Host "  ✓ Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
+                        $found = $true
+                    } catch {
+                        Write-Host "  ✗ Failed to copy OpenCV DLL: $($dll.Name)" -ForegroundColor Red
+                    }
+                }
+                break
+            }
+        }
+
+        if (-not $found) {
+            Write-Host "  ⚠️  No OpenCV DLLs found in any location" -ForegroundColor Yellow
+        }
     }
 }
 
