@@ -119,6 +119,7 @@ private:
     QTranslator *m_translator;            // 翻译器
     QSettings *m_settings;                // 设置
     QActionGroup *m_languageActionGroup;  // 语言选项组
+    bool m_isLanguageRestarting;          // 是否因为语言切换而重启
     
     // 截图相关
 #ifdef WITH_SCREEN_CAPTURE

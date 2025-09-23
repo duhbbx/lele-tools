@@ -133,7 +133,7 @@ void BarcodeGen::setupUI()
 
 void BarcodeGen::setupInputArea()
 {
-    inputGroup = new QGroupBox("条形码生成", leftPanel);
+    inputGroup = new QGroupBox(tr("条形码生成"), leftPanel);
     inputLayout = new QGridLayout(inputGroup);
     
     // 条形码类型
@@ -186,7 +186,7 @@ void BarcodeGen::setupInputArea()
 
 void BarcodeGen::setupStyleArea()
 {
-    styleGroup = new QGroupBox("样式设置", leftPanel);
+    styleGroup = new QGroupBox(tr("样式设置"), leftPanel);
     styleLayout = new QGridLayout(styleGroup);
     
     // 颜色设置
@@ -212,7 +212,7 @@ void BarcodeGen::setupStyleArea()
     styleLayout->addWidget(heightSpinBox, 1, 3);
     
     // 文本设置
-    showTextCheckBox = new QCheckBox("显示文本");
+    showTextCheckBox = new QCheckBox(tr("显示文本"));
     showTextCheckBox->setChecked(true);
     styleLayout->addWidget(showTextCheckBox, 2, 0, 1, 2);
     
@@ -240,27 +240,34 @@ void BarcodeGen::setupStyleArea()
 
 void BarcodeGen::setupBatchArea()
 {
-    batchGroup = new QGroupBox("批量处理", leftPanel);
+    batchGroup = new QGroupBox(tr("批量处理"), leftPanel);
     batchLayout = new QVBoxLayout(batchGroup);
     
     batchTextEdit = new QTextEdit;
-    batchTextEdit->setMaximumHeight(80);
+    batchTextEdit->setMinimumHeight(60);
     batchTextEdit->setPlaceholderText(tr("每行一个内容，用于批量生成条形码"));
-    batchLayout->addWidget(batchTextEdit);
-    
+    batchLayout->addWidget(batchTextEdit, 1); // 添加stretch factor使其可拉伸
+
     batchButtonLayout = new QHBoxLayout;
     batchGenerateBtn = new QPushButton(tr("批量生成"));
     addBatchItemBtn = new QPushButton(tr("添加当前"));
     clearBatchListBtn = new QPushButton(tr("清空列表"));
     importBatchBtn = new QPushButton(tr("导入"));
     exportBatchBtn = new QPushButton(tr("导出"));
-    
+
+    // 设置按钮的大小策略，让高度跟随内容
+    batchGenerateBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    addBatchItemBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    clearBatchListBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    importBatchBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    exportBatchBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+
     batchButtonLayout->addWidget(batchGenerateBtn);
     batchButtonLayout->addWidget(addBatchItemBtn);
     batchButtonLayout->addWidget(clearBatchListBtn);
     batchButtonLayout->addWidget(importBatchBtn);
     batchButtonLayout->addWidget(exportBatchBtn);
-    batchLayout->addLayout(batchButtonLayout);
+    batchLayout->addLayout(batchButtonLayout, 0); // 按钮布局不拉伸
     
     batchProgressBar = new QProgressBar;
     batchProgressBar->setVisible(false);
@@ -278,7 +285,7 @@ void BarcodeGen::setupBatchArea()
 
 void BarcodeGen::setupPreviewArea()
 {
-    previewGroup = new QGroupBox("预览", rightPanel);
+    previewGroup = new QGroupBox(tr("预览"), rightPanel);
     previewLayout = new QVBoxLayout(previewGroup);
     
     barcodePreview = new BarcodePreview;
@@ -304,23 +311,28 @@ void BarcodeGen::setupPreviewArea()
 
 void BarcodeGen::setupHistoryArea()
 {
-    historyGroup = new QGroupBox("历史记录", rightPanel);
+    historyGroup = new QGroupBox(tr("历史记录"), rightPanel);
     historyLayout = new QVBoxLayout(historyGroup);
-    
+
     historyTable = new QTableWidget;
     historyTable->setColumnCount(4);
-    historyTable->setHorizontalHeaderLabels({"内容", "类型", "时间", "状态"});
+    historyTable->setHorizontalHeaderLabels({tr("内容"), tr("类型"), tr("时间"), tr("状态")});
     historyTable->horizontalHeader()->setStretchLastSection(true);
-    historyTable->setMaximumHeight(150);
-    historyLayout->addWidget(historyTable);
-    
+    historyTable->setMinimumHeight(120);
+    historyLayout->addWidget(historyTable, 1); // 添加stretch factor使其可拉伸
+
     historyButtonLayout = new QHBoxLayout;
     clearHistoryBtn = new QPushButton(tr("清空历史"));
     historyCountLabel = new QLabel(tr("共 0 条记录"));
+
+    // 设置按钮的大小策略，让高度跟随内容
+    clearHistoryBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    historyCountLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+
     historyButtonLayout->addWidget(clearHistoryBtn);
     historyButtonLayout->addStretch();
     historyButtonLayout->addWidget(historyCountLabel);
-    historyLayout->addLayout(historyButtonLayout);
+    historyLayout->addLayout(historyButtonLayout, 0); // 按钮布局不拉伸
     
     rightLayout->addWidget(historyGroup);
     
@@ -345,12 +357,12 @@ void BarcodeGen::setupStatusArea()
 
 void BarcodeGen::initializePresets()
 {
-    addPreset("商品条码 (EAN-13)", BarcodeType::EAN13, "1234567890123", "13位数字的商品条码");
-    addPreset("商品条码 (UPC-A)", BarcodeType::UPCA, "123456789012", "12位数字的商品条码");
-    addPreset("通用条码 (Code 128)", BarcodeType::Code128, "Hello World", "支持数字、字母和符号");
-    addPreset("简单条码 (Code 39)", BarcodeType::Code39, "HELLO123", "支持数字、大写字母和部分符号");
+    addPreset(tr("商品条码 (EAN-13)"), BarcodeType::EAN13, "1234567890123", tr("13位数字的商品条码"));
+    addPreset(tr("商品条码 (UPC-A)"), BarcodeType::UPCA, "123456789012", tr("12位数字的商品条码"));
+    addPreset(tr("通用条码 (Code 128)"), BarcodeType::Code128, "Hello World", tr("支持数字、字母和符号"));
+    addPreset(tr("简单条码 (Code 39)"), BarcodeType::Code39, "HELLO123", tr("支持数字、大写字母和部分符号"));
     
-    presetCombo->addItem("选择预设模板", -1);
+    presetCombo->addItem(tr("选择预设模板"), -1);
     for (const auto &preset : m_presets) {
         presetCombo->addItem(preset.name, static_cast<int>(preset.type));
     }

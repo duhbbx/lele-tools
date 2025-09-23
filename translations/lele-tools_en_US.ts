@@ -203,6 +203,83 @@
         <source>关闭</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>条形码生成</source>
+        <translation>Barcode Generation</translation>
+    </message>
+    <message>
+        <source>样式设置</source>
+        <translation>Style Settings</translation>
+    </message>
+    <message>
+        <source>显示文本</source>
+        <translation>Show Text</translation>
+    </message>
+    <message>
+        <source>批量处理</source>
+        <translation>Batch Processing</translation>
+    </message>
+    <message>
+        <source>预览</source>
+        <translation>Preview</translation>
+    </message>
+    <message>
+        <source>历史记录</source>
+        <translation>History</translation>
+    </message>
+    <message>
+        <source>内容</source>
+        <translation>Content</translation>
+    </message>
+    <message>
+        <source>类型</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <source>时间</source>
+        <translation>Time</translation>
+    </message>
+    <message>
+        <source>状态</source>
+        <translation>Status</translation>
+    </message>
+    <message>
+        <source>商品条码 (EAN-13)</source>
+        <translation>Product Barcode (EAN-13)</translation>
+    </message>
+    <message>
+        <source>13位数字的商品条码</source>
+        <translation>13-digit product barcode</translation>
+    </message>
+    <message>
+        <source>商品条码 (UPC-A)</source>
+        <translation>Product Barcode (UPC-A)</translation>
+    </message>
+    <message>
+        <source>12位数字的商品条码</source>
+        <translation>12-digit product barcode</translation>
+    </message>
+    <message>
+        <source>通用条码 (Code 128)</source>
+        <translation>General Barcode (Code 128)</translation>
+    </message>
+    <message>
+        <source>支持数字、字母和符号</source>
+        <translation>Supports numbers, letters, and symbols</translation>
+    </message>
+    <message>
+        <source>简单条码 (Code 39)</source>
+        <translation>Simple Barcode (Code 39)</translation>
+    </message>
+    <message>
+        <source>支持数字、大写字母和部分符号</source>
+        <translation>Supports numbers, uppercase letters, and some symbols</translation>
+    </message>
+    <message>
+        <source>选择预设模板</source>
+        <translation>Select Preset Template</translation>
+    </message>
+
 </context>
 <context>
     <name>Base64EncodeDecode</name>
@@ -4636,214 +4713,213 @@ Error message: %2</translation>
 数据库: %1</source>
         <translation type="unfinished"></translation>
     </message>
-    <!-- Tool module name translations -->
     <message>
         <source>XML Formatter</source>
-        <translation>XML Formatter</translation>
+        <translation type="vanished">XML Formatter</translation>
     </message>
     <message>
         <source>JSON Formatter</source>
-        <translation>JSON Formatter</translation>
+        <translation type="vanished">JSON Formatter</translation>
     </message>
     <message>
         <source>YAML Formatter</source>
-        <translation>YAML Formatter</translation>
+        <translation type="vanished">YAML Formatter</translation>
     </message>
     <message>
         <source>Date Time Util</source>
-        <translation>Date Time Util</translation>
+        <translation type="vanished">Date Time Util</translation>
     </message>
     <message>
         <source>Base64 Encode Decode</source>
-        <translation>Base64 Encoder/Decoder</translation>
+        <translation type="vanished">Base64 Encoder/Decoder</translation>
     </message>
     <message>
         <source>Regex Content Generator</source>
-        <translation>Regex Content Generator</translation>
+        <translation type="vanished">Regex Content Generator</translation>
     </message>
     <message>
         <source>Random Password Generator</source>
-        <translation>Random Password Generator</translation>
+        <translation type="vanished">Random Password Generator</translation>
     </message>
     <message>
         <source>Telnet Tool</source>
-        <translation>Telnet Tool</translation>
+        <translation type="vanished">Telnet Tool</translation>
     </message>
     <message>
         <source>Windows Settings</source>
-        <translation>Windows Settings</translation>
+        <translation type="vanished">Windows Settings</translation>
     </message>
     <message>
         <source>Hosts Editor (Table)</source>
-        <translation>Hosts Editor (Table)</translation>
+        <translation type="vanished">Hosts Editor (Table)</translation>
     </message>
     <message>
         <source>Hosts Editor (Text)</source>
-        <translation>Hosts Editor (Text)</translation>
+        <translation type="vanished">Hosts Editor (Text)</translation>
     </message>
     <message>
         <source>Ping Tool</source>
-        <translation>Ping Tool</translation>
+        <translation type="vanished">Ping Tool</translation>
     </message>
     <message>
         <source>Network Scanner</source>
-        <translation>Network Scanner</translation>
+        <translation type="vanished">Network Scanner</translation>
     </message>
     <message>
         <source>Database Tool</source>
-        <translation>Database Tool</translation>
+        <translation type="vanished">Database Tool</translation>
     </message>
     <message>
         <source>IP Lookup Tool</source>
-        <translation>IP Lookup Tool</translation>
+        <translation type="vanished">IP Lookup Tool</translation>
     </message>
     <message>
         <source>PDF Merge</source>
-        <translation>PDF Merge</translation>
+        <translation type="vanished">PDF Merge</translation>
     </message>
     <message>
         <source>Regex Test Tool</source>
-        <translation>Regex Test Tool</translation>
+        <translation type="vanished">Regex Test Tool</translation>
     </message>
     <message>
         <source>Image Compression</source>
-        <translation>Image Compression</translation>
+        <translation type="vanished">Image Compression</translation>
     </message>
     <message>
         <source>Favicon Production</source>
-        <translation>Favicon Generator</translation>
+        <translation type="vanished">Favicon Generator</translation>
     </message>
     <message>
         <source>Color Tools</source>
-        <translation>Color Tools</translation>
+        <translation type="vanished">Color Tools</translation>
     </message>
     <message>
         <source>Mobile Location</source>
-        <translation>Mobile Number Location</translation>
+        <translation type="vanished">Mobile Number Location</translation>
     </message>
     <message>
         <source>HTML Special Character Table</source>
-        <translation>HTML Special Characters</translation>
+        <translation type="vanished">HTML Special Characters</translation>
     </message>
     <message>
         <source>Torrent File Analysis</source>
-        <translation>Torrent File Analyzer</translation>
+        <translation type="vanished">Torrent File Analyzer</translation>
     </message>
     <message>
         <source>Zip Code Query</source>
-        <translation>Zip Code Lookup</translation>
+        <translation type="vanished">Zip Code Lookup</translation>
     </message>
     <message>
         <source>QR Code Generator</source>
-        <translation>QR Code Generator</translation>
+        <translation type="vanished">QR Code Generator</translation>
     </message>
     <message>
         <source>Image Text Recognition</source>
-        <translation>OCR Text Recognition</translation>
+        <translation type="vanished">OCR Text Recognition</translation>
     </message>
     <message>
         <source>File Hash Calculation</source>
-        <translation>File Hash Calculator</translation>
+        <translation type="vanished">File Hash Calculator</translation>
     </message>
     <message>
         <source>Barcode Generator</source>
-        <translation>Barcode Generator</translation>
+        <translation type="vanished">Barcode Generator</translation>
     </message>
     <message>
         <source>Image Format Conversion</source>
-        <translation>Image Format Converter</translation>
+        <translation type="vanished">Image Format Converter</translation>
     </message>
     <message>
         <source>HTTP Status Code</source>
-        <translation>HTTP Status Codes</translation>
+        <translation type="vanished">HTTP Status Codes</translation>
     </message>
     <message>
         <source>Crontab Time Calculation</source>
-        <translation>Cron Expression Tool</translation>
+        <translation type="vanished">Cron Expression Tool</translation>
     </message>
     <message>
         <source>Text Encryption And Decryption</source>
-        <translation>Text Encryption/Decryption</translation>
+        <translation type="vanished">Text Encryption/Decryption</translation>
     </message>
     <message>
         <source>UUID Generator</source>
-        <translation>UUID Generator</translation>
+        <translation type="vanished">UUID Generator</translation>
     </message>
     <message>
         <source>OpenCV Demo</source>
-        <translation>OpenCV Demo</translation>
+        <translation type="vanished">OpenCV Demo</translation>
     </message>
     <message>
         <source>OpenCV Image Processor</source>
-        <translation>OpenCV Image Processor</translation>
+        <translation type="vanished">OpenCV Image Processor</translation>
     </message>
     <message>
         <source>SSH Client</source>
-        <translation>SSH Client</translation>
+        <translation type="vanished">SSH Client</translation>
     </message>
     <message>
         <source>FTP Client</source>
-        <translation>FTP Client</translation>
+        <translation type="vanished">FTP Client</translation>
     </message>
     <message>
         <source>FTP Server</source>
-        <translation>FTP Server</translation>
+        <translation type="vanished">FTP Server</translation>
     </message>
     <message>
         <source>Camera Tool</source>
-        <translation>Camera Tool</translation>
+        <translation type="vanished">Camera Tool</translation>
     </message>
     <message>
         <source>Terminal Tool</source>
-        <translation>Terminal Tool</translation>
+        <translation type="vanished">Terminal Tool</translation>
     </message>
     <message>
         <source>Traceroute Tool</source>
-        <translation>Traceroute Tool</translation>
+        <translation type="vanished">Traceroute Tool</translation>
     </message>
     <message>
         <source>Route Test Tool</source>
-        <translation>Route Test Tool</translation>
+        <translation type="vanished">Route Test Tool</translation>
     </message>
     <message>
         <source>System Info Tool</source>
-        <translation>System Information</translation>
+        <translation type="vanished">System Information</translation>
     </message>
     <message>
         <source>Rich Text Notepad</source>
-        <translation>Rich Text Editor</translation>
+        <translation type="vanished">Rich Text Editor</translation>
     </message>
     <message>
         <source>Media Manager</source>
-        <translation>Media Manager</translation>
+        <translation type="vanished">Media Manager</translation>
     </message>
     <message>
         <source>Image Watermark</source>
-        <translation>Image Watermark</translation>
+        <translation type="vanished">Image Watermark</translation>
     </message>
     <message>
         <source>WHOIS Tool</source>
-        <translation>WHOIS Lookup</translation>
+        <translation type="vanished">WHOIS Lookup</translation>
     </message>
     <message>
         <source>File Compare Tool</source>
-        <translation>File Compare Tool</translation>
+        <translation type="vanished">File Compare Tool</translation>
     </message>
     <message>
         <source>Blood Type Tool</source>
-        <translation>Blood Type Genetics</translation>
+        <translation type="vanished">Blood Type Genetics</translation>
     </message>
     <message>
         <source>Port Scanner</source>
-        <translation>Port Scanner</translation>
+        <translation type="vanished">Port Scanner</translation>
     </message>
     <message>
         <source>Key Remapper</source>
-        <translation>Key Remapper</translation>
+        <translation type="vanished">Key Remapper</translation>
     </message>
     <message>
         <source>Chinese Copybook</source>
-        <translation>Chinese Character Practice</translation>
+        <translation type="vanished">Chinese Character Practice</translation>
     </message>
 </context>
 <context>
@@ -7223,6 +7299,150 @@ Strength: %3</translation>
         <source>🧪 测试功能</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>🚀 以管理员身份运行程序</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📋 预设命令:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>选择预设命令...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🗒️ 记事本</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>💻 命令提示符</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🔧 注册表编辑器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🎛️ 任务管理器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🌐 PowerShell</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>⚙️ 服务管理</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🖥️ 计算机管理</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>▶️ 运行</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🛠️ 自定义命令:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>程序:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入程序路径或命令，如: notepad.exe</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>参数:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入命令参数 (可选)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🚀 以管理员身份运行</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📤 执行输出:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>程序输出将显示在这里...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>警告</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请选择一个预设命令</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请输入要执行的程序</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已有程序在运行中，请稍候...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🚀 正在以管理员权限启动: %1 %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>💻 执行命令: powershell.exe %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>❌ 启动PowerShell失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>✅ PowerShell进程已启动</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>⏳ 等待用户确认UAC对话框...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>❌ 此功能仅在Windows系统下可用</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>提示</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>此功能仅在Windows系统下可用</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>❌ PowerShell进程异常终止</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>✅ 程序已成功以管理员权限启动</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>⚠️ PowerShell执行完成，退出代码: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误信息: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输出: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>XmlFormatter</name>
@@ -7337,7 +7557,7 @@ settings:
         <translation type="unfinished">---
 # Lele Toolbox Configuration Example
 app:
-  name: &quot;Lele's Toolbox&quot;
+  name: &quot;Lele&apos;s Toolbox&quot;
   version: &quot;1.0.0&quot;
   debug: true
 
@@ -7464,7 +7684,6 @@ settings:
         <translation>Line %1: It is recommended to use spaces instead of tabs for indentation</translation>
     </message>
 </context>
-
 <context>
     <name>ZipCodeQuery</name>
     <message>

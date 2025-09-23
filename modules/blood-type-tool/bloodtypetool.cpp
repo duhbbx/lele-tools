@@ -280,7 +280,6 @@ void BloodTypeCalculator_Widget::setupUI() {
         "QGroupBox {"
         "font-weight: bold;"
         "border: 2px solid #bdc3c7;"
-        "border-radius: 8px;"
         "margin-top: 10px;"
         "padding-top: 10px;"
         "}"
@@ -297,7 +296,6 @@ void BloodTypeCalculator_Widget::setupUI() {
 
     m_parent1ABOCombo = new QComboBox();
     m_parent1ABOCombo->addItems({"A", "B", "AB", "O"});
-    m_parent1ABOCombo->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
 
     m_parent1RhCombo = new QComboBox();
     m_parent1RhCombo->addItems({"阳性(+)", "阴性(-)"});
@@ -1028,10 +1026,8 @@ void BloodTypeTool::setupUI() {
         "QTabBar::tab {"
         "background-color: #ecf0f1;"
         "color: #2c3e50;"
-        "padding: 12px 24px;"
+        "padding: 4px 8px;"
         "margin-right: 2px;"
-        "border-top-left-radius: 6px;"
-        "border-top-right-radius: 6px;"
         "font-weight: bold;"
         "}"
         "QTabBar::tab:selected {"

@@ -30,7 +30,7 @@
 
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false), isLeftPanelCollapsed(false),
-                                          copyTooltip(nullptr)
+                                          copyTooltip(nullptr), m_isLanguageRestarting(false)
 #ifdef Q_OS_WIN
                                           , m_globalHotkeyRegistered(false)
 #endif
@@ -176,6 +176,12 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
+    // 如果是因为语言切换而重启，直接接受关闭事件，不显示确认对话框
+    if (m_isLanguageRestarting) {
+        event->accept();
+        return;
+    }
+
     const QMessageBox::StandardButton resBtn = QMessageBox::question(this, "退出确认",
                                                                      tr("确定要退出乐乐的工具箱吗？"),
                                                                      QMessageBox::Cancel | QMessageBox::Yes,
@@ -1087,6 +1093,9 @@ void MainWindow::changeLanguage(const QString& language) {
     qDebug() << "changeLanguage - 是否是立即重启按钮：" << (clickedBtn == restartNowBtn);
 
     if (clickedBtn == restartNowBtn) {
+        // 设置语言重启标志位
+        m_isLanguageRestarting = true;
+
         // 重启应用程序
         // 获取应用程序路径和参数
         QString program = QApplication::applicationFilePath();
@@ -1126,10 +1135,13 @@ void MainWindow::changeLanguage(const QString& language) {
         if (startResult) {
             qDebug() << "Restart - New instance started successfully, quitting current instance";
             // 延迟退出，确保新实例启动
-            QTimer::singleShot(500, []() {
-                QApplication::quit();
+            QTimer::singleShot(500, [this]() {
+                // 直接调用 close() 而不是 QApplication::quit()，这样可以触发 closeEvent
+                this->close();
             });
         } else {
+            // 如果重启失败，重置标志位
+            m_isLanguageRestarting = false;
             qDebug() << "Restart - All methods failed";
             QMessageBox::warning(this, tr("重启失败"),
                                  tr("无法启动新实例，请手动重启应用程序。\n\n程序路径: %1").arg(program));

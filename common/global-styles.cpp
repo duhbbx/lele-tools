@@ -95,7 +95,7 @@ QString GlobalStyles::getButtonStyle() {
 
 QString GlobalStyles::getInputStyle() {
     return R"(
-        QLineEdit, QDoubleSpinBox, QComboBox {
+        QLineEdit, QDoubleSpinBox {
             border: 2px solid #e1e5e9;
             padding: 2px 2px;
             font-size: 10pt;
@@ -117,14 +117,39 @@ QString GlobalStyles::getInputStyle() {
             background-color: white;
             color: #333333;
         }
-        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {
+        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QDoubleSpinBox:focus {
             border-color: #4CAF50;
             outline: none;
         }
-        QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
+        QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QDoubleSpinBox:disabled {
             background-color: #f5f5f5;
             color: #999999;
             border-color: #e0e0e0;
+        }
+
+        QComboBox {
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+        }
+        QComboBox:hover {
+            border: 1px solid #0078d7; /* 鼠标悬停边框 */
+        }
+        QComboBox::drop-down {
+            border: none;
+            width: 25px;
+        }
+        QComboBox::down-arrow {
+            image: url(:/icons/arrow-down.svg); /* 自定义下拉箭头 */
+            width: 12px;
+            height: 12px;
+        }
+        QComboBox QAbstractItemView {
+            border: 1px solid #ccc;
+            background: white;
+            selection-background-color: #0078d7;
+            selection-color: white;
         }
 
   QSpinBox {
