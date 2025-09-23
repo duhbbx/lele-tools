@@ -1008,7 +1008,10 @@ QPixmap BarcodeGen::generateBarcodeInternal(const QString &text, BarcodeType typ
         painter.setFont(QFont(style.fontFamily, style.fontSize));
         painter.drawText(textRect, Qt::AlignCenter, text);
     }
-    
+
+    // 显式结束QPainter以避免警告
+    painter.end();
+
     return pixmap;
 }
 

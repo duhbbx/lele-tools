@@ -945,5 +945,8 @@ void ChineseCopybook::printCopybook(QPrinter* printer)
         QPoint drawPoint = pageRect.center() - scaledPixmap.rect().center();
         painter.drawPixmap(drawPoint, scaledPixmap);
     }
+
+    // 显式结束QPainter以避免警告
+    painter.end();
 }
 

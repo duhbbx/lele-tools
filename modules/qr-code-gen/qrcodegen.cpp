@@ -183,7 +183,10 @@ QPixmap BatchProcessWorker::generateQRCode(const QString &text, const QRStyle &s
         QRect logoRect(logoX, logoY, logoSize, logoSize);
         painter.drawPixmap(logoRect, style.logoPixmap.scaled(logoSize, logoSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
-    
+
+    // 显式结束QPainter以避免警告
+    painter.end();
+
     return pixmap;
 }
 
@@ -327,7 +330,10 @@ QPixmap BatchProcessWorker::generateErrorPixmap(const QString &errorMsg, const Q
     painter.setFont(QFont("Arial", 12));
     
     painter.drawText(pixmap.rect(), Qt::AlignCenter | Qt::TextWordWrap, errorMsg);
-    
+
+    // 显式结束QPainter以避免警告
+    painter.end();
+
     return pixmap;
 }
 
