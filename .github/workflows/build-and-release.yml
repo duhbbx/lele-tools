@@ -1019,7 +1019,7 @@ jobs:
     # 缓存可以显著减少构建时间（从15分钟减少到2分钟）
     - name: Cache vcpkg
       uses: actions/cache@v4
-      id: vcpkg-cache
+      id: vcpkg-redis-cache
       with:
         path: |
           C:\vcpkg
@@ -1036,7 +1036,7 @@ jobs:
     # Redis-plus-plus: C++ Redis客户端库，用于Redis数据库连接功能
     # libmysql: MySQL客户端库，用于MySQL数据库连接功能
     - name: Setup vcpkg and dependencies
-      if: steps.vcpkg-cache.outputs.cache-hit != 'true'        # 仅在缓存未命中时运行
+      if: steps.vcpkg-redis-cache.outputs.cache-hit != 'true'        # 仅在缓存未命中时运行
       shell: powershell
       run: |
         Write-Host "Setting up vcpkg and dependencies..." -ForegroundColor Green
@@ -1107,7 +1107,7 @@ jobs:
         }
 
         # vcpkg 缓存状态
-        $vcpkgCacheHit = "${{ steps.vcpkg-cache.outputs.cache-hit }}"
+        $vcpkgCacheHit = "${{ steps.vcpkg-redis-cache.outputs.cache-hit }}"
         if ($vcpkgCacheHit -eq "true") {
             Write-Host "[OK] vcpkg: Cache Hit" -ForegroundColor Green
         } else {
