@@ -38,7 +38,8 @@
       "WebFetch(domain:github.com)",
       "Bash(git checkout:*)",
       "Bash(timeout 90 cmake --build build)",
-      "Bash(timeout 10 cmake --build build --target lele-tools)"
+      "Bash(timeout 10 cmake --build build --target lele-tools)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

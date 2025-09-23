@@ -1228,4 +1228,3 @@ void DirectoryCompare::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
     // TODO: 实现项目双击处理
 }
 
-#include "filecomparetool.moc"

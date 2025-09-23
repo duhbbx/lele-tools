@@ -1002,4 +1002,3 @@ void HostsFileEditor::onRestoreHostsClicked() {}
 void HostsFileEditor::onFlushDnsClicked() {}
 
 
-#include "adminrightstool.moc"

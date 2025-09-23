@@ -1719,4 +1719,3 @@ void FTPUserDialog::onBrowseHomeDirectory()
     }
 }
 
-#include "ftpserver.moc"

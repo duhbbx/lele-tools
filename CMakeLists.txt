@@ -136,8 +136,8 @@ SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 
 
 # 必需的Qt组件 (包含SQL用于SQLite，MySQL使用原生驱动)
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport)
 
 # 可选的Qt多媒体组件
 option(WITH_QT_MULTIMEDIA "Enable Qt Multimedia support" ON)
@@ -257,7 +257,7 @@ else()
     message(WARNING "Qt6 WebEngineWidgets not found - some features may be disabled")
 endif()
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql ${QT_MULTIMEDIA_LIBS} yaml-cpp ScreenCaptureLib)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport ${QT_MULTIMEDIA_LIBS} yaml-cpp ScreenCaptureLib)
 
 
 # 链接库

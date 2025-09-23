@@ -1070,4 +1070,3 @@ LRESULT CALLBACK KeyRemapper::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPA
 }
 #endif
 
-#include "keyremapper.moc"

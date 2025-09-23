@@ -1346,4 +1346,3 @@ void FTPConnectionDialog::onTestConnection()
     testConnection->connectToHost();
 }
 
-#include "ftpclient.moc"

@@ -1378,4 +1378,3 @@ void SSHConnection::cleanup()
 #endif
 }
 
-#include "sshclient.moc"

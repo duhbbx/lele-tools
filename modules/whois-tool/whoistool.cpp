@@ -898,4 +898,3 @@ void WhoisHistory::onExportHistoryClicked() {}
 void WhoisHistory::onViewDetailsClicked() {}
 void WhoisHistory::onDeleteSelectedClicked() {}
 
-#include "whoistool.moc"

@@ -947,4 +947,3 @@ void ChineseCopybook::printCopybook(QPrinter* printer)
     }
 }
 
-#include "chinesecopybook.moc"

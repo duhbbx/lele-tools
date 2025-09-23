@@ -141,7 +141,7 @@ namespace Connx {
             result.success = true;
             
             // 如果response已经是一个列表，直接使用它；否则包装成列表
-            if (response.type() == QVariant::List) {
+            if (response.typeId() == QMetaType::QVariantList) {
                 result.data = response.toList();
             } else {
                 result.data.append(response);

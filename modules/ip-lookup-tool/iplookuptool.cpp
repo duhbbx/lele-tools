@@ -1152,4 +1152,3 @@ IpLookupResult IpApiClient::parseIpInfoResponse(const QJsonObject& json) {
     return result;
 }
 
-#include "iplookuptool.moc"

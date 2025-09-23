@@ -1172,4 +1172,3 @@ void ImageWatermark::setupUI() {
     m_mainLayout->addWidget(m_tabWidget);
 }
 
-#include "imagewatermark.moc"

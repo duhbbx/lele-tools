@@ -1109,4 +1109,3 @@ void BloodTypeSimulation::onGenerationCountChanged() {
     // TODO: 实现代数变化处理
 }
 
-#include "bloodtypetool.moc"
