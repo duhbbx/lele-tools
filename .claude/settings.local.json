@@ -40,7 +40,9 @@
       "Bash(timeout 90 cmake --build build)",
       "Bash(timeout 10 cmake --build build --target lele-tools)",
       "Bash(git push:*)",
-      "Bash(timeout 60 cmake --build build --target lele-tools)"
+      "Bash(timeout 60 cmake --build build --target lele-tools)",
+      "Bash(timeout 90 cmake --build build --target lele-tools)",
+      "Bash(timeout 120 cmake --build build --target lele-tools)"
     ],
     "deny": [],
     "ask": []

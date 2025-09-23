@@ -96,12 +96,14 @@ void CameraTool::setupUI()
     QWidget *rightPanel = new QWidget();
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setSpacing(10);
-    
+
     setupPreviewArea();
     setupStatusArea();
-    
-    rightLayout->addWidget(m_previewGroup);
-    rightLayout->addWidget(m_statusGroup);
+
+    // 预览区域 - 固定比例
+    rightLayout->addWidget(m_previewGroup, 0);
+    // 状态信息区域 - 充满剩余空间，让日志区域可以扩展
+    rightLayout->addWidget(m_statusGroup, 1);
     
     // 设置分割器比例
     mainSplitter->addWidget(leftPanel);
@@ -303,18 +305,22 @@ void CameraTool::setupSettingsArea()
 void CameraTool::setupStatusArea()
 {
     m_statusGroup = new QGroupBox(tr("状态信息"), this);
+    // 设置状态组的大小策略为可扩展
+    m_statusGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *layout = new QVBoxLayout(m_statusGroup);
-    
-    // 设备统计
+
+    // 设备统计 - 高度随内容调整
     m_deviceCountLabel = new QLabel();
     m_deviceCountLabel->setStyleSheet("font-weight: bold; color: #007bff;");
-    layout->addWidget(m_deviceCountLabel);
-    
-    // 日志区域
+    m_deviceCountLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    layout->addWidget(m_deviceCountLabel, 0);  // 不拉伸
+
+    // 日志区域 - 充满剩余空间
     m_logText = new QTextEdit();
-    m_logText->setMaximumHeight(150);
     m_logText->setReadOnly(true);
-    layout->addWidget(m_logText);
+    m_logText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // 移除最大高度限制，让日志区域可以充满剩余空间
+    layout->addWidget(m_logText, 1);  // 拉伸因子为1，充满剩余空间
 }
 
 void CameraTool::refreshCameraList()
