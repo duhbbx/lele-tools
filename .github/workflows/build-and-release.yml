@@ -817,13 +817,13 @@ jobs:
 
     # 步骤4: 使用vcpkg安装LibSSH
     # LibSSH是SSH客户端库，用于SSH连接和SFTP文件传输
-    - name: Cache vcpkg
+    - name: Cache vcpkg LibSSH
       uses: actions/cache@v4
       id: vcpkg-cache
       with:
         path: |
-          ${{ env.VCPKG_INSTALLED_DIR }}
-          ${{ env.VCPKG_DOWNLOADS }}
+          C:\vcpkg\installed\x64-windows
+          C:\vcpkg\downloads
         key: ${{ runner.os }}-vcpkg-libssh-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json') }}-v2
         restore-keys: |
           ${{ runner.os }}-vcpkg-libssh-v2
