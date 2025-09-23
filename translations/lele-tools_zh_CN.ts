@@ -4587,6 +4587,215 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
 数据库: %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <!-- 工具模块名称翻译 -->
+    <message>
+        <source>XML Formatter</source>
+        <translation>XML格式化</translation>
+    </message>
+    <message>
+        <source>JSON Formatter</source>
+        <translation>JSON格式化</translation>
+    </message>
+    <message>
+        <source>YAML Formatter</source>
+        <translation>YAML格式化</translation>
+    </message>
+    <message>
+        <source>Date Time Util</source>
+        <translation>日期时间戳</translation>
+    </message>
+    <message>
+        <source>Base64 Encode Decode</source>
+        <translation>Base64编码解码</translation>
+    </message>
+    <message>
+        <source>Regex Content Generator</source>
+        <translation>正则表达式生成内容</translation>
+    </message>
+    <message>
+        <source>Random Password Generator</source>
+        <translation>随机密码生成</translation>
+    </message>
+    <message>
+        <source>Telnet Tool</source>
+        <translation>Telnet工具</translation>
+    </message>
+    <message>
+        <source>Windows Settings</source>
+        <translation>Windows设置</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Table)</source>
+        <translation>Hosts编辑(表格)</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Text)</source>
+        <translation>Hosts编辑(文本)</translation>
+    </message>
+    <message>
+        <source>Ping Tool</source>
+        <translation>Ping工具</translation>
+    </message>
+    <message>
+        <source>Network Scanner</source>
+        <translation>局域网扫描</translation>
+    </message>
+    <message>
+        <source>Database Tool</source>
+        <translation>数据库连接工具</translation>
+    </message>
+    <message>
+        <source>IP Lookup Tool</source>
+        <translation>IP地址查询</translation>
+    </message>
+    <message>
+        <source>PDF Merge</source>
+        <translation>Pdf合并</translation>
+    </message>
+    <message>
+        <source>Regex Test Tool</source>
+        <translation>正则测试工具</translation>
+    </message>
+    <message>
+        <source>Image Compression</source>
+        <translation>图片压缩</translation>
+    </message>
+    <message>
+        <source>Favicon Production</source>
+        <translation>favicon制作</translation>
+    </message>
+    <message>
+        <source>Color Tools</source>
+        <translation>颜色工具</translation>
+    </message>
+    <message>
+        <source>Mobile Location</source>
+        <translation>手机号归属地</translation>
+    </message>
+    <message>
+        <source>HTML Special Character Table</source>
+        <translation>Html特殊字符表</translation>
+    </message>
+    <message>
+        <source>Torrent File Analysis</source>
+        <translation>种子文件分析</translation>
+    </message>
+    <message>
+        <source>Zip Code Query</source>
+        <translation>邮编区号查询</translation>
+    </message>
+    <message>
+        <source>QR Code Generator</source>
+        <translation>二维码</translation>
+    </message>
+    <message>
+        <source>Image Text Recognition</source>
+        <translation>图片文字识别</translation>
+    </message>
+    <message>
+        <source>File Hash Calculation</source>
+        <translation>文件hash计算</translation>
+    </message>
+    <message>
+        <source>Barcode Generator</source>
+        <translation>条形码生成</translation>
+    </message>
+    <message>
+        <source>Image Format Conversion</source>
+        <translation>图片格式转换</translation>
+    </message>
+    <message>
+        <source>HTTP Status Code</source>
+        <translation>HTTP状态码</translation>
+    </message>
+    <message>
+        <source>Crontab Time Calculation</source>
+        <translation>crontab时间计算</translation>
+    </message>
+    <message>
+        <source>Text Encryption And Decryption</source>
+        <translation>文字加密解密</translation>
+    </message>
+    <message>
+        <source>UUID Generator</source>
+        <translation>UUID生成器</translation>
+    </message>
+    <message>
+        <source>OpenCV Demo</source>
+        <translation>OpenCV示例</translation>
+    </message>
+    <message>
+        <source>OpenCV Image Processor</source>
+        <translation>OpenCV图像处理</translation>
+    </message>
+    <message>
+        <source>SSH Client</source>
+        <translation>SSH客户端</translation>
+    </message>
+    <message>
+        <source>FTP Client</source>
+        <translation>FTP客户端</translation>
+    </message>
+    <message>
+        <source>FTP Server</source>
+        <translation>FTP服务器</translation>
+    </message>
+    <message>
+        <source>Camera Tool</source>
+        <translation>摄像头工具</translation>
+    </message>
+    <message>
+        <source>Terminal Tool</source>
+        <translation>终端工具</translation>
+    </message>
+    <message>
+        <source>Traceroute Tool</source>
+        <translation>路由追踪</translation>
+    </message>
+    <message>
+        <source>Route Test Tool</source>
+        <translation>回程路由测试</translation>
+    </message>
+    <message>
+        <source>System Info Tool</source>
+        <translation>系统基本信息</translation>
+    </message>
+    <message>
+        <source>Rich Text Notepad</source>
+        <translation>富文本记事本</translation>
+    </message>
+    <message>
+        <source>Media Manager</source>
+        <translation>媒体文件管理</translation>
+    </message>
+    <message>
+        <source>Image Watermark</source>
+        <translation>图片加水印</translation>
+    </message>
+    <message>
+        <source>WHOIS Tool</source>
+        <translation>WHOIS查询</translation>
+    </message>
+    <message>
+        <source>File Compare Tool</source>
+        <translation>文件对比</translation>
+    </message>
+    <message>
+        <source>Blood Type Tool</source>
+        <translation>血型遗传规律</translation>
+    </message>
+    <message>
+        <source>Port Scanner</source>
+        <translation>端口占用查看</translation>
+    </message>
+    <message>
+        <source>Key Remapper</source>
+        <translation>改键工具</translation>
+    </message>
+    <message>
+        <source>Chinese Copybook</source>
+        <translation>汉字字帖生成器</translation>
+    </message>
 </context>
 <context>
     <name>QrCodeGen</name>

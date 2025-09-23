@@ -2,11 +2,17 @@
 #define MOUDULEMETA_H
 
 #include <QString>
+#include <QObject>
 
 struct ModuleMeta {
     QString icon;
-    QString title;
+    QString titleKey;       // 翻译键值，而不是直接的标题
     QString className;
+
+    // 获取翻译后的标题
+    QString getLocalizedTitle() const {
+        return QObject::tr(titleKey.toUtf8().constData());
+    }
 };
 
 

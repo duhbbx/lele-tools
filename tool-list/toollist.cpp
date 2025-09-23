@@ -5,6 +5,8 @@
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QSizePolicy>
+#include <QMap>
+#include <QDebug>
 
 #include "module-meta.h"
 
@@ -80,12 +82,8 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
         "}"
     );
 
-    for (const auto& [icon, title, className] : moduleMetaArray) {
-        auto* item0 = new QListWidgetItem(QIcon(icon), title);
-        item0->setData(Qt::UserRole, QVariant(className));
-        item0->setData(Qt::DisplayRole, QVariant(title));
-        listWidget->addItem(item0);
-    }
+    // 按使用频率排序工具后添加到列表
+    sortToolsByUsage();
 
     // 设置拉伸因子为1，让列表填满剩余空间
     layout->addWidget(listWidget, 1);
@@ -125,6 +123,67 @@ void ToolList::filterTools(const QString& text) const {
         const bool shouldShow = itemText.contains(searchText);
         item->setHidden(!shouldShow);
     }
+}
+
+void ToolList::sortToolsByUsage() {
+    // 获取最近一周的使用统计
+    QList<ToolUsageStats> usageStats = ToolUsageTracker::instance()->getWeeklyUsageStats();
+
+    // 创建使用次数映射表
+    QMap<QString, int> usageCountMap;
+    for (const auto& stat : usageStats) {
+        usageCountMap[stat.toolName] = stat.usageCount;
+        qDebug() << "Tool usage:" << stat.toolName << "count:" << stat.usageCount;
+    }
+
+    // 创建工具项目列表，包含使用次数信息
+    struct ToolItem {
+        QString icon;
+        QString title;
+        QString className;
+        int usageCount;
+
+        bool operator<(const ToolItem& other) const {
+            // 首先按使用次数降序排序
+            if (usageCount != other.usageCount) {
+                return usageCount > other.usageCount;
+            }
+            // 使用次数相同时按标题字母序排序
+            return title < other.title;
+        }
+    };
+
+    QList<ToolItem> toolItems;
+
+    // 从原始数据创建工具项目列表
+    for (const auto& [icon, titleKey, className] : moduleMetaArray) {
+        ToolItem item;
+        item.icon = icon;
+        item.title = tr(titleKey.toUtf8().constData()); // 使用翻译
+        item.className = className;
+        item.usageCount = usageCountMap.value(className, 0); // 默认为0
+        toolItems.append(item);
+    }
+
+    // 按使用频率排序
+    std::sort(toolItems.begin(), toolItems.end());
+
+    // 添加排序后的项目到列表
+    for (const auto& toolItem : toolItems) {
+        auto* item = new QListWidgetItem(QIcon(toolItem.icon), toolItem.title);
+        item->setData(Qt::UserRole, QVariant(toolItem.className));
+        item->setData(Qt::DisplayRole, QVariant(toolItem.title));
+
+        // 如果有使用记录，在标题后显示使用次数
+        if (toolItem.usageCount > 0) {
+            QString titleWithCount = QString("%1 (%2次)").arg(toolItem.title).arg(toolItem.usageCount);
+            item->setText(titleWithCount);
+        }
+
+        listWidget->addItem(item);
+    }
+
+    qDebug() << "Tools sorted by usage frequency. Total tools:" << toolItems.size();
 }
 
 ToolList::~ToolList() = default;
