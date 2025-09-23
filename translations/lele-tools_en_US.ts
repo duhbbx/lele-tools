@@ -285,7 +285,7 @@
     <message>
         <source>条形码预览区域
 点击生成按钮生成条形码</source>
-<translation>Barcode Preview Area
+        <translation>Barcode Preview Area
 Click the Generate button to create the barcode</translation>
     </message>
 </context>
@@ -1017,95 +1017,99 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
     <name>CameraTool</name>
     <message>
         <source>Qt Multimedia不可用</source>
-        <translation></translation>
+        <translation>Qt Multimedia Not Available</translation>
     </message>
     <message>
         <source>摄像头:</source>
-        <translation></translation>
+        <translation>Camera:</translation>
     </message>
     <message>
         <source>刷新</source>
-        <translation></translation>
+        <translation>Refresh</translation>
     </message>
     <message>
         <source>分辨率:</source>
-        <translation></translation>
+        <translation>Resolution:</translation>
     </message>
     <message>
         <source>开启摄像头</source>
-        <translation></translation>
+        <translation>Start Camera</translation>
     </message>
     <message>
         <source>关闭摄像头</source>
-        <translation></translation>
+        <translation>Stop Camera</translation>
     </message>
     <message>
         <source>摄像头未启动</source>
-        <translation></translation>
+        <translation>Camera Not Started</translation>
     </message>
     <message>
         <source>摄像头预览区域
 请选择并启动摄像头</source>
-        <translation></translation>
+        <translation>Camera Preview Area
+Please select and start the camera</translation>
     </message>
     <message>
         <source>Qt Multimedia模块不可用
 摄像头功能已禁用
 
 请安装Qt Multimedia模块以启用摄像头功能</source>
-        <translation></translation>
+        <translation>Qt Multimedia module not available
+Camera functionality is disabled
+
+Please install Qt Multimedia module to enable camera functionality</translation>
     </message>
     <message>
         <source>拍照</source>
-        <translation></translation>
+        <translation>Take Photo</translation>
     </message>
     <message>
         <source>开始录制</source>
-        <translation></translation>
+        <translation>Start Recording</translation>
     </message>
     <message>
         <source>停止录制</source>
-        <translation></translation>
+        <translation>Stop Recording</translation>
     </message>
     <message>
         <source>未录制</source>
-        <translation></translation>
+        <translation>Not Recorded</translation>
     </message>
     <message>
         <source>屏幕:</source>
-        <translation></translation>
+        <translation>Screen:</translation>
     </message>
     <message>
         <source>截取屏幕</source>
-        <translation></translation>
+        <translation>Capture Screen</translation>
     </message>
     <message>
         <source>保存路径:</source>
-        <translation></translation>
+        <translation>Save Path:</translation>
     </message>
     <message>
         <source>浏览</source>
-        <translation></translation>
+        <translation>Browse</translation>
     </message>
     <message>
         <source>图片质量:</source>
-        <translation></translation>
+        <translation>Image Quality:</translation>
     </message>
     <message>
         <source>摄像头运行中</source>
-        <translation></translation>
+        <translation>Camera Running</translation>
     </message>
     <message>
         <source>正在录制...</source>
-        <translation></translation>
+        <translation>Recording...</translation>
     </message>
     <message>
         <source>提示</source>
-        <translation></translation>
+        <translation>Notice</translation>
     </message>
     <message>
         <source>请先关闭当前摄像头后再切换</source>
-        <translation></translation>
+        <translation>Please stop the current camera before switching</translation>
     </message>
     <message>
         <source>错误</source>
@@ -1113,36 +1117,195 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
     </message>
     <message>
         <source>请先选择一个摄像头设备</source>
-        <translation></translation>
+        <translation>Please select a camera device first</translation>
     </message>
     <message>
         <source>无效的摄像头设备</source>
-        <translation></translation>
+        <translation>Invalid Camera Device</translation>
     </message>
     <message>
         <source>摄像头未启动或图像捕获未准备就绪</source>
-        <translation></translation>
+        <translation>Camera not started or image capture not ready</translation>
     </message>
     <message>
         <source>录制功能将在后续版本中实现</source>
-        <translation></translation>
+        <translation>Recording functionality will be implemented in future versions</translation>
     </message>
     <message>
         <source>保存截图失败</source>
-        <translation></translation>
+        <translation>Failed to Save Screenshot</translation>
     </message>
     <message>
         <source>成功</source>
-        <translation></translation>
+        <translation>Success</translation>
     </message>
     <message>
         <source>截图已复制到剪贴板</source>
-        <translation></translation>
+        <translation>Screenshot copied to clipboard</translation>
     </message>
     <message>
         <source>分辨率更改将在下次启动摄像头时生效</source>
-        <translation></translation>
+        <translation>Resolution changes will take effect next time the camera starts</translation>
     </message>
+    <message>
+        <source>摄像头工具初始化完成</source>
+        <translation>Camera Tool Initialized</translation>
+    </message>
+    <message>
+        <source>Qt Multimedia模块不可用，摄像头功能已禁用</source>
+        <translation>Qt Multimedia module unavailable, camera function disabled</translation>
+    </message>
+    <message>
+        <source>请安装Qt Multimedia模块以启用摄像头功能</source>
+        <translation>Please install Qt Multimedia module to enable camera functionality</translation>
+    </message>
+    <message>
+        <source>摄像头控制</source>
+        <translation>Camera Control</translation>
+    </message>
+    <message>
+        <source>摄像头预览</source>
+        <translation>Camera Preview</translation>
+    </message>
+    <message>
+        <source>拍照录制</source>
+        <translation>Photo &amp; Recording</translation>
+    </message>
+    <message>
+        <source>屏幕截图</source>
+        <translation>Screen Capture</translation>
+    </message>
+    <message>
+        <source>设置</source>
+        <translation>Settings</translation>
+    </message>
+    <message>
+        <source>状态信息</source>
+        <translation>Status Info</translation>
+    </message>
+    <message>
+        <source>未检测到摄像头设备</source>
+        <translation>No Camera Devices Detected</translation>
+    </message>
+    <message>
+        <source>检测到 %1 个摄像头设备</source>
+        <translation>%1 Camera Devices Detected</translation>
+    </message>
+    <message>
+        <source>Qt Multimedia模块不可用，无法枚举摄像头设备</source>
+        <translation>Qt Multimedia module not available, cannot enumerate camera devices</translation>
+    </message>
+    <message>
+        <source>刷新摄像头设备列表...</source>
+        <translation>Refreshing camera device list...</translation>
+    </message>
+    <message>
+        <source>选择摄像头: %1</source>
+        <translation>Select Camera: %1</translation>
+    </message>
+    <message>
+        <source>正在启动摄像头: %1</source>
+        <translation>Starting Camera: %1</translation>
+    </message>
+    <message>
+        <source>启动摄像头失败: %1</source>
+        <translation>Failed to Start Camera: %1</translation>
+    </message>
+    <message>
+        <source>摄像头已关闭</source>
+        <translation>Camera Stopped</translation>
+    </message>
+    <message>
+        <source>拍照保存到: %1</source>
+        <translation>Photo Saved To: %1</translation>
+    </message>
+    <message>
+        <source>拍照完成（未保存到文件）</source>
+        <translation>Photo Taken (Not Saved to File)</translation>
+    </message>
+    <message>
+        <source>拍照失败: %1</source>
+        <translation>Photo Failed: %1</translation>
+    </message>
+    <message>
+        <source>录制功能暂未实现（需要QMediaRecorder）</source>
+        <translation>Recording not yet implemented (requires QMediaRecorder)</translation>
+    </message>
+    <message>
+        <source>未找到摄像头设备</source>
+        <translation>Camera Device Not Found</translation>
+    </message>
+    <message>
+        <source>检测到摄像头设备: %1 个</source>
+        <translation>%1 Camera Devices Detected</translation>
+    </message>
+    <message>
+        <source>屏幕截图保存到: %1</source>
+        <translation>Screen Capture Saved To: %1</translation>
+    </message>
+    <message>
+        <source>截图已保存到:
+%1</source>
+        <translation>Screenshot Saved To:
+%1</translation>
+    </message>
+    <message>
+        <source>屏幕截图已复制到剪贴板</source>
+        <translation>Screen Capture Copied to Clipboard</translation>
+    </message>
+    <message>
+        <source>截图失败: %1</source>
+        <translation>Screenshot Failed: %1</translation>
+    </message>
+    <message>
+        <source>保存路径已更改为: %1</source>
+        <translation>Save Path Changed To: %1</translation>
+    </message>
+    <message>
+        <source>已启用自动保存到文件</source>
+        <translation>Auto-Save to File Enabled</translation>
+    </message>
+    <message>
+        <source>已禁用自动保存，将复制到剪贴板</source>
+        <translation>Auto-Save Disabled, will copy to clipboard</translation>
+    </message>
+    <message>
+        <source>摄像头已启动</source>
+        <translation>Camera Started</translation>
+    </message>
+    <message>
+        <source>摄像头错误 [%1]: %2</source>
+        <translation>Camera Error [%1]: %2</translation>
+    </message>
+    <message>
+        <source>摄像头错误</source>
+        <translation>Camera Error</translation>
+    </message>
+    <message>
+        <source>图像捕获完成，尺寸: %1x%2</source>
+        <translation>Image Capture Complete, Size: %1x%2</translation>
+    </message>
+    <message>
+        <source>图像已保存: %1</source>
+        <translation>Image Saved: %1</translation>
+    </message>
+    <message>
+        <source>图像捕获错误 [%1]: %2</source>
+        <translation>Image Capture Error [%1]: %2</translation>
+    </message>
+    <message>
+        <source>捕获错误</source>
+        <translation>Capture Error</translation>
+    </message>
+<message>
+    <source>屏幕 %1 (%2x%3)</source>
+    <translation>Screen %1 (%2x%3)</translation>
+</message>
+<message>
+    <source>自动保存到文件</source>
+    <translation>Auto Save to File</translation>
+</message>
+
 </context>
 <context>
     <name>ChineseCopybook</name>
@@ -7452,6 +7615,214 @@ Strength: %3</translation>
     <message>
         <source>搜索工具...</source>
         <translation>Search tool...</translation>
+    </message>
+    <message>
+        <source>XML Formatter</source>
+        <translation type="unfinished">XML Formatter</translation>
+    </message>
+    <message>
+        <source>JSON Formatter</source>
+        <translation type="unfinished">JSON Formatter</translation>
+    </message>
+    <message>
+        <source>YAML Formatter</source>
+        <translation type="unfinished">YAML Formatter</translation>
+    </message>
+    <message>
+        <source>Date Time Util</source>
+        <translation type="unfinished">Date Time Util</translation>
+    </message>
+    <message>
+        <source>Base64 Encode Decode</source>
+        <translation type="unfinished">Base64 Encoder/Decoder</translation>
+    </message>
+    <message>
+        <source>Regex Content Generator</source>
+        <translation type="unfinished">Regex Content Generator</translation>
+    </message>
+    <message>
+        <source>Random Password Generator</source>
+        <translation type="unfinished">Random Password Generator</translation>
+    </message>
+    <message>
+        <source>Telnet Tool</source>
+        <translation type="unfinished">Telnet Tool</translation>
+    </message>
+    <message>
+        <source>Windows Settings</source>
+        <translation type="unfinished">Windows Settings</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Table)</source>
+        <translation type="unfinished">Hosts Editor (Table)</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Text)</source>
+        <translation type="unfinished">Hosts Editor (Text)</translation>
+    </message>
+    <message>
+        <source>Ping Tool</source>
+        <translation type="unfinished">Ping Tool</translation>
+    </message>
+    <message>
+        <source>Network Scanner</source>
+        <translation type="unfinished">Network Scanner</translation>
+    </message>
+    <message>
+        <source>Database Tool</source>
+        <translation type="unfinished">Database Tool</translation>
+    </message>
+    <message>
+        <source>IP Lookup Tool</source>
+        <translation type="unfinished">IP Lookup Tool</translation>
+    </message>
+    <message>
+        <source>PDF Merge</source>
+        <translation type="unfinished">PDF Merge</translation>
+    </message>
+    <message>
+        <source>Regex Test Tool</source>
+        <translation type="unfinished">Regex Test Tool</translation>
+    </message>
+    <message>
+        <source>Image Compression</source>
+        <translation type="unfinished">Image Compression</translation>
+    </message>
+    <message>
+        <source>Favicon Production</source>
+        <translation type="unfinished">Favicon Generator</translation>
+    </message>
+    <message>
+        <source>Color Tools</source>
+        <translation type="unfinished">Color Tools</translation>
+    </message>
+    <message>
+        <source>Mobile Location</source>
+        <translation type="unfinished">Mobile Number Location</translation>
+    </message>
+    <message>
+        <source>HTML Special Character Table</source>
+        <translation type="unfinished">HTML Special Characters</translation>
+    </message>
+    <message>
+        <source>Torrent File Analysis</source>
+        <translation type="unfinished">Torrent File Analyzer</translation>
+    </message>
+    <message>
+        <source>Zip Code Query</source>
+        <translation type="unfinished">Zip Code Lookup</translation>
+    </message>
+    <message>
+        <source>QR Code Generator</source>
+        <translation type="unfinished">QR Code Generator</translation>
+    </message>
+    <message>
+        <source>Image Text Recognition</source>
+        <translation type="unfinished">OCR Text Recognition</translation>
+    </message>
+    <message>
+        <source>File Hash Calculation</source>
+        <translation type="unfinished">File Hash Calculator</translation>
+    </message>
+    <message>
+        <source>Barcode Generator</source>
+        <translation type="unfinished">Barcode Generator</translation>
+    </message>
+    <message>
+        <source>Image Format Conversion</source>
+        <translation type="unfinished">Image Format Converter</translation>
+    </message>
+    <message>
+        <source>HTTP Status Code</source>
+        <translation type="unfinished">HTTP Status Codes</translation>
+    </message>
+    <message>
+        <source>Crontab Time Calculation</source>
+        <translation type="unfinished">Cron Expression Tool</translation>
+    </message>
+    <message>
+        <source>Text Encryption And Decryption</source>
+        <translation type="unfinished">Text Encryption/Decryption</translation>
+    </message>
+    <message>
+        <source>UUID Generator</source>
+        <translation type="unfinished">UUID Generator</translation>
+    </message>
+    <message>
+        <source>OpenCV Demo</source>
+        <translation type="unfinished">OpenCV Demo</translation>
+    </message>
+    <message>
+        <source>OpenCV Image Processor</source>
+        <translation type="unfinished">OpenCV Image Processor</translation>
+    </message>
+    <message>
+        <source>SSH Client</source>
+        <translation type="unfinished">SSH Client</translation>
+    </message>
+    <message>
+        <source>FTP Client</source>
+        <translation type="unfinished">FTP Client</translation>
+    </message>
+    <message>
+        <source>FTP Server</source>
+        <translation type="unfinished">FTP Server</translation>
+    </message>
+    <message>
+        <source>Camera Tool</source>
+        <translation type="unfinished">Camera Tool</translation>
+    </message>
+    <message>
+        <source>Terminal Tool</source>
+        <translation type="unfinished">Terminal Tool</translation>
+    </message>
+    <message>
+        <source>Traceroute Tool</source>
+        <translation type="unfinished">Traceroute Tool</translation>
+    </message>
+    <message>
+        <source>Route Test Tool</source>
+        <translation type="unfinished">Route Test Tool</translation>
+    </message>
+    <message>
+        <source>System Info Tool</source>
+        <translation type="unfinished">System Information</translation>
+    </message>
+    <message>
+        <source>Rich Text Notepad</source>
+        <translation type="unfinished">Rich Text Editor</translation>
+    </message>
+    <message>
+        <source>Media Manager</source>
+        <translation type="unfinished">Media Manager</translation>
+    </message>
+    <message>
+        <source>Image Watermark</source>
+        <translation type="unfinished">Image Watermark</translation>
+    </message>
+    <message>
+        <source>WHOIS Tool</source>
+        <translation type="unfinished">WHOIS Lookup</translation>
+    </message>
+    <message>
+        <source>File Compare Tool</source>
+        <translation type="unfinished">File Compare Tool</translation>
+    </message>
+    <message>
+        <source>Blood Type Tool</source>
+        <translation type="unfinished">Blood Type Genetics</translation>
+    </message>
+    <message>
+        <source>Port Scanner</source>
+        <translation type="unfinished">Port Scanner</translation>
+    </message>
+    <message>
+        <source>Key Remapper</source>
+        <translation type="unfinished">Key Remapper</translation>
+    </message>
+    <message>
+        <source>Chinese Copybook</source>
+        <translation type="unfinished">Chinese Character Practice</translation>
     </message>
 </context>
 <context>

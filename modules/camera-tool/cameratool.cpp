@@ -124,8 +124,7 @@ void CameraTool::setupCameraControls()
     m_cameraCombo = new QComboBox();
     m_cameraCombo->setMinimumWidth(200);
     m_refreshBtn = new QPushButton(tr("刷新"));
-    m_refreshBtn->setMaximumWidth(60);
-    
+
     cameraLayout->addWidget(m_cameraCombo);
     cameraLayout->addWidget(m_refreshBtn);
     layout->addLayout(cameraLayout);
@@ -245,7 +244,7 @@ void CameraTool::setupScreenshotControls()
     QList<QScreen*> screens = QGuiApplication::screens();
     for (int i = 0; i < screens.size(); ++i) {
         QScreen *screen = screens[i];
-        QString screenInfo = QString("屏幕 %1 (%2x%3)")
+        QString screenInfo = QString(tr("屏幕 %1 (%2x%3)"))
                            .arg(i + 1)
                            .arg(screen->size().width())
                            .arg(screen->size().height());
@@ -282,7 +281,7 @@ void CameraTool::setupSettingsArea()
     layout->addLayout(pathLayout);
     
     // 自动保存
-    m_autoSaveCheck = new QCheckBox("自动保存到文件");
+    m_autoSaveCheck = new QCheckBox(tr("自动保存到文件"));
     m_autoSaveCheck->setChecked(true);
     layout->addWidget(m_autoSaveCheck);
     
@@ -326,7 +325,7 @@ void CameraTool::refreshCameraList()
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
     
     if (cameras.isEmpty()) {
-        m_cameraCombo->addItem("未找到摄像头设备");
+        m_cameraCombo->addItem(tr("未找到摄像头设备"));
         m_startBtn->setEnabled(false);
         logMessage(tr("未检测到摄像头设备"));
     } else {
@@ -353,7 +352,7 @@ void CameraTool::updateCameraInfo()
 {
 #ifdef WITH_QT_MULTIMEDIA
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
-    m_deviceCountLabel->setText(QString("检测到摄像头设备: %1 个").arg(cameras.size()));
+    m_deviceCountLabel->setText(QString(tr("检测到摄像头设备: %1 个")).arg(cameras.size()));
 #else
     m_deviceCountLabel->setText(tr("Qt Multimedia不可用"));
 #endif
@@ -362,8 +361,8 @@ void CameraTool::updateCameraInfo()
 void CameraTool::updateUI()
 {
     // 更新按钮状态
-    bool hasCamera = m_cameraCombo->count() > 0 && 
-                    m_cameraCombo->currentText() != "未找到摄像头设备";
+    bool hasCamera = m_cameraCombo->count() > 0 &&
+                    m_cameraCombo->currentText() != tr("未找到摄像头设备");
     
     m_startBtn->setEnabled(hasCamera && !m_cameraActive);
     m_stopBtn->setEnabled(m_cameraActive);
@@ -568,31 +567,31 @@ void CameraTool::onTakePhotoClicked()
             QImageCapture::FileFormat format = QImageCapture::JPEG;
             m_imageCapture->captureToFile(fullPath);
             
-            logMessage(QString("拍照保存到: %1").arg(fullPath));
+            logMessage(QString(tr("拍照保存到: %1")).arg(fullPath));
         } else {
             // 只捕获到内存
             m_imageCapture->capture();
-            logMessage("拍照完成（未保存到文件）");
+            logMessage(tr("拍照完成（未保存到文件）"));
         }
         
         m_photoCount++;
         
     } catch (const std::exception& e) {
-        QMessageBox::critical(this, "错误", QString("拍照失败: %1").arg(e.what()));
-        logMessage(QString("拍照失败: %1").arg(e.what()));
+        QMessageBox::critical(this, tr("错误"), QString(tr("拍照失败: %1")).arg(e.what()));
+        logMessage(QString(tr("拍照失败: %1")).arg(e.what()));
     }
 }
 
 void CameraTool::onStartRecordingClicked()
 {
     // 注意：这里需要QMediaRecorder，但为了简化，我们暂时只提供占位实现
-    logMessage("录制功能暂未实现（需要QMediaRecorder）");
+    logMessage(tr("录制功能暂未实现（需要QMediaRecorder）"));
     QMessageBox::information(this, tr("提示"), tr("录制功能将在后续版本中实现"));
 }
 
 void CameraTool::onStopRecordingClicked()
 {
-    logMessage("停止录制");
+    logMessage(tr("停止录制"));
 }
 
 void CameraTool::onTakeScreenshotClicked()
@@ -605,22 +604,22 @@ void CameraTool::onTakeScreenshotClicked()
             QString fullPath = QDir(m_savePath).absoluteFilePath(fileName);
             
             if (screenshot.save(fullPath, "JPEG", m_qualitySpin->value())) {
-                logMessage(QString("屏幕截图保存到: %1").arg(fullPath));
-                QMessageBox::information(this, "成功", QString("截图已保存到:\n%1").arg(fullPath));
+                logMessage(QString(tr("屏幕截图保存到: %1")).arg(fullPath));
+                QMessageBox::information(this, tr("成功"), QString(tr("截图已保存到:\n%1")).arg(fullPath));
             } else {
-                logMessage("保存截图失败");
+                logMessage(tr("保存截图失败"));
                 QMessageBox::warning(this, tr("错误"), tr("保存截图失败"));
             }
         } else {
             // 复制到剪贴板
             QGuiApplication::clipboard()->setPixmap(screenshot);
-            logMessage("屏幕截图已复制到剪贴板");
+            logMessage(tr("屏幕截图已复制到剪贴板"));
             QMessageBox::information(this, tr("成功"), tr("截图已复制到剪贴板"));
         }
         
     } catch (const std::exception& e) {
-        QMessageBox::critical(this, "错误", QString("截图失败: %1").arg(e.what()));
-        logMessage(QString("截图失败: %1").arg(e.what()));
+        QMessageBox::critical(this, tr("错误"), QString(tr("截图失败: %1")).arg(e.what()));
+        logMessage(QString(tr("截图失败: %1")).arg(e.what()));
     }
 }
 
@@ -630,7 +629,7 @@ void CameraTool::onSavePathBrowseClicked()
     if (!dir.isEmpty()) {
         m_savePath = dir;
         m_savePathLabel->setText(QDir::toNativeSeparators(m_savePath));
-        logMessage(QString("保存路径已更改为: %1").arg(m_savePath));
+        logMessage(QString(tr("保存路径已更改为: %1")).arg(m_savePath));
     }
 }
 
@@ -644,7 +643,7 @@ void CameraTool::onResolutionChanged()
 
 void CameraTool::onAutoSaveToggled(bool enabled)
 {
-    logMessage(enabled ? "已启用自动保存到文件" : "已禁用自动保存，将复制到剪贴板");
+    logMessage(enabled ? tr("已启用自动保存到文件") : tr("已禁用自动保存，将复制到剪贴板"));
 }
 
 // 摄像头状态回调
@@ -655,11 +654,11 @@ void CameraTool::onCameraActiveChanged(bool active)
     if (active) {
         m_videoWidget->show();
         m_previewLabel->hide();
-        logMessage("摄像头已启动");
+        logMessage(tr("摄像头已启动"));
     } else {
         m_videoWidget->hide();
         m_previewLabel->show();
-        logMessage("摄像头已关闭");
+        logMessage(tr("摄像头已关闭"));
     }
     
     updateUI();
@@ -667,27 +666,27 @@ void CameraTool::onCameraActiveChanged(bool active)
 
 void CameraTool::onCameraErrorOccurred(QCamera::Error error, const QString &errorString)
 {
-    QString errorMsg = QString("摄像头错误 [%1]: %2").arg(static_cast<int>(error)).arg(errorString);
+    QString errorMsg = QString(tr("摄像头错误 [%1]: %2")).arg(static_cast<int>(error)).arg(errorString);
     logMessage(errorMsg);
-    QMessageBox::critical(this, "摄像头错误", errorMsg);
+    QMessageBox::critical(this, tr("摄像头错误"), errorMsg);
 }
 
 void CameraTool::onImageCaptured(int requestId, const QImage &img)
 {
     Q_UNUSED(requestId)
-    logMessage(QString("图像捕获完成，尺寸: %1x%2").arg(img.width()).arg(img.height()));
+    logMessage(QString(tr("图像捕获完成，尺寸: %1x%2")).arg(img.width()).arg(img.height()));
 }
 
 void CameraTool::onImageSaved(int id, const QString &fileName)
 {
     Q_UNUSED(id)
-    logMessage(QString("图像已保存: %1").arg(fileName));
+    logMessage(QString(tr("图像已保存: %1")).arg(fileName));
 }
 
 void CameraTool::onImageCaptureError(int id, QImageCapture::Error error, const QString &errorString)
 {
     Q_UNUSED(id)
-    QString errorMsg = QString("图像捕获错误 [%1]: %2").arg(static_cast<int>(error)).arg(errorString);
+    QString errorMsg = QString(tr("图像捕获错误 [%1]: %2")).arg(static_cast<int>(error)).arg(errorString);
     logMessage(errorMsg);
-    QMessageBox::warning(this, "捕获错误", errorMsg);
+    QMessageBox::warning(this, tr("捕获错误"), errorMsg);
 }

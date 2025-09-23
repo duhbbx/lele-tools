@@ -418,7 +418,28 @@ void BloodTypeCalculator_Widget::setupUI() {
     m_resultTable = new QTableWidget();
     m_resultTable->setColumnCount(4);
     m_resultTable->setHorizontalHeaderLabels({tr("血型"), tr("基因型"), tr("概率"), tr("比例")});
-    m_resultTable->horizontalHeader()->setStretchLastSection(true);
+
+    // 设置表格充满父容器
+    m_resultTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    // 设置列宽自适应策略
+    QHeaderView* header = m_resultTable->horizontalHeader();
+    // 血型列：固定内容宽度
+    header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    // 基因型列：固定内容宽度
+    header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    // 概率列：固定内容宽度
+    header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    // 比例列：拉伸填满剩余空间
+    header->setSectionResizeMode(3, QHeaderView::Stretch);
+
+    // 设置最小列宽，确保内容可读性
+    m_resultTable->setColumnWidth(0, 60);   // 血型列最小宽度
+    m_resultTable->setColumnWidth(1, 80);   // 基因型列最小宽度
+    m_resultTable->setColumnWidth(2, 60);   // 概率列最小宽度
+    // 比例列会自动拉伸，无需设置最小宽度
+
+    // 表格其他设置
     m_resultTable->setAlternatingRowColors(true);
     m_resultTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_resultTable->verticalHeader()->setVisible(false);
@@ -664,7 +685,7 @@ void BloodTypeCalculator_Widget::displayResults(const QList<HeritageResult>& res
         m_resultTable->setItem(i, 3, ratioItem);
     }
 
-    m_resultTable->resizeColumnsToContents();
+    // 列宽已通过header设置自动调整，无需手动调用resizeColumnsToContents()
 }
 
 QString BloodTypeCalculator_Widget::bloodTypeToString(ABOBloodType type) {

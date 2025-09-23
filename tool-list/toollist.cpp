@@ -126,6 +126,63 @@ void ToolList::filterTools(const QString& text) const {
 }
 
 void ToolList::sortToolsByUsage() const {
+    // 显式标记工具名称用于翻译提取（这些tr()调用确保lupdate能找到所有字符串）
+    static QStringList translationKeys = {
+        tr("XML Formatter"),
+        tr("JSON Formatter"),
+        tr("YAML Formatter"),
+        tr("Date Time Util"),
+        tr("Base64 Encode Decode"),
+        tr("Regex Content Generator"),
+        tr("Random Password Generator"),
+        tr("Telnet Tool"),
+        tr("Windows Settings"),
+        tr("Hosts Editor (Table)"),
+        tr("Hosts Editor (Text)"),
+        tr("Ping Tool"),
+        tr("Network Scanner"),
+        tr("Database Tool"),
+        tr("IP Lookup Tool"),
+        tr("PDF Merge"),
+        tr("Regex Test Tool"),
+        tr("Image Compression"),
+        tr("Favicon Production"),
+        tr("Color Tools"),
+        tr("Mobile Location"),
+        tr("HTML Special Character Table"),
+        tr("Torrent File Analysis"),
+        tr("Zip Code Query"),
+        tr("QR Code Generator"),
+        tr("Image Text Recognition"),
+        tr("File Hash Calculation"),
+        tr("Barcode Generator"),
+        tr("Image Format Conversion"),
+        tr("HTTP Status Code"),
+        tr("Crontab Time Calculation"),
+        tr("Text Encryption And Decryption"),
+        tr("UUID Generator"),
+        tr("OpenCV Demo"),
+        tr("OpenCV Image Processor"),
+        tr("SSH Client"),
+        tr("FTP Client"),
+        tr("FTP Server"),
+        tr("Camera Tool"),
+        tr("Terminal Tool"),
+        tr("Traceroute Tool"),
+        tr("Route Test Tool"),
+        tr("System Info Tool"),
+        tr("Rich Text Notepad"),
+        tr("Media Manager"),
+        tr("Image Watermark"),
+        tr("WHOIS Tool"),
+        tr("File Compare Tool"),
+        tr("Blood Type Tool"),
+        tr("Port Scanner"),
+        tr("Key Remapper"),
+        tr("Chinese Copybook")
+    };
+    Q_UNUSED(translationKeys); // 避免编译器警告
+
     // 获取最近一周的使用统计
     QList<ToolUsageStats> usageStats = ToolUsageTracker::instance()->getWeeklyUsageStats();
 
@@ -159,7 +216,7 @@ void ToolList::sortToolsByUsage() const {
     for (const auto& [icon, titleKey, className] : moduleMetaArray) {
         ToolItem item;
         item.icon = icon;
-        item.title = QCoreApplication::translate("DynamicTitles", titleKey.toUtf8().constData());
+        item.title = tr(titleKey.toUtf8().constData());
         item.className = className;
         item.usageCount = usageCountMap.value(className, 0); // 默认为0
         toolItems.append(item);

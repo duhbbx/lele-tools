@@ -1006,6 +1006,163 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
         <source>分辨率更改将在下次启动摄像头时生效</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>摄像头工具初始化完成</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Qt Multimedia模块不可用，摄像头功能已禁用</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请安装Qt Multimedia模块以启用摄像头功能</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>摄像头控制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>摄像头预览</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>拍照录制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>屏幕截图</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>设置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>状态信息</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>未检测到摄像头设备</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>检测到 %1 个摄像头设备</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Qt Multimedia模块不可用，无法枚举摄像头设备</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>刷新摄像头设备列表...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>选择摄像头: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>正在启动摄像头: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>启动摄像头失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>摄像头已关闭</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>拍照保存到: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>拍照完成（未保存到文件）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>拍照失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>录制功能暂未实现（需要QMediaRecorder）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>未找到摄像头设备</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>检测到摄像头设备: %1 个</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>屏幕截图保存到: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>截图已保存到:
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>屏幕截图已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>截图失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存路径已更改为: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已启用自动保存到文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已禁用自动保存，将复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>摄像头已启动</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>摄像头错误 [%1]: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>摄像头错误</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>图像捕获完成，尺寸: %1x%2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>图像已保存: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>图像捕获错误 [%1]: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>捕获错误</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>屏幕 %1 (%2x%3)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>自动保存到文件</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ChineseCopybook</name>
@@ -2116,211 +2273,211 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
     <name>DynamicTitles</name>
     <message>
         <source>XML Formatter</source>
-        <translation>XML格式化</translation>
+        <translation type="vanished">XML格式化</translation>
     </message>
     <message>
         <source>JSON Formatter</source>
-        <translation>JSON格式化</translation>
+        <translation type="vanished">JSON格式化</translation>
     </message>
     <message>
         <source>YAML Formatter</source>
-        <translation>YAML格式化</translation>
+        <translation type="vanished">YAML格式化</translation>
     </message>
     <message>
         <source>Date Time Util</source>
-        <translation>日期时间戳</translation>
+        <translation type="vanished">日期时间戳</translation>
     </message>
     <message>
         <source>Base64 Encode Decode</source>
-        <translation>Base64编码解码</translation>
+        <translation type="vanished">Base64编码解码</translation>
     </message>
     <message>
         <source>Regex Content Generator</source>
-        <translation>正则表达式生成内容</translation>
+        <translation type="vanished">正则表达式生成内容</translation>
     </message>
     <message>
         <source>Random Password Generator</source>
-        <translation>随机密码生成</translation>
+        <translation type="vanished">随机密码生成</translation>
     </message>
     <message>
         <source>Telnet Tool</source>
-        <translation>Telnet工具</translation>
+        <translation type="vanished">Telnet工具</translation>
     </message>
     <message>
         <source>Windows Settings</source>
-        <translation>Windows设置</translation>
+        <translation type="vanished">Windows设置</translation>
     </message>
     <message>
         <source>Hosts Editor (Table)</source>
-        <translation>Hosts编辑(表格)</translation>
+        <translation type="vanished">Hosts编辑(表格)</translation>
     </message>
     <message>
         <source>Hosts Editor (Text)</source>
-        <translation>Hosts编辑(文本)</translation>
+        <translation type="vanished">Hosts编辑(文本)</translation>
     </message>
     <message>
         <source>Ping Tool</source>
-        <translation>Ping工具</translation>
+        <translation type="vanished">Ping工具</translation>
     </message>
     <message>
         <source>Network Scanner</source>
-        <translation>局域网扫描</translation>
+        <translation type="vanished">局域网扫描</translation>
     </message>
     <message>
         <source>Database Tool</source>
-        <translation>数据库连接工具</translation>
+        <translation type="vanished">数据库连接工具</translation>
     </message>
     <message>
         <source>IP Lookup Tool</source>
-        <translation>IP地址查询</translation>
+        <translation type="vanished">IP地址查询</translation>
     </message>
     <message>
         <source>PDF Merge</source>
-        <translation>Pdf合并</translation>
+        <translation type="vanished">Pdf合并</translation>
     </message>
     <message>
         <source>Regex Test Tool</source>
-        <translation>正则测试工具</translation>
+        <translation type="vanished">正则测试工具</translation>
     </message>
     <message>
         <source>Image Compression</source>
-        <translation>图片压缩</translation>
+        <translation type="vanished">图片压缩</translation>
     </message>
     <message>
         <source>Favicon Production</source>
-        <translation>favicon制作</translation>
+        <translation type="vanished">favicon制作</translation>
     </message>
     <message>
         <source>Color Tools</source>
-        <translation>颜色工具</translation>
+        <translation type="vanished">颜色工具</translation>
     </message>
     <message>
         <source>Mobile Location</source>
-        <translation>手机号归属地</translation>
+        <translation type="vanished">手机号归属地</translation>
     </message>
     <message>
         <source>HTML Special Character Table</source>
-        <translation>Html特殊字符表</translation>
+        <translation type="vanished">Html特殊字符表</translation>
     </message>
     <message>
         <source>Torrent File Analysis</source>
-        <translation>种子文件分析</translation>
+        <translation type="vanished">种子文件分析</translation>
     </message>
     <message>
         <source>Zip Code Query</source>
-        <translation>邮编区号查询</translation>
+        <translation type="vanished">邮编区号查询</translation>
     </message>
     <message>
         <source>QR Code Generator</source>
-        <translation>二维码</translation>
+        <translation type="vanished">二维码</translation>
     </message>
     <message>
         <source>Image Text Recognition</source>
-        <translation>图片文字识别</translation>
+        <translation type="vanished">图片文字识别</translation>
     </message>
     <message>
         <source>File Hash Calculation</source>
-        <translation>文件hash计算</translation>
+        <translation type="vanished">文件hash计算</translation>
     </message>
     <message>
         <source>Barcode Generator</source>
-        <translation>条形码生成</translation>
+        <translation type="vanished">条形码生成</translation>
     </message>
     <message>
         <source>Image Format Conversion</source>
-        <translation>图片格式转换</translation>
+        <translation type="vanished">图片格式转换</translation>
     </message>
     <message>
         <source>HTTP Status Code</source>
-        <translation>HTTP状态码</translation>
+        <translation type="vanished">HTTP状态码</translation>
     </message>
     <message>
         <source>Crontab Time Calculation</source>
-        <translation>crontab时间计算</translation>
+        <translation type="vanished">crontab时间计算</translation>
     </message>
     <message>
         <source>Text Encryption And Decryption</source>
-        <translation>文字加密解密</translation>
+        <translation type="vanished">文字加密解密</translation>
     </message>
     <message>
         <source>UUID Generator</source>
-        <translation>UUID生成器</translation>
+        <translation type="vanished">UUID生成器</translation>
     </message>
     <message>
         <source>OpenCV Demo</source>
-        <translation>OpenCV示例</translation>
+        <translation type="vanished">OpenCV示例</translation>
     </message>
     <message>
         <source>OpenCV Image Processor</source>
-        <translation>OpenCV图像处理</translation>
+        <translation type="vanished">OpenCV图像处理</translation>
     </message>
     <message>
         <source>SSH Client</source>
-        <translation>SSH客户端</translation>
+        <translation type="vanished">SSH客户端</translation>
     </message>
     <message>
         <source>FTP Client</source>
-        <translation>FTP客户端</translation>
+        <translation type="vanished">FTP客户端</translation>
     </message>
     <message>
         <source>FTP Server</source>
-        <translation>FTP服务器</translation>
+        <translation type="vanished">FTP服务器</translation>
     </message>
     <message>
         <source>Camera Tool</source>
-        <translation>摄像头工具</translation>
+        <translation type="vanished">摄像头工具</translation>
     </message>
     <message>
         <source>Terminal Tool</source>
-        <translation>终端工具</translation>
+        <translation type="vanished">终端工具</translation>
     </message>
     <message>
         <source>Traceroute Tool</source>
-        <translation>路由追踪</translation>
+        <translation type="vanished">路由追踪</translation>
     </message>
     <message>
         <source>Route Test Tool</source>
-        <translation>回程路由测试</translation>
+        <translation type="vanished">回程路由测试</translation>
     </message>
     <message>
         <source>System Info Tool</source>
-        <translation>系统基本信息</translation>
+        <translation type="vanished">系统基本信息</translation>
     </message>
     <message>
         <source>Rich Text Notepad</source>
-        <translation>富文本记事本</translation>
+        <translation type="vanished">富文本记事本</translation>
     </message>
     <message>
         <source>Media Manager</source>
-        <translation>媒体文件管理</translation>
+        <translation type="vanished">媒体文件管理</translation>
     </message>
     <message>
         <source>Image Watermark</source>
-        <translation>图片加水印</translation>
+        <translation type="vanished">图片加水印</translation>
     </message>
     <message>
         <source>WHOIS Tool</source>
-        <translation>WHOIS查询</translation>
+        <translation type="vanished">WHOIS查询</translation>
     </message>
     <message>
         <source>File Compare Tool</source>
-        <translation>文件对比</translation>
+        <translation type="vanished">文件对比</translation>
     </message>
     <message>
         <source>Blood Type Tool</source>
-        <translation>血型遗传规律</translation>
+        <translation type="vanished">血型遗传规律</translation>
     </message>
     <message>
         <source>Port Scanner</source>
-        <translation>端口占用查看</translation>
+        <translation type="vanished">端口占用查看</translation>
     </message>
     <message>
         <source>Key Remapper</source>
-        <translation>改键工具</translation>
+        <translation type="vanished">改键工具</translation>
     </message>
     <message>
         <source>Chinese Copybook</source>
-        <translation>汉字字帖生成器</translation>
+        <translation type="vanished">汉字字帖生成器</translation>
     </message>
 </context>
 <context>
@@ -7257,6 +7414,214 @@ https://example3.com</source>
     <message>
         <source>搜索工具...</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>XML Formatter</source>
+        <translation type="unfinished">XML格式化</translation>
+    </message>
+    <message>
+        <source>JSON Formatter</source>
+        <translation type="unfinished">JSON格式化</translation>
+    </message>
+    <message>
+        <source>YAML Formatter</source>
+        <translation type="unfinished">YAML格式化</translation>
+    </message>
+    <message>
+        <source>Date Time Util</source>
+        <translation type="unfinished">日期时间戳</translation>
+    </message>
+    <message>
+        <source>Base64 Encode Decode</source>
+        <translation type="unfinished">Base64编码解码</translation>
+    </message>
+    <message>
+        <source>Regex Content Generator</source>
+        <translation type="unfinished">正则表达式生成内容</translation>
+    </message>
+    <message>
+        <source>Random Password Generator</source>
+        <translation type="unfinished">随机密码生成</translation>
+    </message>
+    <message>
+        <source>Telnet Tool</source>
+        <translation type="unfinished">Telnet工具</translation>
+    </message>
+    <message>
+        <source>Windows Settings</source>
+        <translation type="unfinished">Windows设置</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Table)</source>
+        <translation type="unfinished">Hosts编辑(表格)</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Text)</source>
+        <translation type="unfinished">Hosts编辑(文本)</translation>
+    </message>
+    <message>
+        <source>Ping Tool</source>
+        <translation type="unfinished">Ping工具</translation>
+    </message>
+    <message>
+        <source>Network Scanner</source>
+        <translation type="unfinished">局域网扫描</translation>
+    </message>
+    <message>
+        <source>Database Tool</source>
+        <translation type="unfinished">数据库连接工具</translation>
+    </message>
+    <message>
+        <source>IP Lookup Tool</source>
+        <translation type="unfinished">IP地址查询</translation>
+    </message>
+    <message>
+        <source>PDF Merge</source>
+        <translation type="unfinished">Pdf合并</translation>
+    </message>
+    <message>
+        <source>Regex Test Tool</source>
+        <translation type="unfinished">正则测试工具</translation>
+    </message>
+    <message>
+        <source>Image Compression</source>
+        <translation type="unfinished">图片压缩</translation>
+    </message>
+    <message>
+        <source>Favicon Production</source>
+        <translation type="unfinished">favicon制作</translation>
+    </message>
+    <message>
+        <source>Color Tools</source>
+        <translation type="unfinished">颜色工具</translation>
+    </message>
+    <message>
+        <source>Mobile Location</source>
+        <translation type="unfinished">手机号归属地</translation>
+    </message>
+    <message>
+        <source>HTML Special Character Table</source>
+        <translation type="unfinished">Html特殊字符表</translation>
+    </message>
+    <message>
+        <source>Torrent File Analysis</source>
+        <translation type="unfinished">种子文件分析</translation>
+    </message>
+    <message>
+        <source>Zip Code Query</source>
+        <translation type="unfinished">邮编区号查询</translation>
+    </message>
+    <message>
+        <source>QR Code Generator</source>
+        <translation type="unfinished">二维码</translation>
+    </message>
+    <message>
+        <source>Image Text Recognition</source>
+        <translation type="unfinished">图片文字识别</translation>
+    </message>
+    <message>
+        <source>File Hash Calculation</source>
+        <translation type="unfinished">文件hash计算</translation>
+    </message>
+    <message>
+        <source>Barcode Generator</source>
+        <translation type="unfinished">条形码生成</translation>
+    </message>
+    <message>
+        <source>Image Format Conversion</source>
+        <translation type="unfinished">图片格式转换</translation>
+    </message>
+    <message>
+        <source>HTTP Status Code</source>
+        <translation type="unfinished">HTTP状态码</translation>
+    </message>
+    <message>
+        <source>Crontab Time Calculation</source>
+        <translation type="unfinished">crontab时间计算</translation>
+    </message>
+    <message>
+        <source>Text Encryption And Decryption</source>
+        <translation type="unfinished">文字加密解密</translation>
+    </message>
+    <message>
+        <source>UUID Generator</source>
+        <translation type="unfinished">UUID生成器</translation>
+    </message>
+    <message>
+        <source>OpenCV Demo</source>
+        <translation type="unfinished">OpenCV示例</translation>
+    </message>
+    <message>
+        <source>OpenCV Image Processor</source>
+        <translation type="unfinished">OpenCV图像处理</translation>
+    </message>
+    <message>
+        <source>SSH Client</source>
+        <translation type="unfinished">SSH客户端</translation>
+    </message>
+    <message>
+        <source>FTP Client</source>
+        <translation type="unfinished">FTP客户端</translation>
+    </message>
+    <message>
+        <source>FTP Server</source>
+        <translation type="unfinished">FTP服务器</translation>
+    </message>
+    <message>
+        <source>Camera Tool</source>
+        <translation type="unfinished">摄像头工具</translation>
+    </message>
+    <message>
+        <source>Terminal Tool</source>
+        <translation type="unfinished">终端工具</translation>
+    </message>
+    <message>
+        <source>Traceroute Tool</source>
+        <translation type="unfinished">路由追踪</translation>
+    </message>
+    <message>
+        <source>Route Test Tool</source>
+        <translation type="unfinished">回程路由测试</translation>
+    </message>
+    <message>
+        <source>System Info Tool</source>
+        <translation type="unfinished">系统基本信息</translation>
+    </message>
+    <message>
+        <source>Rich Text Notepad</source>
+        <translation type="unfinished">富文本记事本</translation>
+    </message>
+    <message>
+        <source>Media Manager</source>
+        <translation type="unfinished">媒体文件管理</translation>
+    </message>
+    <message>
+        <source>Image Watermark</source>
+        <translation type="unfinished">图片加水印</translation>
+    </message>
+    <message>
+        <source>WHOIS Tool</source>
+        <translation type="unfinished">WHOIS查询</translation>
+    </message>
+    <message>
+        <source>File Compare Tool</source>
+        <translation type="unfinished">文件对比</translation>
+    </message>
+    <message>
+        <source>Blood Type Tool</source>
+        <translation type="unfinished">血型遗传规律</translation>
+    </message>
+    <message>
+        <source>Port Scanner</source>
+        <translation type="unfinished">端口占用查看</translation>
+    </message>
+    <message>
+        <source>Key Remapper</source>
+        <translation type="unfinished">改键工具</translation>
+    </message>
+    <message>
+        <source>Chinese Copybook</source>
+        <translation type="unfinished">汉字字帖生成器</translation>
     </message>
 </context>
 <context>

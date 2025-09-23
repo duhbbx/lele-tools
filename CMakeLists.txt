@@ -209,7 +209,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         tool-list/toollist.h tool-list/toollist.cpp
         common/string-utils/stringutils.h common/string-utils/stringutils.cpp
         tool-list/module-meta.h
-        tool-list/module-meta-data.h
         common/datetime-utils/datetimeutils.h common/datetime-utils/datetimeutils.cpp
         common/toolusagetracker.h common/toolusagetracker.cpp
         my.qrc
