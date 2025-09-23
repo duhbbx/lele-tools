@@ -22,7 +22,7 @@ private:
     QListWidget* listWidget;
 
     void setupSearchFunctionality();
-    void sortToolsByUsage(); // 按使用频率排序工具
+    void sortToolsByUsage() const; // 按使用频率排序工具
 };
 
 #endif // TOOLLIST_H

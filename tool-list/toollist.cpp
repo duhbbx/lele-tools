@@ -125,7 +125,7 @@ void ToolList::filterTools(const QString& text) const {
     }
 }
 
-void ToolList::sortToolsByUsage() {
+void ToolList::sortToolsByUsage() const {
     // 获取最近一周的使用统计
     QList<ToolUsageStats> usageStats = ToolUsageTracker::instance()->getWeeklyUsageStats();
 
@@ -159,7 +159,7 @@ void ToolList::sortToolsByUsage() {
     for (const auto& [icon, titleKey, className] : moduleMetaArray) {
         ToolItem item;
         item.icon = icon;
-        item.title = tr(titleKey.toUtf8().constData()); // 使用翻译
+        item.title = QCoreApplication::translate("DynamicTitles", titleKey.toUtf8().constData());
         item.className = className;
         item.usageCount = usageCountMap.value(className, 0); // 默认为0
         toolItems.append(item);

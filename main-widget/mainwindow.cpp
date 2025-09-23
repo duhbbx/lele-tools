@@ -300,16 +300,16 @@ void MainWindow::createMenuBar() {
         "    color: #343a40;"
         "    border: 1px solid #e0e0e0;"
         "    border-radius: 0px;"
-        "    padding: 8px 4px;"
+        "    padding: 2px 2px;"
         "    outline: none;"
         "    selection-background-color: #e9ecef;"
         "}"
         "QMenu::item {"
         "    background-color: transparent;"
         "    color: #343a40;"
-        "    padding: 8px 16px;"
+        "    padding: 4px 8px;"
         "    border-radius: 0px;"
-        "    margin: 2px 6px;"
+        "    margin: 2px 2px;"
         "    border: none;"
         "    min-width: 120px;"
         "}"
@@ -324,7 +324,7 @@ void MainWindow::createMenuBar() {
         "QMenu::separator {"
         "    height: 1px;"
         "    background-color: #e0e0e0;"
-        "    margin: 8px 16px;"
+        "    margin: 4px 8px;"
         "    border: none;"
         "}";
 
@@ -354,7 +354,7 @@ void MainWindow::createMenuBar() {
 
     toolsMenu->addSeparator();
 
-    QAction* screenshotAction = new QAction(tr("截图(&S)\tF1"), this);
+    auto* screenshotAction = new QAction(tr("截图(&S)") + "\tF1", this);
     // 快捷键通过全局QShortcut实现，不在菜单中设置
     // screenshotAction->setShortcut(QKeySequence(Qt::Key_F1));
     screenshotAction->setStatusTip(tr("按F1或点击此处开始截图"));
@@ -1111,25 +1111,52 @@ void MainWindow::changeLanguage(const QString& language) {
 
         // 方法1：使用完整路径和工作目录
         QString workingDir = QApplication::applicationDirPath();
-        startResult = QProcess::startDetached(program, arguments, workingDir);
+        qint64 pid;
+        startResult = QProcess::startDetached(program, arguments, workingDir, &pid);
         qDebug() << "Restart - Method 1 result:" << startResult;
+        if (startResult) {
+            qDebug() << "Restart - Method 1 PID:" << pid;
+        }
 
         if (!startResult) {
             // 方法2：不带参数启动
-            startResult = QProcess::startDetached(program, QStringList(), workingDir);
+            qint64 pid2;
+            startResult = QProcess::startDetached(program, QStringList(), workingDir, &pid2);
             qDebug() << "Restart - Method 2 result:" << startResult;
+            if (startResult) {
+                qDebug() << "Restart - Method 2 PID:" << pid2;
+            }
         }
 
         if (!startResult) {
             // 方法3：使用系统命令
 #ifdef Q_OS_WIN
-            QString command = QString("start \"\" \"%1\"").arg(program);
-            startResult = (QProcess::execute("cmd", QStringList() << "/c" << command) == 0);
+            // 使用 startDetached 而不是 execute，因为 execute 是同步的
+            QStringList cmdArgs;
+            cmdArgs << "/c" << "start" << "\"\"" << QString("\"%1\"").arg(program);
+            qint64 pid3;
+            startResult = QProcess::startDetached("cmd", cmdArgs, workingDir, &pid3);
+            qDebug() << "Restart - Method 3 (Windows) command:" << "cmd" << cmdArgs.join(" ");
             qDebug() << "Restart - Method 3 (Windows) result:" << startResult;
+            if (startResult) {
+                qDebug() << "Restart - Method 3 PID:" << pid3;
+            }
 #else
             startResult = QProcess::startDetached(program);
             qDebug() << "Restart - Method 3 (Unix) result:" << startResult;
 #endif
+        }
+
+        if (!startResult) {
+            // 方法4：简化的重启方法，使用相对路径
+            QString simplePath = QFileInfo(program).fileName();
+            qDebug() << "Restart - Method 4 trying simple name:" << simplePath;
+            qint64 pid4;
+            startResult = QProcess::startDetached(simplePath, arguments, workingDir, &pid4);
+            qDebug() << "Restart - Method 4 result:" << startResult;
+            if (startResult) {
+                qDebug() << "Restart - Method 4 PID:" << pid4;
+            }
         }
 
         if (startResult) {
@@ -1143,8 +1170,16 @@ void MainWindow::changeLanguage(const QString& language) {
             // 如果重启失败，重置标志位
             m_isLanguageRestarting = false;
             qDebug() << "Restart - All methods failed";
-            QMessageBox::warning(this, tr("重启失败"),
-                                 tr("无法启动新实例，请手动重启应用程序。\n\n程序路径: %1").arg(program));
+
+            // 显示更详细的错误信息
+            QString errorDetails = QString(
+                "程序路径: %1\n"
+                "工作目录: %2\n"
+                "参数: %3\n\n"
+                "请检查程序是否存在，或手动重启应用程序。"
+            ).arg(program).arg(workingDir).arg(arguments.join(" "));
+
+            QMessageBox::warning(this, tr("重启失败"), tr("无法启动新实例。\n\n%1").arg(errorDetails));
         }
     }
 }

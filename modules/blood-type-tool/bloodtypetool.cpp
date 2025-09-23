@@ -29,7 +29,7 @@ QList<HeritageResult> BloodTypeCalculator::calculateOffspring(const CompleteBloo
                 resultMap[key].count++;
             } else {
                 HeritageResult result(offspring, 0.0, 1);
-                result.description = QString("基因型: %1").arg(offspring.getGenotypeString());
+                result.description = QString(QObject::tr("基因型: %1")).arg(offspring.getGenotypeString());
                 resultMap[key] = result;
             }
         }
@@ -290,7 +290,7 @@ void BloodTypeCalculator_Widget::setupUI() {
         "}";
 
     // 父本1血型设置
-    m_parent1Group = new QGroupBox("👨 父亲血型");
+    m_parent1Group = new QGroupBox(tr("👨 父亲血型"));
     m_parent1Group->setStyleSheet(groupStyle);
     m_parent1Layout = new QFormLayout(m_parent1Group);
 
@@ -298,14 +298,14 @@ void BloodTypeCalculator_Widget::setupUI() {
     m_parent1ABOCombo->addItems({"A", "B", "AB", "O"});
 
     m_parent1RhCombo = new QComboBox();
-    m_parent1RhCombo->addItems({"阳性(+)", "阴性(-)"});
+    m_parent1RhCombo->addItems({tr("阳性(+)"), tr("阴性(-)")});
     m_parent1RhCombo->setStyleSheet(m_parent1ABOCombo->styleSheet());
 
-    m_parent1Layout->addRow("ABO血型:", m_parent1ABOCombo);
-    m_parent1Layout->addRow("Rh血型:", m_parent1RhCombo);
+    m_parent1Layout->addRow(tr("ABO血型:"), m_parent1ABOCombo);
+    m_parent1Layout->addRow(tr("Rh血型:"), m_parent1RhCombo);
 
     // 父本2血型设置
-    m_parent2Group = new QGroupBox("👩 母亲血型");
+    m_parent2Group = new QGroupBox(tr("👩 母亲血型"));
     m_parent2Group->setStyleSheet(groupStyle);
     m_parent2Layout = new QFormLayout(m_parent2Group);
 
@@ -314,18 +314,18 @@ void BloodTypeCalculator_Widget::setupUI() {
     m_parent2ABOCombo->setStyleSheet(m_parent1ABOCombo->styleSheet());
 
     m_parent2RhCombo = new QComboBox();
-    m_parent2RhCombo->addItems({"阳性(+)", "阴性(-)"});
+    m_parent2RhCombo->addItems({tr("阳性(+)"), tr("阴性(-)")});
     m_parent2RhCombo->setStyleSheet(m_parent1ABOCombo->styleSheet());
 
-    m_parent2Layout->addRow("ABO血型:", m_parent2ABOCombo);
-    m_parent2Layout->addRow("Rh血型:", m_parent2RhCombo);
+    m_parent2Layout->addRow(tr("ABO血型:"), m_parent2ABOCombo);
+    m_parent2Layout->addRow(tr("Rh血型:"), m_parent2RhCombo);
 
     // 控制按钮组
-    m_controlGroup = new QGroupBox("操作控制");
+    m_controlGroup = new QGroupBox(tr("操作控制"));
     m_controlGroup->setStyleSheet(groupStyle);
     m_controlLayout = new QVBoxLayout(m_controlGroup);
 
-    m_calculateBtn = new QPushButton("🧬 计算遗传概率");
+    m_calculateBtn = new QPushButton(tr("🧬 计算遗传概率"));
     m_calculateBtn->setStyleSheet(
         "QPushButton {"
         "background-color: #3498db;"
@@ -341,7 +341,7 @@ void BloodTypeCalculator_Widget::setupUI() {
         "}"
     );
 
-    m_clearBtn = new QPushButton("🗑️ 清空结果");
+    m_clearBtn = new QPushButton(tr("🗑️ 清空结果"));
     m_clearBtn->setStyleSheet(
         "QPushButton {"
         "background-color: #95a5a6;"
@@ -356,7 +356,7 @@ void BloodTypeCalculator_Widget::setupUI() {
         "}"
     );
 
-    m_copyResultBtn = new QPushButton("📋 复制结果");
+    m_copyResultBtn = new QPushButton(tr("📋 复制结果"));
     m_copyResultBtn->setStyleSheet(
         "QPushButton {"
         "background-color: #27ae60;"
@@ -374,7 +374,7 @@ void BloodTypeCalculator_Widget::setupUI() {
         "}"
     );
 
-    m_saveResultBtn = new QPushButton("💾 保存结果");
+    m_saveResultBtn = new QPushButton(tr("💾 保存结果"));
     m_saveResultBtn->setStyleSheet(
         "QPushButton {"
         "background-color: #e74c3c;"
@@ -410,14 +410,14 @@ void BloodTypeCalculator_Widget::setupUI() {
     m_resultWidget = new QWidget();
     m_resultLayout = new QVBoxLayout(m_resultWidget);
 
-    m_resultGroup = new QGroupBox("👶 后代血型遗传概率");
+    m_resultGroup = new QGroupBox(tr("👶 后代血型遗传概率"));
     m_resultGroup->setStyleSheet(groupStyle);
     m_resultGroupLayout = new QVBoxLayout(m_resultGroup);
 
     // 结果表格
     m_resultTable = new QTableWidget();
     m_resultTable->setColumnCount(4);
-    m_resultTable->setHorizontalHeaderLabels({"血型", "基因型", "概率", "比例"});
+    m_resultTable->setHorizontalHeaderLabels({tr("血型"), tr("基因型"), tr("概率"), tr("比例")});
     m_resultTable->horizontalHeader()->setStretchLastSection(true);
     m_resultTable->setAlternatingRowColors(true);
     m_resultTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -549,16 +549,16 @@ void BloodTypeCalculator_Widget::onCopyResultClicked() {
         return;
     }
 
-    QString resultText = "血型遗传概率计算结果\n";
+    QString resultText = tr("血型遗传概率计算结果") + "\n";
     resultText += "========================\n\n";
-    resultText += QString("父亲血型: %1%2\n").arg(m_parent1ABOCombo->currentText(),
+    resultText += QString(tr("父亲血型: %1%2\n")).arg(m_parent1ABOCombo->currentText(),
                          m_parent1RhCombo->currentText().contains("+") ? "+" : "-");
-    resultText += QString("母亲血型: %1%2\n\n").arg(m_parent2ABOCombo->currentText(),
+    resultText += QString(tr("母亲血型: %1%2\n\n")).arg(m_parent2ABOCombo->currentText(),
                          m_parent2RhCombo->currentText().contains("+") ? "+" : "-");
 
-    resultText += "后代血型概率:\n";
+    resultText += tr("后代血型概率:") + "\n";
     for (const HeritageResult& result : m_lastResults) {
-        resultText += QString("• %1: %2% (比例 %3/%4)\n")
+        resultText += QString(tr("• %1: %2% (比例 %3/%4)\n"))
                      .arg(result.bloodType.getPhenotypeString())
                      .arg(result.probability * 100, 0, 'f', 1)
                      .arg(result.count)
@@ -566,7 +566,7 @@ void BloodTypeCalculator_Widget::onCopyResultClicked() {
     }
 
     QApplication::clipboard()->setText(resultText);
-    QMessageBox::information(this, "成功", "计算结果已复制到剪贴板");
+    QMessageBox::information(this, tr("成功"), tr("计算结果已复制到剪贴板"));
 }
 
 void BloodTypeCalculator_Widget::onSaveResultClicked() {
@@ -576,9 +576,9 @@ void BloodTypeCalculator_Widget::onSaveResultClicked() {
 
     QString fileName = QFileDialog::getSaveFileName(
         this,
-        "保存血型遗传计算结果",
+        tr("保存血型遗传计算结果"),
         QString("blood_type_result_%1.txt").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")),
-        "文本文件 (*.txt);;所有文件 (*.*)"
+        tr("文本文件 (*.txt);;所有文件 (*.*)")
     );
 
     if (!fileName.isEmpty()) {
@@ -587,17 +587,17 @@ void BloodTypeCalculator_Widget::onSaveResultClicked() {
             QTextStream stream(&file);
             stream.setEncoding(QStringConverter::Utf8);
 
-            stream << "血型遗传概率计算结果\n";
+            stream << tr("血型遗传概率计算结果") << "\n";
             stream << "========================\n\n";
-            stream << "计算时间: " << QDateTime::currentDateTime().toString() << "\n\n";
+            stream << tr("计算时间: ") << QDateTime::currentDateTime().toString() << "\n\n";
 
-            stream << QString("父亲血型: %1%2\n").arg(m_parent1ABOCombo->currentText(),
+            stream << QString(tr("父亲血型: %1%2\n")).arg(m_parent1ABOCombo->currentText(),
                              m_parent1RhCombo->currentText().contains("+") ? "+" : "-");
-            stream << QString("母亲血型: %1%2\n\n").arg(m_parent2ABOCombo->currentText(),
+            stream << QString(tr("母亲血型: %1%2\n\n")).arg(m_parent2ABOCombo->currentText(),
                              m_parent2RhCombo->currentText().contains("+") ? "+" : "-");
 
-            stream << "后代血型概率详情:\n";
-            stream << "血型\t基因型\t\t概率\t比例\n";
+            stream << tr("后代血型概率详情:") << "\n";
+            stream << tr("血型") << "\t" << tr("基因型") << "\t\t" << tr("概率") << "\t" << tr("比例") << "\n";
             stream << "------------------------------------\n";
 
             for (const HeritageResult& result : m_lastResults) {
@@ -608,9 +608,9 @@ void BloodTypeCalculator_Widget::onSaveResultClicked() {
                        .arg(result.count);
             }
 
-            QMessageBox::information(this, "成功", "计算结果已保存");
+            QMessageBox::information(this, tr("成功"), tr("计算结果已保存"));
         } else {
-            QMessageBox::warning(this, "错误", "无法保存文件");
+            QMessageBox::warning(this, tr("错误"), tr("无法保存文件"));
         }
     }
 }
@@ -678,7 +678,7 @@ QString BloodTypeCalculator_Widget::bloodTypeToString(ABOBloodType type) {
 }
 
 QString BloodTypeCalculator_Widget::rhTypeToString(RhBloodType type) {
-    return (type == RhBloodType::Positive) ? "阳性(+)" : "阴性(-)";
+    return (type == RhBloodType::Positive) ? tr("阳性(+)") : tr("阴性(-)");
 }
 
 ABOBloodType BloodTypeCalculator_Widget::stringToBloodType(const QString& str) {
@@ -710,7 +710,7 @@ void BloodTypeKnowledge::setupUI() {
     // 顶部控制区域
     m_topLayout = new QHBoxLayout();
 
-    m_topicGroup = new QGroupBox("知识主题");
+    m_topicGroup = new QGroupBox(tr("知识主题"));
     m_topicGroup->setStyleSheet(
         "QGroupBox {"
         "font-weight: bold;"
@@ -726,8 +726,8 @@ void BloodTypeKnowledge::setupUI() {
     m_topicCombo->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
 
     m_buttonLayout = new QHBoxLayout();
-    m_copyBtn = new QPushButton("📋 复制内容");
-    m_saveBtn = new QPushButton("💾 保存内容");
+    m_copyBtn = new QPushButton(tr("📋 复制内容"));
+    m_saveBtn = new QPushButton(tr("💾 保存内容"));
 
     QString btnStyle =
         "QPushButton {"
@@ -756,7 +756,7 @@ void BloodTypeKnowledge::setupUI() {
     m_topLayout->addStretch();
 
     // 内容显示区域
-    m_contentGroup = new QGroupBox("详细内容");
+    m_contentGroup = new QGroupBox(tr("详细内容"));
     m_contentGroup->setStyleSheet(m_topicGroup->styleSheet());
     m_contentLayout = new QVBoxLayout(m_contentGroup);
 
@@ -786,140 +786,23 @@ void BloodTypeKnowledge::setupUI() {
 
 void BloodTypeKnowledge::loadKnowledgeContent() {
     // 加载血型知识内容
-    m_knowledgeContent["ABO血型系统"] =
-        "ABO血型系统是最重要的血型系统之一，由奥地利科学家兰德施泰纳于1900年发现。\n\n"
-        "🔬 基本原理:\n"
-        "• A型血：红细胞表面有A抗原，血清中有抗B抗体\n"
-        "• B型血：红细胞表面有B抗原，血清中有抗A抗体\n"
-        "• AB型血：红细胞表面有A和B抗原，血清中无抗A、抗B抗体\n"
-        "• O型血：红细胞表面无A、B抗原，血清中有抗A、抗B抗体\n\n"
-        "🧬 遗传机制:\n"
-        "ABO血型由第9号染色体上的ABO基因决定，该基因有三个主要等位基因：\n"
-        "• A等位基因：编码A糖基转移酶，产生A抗原\n"
-        "• B等位基因：编码B糖基转移酶，产生B抗原\n"
-        "• O等位基因：为隐性基因，不产生有功能的酶\n\n"
-        "📊 人群分布:\n"
-        "• 中国人群：O型(34%), A型(28%), B型(27%), AB型(11%)\n"
-        "• 世界平均：O型(45%), A型(40%), B型(11%), AB型(4%)";
+    m_knowledgeContent[tr("ABO血型系统")] =
+        tr("ABO血型系统的介绍内容");
 
-    m_knowledgeContent["Rh血型系统"] =
-        "Rh血型系统是第二重要的血型系统，由兰德施泰纳和维纳于1940年发现。\n\n"
-        "🔬 基本原理:\n"
-        "• Rh阳性(Rh+)：红细胞表面有D抗原\n"
-        "• Rh阴性(Rh-)：红细胞表面无D抗原\n\n"
-        "🧬 遗传机制:\n"
-        "Rh血型主要由D基因决定：\n"
-        "• D等位基因：显性，产生D抗原\n"
-        "• d等位基因：隐性，不产生D抗原\n"
-        "• DD或Dd基因型：Rh阳性\n"
-        "• dd基因型：Rh阴性\n\n"
-        "⚠️ 临床意义:\n"
-        "• 新生儿溶血病：Rh阴性母亲怀Rh阳性胎儿时可能发生\n"
-        "• 输血配型：除ABO配型外，Rh配型也很重要\n\n"
-        "📊 人群分布:\n"
-        "• 中国人群：Rh阳性(99.7%), Rh阴性(0.3%)\n"
-        "• 欧洲人群：Rh阳性(85%), Rh阴性(15%)";
+    m_knowledgeContent[tr("Rh血型系统")] =
+        tr("Rh血型系统的介绍");
 
-    m_knowledgeContent["血型遗传规律"] =
-        "血型遗传遵循孟德尔遗传定律，表现为共显性和隐性遗传模式。\n\n"
-        "🧬 ABO遗传规律:\n"
-        "• A和B等位基因对O等位基因呈显性\n"
-        "• A和B等位基因之间呈共显性\n"
-        "• 可能的基因型：AA, AO(A型), BB, BO(B型), AB(AB型), OO(O型)\n\n"
-        "📋 遗传组合表:\n"
-        "父母血型 → 可能的子女血型\n"
-        "• A × A → A, O\n"
-        "• A × B → A, B, AB, O\n"
-        "• A × AB → A, B, AB\n"
-        "• A × O → A, O\n"
-        "• B × B → B, O\n"
-        "• B × AB → A, B, AB\n"
-        "• B × O → B, O\n"
-        "• AB × AB → A, B, AB\n"
-        "• AB × O → A, B\n"
-        "• O × O → O\n\n"
-        "🔍 Rh遗传规律:\n"
-        "• D基因对d基因呈完全显性\n"
-        "• DD或Dd → Rh阳性\n"
-        "• dd → Rh阴性\n"
-        "• Rh阴性父母的子女必为Rh阴性\n"
-        "• Rh阳性父母可能有Rh阴性子女";
+    m_knowledgeContent[tr("血型遗传规律")] =
+        tr("血型遗传遵循孟德尔遗传定律");
 
-    m_knowledgeContent["血型与输血"] =
-        "血型配型是安全输血的基础，不相容的血型会导致严重的输血反应。\n\n"
-        "🩸 ABO配型原则:\n"
-        "• 同型输血：最安全的选择\n"
-        "• O型红细胞：可输给任何ABO血型(万能供血者)\n"
-        "• AB型患者：可接受任何ABO血型的红细胞(万能受血者)\n"
-        "• A型：可接受A型和O型\n"
-        "• B型：可接受B型和O型\n\n"
-        "⚡ Rh配型原则:\n"
-        "• Rh阳性：可接受Rh阳性和Rh阴性\n"
-        "• Rh阴性：只能接受Rh阴性\n"
-        "• Rh阴性患者输入Rh阳性血液会产生抗D抗体\n\n"
-        "📋 完整配型表:\n"
-        "受血者 → 可接受的供血者\n"
-        "• A+ → A+, A-, O+, O-\n"
-        "• A- → A-, O-\n"
-        "• B+ → B+, B-, O+, O-\n"
-        "• B- → B-, O-\n"
-        "• AB+ → 所有血型\n"
-        "• AB- → A-, B-, AB-, O-\n"
-        "• O+ → O+, O-\n"
-        "• O- → O-\n\n"
-        "⚠️ 注意事项:\n"
-        "• 首次输血相对安全，多次输血需要更严格的配型\n"
-        "• 除ABO和Rh外，还有其他血型系统需要考虑";
+    m_knowledgeContent[tr("血型与输血")] =
+        tr("血型与输血的介绍");
 
-    m_knowledgeContent["血型与疾病"] =
-        "研究表明，不同血型与某些疾病的易感性存在关联。\n\n"
-        "🔬 A型血相关:\n"
-        "• 胃癌风险相对较高\n"
-        "• 心脑血管疾病风险增加\n"
-        "• 对痘类病毒抵抗力较强\n\n"
-        "🔬 B型血相关:\n"
-        "• 糖尿病风险相对较高\n"
-        "• 对结核病抵抗力较强\n"
-        "• 泌尿系统感染风险较低\n\n"
-        "🔬 AB型血相关:\n"
-        "• 记忆力衰退风险较高\n"
-        "• 心脏病风险相对较低\n"
-        "• 某些癌症风险增加\n\n"
-        "🔬 O型血相关:\n"
-        "• 胃溃疡和十二指肠溃疡风险较高\n"
-        "• 对疟疾抵抗力较强\n"
-        "• 血液凝固时间较长\n\n"
-        "⚠️ 重要提醒:\n"
-        "• 血型与疾病的关联只是统计学相关性\n"
-        "• 不能仅凭血型预测疾病\n"
-        "• 生活方式和环境因素更为重要\n"
-        "• 定期体检和健康生活是预防疾病的关键";
+    m_knowledgeContent[tr("血型与疾病")] =
+        tr("血型和疾病的介绍");
 
-    m_knowledgeContent["血型检测方法"] =
-        "血型检测是医学检验的基础项目，有多种检测方法。\n\n"
-        "🧪 正向定型(细胞定型):\n"
-        "• 用已知抗体检测未知红细胞上的抗原\n"
-        "• 抗A血清 + 红细胞：凝集为A型\n"
-        "• 抗B血清 + 红细胞：凝集为B型\n"
-        "• 两者都凝集为AB型，都不凝集为O型\n\n"
-        "🧪 反向定型(血清定型):\n"
-        "• 用已知红细胞检测未知血清中的抗体\n"
-        "• A型细胞 + 血清：凝集说明有抗A抗体\n"
-        "• B型细胞 + 血清：凝集说明有抗B抗体\n\n"
-        "🔬 Rh检测:\n"
-        "• 抗D血清 + 红细胞\n"
-        "• 凝集为Rh阳性，不凝集为Rh阴性\n"
-        "• 弱D检测：间接抗球蛋白试验\n\n"
-        "📋 质量控制:\n"
-        "• 正反向定型结果必须一致\n"
-        "• 使用阳性和阴性对照\n"
-        "• 定期校准检测试剂\n"
-        "• 严格按照操作规程进行\n\n"
-        "🏥 检测意义:\n"
-        "• 输血前配型检查\n"
-        "• 新生儿溶血病筛查\n"
-        "• 器官移植配型\n"
-        "• 亲子鉴定辅助";
+    m_knowledgeContent[tr("血型检测方法")] =
+        tr("血型检测方法的介绍");
 
     // 填充下拉框
     m_topicCombo->clear();
@@ -940,15 +823,15 @@ void BloodTypeKnowledge::onTopicChanged() {
 void BloodTypeKnowledge::onCopyContentClicked() {
     QString content = m_contentText->toPlainText();
     QApplication::clipboard()->setText(content);
-    QMessageBox::information(this, "成功", "内容已复制到剪贴板");
+    QMessageBox::information(this, tr("成功"), tr("内容已复制到剪贴板"));
 }
 
 void BloodTypeKnowledge::onSaveContentClicked() {
     QString fileName = QFileDialog::getSaveFileName(
         this,
-        "保存血型知识内容",
-        QString("blood_type_knowledge_%1.txt").arg(m_topicCombo->currentText()),
-        "文本文件 (*.txt);;所有文件 (*.*)"
+        tr("保存血型知识内容"),
+        QString(tr("blood_type_knowledge_%1.txt")).arg(m_topicCombo->currentText()),
+        tr("文本文件 (*.txt);;所有文件 (*.*)")
     );
 
     if (!fileName.isEmpty()) {
@@ -957,9 +840,9 @@ void BloodTypeKnowledge::onSaveContentClicked() {
             QTextStream stream(&file);
             stream.setEncoding(QStringConverter::Utf8);
             stream << m_contentText->toPlainText();
-            QMessageBox::information(this, "成功", "内容已保存");
+            QMessageBox::information(this, tr("成功"), tr("内容已保存"));
         } else {
-            QMessageBox::warning(this, "错误", "无法保存文件");
+            QMessageBox::warning(this, tr("错误"), tr("无法保存文件"));
         }
     }
 }
@@ -977,7 +860,7 @@ BloodTypeCompatibility::BloodTypeCompatibility(QWidget* parent) : QWidget(parent
 
 void BloodTypeCompatibility::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    auto* label = new QLabel("血型配对功能正在完善中...");
+    auto* label = new QLabel(tr("血型配对功能正在完善中..."));
     label->setAlignment(Qt::AlignCenter);
     label->setStyleSheet("font-size: 16px; color: #7f8c8d; font-style: italic;");
     m_mainLayout->addWidget(label);
@@ -989,7 +872,7 @@ BloodTypeStatistics::BloodTypeStatistics(QWidget* parent) : QWidget(parent) {
 
 void BloodTypeStatistics::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    auto* label = new QLabel("血型统计功能正在完善中...");
+    auto* label = new QLabel(tr("血型统计功能正在完善中..."));
     label->setAlignment(Qt::AlignCenter);
     label->setStyleSheet("font-size: 16px; color: #7f8c8d; font-style: italic;");
     m_mainLayout->addWidget(label);
@@ -1001,7 +884,7 @@ BloodTypeSimulation::BloodTypeSimulation(QWidget* parent) : QWidget(parent) {
 
 void BloodTypeSimulation::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    auto* label = new QLabel("血型遗传模拟功能正在完善中...");
+    auto* label = new QLabel(tr("血型遗传模拟功能正在完善中..."));
     label->setAlignment(Qt::AlignCenter);
     label->setStyleSheet("font-size: 16px; color: #7f8c8d; font-style: italic;");
     m_mainLayout->addWidget(label);
@@ -1041,19 +924,19 @@ void BloodTypeTool::setupUI() {
 
     // 创建各个标签页
     m_calculator = new BloodTypeCalculator_Widget();
-    m_tabWidget->addTab(m_calculator, "🧬 遗传计算");
+    m_tabWidget->addTab(m_calculator, tr("🧬 遗传计算"));
 
     m_knowledge = new BloodTypeKnowledge();
-    m_tabWidget->addTab(m_knowledge, "📚 血型知识");
+    m_tabWidget->addTab(m_knowledge, tr("📚 血型知识"));
 
     m_compatibility = new BloodTypeCompatibility();
-    m_tabWidget->addTab(m_compatibility, "🩸 配型分析");
+    m_tabWidget->addTab(m_compatibility, tr("🩸 配型分析"));
 
     m_statistics = new BloodTypeStatistics();
-    m_tabWidget->addTab(m_statistics, "📊 统计分析");
+    m_tabWidget->addTab(m_statistics, tr("📊 统计分析"));
 
     m_simulation = new BloodTypeSimulation();
-    m_tabWidget->addTab(m_simulation, "🎲 遗传模拟");
+    m_tabWidget->addTab(m_simulation, tr("🎲 遗传模拟"));
 
     m_mainLayout->addWidget(m_tabWidget);
 }

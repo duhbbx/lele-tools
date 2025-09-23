@@ -404,6 +404,417 @@
     </message>
 </context>
 <context>
+    <name>BloodTypeCalculator_Widget</name>
+    <message>
+        <source>👨 父亲血型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>阳性(+)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>阴性(-)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ABO血型:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rh血型:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>👩 母亲血型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>操作控制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🧬 计算遗传概率</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📋 复制结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>👶 后代血型遗传概率</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>血型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>基因型</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>概率</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>比例</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>血型遗传概率计算结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>父亲血型: %1%2
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>母亲血型: %1%2
+
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>后代血型概率:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>• %1: %2% (比例 %3/%4)
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>计算结果已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存血型遗传计算结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文本文件 (*.txt);;所有文件 (*.*)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>计算时间: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>后代血型概率详情:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>计算结果已保存</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无法保存文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🗑️ 清空结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>💾 保存结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>BloodTypeCompatibility</name>
+    <message>
+        <source>血型配对功能正在完善中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>BloodTypeKnowledge</name>
+    <message>
+        <source>📋 复制内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>💾 保存内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ABO血型系统</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>内容已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存血型知识内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>知识主题</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>详细内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ABO血型系统的介绍内容</source>
+        <translation>ABO血型系统是最重要的血型系统之一，由奥地利科学家兰德施泰纳于1900年发现。
+
+🔬 基本原理:
+• A型血：红细胞表面有A抗原，血清中有抗B抗体
+• B型血：红细胞表面有B抗原，血清中有抗A抗体
+• AB型血：红细胞表面有A和B抗原，血清中无抗A、抗B抗体
+• O型血：红细胞表面无A、B抗原，血清中有抗A、抗B抗体
+
+🧬 遗传机制:
+ABO血型由第9号染色体上的ABO基因决定，该基因有三个主要等位基因：
+• A等位基因：编码A糖基转移酶，产生A抗原
+• B等位基因：编码B糖基转移酶，产生B抗原
+• O等位基因：为隐性基因，不产生有功能的酶
+
+📊 人群分布:
+• 中国人群：O型(34%), A型(28%), B型(27%), AB型(11%)
+• 世界平均：O型(45%), A型(40%), B型(11%), AB型(4%)</translation>
+    </message>
+    <message>
+        <source>Rh血型系统</source>
+        <translation>Rh血型系统</translation>
+    </message>
+    <message>
+        <source>Rh血型系统的介绍</source>
+        <translation>Rh血型系统是第二重要的血型系统，由兰德施泰纳和维纳于1940年发现。
+
+🔬 基本原理:
+• Rh阳性(Rh+)：红细胞表面有D抗原
+• Rh阴性(Rh-)：红细胞表面无D抗原
+
+🧬 遗传机制:
+Rh血型主要由D基因决定：
+• D等位基因：显性，产生D抗原
+• d等位基因：隐性，不产生D抗原
+• DD或Dd基因型：Rh阳性
+• dd基因型：Rh阴性
+
+⚠️ 临床意义:
+• 新生儿溶血病：Rh阴性母亲怀Rh阳性胎儿时可能发生
+• 输血配型：除ABO配型外，Rh配型也很重要
+
+📊 人群分布:
+• 中国人群：Rh阳性(99.7%), Rh阴性(0.3%)
+• 欧洲人群：Rh阳性(85%), Rh阴性(15%)</translation>
+    </message>
+    <message>
+        <source>血型遗传规律</source>
+        <translation>血型遗传规律</translation>
+    </message>
+    <message>
+        <source>血型遗传遵循孟德尔遗传定律</source>
+        <translation>血型遗传遵循孟德尔遗传定律，表现为共显性和隐性遗传模式。
+
+🧬 ABO遗传规律:
+• A和B等位基因对O等位基因呈显性
+• A和B等位基因之间呈共显性
+• 可能的基因型：AA, AO(A型), BB, BO(B型), AB(AB型), OO(O型)
+
+📋 遗传组合表:
+父母血型 → 可能的子女血型
+• A × A → A, O
+• A × B → A, B, AB, O
+• A × AB → A, B, AB
+• A × O → A, O
+• B × B → B, O
+• B × AB → A, B, AB
+• B × O → B, O
+• AB × AB → A, B, AB
+• AB × O → A, B
+• O × O → O
+
+🔍 Rh遗传规律:
+• D基因对d基因呈完全显性
+• DD或Dd → Rh阳性
+• dd → Rh阴性
+• Rh阴性父母的子女必为Rh阴性
+• Rh阳性父母可能有Rh阴性子女</translation>
+    </message>
+    <message>
+        <source>血型与输血</source>
+        <translation>血型与输血</translation>
+    </message>
+    <message>
+        <source>血型与输血的介绍</source>
+        <translation>血型配型是安全输血的基础，不相容的血型会导致严重的输血反应。
+
+🩸 ABO配型原则:
+• 同型输血：最安全的选择
+• O型红细胞：可输给任何ABO血型(万能供血者)
+• AB型患者：可接受任何ABO血型的红细胞(万能受血者)
+• A型：可接受A型和O型
+• B型：可接受B型和O型
+
+⚡ Rh配型原则:
+• Rh阳性：可接受Rh阳性和Rh阴性
+• Rh阴性：只能接受Rh阴性
+• Rh阴性患者输入Rh阳性血液会产生抗D抗体
+
+📋 完整配型表:
+受血者 → 可接受的供血者
+• A+ → A+, A-, O+, O-
+• A- → A-, O-
+• B+ → B+, B-, O+, O-
+• B- → B-, O-
+• AB+ → 所有血型
+• AB- → A-, B-, AB-, O-
+• O+ → O+, O-
+• O- → O-
+
+⚠️ 注意事项:
+• 首次输血相对安全，多次输血需要更严格的配型
+• 除ABO和Rh外，还有其他血型系统需要考虑</translation>
+    </message>
+    <message>
+        <source>血型与疾病</source>
+        <translation>血型与疾病</translation>
+    </message>
+    <message>
+        <source>血型和疾病的介绍</source>
+        <translation>研究表明，不同血型与某些疾病的易感性存在关联。
+
+🔬 A型血相关:
+• 胃癌风险相对较高
+• 心脑血管疾病风险增加
+• 对痘类病毒抵抗力较强
+
+🔬 B型血相关:
+• 糖尿病风险相对较高
+• 对结核病抵抗力较强
+• 泌尿系统感染风险较低
+
+🔬 AB型血相关:
+• 记忆力衰退风险较高
+• 心脏病风险相对较低
+• 某些癌症风险增加
+
+🔬 O型血相关:
+• 胃溃疡和十二指肠溃疡风险较高
+• 对疟疾抵抗力较强
+• 血液凝固时间较长
+
+⚠️ 重要提醒:
+• 血型与疾病的关联只是统计学相关性
+• 不能仅凭血型预测疾病
+• 生活方式和环境因素更为重要
+• 定期体检和健康生活是预防疾病的关键</translation>
+    </message>
+    <message>
+        <source>血型检测方法</source>
+        <translation>血型检测方法</translation>
+    </message>
+    <message>
+        <source>血型检测方法的介绍</source>
+        <translation>血型检测是医学检验的基础项目，有多种检测方法。
+
+🧪 正向定型(细胞定型):
+• 用已知抗体检测未知红细胞上的抗原
+• 抗A血清 + 红细胞：凝集为A型
+• 抗B血清 + 红细胞：凝集为B型
+• 两者都凝集为AB型，都不凝集为O型
+
+🧪 反向定型(血清定型):
+• 用已知红细胞检测未知血清中的抗体
+• A型细胞 + 血清：凝集说明有抗A抗体
+• B型细胞 + 血清：凝集说明有抗B抗体
+
+🔬 Rh检测:
+• 抗D血清 + 红细胞
+• 凝集为Rh阳性，不凝集为Rh阴性
+• 弱D检测：间接抗球蛋白试验
+
+📋 质量控制:
+• 正反向定型结果必须一致
+• 使用阳性和阴性对照
+• 定期校准检测试剂
+• 严格按照操作规程进行
+
+🏥 检测意义:
+• 输血前配型检查
+• 新生儿溶血病筛查
+• 器官移植配型
+• 亲子鉴定辅助</translation>
+    </message>
+    <message>
+        <source>blood_type_knowledge_%1.txt</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文本文件 (*.txt);;所有文件 (*.*)</source>
+        <translation type="unfinished">文本文件 (*.txt);;所有文件 (*.*)</translation>
+    </message>
+    <message>
+        <source>内容已保存</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无法保存文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>BloodTypeSimulation</name>
+    <message>
+        <source>血型遗传模拟功能正在完善中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>BloodTypeStatistics</name>
+    <message>
+        <source>血型统计功能正在完善中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>BloodTypeTool</name>
+    <message>
+        <source>🧬 遗传计算</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📚 血型知识</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🩸 配型分析</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>📊 统计分析</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🎲 遗传模拟</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>Calculator</name>
     <message>
         <source>表达式计算器</source>
@@ -1690,6 +2101,217 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
     <message>
         <source>已复制转换结果</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>DynamicTitles</name>
+    <message>
+        <source>XML Formatter</source>
+        <translation>XML格式化</translation>
+    </message>
+    <message>
+        <source>JSON Formatter</source>
+        <translation>JSON格式化</translation>
+    </message>
+    <message>
+        <source>YAML Formatter</source>
+        <translation>YAML格式化</translation>
+    </message>
+    <message>
+        <source>Date Time Util</source>
+        <translation>日期时间戳</translation>
+    </message>
+    <message>
+        <source>Base64 Encode Decode</source>
+        <translation>Base64编码解码</translation>
+    </message>
+    <message>
+        <source>Regex Content Generator</source>
+        <translation>正则表达式生成内容</translation>
+    </message>
+    <message>
+        <source>Random Password Generator</source>
+        <translation>随机密码生成</translation>
+    </message>
+    <message>
+        <source>Telnet Tool</source>
+        <translation>Telnet工具</translation>
+    </message>
+    <message>
+        <source>Windows Settings</source>
+        <translation>Windows设置</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Table)</source>
+        <translation>Hosts编辑(表格)</translation>
+    </message>
+    <message>
+        <source>Hosts Editor (Text)</source>
+        <translation>Hosts编辑(文本)</translation>
+    </message>
+    <message>
+        <source>Ping Tool</source>
+        <translation>Ping工具</translation>
+    </message>
+    <message>
+        <source>Network Scanner</source>
+        <translation>局域网扫描</translation>
+    </message>
+    <message>
+        <source>Database Tool</source>
+        <translation>数据库连接工具</translation>
+    </message>
+    <message>
+        <source>IP Lookup Tool</source>
+        <translation>IP地址查询</translation>
+    </message>
+    <message>
+        <source>PDF Merge</source>
+        <translation>Pdf合并</translation>
+    </message>
+    <message>
+        <source>Regex Test Tool</source>
+        <translation>正则测试工具</translation>
+    </message>
+    <message>
+        <source>Image Compression</source>
+        <translation>图片压缩</translation>
+    </message>
+    <message>
+        <source>Favicon Production</source>
+        <translation>favicon制作</translation>
+    </message>
+    <message>
+        <source>Color Tools</source>
+        <translation>颜色工具</translation>
+    </message>
+    <message>
+        <source>Mobile Location</source>
+        <translation>手机号归属地</translation>
+    </message>
+    <message>
+        <source>HTML Special Character Table</source>
+        <translation>Html特殊字符表</translation>
+    </message>
+    <message>
+        <source>Torrent File Analysis</source>
+        <translation>种子文件分析</translation>
+    </message>
+    <message>
+        <source>Zip Code Query</source>
+        <translation>邮编区号查询</translation>
+    </message>
+    <message>
+        <source>QR Code Generator</source>
+        <translation>二维码</translation>
+    </message>
+    <message>
+        <source>Image Text Recognition</source>
+        <translation>图片文字识别</translation>
+    </message>
+    <message>
+        <source>File Hash Calculation</source>
+        <translation>文件hash计算</translation>
+    </message>
+    <message>
+        <source>Barcode Generator</source>
+        <translation>条形码生成</translation>
+    </message>
+    <message>
+        <source>Image Format Conversion</source>
+        <translation>图片格式转换</translation>
+    </message>
+    <message>
+        <source>HTTP Status Code</source>
+        <translation>HTTP状态码</translation>
+    </message>
+    <message>
+        <source>Crontab Time Calculation</source>
+        <translation>crontab时间计算</translation>
+    </message>
+    <message>
+        <source>Text Encryption And Decryption</source>
+        <translation>文字加密解密</translation>
+    </message>
+    <message>
+        <source>UUID Generator</source>
+        <translation>UUID生成器</translation>
+    </message>
+    <message>
+        <source>OpenCV Demo</source>
+        <translation>OpenCV示例</translation>
+    </message>
+    <message>
+        <source>OpenCV Image Processor</source>
+        <translation>OpenCV图像处理</translation>
+    </message>
+    <message>
+        <source>SSH Client</source>
+        <translation>SSH客户端</translation>
+    </message>
+    <message>
+        <source>FTP Client</source>
+        <translation>FTP客户端</translation>
+    </message>
+    <message>
+        <source>FTP Server</source>
+        <translation>FTP服务器</translation>
+    </message>
+    <message>
+        <source>Camera Tool</source>
+        <translation>摄像头工具</translation>
+    </message>
+    <message>
+        <source>Terminal Tool</source>
+        <translation>终端工具</translation>
+    </message>
+    <message>
+        <source>Traceroute Tool</source>
+        <translation>路由追踪</translation>
+    </message>
+    <message>
+        <source>Route Test Tool</source>
+        <translation>回程路由测试</translation>
+    </message>
+    <message>
+        <source>System Info Tool</source>
+        <translation>系统基本信息</translation>
+    </message>
+    <message>
+        <source>Rich Text Notepad</source>
+        <translation>富文本记事本</translation>
+    </message>
+    <message>
+        <source>Media Manager</source>
+        <translation>媒体文件管理</translation>
+    </message>
+    <message>
+        <source>Image Watermark</source>
+        <translation>图片加水印</translation>
+    </message>
+    <message>
+        <source>WHOIS Tool</source>
+        <translation>WHOIS查询</translation>
+    </message>
+    <message>
+        <source>File Compare Tool</source>
+        <translation>文件对比</translation>
+    </message>
+    <message>
+        <source>Blood Type Tool</source>
+        <translation>血型遗传规律</translation>
+    </message>
+    <message>
+        <source>Port Scanner</source>
+        <translation>端口占用查看</translation>
+    </message>
+    <message>
+        <source>Key Remapper</source>
+        <translation>改键工具</translation>
+    </message>
+    <message>
+        <source>Chinese Copybook</source>
+        <translation>汉字字帖生成器</translation>
     </message>
 </context>
 <context>
@@ -3490,10 +4112,6 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>截图(&amp;S)	F1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>&lt;h2&gt;乐乐的工具箱&lt;/h2&gt;&lt;p&gt;版本 1.0&lt;/p&gt;&lt;p&gt;一个集成了多种实用工具的桌面应用程序。&lt;/p&gt;&lt;p&gt;包含了编码解码、格式转换、文本处理、图像处理等多种常用工具。&lt;/p&gt;&lt;p&gt;© 2024 乐乐工作室&lt;/p&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3504,12 +4122,6 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
     <message>
         <source>语言已更改为 %1。
 请重启应用程序以使更改完全生效。</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>无法启动新实例，请手动重启应用程序。
-
-程序路径: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3560,6 +4172,16 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
     </message>
     <message>
         <source>⋮</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>截图(&amp;S)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无法启动新实例。
+
+%1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -4654,6 +5276,10 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
 <context>
     <name>QObject</name>
     <message>
+        <source>基因型: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>
 完整名称: %1</source>
         <translation type="unfinished"></translation>
@@ -4662,214 +5288,6 @@ sqrt(), sin(), cos(), tan(), log(), ln(), abs()</source>
         <source>
 数据库: %1</source>
         <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>XML Formatter</source>
-        <translation type="vanished">XML格式化</translation>
-    </message>
-    <message>
-        <source>JSON Formatter</source>
-        <translation type="vanished">JSON格式化</translation>
-    </message>
-    <message>
-        <source>YAML Formatter</source>
-        <translation type="vanished">YAML格式化</translation>
-    </message>
-    <message>
-        <source>Date Time Util</source>
-        <translation type="vanished">日期时间戳</translation>
-    </message>
-    <message>
-        <source>Base64 Encode Decode</source>
-        <translation type="vanished">Base64编码解码</translation>
-    </message>
-    <message>
-        <source>Regex Content Generator</source>
-        <translation type="vanished">正则表达式生成内容</translation>
-    </message>
-    <message>
-        <source>Random Password Generator</source>
-        <translation type="vanished">随机密码生成</translation>
-    </message>
-    <message>
-        <source>Telnet Tool</source>
-        <translation type="vanished">Telnet工具</translation>
-    </message>
-    <message>
-        <source>Windows Settings</source>
-        <translation type="vanished">Windows设置</translation>
-    </message>
-    <message>
-        <source>Hosts Editor (Table)</source>
-        <translation type="vanished">Hosts编辑(表格)</translation>
-    </message>
-    <message>
-        <source>Hosts Editor (Text)</source>
-        <translation type="vanished">Hosts编辑(文本)</translation>
-    </message>
-    <message>
-        <source>Ping Tool</source>
-        <translation type="vanished">Ping工具</translation>
-    </message>
-    <message>
-        <source>Network Scanner</source>
-        <translation type="vanished">局域网扫描</translation>
-    </message>
-    <message>
-        <source>Database Tool</source>
-        <translation type="vanished">数据库连接工具</translation>
-    </message>
-    <message>
-        <source>IP Lookup Tool</source>
-        <translation type="vanished">IP地址查询</translation>
-    </message>
-    <message>
-        <source>PDF Merge</source>
-        <translation type="vanished">Pdf合并</translation>
-    </message>
-    <message>
-        <source>Regex Test Tool</source>
-        <translation type="vanished">正则测试工具</translation>
-    </message>
-    <message>
-        <source>Image Compression</source>
-        <translation type="vanished">图片压缩</translation>
-    </message>
-    <message>
-        <source>Favicon Production</source>
-        <translation type="vanished">favicon制作</translation>
-    </message>
-    <message>
-        <source>Color Tools</source>
-        <translation type="vanished">颜色工具</translation>
-    </message>
-    <message>
-        <source>Mobile Location</source>
-        <translation type="vanished">手机号归属地</translation>
-    </message>
-    <message>
-        <source>HTML Special Character Table</source>
-        <translation type="vanished">Html特殊字符表</translation>
-    </message>
-    <message>
-        <source>Torrent File Analysis</source>
-        <translation type="vanished">种子文件分析</translation>
-    </message>
-    <message>
-        <source>Zip Code Query</source>
-        <translation type="vanished">邮编区号查询</translation>
-    </message>
-    <message>
-        <source>QR Code Generator</source>
-        <translation type="vanished">二维码</translation>
-    </message>
-    <message>
-        <source>Image Text Recognition</source>
-        <translation type="vanished">图片文字识别</translation>
-    </message>
-    <message>
-        <source>File Hash Calculation</source>
-        <translation type="vanished">文件hash计算</translation>
-    </message>
-    <message>
-        <source>Barcode Generator</source>
-        <translation type="vanished">条形码生成</translation>
-    </message>
-    <message>
-        <source>Image Format Conversion</source>
-        <translation type="vanished">图片格式转换</translation>
-    </message>
-    <message>
-        <source>HTTP Status Code</source>
-        <translation type="vanished">HTTP状态码</translation>
-    </message>
-    <message>
-        <source>Crontab Time Calculation</source>
-        <translation type="vanished">crontab时间计算</translation>
-    </message>
-    <message>
-        <source>Text Encryption And Decryption</source>
-        <translation type="vanished">文字加密解密</translation>
-    </message>
-    <message>
-        <source>UUID Generator</source>
-        <translation type="vanished">UUID生成器</translation>
-    </message>
-    <message>
-        <source>OpenCV Demo</source>
-        <translation type="vanished">OpenCV示例</translation>
-    </message>
-    <message>
-        <source>OpenCV Image Processor</source>
-        <translation type="vanished">OpenCV图像处理</translation>
-    </message>
-    <message>
-        <source>SSH Client</source>
-        <translation type="vanished">SSH客户端</translation>
-    </message>
-    <message>
-        <source>FTP Client</source>
-        <translation type="vanished">FTP客户端</translation>
-    </message>
-    <message>
-        <source>FTP Server</source>
-        <translation type="vanished">FTP服务器</translation>
-    </message>
-    <message>
-        <source>Camera Tool</source>
-        <translation type="vanished">摄像头工具</translation>
-    </message>
-    <message>
-        <source>Terminal Tool</source>
-        <translation type="vanished">终端工具</translation>
-    </message>
-    <message>
-        <source>Traceroute Tool</source>
-        <translation type="vanished">路由追踪</translation>
-    </message>
-    <message>
-        <source>Route Test Tool</source>
-        <translation type="vanished">回程路由测试</translation>
-    </message>
-    <message>
-        <source>System Info Tool</source>
-        <translation type="vanished">系统基本信息</translation>
-    </message>
-    <message>
-        <source>Rich Text Notepad</source>
-        <translation type="vanished">富文本记事本</translation>
-    </message>
-    <message>
-        <source>Media Manager</source>
-        <translation type="vanished">媒体文件管理</translation>
-    </message>
-    <message>
-        <source>Image Watermark</source>
-        <translation type="vanished">图片加水印</translation>
-    </message>
-    <message>
-        <source>WHOIS Tool</source>
-        <translation type="vanished">WHOIS查询</translation>
-    </message>
-    <message>
-        <source>File Compare Tool</source>
-        <translation type="vanished">文件对比</translation>
-    </message>
-    <message>
-        <source>Blood Type Tool</source>
-        <translation type="vanished">血型遗传规律</translation>
-    </message>
-    <message>
-        <source>Port Scanner</source>
-        <translation type="vanished">端口占用查看</translation>
-    </message>
-    <message>
-        <source>Key Remapper</source>
-        <translation type="vanished">改键工具</translation>
-    </message>
-    <message>
-        <source>Chinese Copybook</source>
-        <translation type="vanished">汉字字帖生成器</translation>
     </message>
 </context>
 <context>
