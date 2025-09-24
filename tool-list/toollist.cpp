@@ -179,7 +179,8 @@ void ToolList::sortToolsByUsage() const {
         tr("Blood Type Tool"),
         tr("Port Scanner"),
         tr("Key Remapper"),
-        tr("Chinese Copybook")
+        tr("Chinese Copybook"),
+        tr("HTTP Client")
     };
     Q_UNUSED(translationKeys); // 避免编译器警告
 

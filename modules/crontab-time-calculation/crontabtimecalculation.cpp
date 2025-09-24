@@ -23,13 +23,13 @@ const QStringList CrontabTimeCalculation::WEEKDAY_OPTIONS = {
     "*", "0", "1", "5", "6", "1-5", "0,6", "1,3,5"
 };
 
-const QStringList CrontabTimeCalculation::MONTH_NAMES = {
-    "一月", "二月", "三月", "四月", "五月", "六月",
-    "七月", "八月", "九月", "十月", "十一月", "十二月"
+QStringList CrontabTimeCalculation::MONTH_NAMES = {
+    QObject::tr("一月"), QObject::tr("二月"), QObject::tr("三月"), QObject::tr("四月"), QObject::tr("五月"), QObject::tr("六月"),
+    QObject::tr("七月"), QObject::tr("八月"), QObject::tr("九月"), QObject::tr("十月"), QObject::tr("十一月"), QObject::tr("十二月")
 };
 
-const QStringList CrontabTimeCalculation::WEEKDAY_NAMES = {
-    "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"
+QStringList CrontabTimeCalculation::WEEKDAY_NAMES = {
+    QObject::tr("星期日"), QObject::tr("星期一"), QObject::tr("星期二"), QObject::tr("星期三"), QObject::tr("星期四"), QObject::tr("星期五"), QObject::tr("星期六")
 };
 
 CrontabTimeCalculation::CrontabTimeCalculation() : QWidget(nullptr), DynamicObjectBase()
@@ -188,7 +188,7 @@ void CrontabTimeCalculation::setupParseTab()
     layout->setSpacing(10);
     
     // 输入区域
-    inputGroup = new QGroupBox("Crontab表达式输入");
+    inputGroup = new QGroupBox(tr("Crontab表达式输入"));
     QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
     
     QLabel *formatLabel = new QLabel(tr("格式: 分钟(0-59) 小时(0-23) 日(1-31) 月(1-12) 星期(0-7)"));
@@ -220,32 +220,33 @@ void CrontabTimeCalculation::setupParseTab()
     layout->addWidget(inputGroup);
     
     // 结果区域
-    resultGroup = new QGroupBox("解析结果");
+    resultGroup = new QGroupBox(tr("解析结果"));
     QVBoxLayout *resultLayout = new QVBoxLayout(resultGroup);
     
     statusLabel = new QLabel(tr("请输入Crontab表达式"));
     statusLabel->setStyleSheet("color: #6c757d; font-weight: bold; padding: 5px;");
-    resultLayout->addWidget(statusLabel);
+    statusLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    resultLayout->addWidget(statusLabel, 0); // 高度随内容调整
     
     QLabel *explanationLabel = new QLabel(tr("表达式说明:"));
     explanationLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
     resultLayout->addWidget(explanationLabel);
     
     explanationEdit = new QTextEdit;
-    explanationEdit->setMaximumHeight(100);
     explanationEdit->setReadOnly(true);
     explanationEdit->setPlaceholderText(tr("表达式的详细说明将显示在这里..."));
-    resultLayout->addWidget(explanationEdit);
+    explanationEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    resultLayout->addWidget(explanationEdit, 1); // 添加拉伸因子
     
     QLabel *validationLabel = new QLabel(tr("验证信息:"));
     validationLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
     resultLayout->addWidget(validationLabel);
     
     validationEdit = new QTextEdit;
-    validationEdit->setMaximumHeight(80);
     validationEdit->setReadOnly(true);
     validationEdit->setPlaceholderText(tr("验证结果将显示在这里..."));
-    resultLayout->addWidget(validationEdit);
+    validationEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    resultLayout->addWidget(validationEdit, 0); // 高度随内容调整
     
     layout->addWidget(resultGroup);
     
@@ -264,7 +265,7 @@ void CrontabTimeCalculation::setupGenerateTab()
     layout->setSpacing(10);
     
     // 字段设置区域
-    fieldsGroup = new QGroupBox("字段设置");
+    fieldsGroup = new QGroupBox(tr("字段设置"));
     QGridLayout *fieldsLayout = new QGridLayout(fieldsGroup);
     
     // 分钟
@@ -309,7 +310,7 @@ void CrontabTimeCalculation::setupGenerateTab()
     layout->addWidget(fieldsGroup);
     
     // 预览区域
-    previewGroup = new QGroupBox("生成预览");
+    previewGroup = new QGroupBox(tr("生成预览"));
     QVBoxLayout *previewLayout = new QVBoxLayout(previewGroup);
     
     QLabel *expressionLabel = new QLabel(tr("生成的表达式:"));
@@ -349,7 +350,7 @@ void CrontabTimeCalculation::setupCalculateTab()
     layout->setSpacing(10);
     
     // 时间设置
-    timeSettingsGroup = new QGroupBox("计算设置");
+    timeSettingsGroup = new QGroupBox(tr("计算设置"));
     QGridLayout *settingsLayout = new QGridLayout(timeSettingsGroup);
     
     settingsLayout->addWidget(new QLabel(tr("Crontab表达式:")), 0, 0);
@@ -370,7 +371,7 @@ void CrontabTimeCalculation::setupCalculateTab()
     layout->addWidget(timeSettingsGroup);
     
     // 当前时间显示
-    currentTimeGroup = new QGroupBox("当前时间");
+    currentTimeGroup = new QGroupBox(tr("当前时间"));
     QVBoxLayout *timeLayout = new QVBoxLayout(currentTimeGroup);
     
     currentTimeLabel = new QLabel;
@@ -385,7 +386,7 @@ void CrontabTimeCalculation::setupCalculateTab()
     layout->addWidget(currentTimeGroup);
     
     // 结果区域
-    nextRunsGroup = new QGroupBox("下次执行时间");
+    nextRunsGroup = new QGroupBox(tr("下次执行时间"));
     QVBoxLayout *runsLayout = new QVBoxLayout(nextRunsGroup);
     
     copyNextRunsButton = new QPushButton(tr("复制执行时间"));
@@ -394,7 +395,7 @@ void CrontabTimeCalculation::setupCalculateTab()
     
     nextRunsTable = new QTableWidget;
     nextRunsTable->setColumnCount(3);
-    nextRunsTable->setHorizontalHeaderLabels({"序号", "执行时间", "距离现在"});
+    nextRunsTable->setHorizontalHeaderLabels({tr("序号"), tr("执行时间"), tr("距离现在")});
     nextRunsTable->horizontalHeader()->setStretchLastSection(true);
     nextRunsTable->setAlternatingRowColors(true);
     nextRunsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -420,7 +421,7 @@ void CrontabTimeCalculation::setupTemplateTab()
     layout->setSpacing(10);
     
     // 常用模板
-    commonTemplatesGroup = new QGroupBox("常用模板");
+    commonTemplatesGroup = new QGroupBox(tr("常用模板"));
     QVBoxLayout *templatesLayout = new QVBoxLayout(commonTemplatesGroup);
     
     templatesList = new QListWidget;
@@ -430,12 +431,12 @@ void CrontabTimeCalculation::setupTemplateTab()
     layout->addWidget(commonTemplatesGroup);
     
     // 示例表格
-    examplesGroup = new QGroupBox("Crontab示例");
+    examplesGroup = new QGroupBox(tr("Crontab示例"));
     QVBoxLayout *examplesLayout = new QVBoxLayout(examplesGroup);
     
     examplesTable = new QTableWidget;
     examplesTable->setColumnCount(2);
-    examplesTable->setHorizontalHeaderLabels({"表达式", "说明"});
+    examplesTable->setHorizontalHeaderLabels({tr("表达式"), tr("说明")});
     examplesTable->horizontalHeader()->setStretchLastSection(true);
     examplesTable->setAlternatingRowColors(true);
     examplesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -456,7 +457,7 @@ void CrontabTimeCalculation::setupTemplateTab()
 
 void CrontabTimeCalculation::setupToolbar()
 {
-    toolbarGroup = new QGroupBox("工具");
+    toolbarGroup = new QGroupBox(tr("工具"));
     QHBoxLayout *toolbarLayout = new QHBoxLayout(toolbarGroup);
     
     exportButton = new QPushButton(tr("导出配置"));
@@ -500,24 +501,24 @@ QString CrontabTimeCalculation::explainCrontabExpression(const QString &expressi
 {
     QStringList parts = expression.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
     if (parts.size() < 5) {
-        return "表达式格式错误";
+        return tr("表达式格式错误");
     }
     
-    QString explanation = "此表达式表示：";
+    QString explanation = tr("此表达式表示：");
     
     // 简单的解释逻辑
     if (parts[0] == "*" && parts[1] == "*" && parts[2] == "*" && parts[3] == "*" && parts[4] == "*") {
-        explanation += "每分钟执行";
+        explanation += tr("每分钟执行");
     } else if (parts[1] == "*" && parts[2] == "*" && parts[3] == "*" && parts[4] == "*") {
-        explanation += QString("每小时的第%1分钟执行").arg(parts[0]);
+        explanation += tr("每小时的第%1分钟执行").arg(parts[0]);
     } else if (parts[2] == "*" && parts[3] == "*" && parts[4] == "*") {
-        explanation += QString("每天的%1:%2执行").arg(parts[1]).arg(parts[0]);
+        explanation += tr("每天的%1:%2执行").arg(parts[1]).arg(parts[0]);
     } else {
-        explanation += QString("在指定时间执行: %1:%2 %3日 %4月 星期%5")
+        explanation += tr("在指定时间执行: %1:%2 %3日 %4月 星期%5")
                      .arg(parts[1]).arg(parts[0]).arg(parts[2]).arg(parts[3]).arg(parts[4]);
     }
     
-    explanation += QString("\n\n详细字段：\n分钟: %1\n小时: %2\n日: %3\n月: %4\n星期: %5")
+    explanation += tr("\n\n详细字段：\n分钟: %1\n小时: %2\n日: %3\n月: %4\n星期: %5")
                   .arg(parts[0], parts[1], parts[2], parts[3], parts[4]);
     
     return explanation;
@@ -572,8 +573,8 @@ void CrontabTimeCalculation::updateCurrentTime()
 {
     QDateTime currentTime = QDateTime::currentDateTime();
     QString timeText = QString("%1\n%2")
-                      .arg(currentTime.toString("yyyy年MM月dd日"))
-                      .arg(currentTime.toString("hh:mm:ss dddd"));
+                      .arg(currentTime.toString(tr("yyyy年MM月dd日")))
+                      .arg(currentTime.toString(tr("hh:mm:ss dddd")));
     
     currentTimeLabel->setText(timeText);
 }
@@ -678,7 +679,7 @@ void CrontabTimeCalculation::onCalculateNextRunsClicked()
         nextRunsTable->setItem(i, 1, timeItem);
         
         // 距离现在
-        QString timeDistance = QString("%1小时后").arg(i + 1);
+        QString timeDistance = tr("%1小时后").arg(i + 1);
         QTableWidgetItem *distanceItem = new QTableWidgetItem(timeDistance);
         nextRunsTable->setItem(i, 2, distanceItem);
     }
@@ -711,7 +712,7 @@ void CrontabTimeCalculation::onCopyNextRunsClicked()
         return;
     }
     
-    QString text = "Crontab执行时间表:\n";
+    QString text = tr("Crontab执行时间表:\n");
     for (int i = 0; i < nextRunsTable->rowCount(); ++i) {
         QString timeStr = nextRunsTable->item(i, 1)->text();
         QString distanceStr = nextRunsTable->item(i, 2)->text();
@@ -726,9 +727,9 @@ void CrontabTimeCalculation::onCopyNextRunsClicked()
 void CrontabTimeCalculation::onExportClicked()
 {
     QString fileName = QFileDialog::getSaveFileName(this,
-        "导出Crontab配置",
+        tr("导出Crontab配置"),
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/crontab_config.txt",
-        "文本文件 (*.txt)");
+        tr("文本文件 (*.txt)"));
     
     if (fileName.isEmpty()) return;
     
@@ -736,9 +737,9 @@ void CrontabTimeCalculation::onExportClicked()
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream out(&file);
         out.setEncoding(QStringConverter::Utf8);
-        out << "Crontab配置导出\n";
-        out << "表达式: " << expressionEdit->text() << "\n";
-        out << "说明: " << explanationEdit->toPlainText() << "\n";
+        out << tr("Crontab配置导出\n");
+        out << tr("表达式: ") << expressionEdit->text() << "\n";
+        out << tr("说明: ") << explanationEdit->toPlainText() << "\n";
         file.close();
         QMessageBox::information(this, tr("成功"), tr("配置已导出"));
     }
@@ -751,7 +752,7 @@ void CrontabTimeCalculation::onImportClicked()
 
 void CrontabTimeCalculation::onClearAllClicked()
 {
-    int ret = QMessageBox::question(this, "确认", "确定要清空所有设置吗？",
+    int ret = QMessageBox::question(this, tr("确认"), tr("确定要清空所有设置吗？"),
                                    QMessageBox::Yes | QMessageBox::No);
     if (ret == QMessageBox::Yes) {
         expressionEdit->clear();

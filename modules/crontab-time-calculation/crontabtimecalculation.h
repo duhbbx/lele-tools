@@ -243,8 +243,8 @@ private:
     static const QStringList DAY_OPTIONS;
     static const QStringList MONTH_OPTIONS;
     static const QStringList WEEKDAY_OPTIONS;
-    static const QStringList MONTH_NAMES;
-    static const QStringList WEEKDAY_NAMES;
+    static QStringList MONTH_NAMES;
+    static QStringList WEEKDAY_NAMES;
 };
 
 #endif // CRONTABTIMECALCULATION_H
