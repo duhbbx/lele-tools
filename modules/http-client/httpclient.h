@@ -36,8 +36,21 @@
 #include <QMimeDatabase>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QTreeView>
+#include <QStandardItemModel>
+#include <QStandardItem>
+#include <QContextMenuEvent>
+#include <QMenu>
+#include <QAction>
+#include <QInputDialog>
+#include <QMimeData>
+#include <QDataStream>
 
 #include "../../common/dynamicobjectbase.h"
+#include "httprequeststore.h"
+
+// 前置声明
+class HttpRequestTreeModel;
 
 // HTTP请求方法枚举
 enum class HttpMethod {
@@ -77,6 +90,33 @@ struct HttpRequestInfo {
     HttpRequestInfo() : method(HttpMethod::GET), port(80) {}
 };
 
+// 自定义树模型，支持拖拽操作
+class HttpRequestTreeModel : public QStandardItemModel
+{
+    Q_OBJECT
+
+public:
+    explicit HttpRequestTreeModel(QObject* parent = nullptr);
+
+    // 重写拖拽相关方法
+    Qt::ItemFlags flags(const QModelIndex& index) const override;
+    QStringList mimeTypes() const override;
+    QMimeData* mimeData(const QModelIndexList& indexes) const override;
+    bool canDropMimeData(const QMimeData* data, Qt::DropAction action,
+                        int row, int column, const QModelIndex& parent) const override;
+    bool dropMimeData(const QMimeData* data, Qt::DropAction action,
+                     int row, int column, const QModelIndex& parent) override;
+
+    // 重写编辑相关方法
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+
+signals:
+    void requestMoved(int requestId, int newGroupId);
+    void multipleRequestsMoved(const QList<int>& requestIds, int newGroupId);
+    void requestRenamed(int requestId, const QString& newName, const QString& oldName);
+};
+
 // HTTP响应信息结构
 struct HttpResponseInfo {
     int statusCode;
@@ -90,6 +130,73 @@ struct HttpResponseInfo {
     HttpResponseInfo() : statusCode(0), responseTime(0), contentLength(0) {}
 };
 
+// HTTP请求标签页数据结构
+struct HttpRequestTab {
+    int requestId;
+    int groupId;
+    QString tabName;
+    QWidget* tabWidget;
+
+    // 请求区域组件
+    QGroupBox* requestGroup;
+    QComboBox* methodCombo;
+    QComboBox* protocolCombo;
+    QLineEdit* hostEdit;
+    QSpinBox* portSpin;
+    QLineEdit* pathEdit;
+    QPushButton* sendBtn;
+    QPushButton* cancelBtn;
+    QPushButton* saveBtn;
+
+    // 请求详情标签页
+    QTabWidget* requestTabs;
+    QWidget* paramsTab;
+    QWidget* headersTab;
+    QWidget* cookiesTab;
+    QWidget* bodyTab;
+
+    // 参数表格
+    QTableWidget* paramsTable;
+    QPushButton* addParamBtn;
+    QPushButton* removeParamBtn;
+
+    // 头部表格
+    QTableWidget* headersTable;
+    QPushButton* addHeaderBtn;
+    QPushButton* removeHeaderBtn;
+
+    // Cookie表格
+    QTableWidget* cookiesTable;
+    QPushButton* addCookieBtn;
+    QPushButton* removeCookieBtn;
+
+    // 请求体
+    QComboBox* bodyTypeCombo;
+    QTextEdit* bodyEdit;
+    QPushButton* formatBodyBtn;
+
+    // 响应区域
+    QWidget* responseWidget;
+    QGroupBox* responseGroup;
+    QTabWidget* responseTabs;
+    QTextEdit* responseBodyEdit;
+    QTextEdit* rawResponseEdit;
+    QLabel* statusLabel;
+    QLabel* timeLabel;
+    QPushButton* copyResponseBtn;
+    QPushButton* formatResponseBtn;
+    QPushButton* saveResponseBtn;
+
+    // 数据
+    HttpRequestInfo requestInfo;
+    HttpResponseInfo responseInfo;
+    QNetworkReply* currentReply;
+    QTimer* requestTimer;
+    QElapsedTimer elapsedTimer;
+
+    HttpRequestTab() : requestId(0), groupId(0), tabWidget(nullptr), currentReply(nullptr), requestTimer(nullptr) {}
+};
+
 class HttpClient : public QWidget, public DynamicObjectBase
 {
     Q_OBJECT
@@ -99,11 +206,6 @@ public:
     ~HttpClient();
 
 private slots:
-    // cURL解析
-    void onCurlInputChanged();
-    void onParseCurlClicked();
-    void onClearAllClicked();
-
     // 请求发送
     void onSendRequestClicked();
     void onCancelRequestClicked();
@@ -141,23 +243,70 @@ private slots:
     void onPathChanged();
     void updateFullUrl();
 
+    // 请求存储管理
+    void onRequestTreeClicked(const QModelIndex& index);
+    void onRequestTreeDoubleClicked(const QModelIndex& index);
+    void onRequestTreeContextMenu(const QPoint& position);
+    void onAddGroupTriggered();
+    void onAddRequestTriggered();
+    void onRenameTriggered();
+    void onDeleteTriggered();
+    void onSaveCurrentTriggered();
+    void onImportTriggered();
+
+    // 标签页管理
+    void onTabCloseRequested(int index);
+    void onTabChanged(int index);
+    void onNewTabRequested();
+    void onSaveTabRequested();
+    void onSaveCurrentTabClicked();
+
+    // 拖拽处理
+    void onRequestMoved(int requestId, int newGroupId);
+    void onMultipleRequestsMoved(const QList<int>& requestIds, int newGroupId);
+
+    // 重命名处理
+    void onRequestRenamed(int requestId, const QString& newName, const QString& oldName);
+
 private:
     void setupUI();
-    void setupRequestArea();
-    void setupParametersTab();
-    void setupHeadersTab();
-    void setupCookiesTab();
-    void setupBodyTab();
-    void setupResponseArea();
-    void setupToolbar();
+    static void setupToolbar();
+    void setupRequestTreeView();
+    void setupContextMenus();
 
-    // cURL解析功能
-    bool parseCurlCommand(const QString& curlCommand);
-    QString extractUrl(const QString& curlCommand);
-    HttpMethod extractMethod(const QString& curlCommand);
-    QList<KeyValuePair> extractHeaders(const QString& curlCommand);
-    QString extractBody(const QString& curlCommand);
-    QList<KeyValuePair> extractCookies(const QString& curlCommand);
+    // 请求存储管理
+    void initializeStorage();
+    void loadRequestTree();
+    void loadRequestsForGroup(QStandardItem* groupItem, int groupId);
+    void populateRequestFromEntity(const HttpClientStore::HttpRequestEntity& request);
+    HttpClientStore::HttpRequestEntity createRequestFromCurrentUI(int groupId, const QString& name);
+    QStandardItem* findGroupItem(int groupId);
+    QStandardItem* findRequestItem(int requestId);
+    void refreshTreeView();
+    void selectRequestInTree(const QString& requestName, int groupId);
+    void showImportDialog(int groupId, const QString& groupName);
+    bool processImport(int groupId, const QString& requestName, const QString& importType, const QString& content, QString& errorMessage);
+    HttpClientStore::HttpRequestEntity parseCurlCommand(const QString& curlCommand, int groupId, const QString& requestName);
+
+    // 标签页管理
+    HttpRequestTab* createNewTab(const QString& tabName, int requestId = 0, int groupId = 0);
+    HttpRequestTab* createTabFromRequest(const HttpClientStore::HttpRequestEntity& request);
+    void closeTab(int index);
+    void populateTabFromEntity(HttpRequestTab* tab, const HttpClientStore::HttpRequestEntity& request);
+    HttpClientStore::HttpRequestEntity createRequestFromTab(HttpRequestTab* tab, int groupId, const QString& name);
+    HttpRequestTab* getTabByRequestId(int requestId);
+    HttpRequestTab* getCurrentTab() const;
+    void setCurrentTab(HttpRequestTab* tab);
+    void setupTabUI(HttpRequestTab* tab);
+    void setupTabParametersTab(HttpRequestTab* tab);
+    void setupTabHeadersTab(HttpRequestTab* tab);
+    void setupTabCookiesTab(HttpRequestTab* tab);
+    void setupTabBodyTab(HttpRequestTab* tab);
+    void setupTabResponseArea(HttpRequestTab* tab);
+    void connectTabSignals(HttpRequestTab* tab);
+    void updateTabTitle(HttpRequestTab* tab);
+    void updateTreeViewDisplay();
+
 
     // HTTP请求功能
     void buildRequest();
@@ -181,80 +330,45 @@ private:
     QList<KeyValuePair> getTableData(QTableWidget* table);
 
     // 工具函数
-    QString httpMethodToString(HttpMethod method);
-    HttpMethod stringToHttpMethod(const QString& method);
-    QString formatFileSize(qint64 bytes);
-    QString formatTime(qint64 milliseconds);
+    static QString httpMethodToString(HttpMethod method);
+    static HttpMethod stringToHttpMethod(const QString& method);
+    static QString formatFileSize(qint64 bytes);
+    static QString formatTime(qint64 milliseconds);
 
     // UI组件
     QVBoxLayout* m_mainLayout;
     QSplitter* m_mainSplitter;
 
-    // cURL输入区域
-    QGroupBox* m_curlGroup;
-    QTextEdit* m_curlInput;
-    QPushButton* m_parseCurlBtn;
-    QPushButton* m_clearAllBtn;
+    // 主标签页容器（右侧）
+    QTabWidget* m_mainTabWidget;
 
-    // 请求区域
-    QWidget* m_requestWidget;
-    QGroupBox* m_requestGroup;
-    QComboBox* m_methodCombo;
-    QComboBox* m_protocolCombo;
-    QLineEdit* m_hostEdit;
-    QSpinBox* m_portSpin;
-    QLineEdit* m_pathEdit;
-    QPushButton* m_sendBtn;
-    QPushButton* m_cancelBtn;
-    QProgressBar* m_progressBar;
+    // 左侧请求树视图
+    QTreeView* m_requestTreeView;
+    HttpRequestTreeModel* m_requestTreeModel;
+    QWidget* m_leftPanel;
+    QSplitter* m_horizontalSplitter;
 
-    // 请求详情标签页
-    QTabWidget* m_requestTabs;
-    QWidget* m_paramsTab;
-    QWidget* m_headersTab;
-    QWidget* m_cookiesTab;
-    QWidget* m_bodyTab;
+    // 存储管理器
+    HttpClientStore::HttpRequestGroupManager* m_groupManager;
+    HttpClientStore::HttpRequestManager* m_requestManager;
 
-    // 参数表格
-    QTableWidget* m_paramsTable;
-    QPushButton* m_addParamBtn;
-    QPushButton* m_removeParamBtn;
+    // 上下文菜单
+    QMenu* m_groupContextMenu;
+    QMenu* m_requestContextMenu;
+    QAction* m_addGroupAction;
+    QAction* m_addRequestAction;
+    QAction* m_renameAction;
+    QAction* m_deleteAction;
+    QAction* m_saveCurrentAction;
+    QAction* m_importAction;
 
-    // 头部表格
-    QTableWidget* m_headersTable;
-    QPushButton* m_addHeaderBtn;
-    QPushButton* m_removeHeaderBtn;
+    // 标签页管理
+    QMap<int, HttpRequestTab*> m_tabMap; // 标签页索引到标签页对象的映射
+    QMap<int, int> m_requestTabMap; // 请求ID到标签页索引的映射
+    int m_nextTabId;
 
-    // Cookie表格
-    QTableWidget* m_cookiesTable;
-    QPushButton* m_addCookieBtn;
-    QPushButton* m_removeCookieBtn;
-
-    // 请求体
-    QComboBox* m_bodyTypeCombo;
-    QTextEdit* m_bodyEdit;
-    QPushButton* m_formatBodyBtn;
-
-    // 响应区域
-    QWidget* m_responseWidget;
-    QGroupBox* m_responseGroup;
-    QTabWidget* m_responseTabs;
-    QTextEdit* m_responseBodyEdit;
-    QTextEdit* m_rawResponseEdit;
-    QLabel* m_statusLabel;
-    QLabel* m_timeLabel;
-    QLabel* m_sizeLabel;
-    QPushButton* m_copyResponseBtn;
-    QPushButton* m_formatResponseBtn;
-    QPushButton* m_saveResponseBtn;
-
-    // 数据成员
-    HttpRequestInfo m_requestInfo;
-    HttpResponseInfo m_responseInfo;
+    // 全局组件
     QNetworkAccessManager* m_networkManager;
-    QNetworkReply* m_currentReply;
-    QTimer* m_requestTimer;
-    QElapsedTimer m_elapsedTimer;
 };
 
 #endif // HTTPCLIENT_H

@@ -230,6 +230,7 @@ else()
     else()
         add_executable(lele-tools
             ${PROJECT_SOURCES}
+            ${MODULE_SOURCES}
         )
     endif()
 
