@@ -180,7 +180,8 @@ void ToolList::sortToolsByUsage() const {
         tr("Port Scanner"),
         tr("Key Remapper"),
         tr("Chinese Copybook"),
-        tr("HTTP Client")
+        tr("HTTP Client"),
+        tr("File Search")
     };
     Q_UNUSED(translationKeys); // 避免编译器警告
 

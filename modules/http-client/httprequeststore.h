@@ -49,6 +49,7 @@ struct HttpRequestEntity {
     QString cookies;        // JSON格式存储cookies
     QString body;
     QString bodyType;
+    QString user;           // JSON格式存储用户认证信息 {"username": "", "password": "", "enabled": false}
     QDateTime createdAt;
     QDateTime updatedAt;
 
@@ -71,6 +72,8 @@ struct HttpRequestEntity {
     static QList<QVariantMap> headersFromJson(const QString& json);
     static QString cookiesToJson(const QList<QVariantMap>& cookies);
     static QList<QVariantMap> cookiesFromJson(const QString& json);
+    static QString userToJson(const QString& username, const QString& password, bool enabled = true);
+    static QVariantMap userFromJson(const QString& json);
 };
 
 // HTTP请求分组表管理器

@@ -541,6 +541,17 @@ void HttpClient::setRequestHeaders(QNetworkRequest& request) {
         }
     }
 
+    // 设置 Basic Authentication
+    if (tab->authEnabledCheck->isChecked() &&
+        !tab->usernameEdit->text().trimmed().isEmpty()) {
+
+        QString username = tab->usernameEdit->text().trimmed();
+        QString password = tab->passwordEdit->text();
+        QString credentials = username + ":" + password;
+        QString basicAuth = "Basic " + credentials.toUtf8().toBase64();
+        request.setRawHeader("Authorization", basicAuth.toUtf8());
+    }
+
     // 设置 Cookies
     if (!tab->requestInfo.cookies.isEmpty()) {
         QStringList cookieStrings;
@@ -560,11 +571,11 @@ QByteArray HttpClient::buildRequestBody() {
     if (!tab)
         return QByteArray();
 
-    QString bodyType = tab->bodyTypeCombo->currentText();
-    QString body = tab->bodyEdit->toPlainText();
+    const QString bodyType = tab->bodyTypeCombo->currentText();
+    const QString body = tab->bodyEdit->toPlainText();
 
     if (bodyType == tr("无请求体") || body.isEmpty()) {
-        return QByteArray();
+        return {};
     }
 
     return body.toUtf8();
@@ -627,13 +638,9 @@ void HttpClient::sendHttpRequest() {
         this->onRequestError(code);
     });
 
-
     connect(tab->currentReply, &QNetworkReply::finished, this, [this, tab]() {
         this->onRequestFinished();
     });
-
-
-
 
     // 更新UI状态
     tab->sendBtn->setEnabled(false);
@@ -721,7 +728,37 @@ QString HttpClient::formatJsonResponse(const QString& json) {
         return json; // 返回原始 JSON
     }
 
-    return doc.toJson(QJsonDocument::Indented);
+    // 使用默认4空格缩进，然后转换为2空格缩进
+    QString formatted = doc.toJson(QJsonDocument::Indented);
+
+    // 将4个空格的缩进替换为2个空格
+    QStringList lines = formatted.split('\n');
+    QString result;
+    for (const QString& line : lines) {
+        QString processedLine = line;
+        // 计算行前的空格数量，然后除以2来减少缩进
+        int leadingSpaces = 0;
+        for (const QChar& ch : line) {
+            if (ch == ' ') {
+                leadingSpaces++;
+            } else {
+                break;
+            }
+        }
+
+        if (leadingSpaces > 0) {
+            // 将4空格缩进改为2空格缩进
+            int newSpaces = leadingSpaces / 2;
+            processedLine = QString(newSpaces, ' ') + line.trimmed();
+        }
+
+        result += processedLine;
+        if (&line != &lines.last()) {
+            result += '\n';
+        }
+    }
+
+    return result;
 }
 
 QString HttpClient::formatXmlResponse(const QString& xml) {
@@ -901,6 +938,52 @@ void HttpClient::setupRequestTreeView() {
     titleLabel->setStyleSheet("font-weight: bold; font-size: 12px; padding: 5px;");
     leftLayout->addWidget(titleLabel);
 
+    // 创建搜索区域
+    QWidget* searchWidget = new QWidget();
+    QVBoxLayout* searchLayout = new QVBoxLayout(searchWidget);
+    searchLayout->setContentsMargins(0, 0, 0, 5);
+    searchLayout->setSpacing(3);
+
+    // 搜索输入框和清除按钮
+    QHBoxLayout* searchInputLayout = new QHBoxLayout();
+    m_searchLineEdit = new QLineEdit();
+    m_searchLineEdit->setPlaceholderText(tr("搜索请求名称或URL..."));
+    m_searchLineEdit->setStyleSheet(
+        "QLineEdit {"
+        "    border: 1px solid #ccc;"
+        "    border-radius: 3px;"
+        "    padding: 4px;"
+        "    font-size: 12px;"
+        "}"
+    );
+
+    m_clearSearchBtn = new QPushButton(tr("✕"));
+    m_clearSearchBtn->setFixedSize(24, 24);
+    m_clearSearchBtn->setStyleSheet(
+        "QPushButton {"
+        "    border: none;"
+        "    background-color: transparent;"
+        "    font-weight: bold;"
+        "    color: #666;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #e0e0e0;"
+        "    border-radius: 12px;"
+        "}"
+    );
+    m_clearSearchBtn->setEnabled(false);
+
+    searchInputLayout->addWidget(m_searchLineEdit);
+    searchInputLayout->addWidget(m_clearSearchBtn);
+
+    searchLayout->addLayout(searchInputLayout);
+
+    leftLayout->addWidget(searchWidget);
+
+    // 连接搜索信号
+    connect(m_searchLineEdit, &QLineEdit::textChanged, this, &HttpClient::onSearchTextChanged);
+    connect(m_clearSearchBtn, &QPushButton::clicked, this, &HttpClient::onClearSearchClicked);
+
     // 创建树视图
     m_requestTreeView = new QTreeView();
     m_requestTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -919,6 +1002,10 @@ void HttpClient::setupRequestTreeView() {
     m_requestTreeModel = new HttpRequestTreeModel(this);
     m_requestTreeModel->setHorizontalHeaderLabels({ tr("名称") });
     m_requestTreeView->setModel(m_requestTreeModel);
+
+    // 设置自定义委托以优化inline编辑
+    m_requestTreeDelegate = new HttpRequestTreeDelegate(this);
+    m_requestTreeView->setItemDelegate(m_requestTreeDelegate);
 
     // 连接拖拽信号
     connect(m_requestTreeModel, &HttpRequestTreeModel::requestMoved,
@@ -1589,6 +1676,8 @@ QStandardItem* HttpClient::findRequestItem(int requestId) {
 }
 
 void HttpClient::refreshTreeView() {
+    // 清除搜索缓存，因为数据可能已更新
+    m_requestSearchCache.clear();
     loadRequestTree();
 }
 
@@ -1736,7 +1825,7 @@ void HttpClient::setupTabUI(HttpRequestTab* tab) {
     // 按钮行
     auto* buttonLayout = new QHBoxLayout();
     tab->sendBtn = new QPushButton(tr("发送请求"));
-    tab->sendBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; font-weight: bold; }");
+    tab->sendBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white;  }");
     tab->sendBtn->setMinimumWidth(100);
     buttonLayout->addWidget(tab->sendBtn);
 
@@ -1763,6 +1852,8 @@ void HttpClient::setupTabUI(HttpRequestTab* tab) {
     setupTabHeadersTab(tab);
     // Cookie标签页
     setupTabCookiesTab(tab);
+    // 用户认证标签页
+    setupTabAuthTab(tab);
     // 请求体标签页
     setupTabBodyTab(tab);
 
@@ -1853,12 +1944,48 @@ void HttpClient::setupTabCookiesTab(HttpRequestTab* tab) {
     tab->requestTabs->addTab(tab->cookiesTab, tr("Cookies"));
 }
 
+void HttpClient::setupTabAuthTab(HttpRequestTab* tab) {
+    tab->authTab = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(tab->authTab);
+
+    // 认证启用复选框
+    tab->authEnabledCheck = new QCheckBox(tr("启用 Basic Authentication"));
+    layout->addWidget(tab->authEnabledCheck);
+
+    // 用户名
+    QHBoxLayout* userLayout = new QHBoxLayout();
+    userLayout->addWidget(new QLabel(tr("用户名:")));
+    tab->usernameEdit = new QLineEdit();
+    tab->usernameEdit->setPlaceholderText(tr("输入用户名"));
+    tab->usernameEdit->setEnabled(false);
+    userLayout->addWidget(tab->usernameEdit);
+    layout->addLayout(userLayout);
+
+    // 密码
+    QHBoxLayout* passLayout = new QHBoxLayout();
+    passLayout->addWidget(new QLabel(tr("密码:")));
+    tab->passwordEdit = new QLineEdit();
+    tab->passwordEdit->setPlaceholderText(tr("输入密码"));
+    tab->passwordEdit->setEnabled(false);
+    passLayout->addWidget(tab->passwordEdit);
+    layout->addLayout(passLayout);
+
+    // 说明文本
+    QLabel* infoLabel = new QLabel(tr("Basic Authentication 会自动设置 Authorization 请求头"));
+    infoLabel->setStyleSheet("color: #666; font-style: italic;");
+    layout->addWidget(infoLabel);
+
+    layout->addStretch();
+
+    tab->requestTabs->addTab(tab->authTab, tr("认证"));
+}
+
 void HttpClient::setupTabBodyTab(HttpRequestTab* tab) {
     tab->bodyTab = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(tab->bodyTab);
 
     // 请求体类型选择和格式化按钮在一行
-    QHBoxLayout* topLayout = new QHBoxLayout();
+    auto* topLayout = new QHBoxLayout();
     topLayout->addWidget(new QLabel(tr("类型:")));
 
     tab->bodyTypeCombo = new QComboBox();
@@ -1877,7 +2004,14 @@ void HttpClient::setupTabBodyTab(HttpRequestTab* tab) {
     // 请求体内容
     tab->bodyEdit = new QTextEdit();
     tab->bodyEdit->setPlaceholderText(tr("在这里输入请求体内容..."));
-    tab->bodyEdit->setMaximumHeight(200);
+    // 取消固定高度，让布局自己决定
+    tab->bodyEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    // 如果你希望初始高度有限制，可以设置最小高度
+    tab->bodyEdit->setMinimumHeight(100);
+
+    // ❌ 删除 setMaximumHeight(200);
+    // tab->bodyEdit->setMaximumHeight(200);
     layout->addWidget(tab->bodyEdit);
 
     tab->requestTabs->addTab(tab->bodyTab, tr("请求体"));
@@ -2023,6 +2157,16 @@ void HttpClient::connectTabSignals(HttpRequestTab* tab) {
         tab->formatBodyBtn->setVisible(shouldShow);
     });
 
+    // 用户认证相关信号
+    connect(tab->authEnabledCheck, &QCheckBox::toggled, [tab](bool enabled) {
+        tab->usernameEdit->setEnabled(enabled);
+        tab->passwordEdit->setEnabled(enabled);
+        if (!enabled) {
+            tab->usernameEdit->clear();
+            tab->passwordEdit->clear();
+        }
+    });
+
     // 初始化计时器
     tab->requestTimer = new QTimer(tab->tabWidget);
     tab->requestTimer->setInterval(100); // 每100毫秒更新一次时间显示
@@ -2089,6 +2233,14 @@ void HttpClient::populateTabFromEntity(HttpRequestTab* tab, const HttpClientStor
     // 设置请求体
     tab->bodyTypeCombo->setCurrentText(request.bodyType);
     tab->bodyEdit->setPlainText(request.body);
+
+    // 设置用户认证
+    QVariantMap userAuth = HttpClientStore::HttpRequestEntity::userFromJson(request.user);
+    tab->authEnabledCheck->setChecked(userAuth["enabled"].toBool());
+    tab->usernameEdit->setText(userAuth["username"].toString());
+    tab->passwordEdit->setText(userAuth["password"].toString());
+    tab->usernameEdit->setEnabled(userAuth["enabled"].toBool());
+    tab->passwordEdit->setEnabled(userAuth["enabled"].toBool());
 
     // 更新标签页标题
     updateTabTitle(tab);
@@ -2162,6 +2314,13 @@ HttpClientStore::HttpRequestEntity HttpClient::createRequestFromTab(HttpRequestT
         }
     }
     request.cookies = HttpClientStore::HttpRequestEntity::cookiesToJson(cookies);
+
+    // 获取用户认证信息
+    request.user = HttpClientStore::HttpRequestEntity::userToJson(
+        tab->usernameEdit->text().trimmed(),
+        tab->passwordEdit->text(),
+        tab->authEnabledCheck->isChecked()
+    );
 
     return request;
 }
@@ -2764,17 +2923,17 @@ void HttpClient::onMultipleRequestsMoved(const QList<int>& requestIds, int newGr
 
 void HttpClient::onImportTriggered() {
     // 获取当前选中的分组
-    QModelIndex index = m_requestTreeView->currentIndex();
+    const QModelIndex index = m_requestTreeView->currentIndex();
     if (!index.isValid()) {
         QMessageBox::information(this, tr("提示"), tr("请先选择一个分组"));
         return;
     }
 
-    QStandardItem* item = m_requestTreeModel->itemFromIndex(index);
+    const QStandardItem* item = m_requestTreeModel->itemFromIndex(index);
     if (!item)
         return;
 
-    QString itemType = item->data(Qt::UserRole + 1).toString();
+    const QString itemType = item->data(Qt::UserRole + 1).toString();
     int groupId = 0;
     QString groupName;
 
@@ -2783,7 +2942,7 @@ void HttpClient::onImportTriggered() {
         groupName = item->text();
     } else if (itemType == "request") {
         // 如果选中的是请求，获取其父分组
-        QStandardItem* parentItem = item->parent();
+        const QStandardItem* parentItem = item->parent();
         if (!parentItem)
             return;
         groupId = parentItem->data(Qt::UserRole).toInt();
@@ -2800,42 +2959,43 @@ void HttpClient::showImportDialog(int groupId, const QString& groupName) {
     dialog.setWindowTitle(tr("导入请求到分组: %1").arg(groupName));
     dialog.setFixedSize(500, 450);
 
-    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    auto* layout = new QVBoxLayout(&dialog);
 
     // 请求名称
-    QLabel* nameLabel = new QLabel(tr("请求名称:"));
-    QLineEdit* nameEdit = new QLineEdit(tr("导入的请求"));
+    auto* nameLabel = new QLabel(tr("请求名称:"));
+    auto* nameEdit = new QLineEdit(tr("导入的请求"));
     layout->addWidget(nameLabel);
     layout->addWidget(nameEdit);
 
     // 导入类型
-    QLabel* typeLabel = new QLabel(tr("导入类型:"));
-    QComboBox* typeCombo = new QComboBox();
+    auto* typeLabel = new QLabel(tr("导入类型:"));
+    auto* typeCombo = new QComboBox();
     typeCombo->addItem("cURL");
     typeCombo->addItem("wget");
     typeCombo->addItem("HTTPie");
     typeCombo->addItem("Postman (JSON)");
+    typeCombo->addItem("OpenAPI/Swagger URL");
     layout->addWidget(typeLabel);
     layout->addWidget(typeCombo);
 
     // 输入内容
-    QLabel* contentLabel = new QLabel(tr("输入内容:"));
-    QTextEdit* contentEdit = new QTextEdit();
+    auto* contentLabel = new QLabel(tr("输入内容:"));
+    auto* contentEdit = new QTextEdit();
     contentEdit->setPlaceholderText(tr("在此粘贴 cURL 命令或其他格式的请求内容"));
     layout->addWidget(contentLabel);
     layout->addWidget(contentEdit);
 
     // 错误信息标签
     QLabel* errorLabel = new QLabel();
-    errorLabel->setStyleSheet("QLabel { color: red; font-weight: bold; }");
+    errorLabel->setStyleSheet("QLabel { color: red; }");
     errorLabel->setWordWrap(true);
     errorLabel->setVisible(false);
     layout->addWidget(errorLabel);
 
     // 按钮
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
-    QPushButton* okButton = new QPushButton(tr("确定"));
-    QPushButton* cancelButton = new QPushButton(tr("取消"));
+    auto* buttonLayout = new QHBoxLayout();
+    auto* okButton = new QPushButton(tr("确定"));
+    auto* cancelButton = new QPushButton(tr("取消"));
 
     okButton->setStyleSheet("QPushButton { background-color: #007bff; color: white; font-weight: bold; }");
     cancelButton->setStyleSheet("QPushButton { background-color: #6c757d; color: white; font-weight: bold; }");
@@ -2844,6 +3004,16 @@ void HttpClient::showImportDialog(int groupId, const QString& groupName) {
     buttonLayout->addWidget(okButton);
     buttonLayout->addWidget(cancelButton);
     layout->addLayout(buttonLayout);
+
+    // 类型选择改变时更新提示文本
+    connect(typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [contentEdit, typeCombo]() {
+        QString type = typeCombo->currentText();
+        if (type == "OpenAPI/Swagger URL") {
+            contentEdit->setPlaceholderText(tr("输入OpenAPI/Swagger文档的URL\n例如: http://example.com/swagger.json\n或: http://example.com/api-docs"));
+        } else {
+            contentEdit->setPlaceholderText(tr("在此粘贴 cURL 命令或其他格式的请求内容"));
+        }
+    });
 
     // 连接取消按钮
     connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
@@ -2877,8 +3047,7 @@ void HttpClient::showImportDialog(int groupId, const QString& groupName) {
         }
 
         // 尝试处理导入
-        QString errorMessage;
-        if (processImport(groupId, requestName, importType, content, errorMessage)) {
+        if (QString errorMessage; processImport(groupId, requestName, importType, content, errorMessage)) {
             // 导入成功，关闭对话框
             dialog.accept();
         } else {
@@ -2920,6 +3089,12 @@ bool HttpClient::processImport(int groupId, const QString& requestName, const QS
             request.port = 443;
             request.path = "/";
             errorMessage = tr("wget 格式暂时不支持，已创建默认请求");
+        } else if (importType == "OpenAPI/Swagger URL") {
+            // 处理 OpenAPI/Swagger 文档 URL 导入
+            if (!processSwaggerImport(groupId, requestName, content, errorMessage)) {
+                return false;
+            }
+            return true; // processSwaggerImport 会处理所有请求的保存
         } else {
             // 默认创建基本的GET请求
             request = HttpClientStore::HttpRequestEntity(groupId, requestName);
@@ -3026,9 +3201,14 @@ HttpClientStore::HttpRequestEntity HttpClient::parseCurlCommand(const QString& c
 
     QString cmd = curlCommand.trimmed();
 
+    // 预处理：处理多行命令，合并用反斜杠连接的行
+    cmd = cmd.replace(QRegularExpression(R"(\\\s*\n\s*)"), " ");
+    cmd = cmd.replace(QRegularExpression(R"(\\\s*\r?\n\s*)"), " ");
+    cmd = cmd.simplified(); // 移除多余空格
+
     // 移除开头的 curl 命令
     if (cmd.startsWith("curl ")) {
-        cmd = cmd.mid(5);
+        cmd = cmd.mid(5).trimmed();
     }
 
     // 用于存储解析的数据
@@ -3041,8 +3221,8 @@ HttpClientStore::HttpRequestEntity HttpClient::parseCurlCommand(const QString& c
     QRegularExpression paramRegex;
     QRegularExpressionMatchIterator iterator;
 
-    // 解析 URL (通常在最后或者在 -X 之前)
-    QRegularExpression urlRegex(R"(['""]?(https?://[^\s'"]+)['""]?)");
+    // 解析 URL - 改进匹配，支持更复杂的URL
+    QRegularExpression urlRegex(R"(['"]?(https?://[^\s'"\\]+)['"]?)");
     QRegularExpressionMatch urlMatch = urlRegex.match(cmd);
     if (urlMatch.hasMatch()) {
         QString url = urlMatch.captured(1);
@@ -3072,22 +3252,22 @@ HttpClientStore::HttpRequestEntity HttpClient::parseCurlCommand(const QString& c
     }
 
     // 解析请求方法 -X 或 --request (支持大小写和引号)
-    paramRegex.setPattern(R"(-X\s+['""]?([A-Za-z]+)['""]?|--request\s+['""]?([A-Za-z]+)['""]?)");
-    iterator = paramRegex.globalMatch(cmd);
-    while (iterator.hasNext()) {
-        QRegularExpressionMatch match = iterator.next();
-        QString method = match.captured(1).isEmpty() ? match.captured(2) : match.captured(1);
-        if (!method.isEmpty()) {
-            request.method = method.toUpper();
-        }
+    paramRegex.setPattern(R"((?:-X|--request)\s+['"]?([A-Za-z]+)['"]?)");
+    QRegularExpressionMatch methodMatch = paramRegex.match(cmd);
+    if (methodMatch.hasMatch()) {
+        request.method = methodMatch.captured(1).toUpper();
     }
 
-    // 解析请求头 -H 或 --header
-    paramRegex.setPattern(R"(-H\s+['""]([^'""]+)['""]|--header\s+['""]([^'""]+)['""])");
+    // 解析请求头 -H 或 --header - 改进支持复杂内容
+    paramRegex.setPattern(R"((?:-H|--header)\s+(['"])((?:\\.|(?!\1)[^\\])*)\1)");
     iterator = paramRegex.globalMatch(cmd);
     while (iterator.hasNext()) {
         QRegularExpressionMatch match = iterator.next();
-        QString headerLine = match.captured(1).isEmpty() ? match.captured(2) : match.captured(1);
+        QString headerLine = match.captured(2);
+
+        // 处理转义字符
+        headerLine = headerLine.replace(R"(\")", "\"");
+        headerLine = headerLine.replace(R"(\\)", "\\");
 
         if (headerLine.contains(":")) {
             QStringList parts = headerLine.split(":", Qt::SkipEmptyParts);
@@ -3116,17 +3296,23 @@ HttpClientStore::HttpRequestEntity HttpClient::parseCurlCommand(const QString& c
         }
     }
 
-    // 解析 Cookie -b 或 --cookie
-    paramRegex.setPattern(R"(-b\s+['""]([^'""]+)['""]|--cookie\s+['""]([^'""]+)['""])");
+    // 解析 Cookie -b 或 --cookie - 改进支持复杂格式
+    paramRegex.setPattern(R"((?:-b|--cookie)\s+(['"])((?:\\.|(?!\1)[^\\])*)\1)");
     iterator = paramRegex.globalMatch(cmd);
     while (iterator.hasNext()) {
         QRegularExpressionMatch match = iterator.next();
-        QString cookieLine = match.captured(1).isEmpty() ? match.captured(2) : match.captured(1);
+        QString cookieLine = match.captured(2);
 
+        // 处理转义字符
+        cookieLine = cookieLine.replace(R"(\")", "\"");
+        cookieLine = cookieLine.replace(R"(\\)", "\\");
+
+        // 解析cookie字符串 - 支持key=value; key2=value2格式
         QStringList cookieParts = cookieLine.split(";", Qt::SkipEmptyParts);
         for (const QString& cookiePart : cookieParts) {
-            if (cookiePart.contains("=")) {
-                QStringList parts = cookiePart.split("=", Qt::SkipEmptyParts);
+            QString trimmedPart = cookiePart.trimmed();
+            if (trimmedPart.contains("=")) {
+                QStringList parts = trimmedPart.split("=", Qt::SkipEmptyParts);
                 if (parts.size() >= 2) {
                     QVariantMap cookie;
                     cookie["key"] = parts[0].trimmed();
@@ -3138,23 +3324,75 @@ HttpClientStore::HttpRequestEntity HttpClient::parseCurlCommand(const QString& c
         }
     }
 
-    // 解析请求体 -d 或 --data
-    paramRegex.setPattern(R"(-d\s+['""]([^'""]*)['""]|--data\s+['""]([^'""]*)['""]|-d\s+([^\s]+)|--data\s+([^\s]+))");
+    // 解析数据 -d, --data, --data-raw - 改进支持复杂JSON
+    paramRegex.setPattern(R"((?:--data-raw)\s+(['"])((?:\\.|(?!\1)[^\\])*)\1|(?:-d|--data)\s+(['"])((?:\\.|(?!\3)[^\\])*)\3|(?:--data-raw)\s+([^\s]+)|(?:-d|--data)\s+([^\s]+))");
     iterator = paramRegex.globalMatch(cmd);
     while (iterator.hasNext()) {
         QRegularExpressionMatch match = iterator.next();
         QString data;
-        for (int i = 1; i <= 4; ++i) {
-            if (!match.captured(i).isEmpty()) {
-                data = match.captured(i);
-                break;
-            }
+        bool isRaw = false;
+
+        // 检查哪个捕获组有内容
+        if (!match.captured(2).isEmpty()) {
+            // --data-raw with quotes
+            data = match.captured(2);
+            isRaw = true;
+        } else if (!match.captured(4).isEmpty()) {
+            // -d/--data with quotes
+            data = match.captured(4);
+        } else if (!match.captured(5).isEmpty()) {
+            // --data-raw without quotes
+            data = match.captured(5);
+            isRaw = true;
+        } else if (!match.captured(6).isEmpty()) {
+            // -d/--data without quotes
+            data = match.captured(6);
         }
+
         if (!data.isEmpty()) {
+            // 处理转义字符
+            data = data.replace(R"(\")", "\"");
+            data = data.replace(R"(\\)", "\\");
+            data = data.replace(R"(\n)", "\n");
+            data = data.replace(R"(\t)", "\t");
+
             if (body.isEmpty()) {
                 body = data;
             } else {
-                body += "&" + data;
+                // --data-raw 原样追加，--data 用&连接
+                if (isRaw) {
+                    body += data;
+                } else {
+                    body += "&" + data;
+                }
+            }
+        }
+    }
+
+    // 解析用户认证 -u 或 --user
+    QString username, password;
+    paramRegex.setPattern(R"((?:-u|--user)\s+(['"])((?:\\.|(?!\1)[^\\])*)\1|(?:-u|--user)\s+([^\s]+))");
+    QRegularExpressionMatch userMatch = paramRegex.match(cmd);
+    if (userMatch.hasMatch()) {
+        QString userCredentials;
+        if (!userMatch.captured(2).isEmpty()) {
+            // With quotes
+            userCredentials = userMatch.captured(2);
+        } else if (!userMatch.captured(3).isEmpty()) {
+            // Without quotes
+            userCredentials = userMatch.captured(3);
+        }
+
+        if (!userCredentials.isEmpty()) {
+            // 处理转义字符
+            userCredentials = userCredentials.replace(R"(\")", "\"");
+            userCredentials = userCredentials.replace(R"(\\)", "\\");
+
+            // 分割用户名和密码 (格式: username:password)
+            QStringList parts = userCredentials.split(":", Qt::KeepEmptyParts);
+            if (parts.size() >= 1) {
+                username = parts[0];
+                password = parts.size() > 1 ? parts.mid(1).join(":") : "";
             }
         }
     }
@@ -3163,6 +3401,459 @@ HttpClientStore::HttpRequestEntity HttpClient::parseCurlCommand(const QString& c
     request.headers = HttpClientStore::HttpRequestEntity::headersToJson(headers);
     request.cookies = HttpClientStore::HttpRequestEntity::cookiesToJson(cookies);
     request.body = body;
+    request.user = HttpClientStore::HttpRequestEntity::userToJson(username, password, !username.isEmpty());
 
     return request;
+}
+
+bool HttpClient::processSwaggerImport(int groupId, const QString& baseName, const QString& url, QString& errorMessage) {
+    // 验证URL格式
+    QUrl swaggerUrl(url);
+    if (!swaggerUrl.isValid()) {
+        errorMessage = tr("无效的URL格式");
+        return false;
+    }
+
+    // 创建网络请求获取 Swagger 文档
+    QNetworkRequest request(swaggerUrl);
+    request.setHeader(QNetworkRequest::UserAgentHeader, "lele-tools HTTP Client");
+    request.setRawHeader("Accept", "application/json, application/x-yaml, text/plain, */*");
+
+    // 同步获取响应 (使用事件循环等待)
+    QEventLoop loop;
+    QString responseData;
+    bool requestSuccess = false;
+
+    QNetworkReply* reply = m_networkManager->get(request);
+
+    // 设置超时
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    timeout.start(15000); // 15秒超时
+
+    connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    connect(reply, &QNetworkReply::finished, [&]() {
+        timeout.stop();
+        if (reply->error() == QNetworkReply::NoError) {
+            responseData = reply->readAll();
+            requestSuccess = true;
+        } else {
+            errorMessage = tr("网络请求失败: %1").arg(reply->errorString());
+        }
+        loop.quit();
+    });
+
+    // 等待请求完成
+    loop.exec();
+    reply->deleteLater();
+
+    if (!requestSuccess) {
+        return false;
+    }
+
+    if (responseData.isEmpty()) {
+        errorMessage = tr("获取到空的文档内容");
+        return false;
+    }
+
+    // 尝试解析为 JSON
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(responseData.toUtf8(), &parseError);
+
+    if (doc.isNull()) {
+        errorMessage = tr("解析JSON文档失败: %1").arg(parseError.errorString());
+        return false;
+    }
+
+    QJsonObject rootObj = doc.object();
+
+    // 验证是否为有效的 OpenAPI/Swagger 文档
+    if (!rootObj.contains("swagger") && !rootObj.contains("openapi")) {
+        errorMessage = tr("不是有效的OpenAPI/Swagger文档");
+        return false;
+    }
+
+    // 获取基础信息
+    QJsonObject infoObj = rootObj["info"].toObject();
+    QString apiTitle = infoObj["title"].toString();
+    QString apiVersion = infoObj["version"].toString();
+
+    // 获取服务器信息
+    QString baseHost = "localhost";
+    QString baseProtocol = "https";
+    int basePort = 443;
+    QString basePath = "";
+
+    // OpenAPI 3.x 格式
+    if (rootObj.contains("servers")) {
+        QJsonArray servers = rootObj["servers"].toArray();
+        if (!servers.isEmpty()) {
+            QJsonObject firstServer = servers[0].toObject();
+            QString serverUrl = firstServer["url"].toString();
+            QUrl parsedServerUrl(serverUrl);
+            if (parsedServerUrl.isValid()) {
+                baseProtocol = parsedServerUrl.scheme();
+                baseHost = parsedServerUrl.host();
+                basePort = parsedServerUrl.port(baseProtocol == "https" ? 443 : 80);
+                basePath = parsedServerUrl.path();
+            }
+        }
+    }
+    // Swagger 2.0 格式
+    else if (rootObj.contains("host")) {
+        baseHost = rootObj["host"].toString();
+        baseProtocol = rootObj["schemes"].toArray().contains("https") ? "https" : "http";
+        basePort = baseProtocol == "https" ? 443 : 80;
+        basePath = rootObj["basePath"].toString();
+    }
+
+    // 解析路径和操作
+    QJsonObject paths = rootObj["paths"].toObject();
+    int requestCount = 0;
+
+    for (auto pathIter = paths.begin(); pathIter != paths.end(); ++pathIter) {
+        QString pathTemplate = pathIter.key();
+        QJsonObject pathObj = pathIter.value().toObject();
+
+        // 遍历每个HTTP方法
+        QStringList httpMethods = {"get", "post", "put", "delete", "patch", "head", "options"};
+        for (const QString& method : httpMethods) {
+            if (pathObj.contains(method)) {
+                QJsonObject operationObj = pathObj[method].toObject();
+
+                // 创建请求名称
+                QString operationId = operationObj["operationId"].toString();
+                QString summary = operationObj["summary"].toString();
+
+                QString requestName;
+                if (!operationId.isEmpty()) {
+                    requestName = QString("%1_%2_%3").arg(baseName).arg(method.toUpper()).arg(operationId);
+                } else if (!summary.isEmpty()) {
+                    requestName = QString("%1_%2_%3").arg(baseName).arg(method.toUpper()).arg(summary.left(20));
+                } else {
+                    requestName = QString("%1_%2_%3").arg(baseName).arg(method.toUpper()).arg(pathTemplate.section('/', -1));
+                }
+
+                // 确保请求名称唯一
+                int suffix = 1;
+                QString originalName = requestName;
+                while (m_requestManager->requestExists(requestName, groupId)) {
+                    requestName = QString("%1_%2").arg(originalName).arg(suffix++);
+                }
+
+                // 创建请求实体
+                HttpClientStore::HttpRequestEntity request(groupId, requestName);
+                request.method = method.toUpper();
+                request.protocol = baseProtocol;
+                request.host = baseHost;
+                request.port = basePort;
+                request.path = basePath + pathTemplate;
+                request.bodyType = "raw";
+
+                // 处理参数
+                QList<QVariantMap> parameters;
+                QList<QVariantMap> headers;
+                QString requestBody;
+
+                // 解析参数
+                if (operationObj.contains("parameters")) {
+                    QJsonArray params = operationObj["parameters"].toArray();
+                    for (const auto& paramValue : params) {
+                        QJsonObject param = paramValue.toObject();
+                        QString paramName = param["name"].toString();
+                        QString paramIn = param["in"].toString();
+                        bool required = param["required"].toBool();
+
+                        QVariantMap paramMap;
+                        paramMap["key"] = paramName;
+                        paramMap["value"] = ""; // 用户需要填写
+                        paramMap["enabled"] = required;
+
+                        if (paramIn == "query") {
+                            parameters.append(paramMap);
+                        } else if (paramIn == "header") {
+                            headers.append(paramMap);
+                        }
+                    }
+                }
+
+                // 处理请求体 (OpenAPI 3.x)
+                if (operationObj.contains("requestBody")) {
+                    QJsonObject requestBodyObj = operationObj["requestBody"].toObject();
+                    QJsonObject content = requestBodyObj["content"].toObject();
+                    if (content.contains("application/json")) {
+                        headers.append({
+                            {"key", "Content-Type"},
+                            {"value", "application/json"},
+                            {"enabled", true}
+                        });
+                        requestBody = "{\n  \n}"; // 空JSON模板
+                    }
+                }
+
+                // 设置默认的Accept头
+                headers.append({
+                    {"key", "Accept"},
+                    {"value", "application/json"},
+                    {"enabled", true}
+                });
+
+                // 序列化数据
+                request.parameters = HttpClientStore::HttpRequestEntity::parametersToJson(parameters);
+                request.headers = HttpClientStore::HttpRequestEntity::headersToJson(headers);
+                request.body = requestBody;
+
+                // 设置时间戳
+                request.createdAt = QDateTime::currentDateTime();
+                request.updatedAt = QDateTime::currentDateTime();
+
+                // 保存请求
+                if (m_requestManager->saveRequest(request)) {
+                    requestCount++;
+                } else {
+                    qWarning() << "Failed to save request:" << requestName;
+                }
+            }
+        }
+    }
+
+    if (requestCount == 0) {
+        errorMessage = tr("文档中未找到有效的API端点");
+        return false;
+    }
+
+    // 刷新树视图
+    refreshTreeView();
+
+    // 显示成功消息
+    errorMessage = tr("成功导入 %1 个API端点").arg(requestCount);
+
+    return true;
+}
+
+// 搜索功能实现
+void HttpClient::setupSearchUI() {
+    // 初始化搜索组件（已在 setupRequestTreeView 中实现）
+}
+
+void HttpClient::onSearchTextChanged(const QString& text) {
+    // 启用/禁用清除按钮
+    m_clearSearchBtn->setEnabled(!text.isEmpty());
+
+    // 执行搜索
+    if (text.isEmpty()) {
+        clearSearch();
+    } else {
+        performSearch(text);
+    }
+}
+
+void HttpClient::onClearSearchClicked() {
+    m_searchLineEdit->clear();
+    clearSearch();
+}
+
+
+void HttpClient::performSearch(const QString& searchText) {
+    if (!m_requestTreeModel) {
+        return;
+    }
+
+    QString lowerSearchText = searchText.toLower();
+
+    // 遍历所有顶级项（分组）
+    for (int i = 0; i < m_requestTreeModel->rowCount(); ++i) {
+        QStandardItem* groupItem = m_requestTreeModel->item(i);
+        if (!groupItem) continue;
+
+        bool hasVisibleChildren = false;
+
+        // 检查子项（请求）是否匹配
+        for (int j = 0; j < groupItem->rowCount(); ++j) {
+            QStandardItem* requestItem = groupItem->child(j);
+            if (!requestItem) continue;
+
+            // 获取请求ID以查询详细信息
+            int requestId = requestItem->data(Qt::UserRole).toInt();
+            bool requestMatches = matchesRequestSearchCriteria(requestId, lowerSearchText);
+
+            setItemVisibility(requestItem, requestMatches);
+
+            if (requestMatches) {
+                hasVisibleChildren = true;
+                // 高亮匹配结果
+                highlightSearchResults(requestItem, lowerSearchText);
+            }
+        }
+
+        // 设置分组的可见性（只有包含匹配请求时才显示）
+        setItemVisibility(groupItem, hasVisibleChildren);
+
+        if (hasVisibleChildren) {
+            // 展开包含匹配请求的分组
+            m_requestTreeView->expand(groupItem->index());
+        }
+    }
+}
+
+void HttpClient::clearSearch() {
+    if (!m_requestTreeModel) {
+        return;
+    }
+
+    // 显示所有项目并清除高亮
+    for (int i = 0; i < m_requestTreeModel->rowCount(); ++i) {
+        QStandardItem* groupItem = m_requestTreeModel->item(i);
+        if (!groupItem) continue;
+
+        setItemVisibility(groupItem, true);
+        highlightSearchResults(groupItem, ""); // 清除高亮
+
+        for (int j = 0; j < groupItem->rowCount(); ++j) {
+            QStandardItem* requestItem = groupItem->child(j);
+            if (!requestItem) continue;
+
+            setItemVisibility(requestItem, true);
+            highlightSearchResults(requestItem, ""); // 清除高亮
+        }
+    }
+}
+
+bool HttpClient::matchesRequestSearchCriteria(int requestId, const QString& searchText) {
+    if (requestId <= 0 || searchText.isEmpty()) {
+        return true;
+    }
+
+    QString lowerSearchText = searchText.toLower();
+
+    // 检查缓存
+    QString cachedSearchString;
+    if (m_requestSearchCache.contains(requestId)) {
+        cachedSearchString = m_requestSearchCache[requestId];
+    } else {
+        // 从数据库获取请求详细信息并构建搜索字符串
+        HttpClientStore::HttpRequestEntity request = m_requestManager->getRequestById(requestId);
+        if (!request.isValid()) {
+            return false;
+        }
+
+        // 构建完整URL
+        QString fullUrl = QString("%1://%2:%3%4")
+                         .arg(request.protocol.isEmpty() ? "http" : request.protocol)
+                         .arg(request.host.isEmpty() ? "localhost" : request.host)
+                         .arg(request.port <= 0 ? (request.protocol == "https" ? 443 : 80) : request.port)
+                         .arg(request.path.isEmpty() ? "/" : request.path);
+
+        // 组合所有可搜索的文本
+        cachedSearchString = QString("%1 %2 %3 %4 %5")
+                           .arg(request.name)
+                           .arg(fullUrl)
+                           .arg(request.host)
+                           .arg(request.path)
+                           .arg(request.method)
+                           .toLower();
+
+        // 添加到缓存
+        m_requestSearchCache[requestId] = cachedSearchString;
+    }
+
+    // 在缓存的搜索字符串中查找
+    return cachedSearchString.contains(lowerSearchText);
+}
+
+void HttpClient::setItemVisibility(QStandardItem* item, bool visible) {
+    if (!item || !m_requestTreeView) {
+        return;
+    }
+
+    QModelIndex index = item->index();
+    m_requestTreeView->setRowHidden(index.row(), index.parent(), !visible);
+}
+
+void HttpClient::highlightSearchResults(QStandardItem* item, const QString& searchText) {
+    if (!item) {
+        return;
+    }
+
+    if (searchText.isEmpty()) {
+        // 清除高亮 - 恢复默认字体
+        QFont defaultFont = item->font();
+        defaultFont.setBold(false);
+        item->setFont(defaultFont);
+        item->setForeground(QBrush(Qt::black));
+    } else {
+        // 如果文本匹配，设置高亮样式
+        QString itemText = item->text().toLower();
+        if (itemText.contains(searchText.toLower())) {
+            QFont boldFont = item->font();
+            boldFont.setBold(true);
+            item->setFont(boldFont);
+            item->setForeground(QBrush(QColor(0, 100, 200))); // 蓝色高亮
+        } else {
+            // 不匹配时恢复默认样式
+            QFont defaultFont = item->font();
+            defaultFont.setBold(false);
+            item->setFont(defaultFont);
+            item->setForeground(QBrush(Qt::black));
+        }
+    }
+}
+
+// HttpRequestTreeDelegate 实现
+HttpRequestTreeDelegate::HttpRequestTreeDelegate(QObject* parent)
+    : QStyledItemDelegate(parent)
+{
+}
+
+QWidget* HttpRequestTreeDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    Q_UNUSED(option);
+    Q_UNUSED(index);
+
+    QLineEdit* editor = new QLineEdit(parent);
+    editor->setStyleSheet(
+        "QLineEdit {"
+        "    padding: 1px 2px;"
+        "    margin: 0px;"
+        "    border: 2px solid #3b82f6;"
+        "    border-radius: 2px;"
+        "    background-color: white;"
+        "    color: black;"
+        "    font-size: 12px;"
+        "    font-weight: normal;"
+        "}"
+    );
+    editor->setFrame(false); // 移除默认边框
+    return editor;
+}
+
+void HttpRequestTreeDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
+{
+    QString value = index.model()->data(index, Qt::EditRole).toString();
+    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    if (lineEdit) {
+        lineEdit->setText(value);
+        lineEdit->selectAll(); // 选中所有文本便于编辑
+    }
+}
+
+void HttpRequestTreeDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const
+{
+    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    if (lineEdit) {
+        QString value = lineEdit->text().trimmed();
+        if (!value.isEmpty()) {
+            model->setData(index, value, Qt::EditRole);
+        }
+    }
+}
+
+void HttpRequestTreeDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    Q_UNUSED(index);
+
+    // 调整编辑器几何形状，减少padding并确保文本完全可见
+    QRect rect = option.rect;
+    rect.adjust(1, 1, -1, -1); // 稍微缩小以避免与边框重叠
+    editor->setGeometry(rect);
 }

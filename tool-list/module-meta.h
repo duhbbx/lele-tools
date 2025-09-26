@@ -70,6 +70,7 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "Key Remapper", "KeyRemapper"},
 {"xxx", "Chinese Copybook", "ChineseCopybook"},
 {"xxx", "HTTP Client", "HttpClient"},
+{"xxx", "File Search", "FileSearch"},
 };
 
 #endif // MOUDULEMETA_H

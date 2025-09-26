@@ -81,6 +81,7 @@ private:
     void updateStatusBar(const QString& message, bool isError = false);
     QString getJsonValueTypeString(const QJsonValue& value);
     QIcon getJsonValueIcon(const QJsonValue& value);
+    QString formatJsonWithTwoSpaceIndent(const QJsonDocument& doc);
 
     // UI组件
     QVBoxLayout* mainLayout;

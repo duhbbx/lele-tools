@@ -225,7 +225,7 @@ void JsonFormatter::setupInputArea() {
     
     // 性能优化设置
     inputTextEdit->setUndoRedoEnabled(true); // 保持撤销重做功能
-    inputTextEdit->setLineWrapMode(QTextEdit::NoWrap); // 禁用自动换行，提高性能
+    inputTextEdit->setLineWrapMode(QTextEdit::WidgetWidth); // 启用自动换行
     inputLayout->addWidget(inputLabel);
     inputLayout->addWidget(inputTextEdit);
 }
@@ -315,13 +315,13 @@ void JsonFormatter::performValidation() {
 void JsonFormatter::onFormatJson() {
     // 先进行验证
     performValidation();
-    
+
     if (!isValidJson) {
         QMessageBox::warning(this, tr("格式化失败"), tr("请先输入有效的JSON数据"));
         return;
     }
 
-    const QString formatted = QString::fromUtf8(currentJsonDoc.toJson(QJsonDocument::Indented));
+    const QString formatted = formatJsonWithTwoSpaceIndent(currentJsonDoc);
     outputTextEdit->setPlainText(formatted);
     updateJsonTree(currentJsonDoc);
     updateStatusBar(tr("JSON格式化完成"), false);
@@ -503,5 +503,39 @@ QString JsonFormatter::getJsonValueTypeString(const QJsonValue& value) {
 
 QIcon JsonFormatter::getJsonValueIcon(const QJsonValue& value) {
     return QIcon();
+}
+
+QString JsonFormatter::formatJsonWithTwoSpaceIndent(const QJsonDocument& doc) {
+    // 使用默认4空格缩进，然后转换为2空格缩进
+    QString formatted = QString::fromUtf8(doc.toJson(QJsonDocument::Indented));
+
+    // 将4个空格的缩进替换为2个空格
+    QStringList lines = formatted.split('\n');
+    QString result;
+    for (const QString& line : lines) {
+        QString processedLine = line;
+        // 计算行前的空格数量，然后除以2来减少缩进
+        int leadingSpaces = 0;
+        for (const QChar& ch : line) {
+            if (ch == ' ') {
+                leadingSpaces++;
+            } else {
+                break;
+            }
+        }
+
+        if (leadingSpaces > 0) {
+            // 将4空格缩进改为2空格缩进
+            int newSpaces = leadingSpaces / 2;
+            processedLine = QString(newSpaces, ' ') + line.trimmed();
+        }
+
+        result += processedLine;
+        if (&line != &lines.last()) {
+            result += '\n';
+        }
+    }
+
+    return result;
 }
 

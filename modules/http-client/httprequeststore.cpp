@@ -61,6 +61,33 @@ QList<QVariantMap> HttpRequestEntity::cookiesFromJson(const QString& json) {
     return parametersFromJson(json); // 格式相同
 }
 
+QString HttpRequestEntity::userToJson(const QString& username, const QString& password, bool enabled) {
+    QJsonObject obj;
+    obj["username"] = username;
+    obj["password"] = password;
+    obj["enabled"] = enabled;
+    return QJsonDocument(obj).toJson(QJsonDocument::Compact);
+}
+
+QVariantMap HttpRequestEntity::userFromJson(const QString& json) {
+    QVariantMap result;
+    result["username"] = "";
+    result["password"] = "";
+    result["enabled"] = false;
+
+    if (json.isEmpty()) return result;
+
+    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+    if (!doc.isObject()) return result;
+
+    QJsonObject obj = doc.object();
+    result["username"] = obj["username"].toString();
+    result["password"] = obj["password"].toString();
+    result["enabled"] = obj["enabled"].toBool();
+
+    return result;
+}
+
 // === HttpRequestGroupManager 实现 ===
 
 const QString HttpRequestGroupManager::TABLE_NAME = "http_request_groups";
@@ -86,7 +113,7 @@ void HttpRequestGroupManager::initializeTable() {
 
         // 创建索引
         QString indexSql = QString("CREATE INDEX IF NOT EXISTS idx_%1_name ON %1(name)").arg(TABLE_NAME);
-        QueryResult result = m_sqliteManager->execute(indexSql);
+        SqliteWrapper::QueryResult result = m_sqliteManager->execute(indexSql);
         if (!result.success) {
             qWarning() << "Failed to create index:" << result.errorMessage;
         }
@@ -218,6 +245,7 @@ void HttpRequestManager::initializeTable() {
     schema["cookies"] = "TEXT DEFAULT ''";
     schema["body"] = "TEXT DEFAULT ''";
     schema["body_type"] = "TEXT NOT NULL DEFAULT 'raw'";
+    schema["user"] = "TEXT DEFAULT ''";
     schema["created_at"] = "TEXT NOT NULL";
     schema["updated_at"] = "TEXT NOT NULL";
 
@@ -227,15 +255,29 @@ void HttpRequestManager::initializeTable() {
 
         // 创建索引和约束（需要单独执行）
         QString groupIndexSql = QString("CREATE INDEX IF NOT EXISTS idx_%1_group_id ON %1(group_id)").arg(TABLE_NAME);
-        QueryResult result1 = m_sqliteManager->execute(groupIndexSql);
+        SqliteWrapper::QueryResult result1 = m_sqliteManager->execute(groupIndexSql);
         if (!result1.success) {
             qWarning() << "Failed to create group_id index:" << result1.errorMessage;
         }
 
         QString nameIndexSql = QString("CREATE INDEX IF NOT EXISTS idx_%1_name ON %1(name)").arg(TABLE_NAME);
-        QueryResult result2 = m_sqliteManager->execute(nameIndexSql);
+        SqliteWrapper::QueryResult result2 = m_sqliteManager->execute(nameIndexSql);
         if (!result2.success) {
             qWarning() << "Failed to create name index:" << result2.errorMessage;
+        }
+    } else {
+        // 检查是否需要添加新字段
+        QStringList existingColumns = m_sqliteManager->getColumns(TABLE_NAME);
+
+        // 检查user字段是否存在
+        if (!existingColumns.contains("user", Qt::CaseInsensitive)) {
+            QString addColumnSql = QString("ALTER TABLE %1 ADD COLUMN user TEXT DEFAULT ''").arg(TABLE_NAME);
+            SqliteWrapper::QueryResult result = m_sqliteManager->execute(addColumnSql);
+            if (!result.success) {
+                qWarning() << "Failed to add user column:" << result.errorMessage;
+            } else {
+                qDebug() << "Successfully added user column to" << TABLE_NAME;
+            }
         }
     }
 }
@@ -334,6 +376,7 @@ HttpRequestEntity HttpRequestManager::fromVariantMap(const QVariantMap& map) {
     request.cookies = map.value("cookies").toString();
     request.body = map.value("body").toString();
     request.bodyType = map.value("body_type").toString();
+    request.user = map.value("user").toString();
     request.createdAt = QDateTime::fromString(map.value("created_at").toString(), Qt::ISODate);
     request.updatedAt = QDateTime::fromString(map.value("updated_at").toString(), Qt::ISODate);
     return request;
@@ -355,6 +398,7 @@ QVariantMap HttpRequestManager::toVariantMap(const HttpRequestEntity& request) {
     map["cookies"] = request.cookies;
     map["body"] = request.body;
     map["body_type"] = request.bodyType;
+    map["user"] = request.user;
     map["created_at"] = request.createdAt.toString(Qt::ISODate);
     map["updated_at"] = request.updatedAt.toString(Qt::ISODate);
     return map;

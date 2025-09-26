@@ -27,6 +27,8 @@
 #include <QUrlQuery>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QEventLoop>
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
 #include <QMessageBox>
@@ -45,12 +47,27 @@
 #include <QInputDialog>
 #include <QMimeData>
 #include <QDataStream>
+#include <QStyledItemDelegate>
 
 #include "../../common/dynamicobjectbase.h"
 #include "httprequeststore.h"
 
 // 前置声明
 class HttpRequestTreeModel;
+
+// 自定义树视图项委托，用于优化inline编辑样式
+class HttpRequestTreeDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+
+public:
+    explicit HttpRequestTreeDelegate(QObject* parent = nullptr);
+
+    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    void setEditorData(QWidget* editor, const QModelIndex& index) const override;
+    void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+    void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+};
 
 // HTTP请求方法枚举
 enum class HttpMethod {
@@ -170,6 +187,12 @@ struct HttpRequestTab {
     QPushButton* addCookieBtn;
     QPushButton* removeCookieBtn;
 
+    // 用户认证
+    QWidget* authTab;
+    QCheckBox* authEnabledCheck;
+    QLineEdit* usernameEdit;
+    QLineEdit* passwordEdit;
+
     // 请求体
     QComboBox* bodyTypeCombo;
     QTextEdit* bodyEdit;
@@ -268,6 +291,10 @@ private slots:
     // 重命名处理
     void onRequestRenamed(int requestId, const QString& newName, const QString& oldName);
 
+    // 搜索功能
+    void onSearchTextChanged(const QString& text);
+    void onClearSearchClicked();
+
 private:
     void setupUI();
     static void setupToolbar();
@@ -286,7 +313,16 @@ private:
     void selectRequestInTree(const QString& requestName, int groupId);
     void showImportDialog(int groupId, const QString& groupName);
     bool processImport(int groupId, const QString& requestName, const QString& importType, const QString& content, QString& errorMessage);
-    HttpClientStore::HttpRequestEntity parseCurlCommand(const QString& curlCommand, int groupId, const QString& requestName);
+    bool processSwaggerImport(int groupId, const QString& baseName, const QString& url, QString& errorMessage);
+    static HttpClientStore::HttpRequestEntity parseCurlCommand(const QString& curlCommand, int groupId, const QString& requestName);
+
+    // 搜索功能
+    void performSearch(const QString& searchText);
+    void clearSearch();
+    bool matchesRequestSearchCriteria(int requestId, const QString& searchText);
+    void setItemVisibility(QStandardItem* item, bool visible);
+    void highlightSearchResults(QStandardItem* item, const QString& searchText);
+    void setupSearchUI();
 
     // 标签页管理
     HttpRequestTab* createNewTab(const QString& tabName, int requestId = 0, int groupId = 0);
@@ -301,6 +337,7 @@ private:
     void setupTabParametersTab(HttpRequestTab* tab);
     void setupTabHeadersTab(HttpRequestTab* tab);
     void setupTabCookiesTab(HttpRequestTab* tab);
+    void setupTabAuthTab(HttpRequestTab* tab);
     void setupTabBodyTab(HttpRequestTab* tab);
     void setupTabResponseArea(HttpRequestTab* tab);
     void connectTabSignals(HttpRequestTab* tab);
@@ -345,8 +382,14 @@ private:
     // 左侧请求树视图
     QTreeView* m_requestTreeView;
     HttpRequestTreeModel* m_requestTreeModel;
+    HttpRequestTreeDelegate* m_requestTreeDelegate;
     QWidget* m_leftPanel;
     QSplitter* m_horizontalSplitter;
+
+    // 搜索组件
+    QLineEdit* m_searchLineEdit;
+    QPushButton* m_clearSearchBtn;
+    QMap<int, QString> m_requestSearchCache; // 缓存请求的搜索文本
 
     // 存储管理器
     HttpClientStore::HttpRequestGroupManager* m_groupManager;

@@ -47,7 +47,8 @@
       "Bash(timeout 20 cmake --build build --target lele-tools)",
       "Bash(timeout 180 cmake --build build --target lele-tools --verbose)",
       "Bash(timeout 15 cmake --build build --target lele-tools)",
-      "Bash(timeout 30 cmake --build build --clean-first --target lele-tools)"
+      "Bash(timeout 30 cmake --build build --clean-first --target lele-tools)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
