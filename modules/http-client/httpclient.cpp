@@ -124,7 +124,7 @@ QTableWidget::item:selected {
 
 QHeaderView::section {
     background-color: #f8f9fa;
-    padding: 6px;
+    padding: 4px;
     border: 1px solid #dee2e6;
     border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
     border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
