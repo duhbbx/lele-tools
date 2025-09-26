@@ -69,80 +69,103 @@ void HttpClient::setupUI() {
     createNewTab(tr("新请求"));
 
     // 应用样式
-    setStyleSheet(
-        "QWidget {"
-        "    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;"
-        "    font-size: 12px;"
-        "}"
-        "QGroupBox {"
-        "    font-weight: bold;"
-        "    border: 2px solid #cccccc;"
-        "    border-radius: 5px;"
-        "    margin-top: 10px;"
-        "    padding-top: 5px;"
-        "}"
-        "QGroupBox::title {"
-        "    subcontrol-origin: margin;"
-        "    left: 10px;"
-        "    padding: 0 5px 0 5px;"
-        "}"
-        "QPushButton {"
-        "    background-color: #f8f9fa;"
-        "    border: 1px solid #dee2e6;"
-        "    border-radius: 4px;"
-        "    padding: 6px 12px;"
-        "    font-weight: normal;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #e9ecef;"
-        "    border-color: #adb5bd;"
-        "}"
-        "QPushButton:pressed {"
-        "    background-color: #dee2e6;"
-        "}"
-        "QLineEdit, QTextEdit, QComboBox {"
-        "    border: 1px solid #ced4da;"
-        "    padding: 6px;"
-        "    background-color: #ffffff;"
-        "    border-radius: 4px;"
-        "}"
-        "QLineEdit:focus, QTextEdit:focus, QComboBox:focus {"
-        "    border-color: #80bdff;"
-        "    outline: 0;"
-        "}"
-        "QTableWidget {"
-        "    gridline-color: #dee2e6;"
-        "    background-color: #ffffff;"
-        "    alternate-background-color: #f8f9fa;"
-        "}"
-        "QTableWidget::item {"
-        "    padding: 2px;"
-        "    border-bottom: 1px solid #dee2e6;"
-        "}"
-        "QTableWidget::item:selected {"
-        "    background-color: #007bff;"
-        "    color: white;"
-        "}"
-        "QTabWidget::pane {"
-        "    border: 1px solid #c0c0c0;"
-        "    background-color: #ffffff;"
-        "}"
-        "QTabBar::tab {"
-        "    background-color: #f0f0f0;"
-        "    color: #333333;"
-        "    padding: 8px 16px;"
-        "    border: 1px solid #c0c0c0;"
-        "    border-bottom: none;"
-        "}"
-        "QTabBar::tab:selected {"
-        "    background-color: #ffffff;"
-        "    border-bottom: 1px solid #ffffff;"
-        "    font-weight: bold;"
-        "}"
-        "QTabBar::tab:hover {"
-        "    background-color: #e0e0e0;"
-        "}"
-    );
+    setStyleSheet(R"(
+QWidget {
+    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    font-size: 12px;
+}
+QGroupBox {
+    font-weight: bold;
+    border: 2px solid #cccccc;
+    border-radius: 5px;
+    margin-top: 10px;
+    padding-top: 5px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 5px 0 5px;
+}
+QPushButton {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 6px 12px;
+    font-weight: normal;
+}
+QPushButton:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+QPushButton:pressed {
+    background-color: #dee2e6;
+}
+QLineEdit, QTextEdit, QComboBox {
+    border: 1px solid #ced4da;
+    padding: 6px;
+    background-color: #ffffff;
+}
+QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
+    border-color: #80bdff;
+    outline: 0;
+}
+QTableWidget {
+    gridline-color: #dee2e6;
+    background-color: #ffffff;
+    alternate-background-color: #f8f9fa;
+}
+QTableWidget::item {
+    padding: 2px;
+    border-bottom: 1px solid #dee2e6;
+}
+QTableWidget::item:selected {
+    background-color: #007bff;
+    color: white;
+}
+
+QHeaderView::section {
+    background-color: #f8f9fa;
+    padding: 6px;
+    border: 1px solid #dee2e6;
+    border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+    border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+}
+
+QHeaderView::section:last {
+    margin-right: -1px;    /* 解决左右 tab 边框重叠 */
+}
+
+
+QTabWidget::pane {
+    border: 1px solid #c0c0c0;
+    background-color: #ffffff;
+}
+
+QTabWidget::pane QTextEdit {
+    border: none;
+}
+
+QTabBar::tab {
+    background-color: #f0f0f0;
+    color: #333333;
+    padding: 8px 16px;
+    border: 1px solid #c0c0c0;
+    border-bottom: none;   /* 避免和 pane 重叠 */
+    margin-right: -1px;    /* 解决左右 tab 边框重叠 */
+}
+
+QTabBar::tab:last {
+    margin-right: 0px;
+}
+
+QTabBar::tab:selected {
+    background-color: #ffffff;
+    font-weight: bold;
+}
+QTabBar::tab:hover {
+    background-color: #e0e0e0;
+}
+)");
+
 }
 
 void HttpClient::setupToolbar() {
@@ -1018,14 +1041,14 @@ void HttpClient::setupRequestTreeView() {
             this, &HttpClient::onRequestRenamed);
 
     leftLayout->addWidget(m_requestTreeView);
-
-    // 设置样式
+    // 设置样式（现代化）
     m_requestTreeView->setStyleSheet(
         "QTreeView {"
-        "    border: 1px solid #ccc;"
-        "    background-color: #ffffff;"
-        "    selection-background-color: #3b82f6;"
+        "    border: 1px solid #e0e0e0;"
+        "    background-color: #fafafa;"
+        "    selection-background-color: #2563eb;"
         "    outline: none;"
+        "    font-size: 10pt;"
         "}"
         "QTreeView::item {"
         "    height: 24px;"
@@ -1033,13 +1056,21 @@ void HttpClient::setupRequestTreeView() {
         "    border: none;"
         "}"
         "QTreeView::item:hover {"
-        "    background-color: #f0f8ff;"
+        "    background-color: #e8f0fe;"
         "}"
         "QTreeView::item:selected {"
-        "    background-color: #3b82f6;"
+        "    background-color: #2563eb;"
         "    color: white;"
         "}"
+        "QHeaderView::section {"
+        "    background-color: #f3f4f6;"
+        "    padding: 2px 4px;"
+        "    border: none;"
+        "    border-bottom: 1px solid #e5e7eb;"
+        "    font-size: 10pt;"
+        "}"
     );
+
 
     setupContextMenus();
 
@@ -1952,23 +1983,36 @@ void HttpClient::setupTabAuthTab(HttpRequestTab* tab) {
     tab->authEnabledCheck = new QCheckBox(tr("启用 Basic Authentication"));
     layout->addWidget(tab->authEnabledCheck);
 
+    int labelWidth = 70; // 统一 label 宽度
+
     // 用户名
     QHBoxLayout* userLayout = new QHBoxLayout();
-    userLayout->addWidget(new QLabel(tr("用户名:")));
+    QLabel* userLabel = new QLabel(tr("用户名:"));
+    userLabel->setFixedWidth(labelWidth);         // 固定宽度
+    userLayout->addWidget(userLabel);
+
     tab->usernameEdit = new QLineEdit();
     tab->usernameEdit->setPlaceholderText(tr("输入用户名"));
     tab->usernameEdit->setEnabled(false);
+    tab->usernameEdit->setAlignment(Qt::AlignLeft); // 文本左对齐
     userLayout->addWidget(tab->usernameEdit);
+
     layout->addLayout(userLayout);
 
     // 密码
     QHBoxLayout* passLayout = new QHBoxLayout();
-    passLayout->addWidget(new QLabel(tr("密码:")));
+    QLabel* passLabel = new QLabel(tr("密码:"));
+    passLabel->setFixedWidth(labelWidth);         // 固定宽度
+    passLayout->addWidget(passLabel);
+
     tab->passwordEdit = new QLineEdit();
     tab->passwordEdit->setPlaceholderText(tr("输入密码"));
     tab->passwordEdit->setEnabled(false);
+    tab->passwordEdit->setAlignment(Qt::AlignLeft); // 文本左对齐
     passLayout->addWidget(tab->passwordEdit);
+
     layout->addLayout(passLayout);
+
 
     // 说明文本
     QLabel* infoLabel = new QLabel(tr("Basic Authentication 会自动设置 Authorization 请求头"));

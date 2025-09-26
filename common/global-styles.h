@@ -17,6 +17,9 @@ public:
     
     // 获取输入框样式
     static QString getInputStyle();
+
+    // 获取滚动条的样式
+    static QString getScrollBarStyle();
 };
 
 #endif // GLOBAL_STYLES_H

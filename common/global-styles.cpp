@@ -173,6 +173,46 @@ QString GlobalStyles::getInputStyle() {
     )";
 }
 
+QString GlobalStyles::getScrollBarStyle() {
+    return R"(
+QScrollBar:vertical {
+    background: #f5f5f5;
+    width: 8px;
+    margin: 0px;
+    border-radius: 4px;
+}
+QScrollBar::handle:vertical {
+    background: #9ca3af;
+    min-height: 20px;
+    border-radius: 4px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #6b7280;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QScrollBar:horizontal {
+    background: #f5f5f5;
+    height: 8px;
+    margin: 0px;
+    border-radius: 4px;
+}
+QScrollBar::handle:horizontal {
+    background: #9ca3af;
+    min-width: 20px;
+    border-radius: 4px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: #6b7280;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+)";
+
+}
+
 QString GlobalStyles::getGlobalStyle() {
     return QString(R"(
         QWidget {
@@ -229,5 +269,5 @@ QString GlobalStyles::getGlobalStyle() {
         QLabel {
             font-size: 10pt;
         }
-    )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle();
+    )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle() + getScrollBarStyle();
 }
