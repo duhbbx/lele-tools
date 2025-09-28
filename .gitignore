@@ -89,3 +89,5 @@ build-mysql
 cmake-build-claude
 
 nul
+
+ScreenCapture.log

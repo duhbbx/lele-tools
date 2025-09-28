@@ -11,6 +11,7 @@ REGISTER_DYNAMICOBJECT(FileSearch);
 #include <QJsonArray>
 #include <QTextStream>
 #include <QProcess>
+#include <QFormLayout>
 
 // FileSearchSortProxyModel 实现
 FileSearchSortProxyModel::FileSearchSortProxyModel(QObject *parent)

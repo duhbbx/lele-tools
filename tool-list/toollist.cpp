@@ -57,29 +57,6 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
         "    background-color: #3b82f6;"
         "    color: white;"
         "}"
-        "QScrollBar:vertical {"
-        "    background: #f0f0f0;"
-        "    width: 8px;"
-        "    border-radius: 0px;"
-        "}"
-        "QScrollBar::handle:vertical {"
-        "    background: #c0c0c0;"
-        "    border-radius: 0px;"
-        "    min-height: 20px;"
-        "}"
-        "QScrollBar::handle:vertical:hover {"
-        "    background: #a0a0a0;"
-        "}"
-        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
-        "    border: none;"
-        "    background: none;"
-        "}"
-        "QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {"
-        "    background: none;"
-        "}"
-        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {"
-        "    background: none;"
-        "}"
     );
 
     // 按使用频率排序工具后添加到列表
@@ -181,7 +158,8 @@ void ToolList::sortToolsByUsage() const {
         tr("Key Remapper"),
         tr("Chinese Copybook"),
         tr("HTTP Client"),
-        tr("File Search")
+        tr("File Search"),
+        tr("Character Counter")
     };
     Q_UNUSED(translationKeys); // 避免编译器警告
 

@@ -623,7 +623,7 @@ void HttpClient::sendHttpRequest() {
     request.setRawHeader("User-Agent", "HTTP-Client-Tool/1.0");
 
     // 设置请求超时（10秒）
-    request.setTransferTimeout(10000);
+    request.setTransferTimeout(30 * 60 * 1000);
 
     // 获取请求体
     const QByteArray requestBody = buildRequestBody();

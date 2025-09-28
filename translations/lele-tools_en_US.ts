@@ -1297,15 +1297,14 @@ Please install Qt Multimedia module to enable camera functionality</translation>
         <source>捕获错误</source>
         <translation>Capture Error</translation>
     </message>
-<message>
-    <source>屏幕 %1 (%2x%3)</source>
-    <translation>Screen %1 (%2x%3)</translation>
-</message>
-<message>
-    <source>自动保存到文件</source>
-    <translation>Auto Save to File</translation>
-</message>
-
+    <message>
+        <source>屏幕 %1 (%2x%3)</source>
+        <translation>Screen %1 (%2x%3)</translation>
+    </message>
+    <message>
+        <source>自动保存到文件</source>
+        <translation>Auto Save to File</translation>
+    </message>
 </context>
 <context>
     <name>ChineseCopybook</name>
@@ -1990,6 +1989,147 @@ Please install Qt Multimedia module to enable camera functionality</translation>
     <message>
         <source>导入功能开发中...</source>
         <translation></translation>
+    </message>
+    <message>
+        <source>Crontab表达式输入</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解析结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>字段设置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>生成预览</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>计算设置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>当前时间</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>下次执行时间</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>序号</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>执行时间</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>距离现在</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>常用模板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Crontab示例</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>表达式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>说明</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>工具</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>表达式格式错误</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>此表达式表示：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>每分钟执行</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>每小时的第%1分钟执行</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>每天的%1:%2执行</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>在指定时间执行: %1:%2 %3日 %4月 星期%5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>
+
+详细字段：
+分钟: %1
+小时: %2
+日: %3
+月: %4
+星期: %5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>yyyy年MM月dd日</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>hh:mm:ss dddd</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1小时后</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Crontab执行时间表:
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导出Crontab配置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文本文件 (*.txt)</source>
+        <translation type="unfinished">Text Files (*.txt)</translation>
+    </message>
+    <message>
+        <source>Crontab配置导出
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>表达式: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>说明: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确认</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确定要清空所有设置吗？</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3588,6 +3728,230 @@ For example:
     </message>
 </context>
 <context>
+    <name>FileSearch</name>
+    <message>
+        <source>搜索配置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索内容:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入要搜索的文件名或内容...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索路径:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>添加路径</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>移除路径</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>开始搜索</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>停止搜索</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>清空结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索选项</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>使用正则表达式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>区分大小写</source>
+        <translation type="unfinished">Case sensitive</translation>
+    </message>
+    <message>
+        <source>全词匹配</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>包含隐藏文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索文件内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>过滤选项</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>例如: txt,doc,pdf</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件类型:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> KB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>最小大小:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>最大大小:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>修改日期从:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>修改日期到:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>最大结果数:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索结果</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>路径</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>大小</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>修改时间</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>类型</source>
+        <translation type="unfinished">Type</translation>
+    </message>
+    <message>
+        <source>就绪</source>
+        <translation type="unfinished">Ready</translation>
+    </message>
+    <message>
+        <source>复制完整路径</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>复制文件名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>打开文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>打开文件位置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>删除文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请输入搜索内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请添加至少一个搜索路径</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>正在停止搜索...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>选择搜索路径</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>已找到 %1 个文件...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;目录&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件夹</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> 文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索完成: 找到 %1 个文件，用时 %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>路径已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件名已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确认删除</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确定要删除文件 &apos;%1&apos; 吗？
+
+此操作不可恢复。</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件删除成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文件删除失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>FileSearchWorker</name>
+    <message>
+        <source>搜索路径不存在: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>HostsEditor</name>
     <message>
         <source>🛠️ Hosts文件编辑器</source>
@@ -3983,6 +4347,544 @@ For example:
     <message>
         <source>已从收藏移除</source>
         <translation></translation>
+    </message>
+</context>
+<context>
+    <name>HttpClient</name>
+    <message>
+        <source>新请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>提示</source>
+        <translation type="unfinished">Notice</translation>
+    </message>
+    <message>
+        <source>请输入主机地址</source>
+        <translation type="unfinished">Please enter host address</translation>
+    </message>
+    <message>
+        <source>状态: 已取消</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>时间: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>状态: 错误 - HTTP %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求错误: HTTP %1, %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>没有响应数据可复制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功</source>
+        <translation type="unfinished">Success</translation>
+    </message>
+    <message>
+        <source>响应已复制到剪贴板</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>没有响应数据可格式化</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存功能开发中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无请求体</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误</source>
+        <translation type="unfinished">Error</translation>
+    </message>
+    <message>
+        <source>无效的 URL</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>时间: 0ms</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>状态: 发送请求中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>状态: %1 %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请先输入内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>JSON格式化完成</source>
+        <translation type="unfinished">JSON formatting completed</translation>
+    </message>
+    <message>
+        <source>无效的JSON格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>XML格式化完成</source>
+        <translation type="unfinished">XML formatting completed</translation>
+    </message>
+    <message>
+        <source>无效的XML格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求集合</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>搜索请求名称或URL...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>✕</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>名称</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>添加请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>重命名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>删除</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存当前请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>添加分组</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>默认分组</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>分组名称:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>分组名称已存在</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>分组添加失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求名称:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求名称在该分组中已存在</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求添加失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>新名称:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>重命名成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>重命名失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确认删除</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确定要删除 &quot;%1&quot; 吗？</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>删除成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>删除失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>没有打开的请求标签页</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请先在左侧树中选择一个分组或请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>更新请求失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>新建请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请输入请求名称:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>该分组下已存在同名请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存请求失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请选择一个分组来保存新请求，或选择现有请求进行更新</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HTTP 请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>方法:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>协议:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>端口:</source>
+        <translation type="unfinished">Port:</translation>
+    </message>
+    <message>
+        <source>主机:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>例如: api.example.com</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>路径:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>例如: /api/v1/users</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>发送请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>取消</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存</source>
+        <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+        <source>键</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>值</source>
+        <translation type="unfinished">Value</translation>
+    </message>
+    <message>
+        <source>启用</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>添加</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>参数</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求头</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cookies</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>启用 Basic Authentication</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>用户名:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入用户名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>密码:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入密码</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Basic Authentication 会自动设置 Authorization 请求头</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>认证</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>类型:</source>
+        <translation type="unfinished">Type:</translation>
+    </message>
+    <message>
+        <source>格式化</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>在这里输入请求体内容...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求体</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HTTP 响应</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>状态: 就绪</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>时间: --</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>复制</source>
+        <translation type="unfinished">Copy</translation>
+    </message>
+    <message>
+        <source>响应体</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>原始响应</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>新请求 - %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求保存失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求已更新</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求更新失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>保存新请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>选择分组:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请输入请求名称</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求已保存</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>目标分组中已存在同名请求：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求已移动到新分组</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请求移动失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>以下请求在目标分组中已存在同名项，无法移动：
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功移动 %1 个请求到新分组</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>部分成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功移动 %1 个请求，失败 %2 个</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请先选择一个分组</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入请求到分组: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入的请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入类型:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入内容:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>在此粘贴 cURL 命令或其他格式的请求内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>确定</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>输入OpenAPI/Swagger文档的URL
+例如: http://example.com/swagger.json
+或: http://example.com/api-docs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误: 请输入请求名称</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误: 请输入要导入的内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>错误: 该分组下已存在同名请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>导入失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无效的 cURL 命令格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>cURL 命令中未找到有效的 URL</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>wget 格式暂时不支持，已创建默认请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>未知的导入格式，已创建默认请求</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>数据库保存失败，请检查数据库连接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解析过程中发生异常: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解析过程中发生未知错误</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>该分组下已存在同名请求：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>无效的URL格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>网络请求失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>获取到空的文档内容</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>解析JSON文档失败: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>不是有效的OpenAPI/Swagger文档</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文档中未找到有效的API端点</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>成功导入 %1 个API端点</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5640,6 +6542,82 @@ Error message: %2</translation>
     <message>
         <source>
 数据库: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>一月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>二月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>三月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>四月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>五月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>六月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>七月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>八月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>九月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>十月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>十一月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>十二月</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期日</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期一</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期二</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期三</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期四</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期五</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>星期六</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -7823,6 +8801,18 @@ Strength: %3</translation>
     <message>
         <source>Chinese Copybook</source>
         <translation type="unfinished">Chinese Character Practice</translation>
+    </message>
+    <message>
+        <source>HTTP Client</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>File Search</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Character Counter</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

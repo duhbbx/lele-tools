@@ -71,6 +71,7 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "Chinese Copybook", "ChineseCopybook"},
 {"xxx", "HTTP Client", "HttpClient"},
 {"xxx", "File Search", "FileSearch"},
+{"xxx", "Character Counter", "CharacterCounter"},
 };
 
 #endif // MOUDULEMETA_H
