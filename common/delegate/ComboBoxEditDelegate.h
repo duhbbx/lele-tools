@@ -6,6 +6,7 @@
 #ifndef LELE_TOOLS_COMBOBOXEDITDELEGATE_H
 #define LELE_TOOLS_COMBOBOXEDITDELEGATE_H
 
+#include <qabstractitemview.h>
 #include <QStyledItemDelegate>
 #include <QComboBox>
 #include <QLineEdit>
@@ -25,7 +26,7 @@ public:
     }
 
     // 获取下拉选项
-    QStringList options() const {
+    [[nodiscard]] QStringList options() const {
         return m_options;
     }
 
@@ -86,19 +87,37 @@ public:
             lineEdit->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         }
 
+        // —— 这里设置 QCompleter popup 样式 ——
+        if (QCompleter* completer = comboBox->completer()) {
+            if (QAbstractItemView* popup = completer->popup()) {
+                popup->setStyleSheet(R"(
+                QAbstractItemView {
+                    border: 1px solid #c0c0c0;
+                    background: #ffffff;
+                    selection-background-color: #409eff;
+                    selection-color: #ffffff;
+                    outline: 0;
+                }
+                QAbstractItemView::item {
+                    height: 20px;
+                    padding: 4px 4px;
+                }
+            )");
+            }
+        }
+
         return comboBox;
     }
 
     // 将数据设置到编辑器
     void setEditorData(QWidget* editor, const QModelIndex& index) const override {
-        QString value = index.model()->data(index, Qt::EditRole).toString();
-        auto* comboBox = qobject_cast<QComboBox*>(editor);
-        if (comboBox) {
+        const QString value = index.model()->data(index, Qt::EditRole).toString();
+        if (auto* comboBox = qobject_cast<QComboBox*>(editor)) {
             // 设置当前文本（无论是否在列表中）
             comboBox->setCurrentText(value);
 
             // 如果值在选项列表中，选中它
-            int idx = comboBox->findText(value);
+            const int idx = comboBox->findText(value);
             if (idx >= 0) {
                 comboBox->setCurrentIndex(idx);
             }
@@ -106,19 +125,16 @@ public:
     }
 
     // 将编辑器的数据提交到模型
-    void setModelData(QWidget* editor, QAbstractItemModel* model,
-                     const QModelIndex& index) const override {
-        auto* comboBox = qobject_cast<QComboBox*>(editor);
-        if (comboBox) {
+    void setModelData(QWidget* editor, QAbstractItemModel* model,const QModelIndex& index) const override {
+        if (const auto* comboBox = qobject_cast<QComboBox*>(editor)) {
             // 获取当前文本（可能是手动输入的，也可能是选中的）
-            QString value = comboBox->currentText().trimmed();
+            const QString value = comboBox->currentText().trimmed();
             model->setData(index, value, Qt::EditRole);
         }
     }
 
     // 更新编辑器几何形状
-    void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,
-                             const QModelIndex& index) const override {
+    void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         Q_UNUSED(index)
         editor->setGeometry(option.rect);
     }

@@ -1,6 +1,7 @@
 #include "httpclient.h"
 #include <algorithm>
 #include <functional>
+#include <QPainter>
 
 #include "../../common/delegate/MyItemEditDelegate.h"
 #include "../../common/delegate/ComboBoxEditDelegate.h"
@@ -977,48 +978,21 @@ void HttpClient::setupRequestTreeView() {
     // 创建搜索区域
     QWidget* searchWidget = new QWidget();
     QVBoxLayout* searchLayout = new QVBoxLayout(searchWidget);
-    searchLayout->setContentsMargins(0, 0, 0, 5);
+    searchLayout->setContentsMargins(0, 0, 0, 0);
     searchLayout->setSpacing(3);
 
     // 搜索输入框和清除按钮
     QHBoxLayout* searchInputLayout = new QHBoxLayout();
     m_searchLineEdit = new QLineEdit();
     m_searchLineEdit->setPlaceholderText(tr("搜索请求名称或URL..."));
-    m_searchLineEdit->setStyleSheet(
-        "QLineEdit {"
-        "    border: 1px solid #ccc;"
-        "    border-radius: 3px;"
-        "    padding: 4px;"
-        "    font-size: 12px;"
-        "}"
-    );
 
-    m_clearSearchBtn = new QPushButton(tr("✕"));
-    m_clearSearchBtn->setFixedSize(24, 24);
-    m_clearSearchBtn->setStyleSheet(
-        "QPushButton {"
-        "    border: none;"
-        "    background-color: transparent;"
-        "    font-weight: bold;"
-        "    color: #666;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #e0e0e0;"
-        "    border-radius: 12px;"
-        "}"
-    );
-    m_clearSearchBtn->setEnabled(false);
-
-    searchInputLayout->addWidget(m_searchLineEdit);
-    searchInputLayout->addWidget(m_clearSearchBtn);
-
+    searchInputLayout->addWidget(m_searchLineEdit, /*stretch=*/1); // 占满剩余空间
     searchLayout->addLayout(searchInputLayout);
 
     leftLayout->addWidget(searchWidget);
 
     // 连接搜索信号
     connect(m_searchLineEdit, &QLineEdit::textChanged, this, &HttpClient::onSearchTextChanged);
-    connect(m_clearSearchBtn, &QPushButton::clicked, this, &HttpClient::onClearSearchClicked);
 
     // 创建树视图
     m_requestTreeView = new QTreeView();
@@ -1187,16 +1161,7 @@ void HttpClient::loadRequestsForGroup(QStandardItem* groupItem, int groupId) {
         requestItem->setIcon(QIcon(":/icons/http.png"));
         requestItem->setEditable(true); // 允许编辑
 
-        // 根据HTTP方法设置不同的图标和颜色
-        if (method == "GET") {
-            requestItem->setForeground(QBrush(QColor("#2563eb")));
-        } else if (method == "POST") {
-            requestItem->setForeground(QBrush(QColor("#dc2626")));
-        } else if (method == "PUT") {
-            requestItem->setForeground(QBrush(QColor("#ea580c")));
-        } else if (method == "DELETE") {
-            requestItem->setForeground(QBrush(QColor("#dc2626")));
-        }
+        // 颜色由 HttpRequestTreeDelegate::paint 处理，这里不再设置
 
         groupItem->appendRow(requestItem);
     }
@@ -2577,22 +2542,7 @@ void HttpClient::updateTreeViewDisplay() {
                         QString displayText = QString("[%1] %2").arg(request.method).arg(request.name);
                         requestItem->setText(displayText);
 
-                        // 根据HTTP方法设置不同颜色
-                        QColor methodColor;
-                        if (request.method == "GET")
-                            methodColor = QColor("#28a745");
-                        else if (request.method == "POST")
-                            methodColor = QColor("#007bff");
-                        else if (request.method == "PUT")
-                            methodColor = QColor("#ffc107");
-                        else if (request.method == "DELETE")
-                            methodColor = QColor("#dc3545");
-                        else if (request.method == "PATCH")
-                            methodColor = QColor("#17a2b8");
-                        else
-                            methodColor = QColor("#666666");
-
-                        requestItem->setForeground(QBrush(methodColor));
+                        // 颜色由 HttpRequestTreeDelegate::paint 处理，这里不再设置
                     }
                 }
             }
@@ -3755,8 +3705,6 @@ void HttpClient::setupSearchUI() {
 }
 
 void HttpClient::onSearchTextChanged(const QString& text) {
-    // 启用/禁用清除按钮
-    m_clearSearchBtn->setEnabled(!text.isEmpty());
 
     // 执行搜索
     if (text.isEmpty()) {
@@ -3921,6 +3869,87 @@ void HttpClient::highlightSearchResults(QStandardItem* item, const QString& sear
 HttpRequestTreeDelegate::HttpRequestTreeDelegate(QObject* parent)
     : QStyledItemDelegate(parent)
 {
+}
+
+void HttpRequestTreeDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    // 获取显示文本
+    QString text = index.data(Qt::DisplayRole).toString();
+
+    // 检查是否包含方法标记 [METHOD]
+    QRegularExpression methodRegex(R"(^\[([A-Z]+)\]\s+(.+)$)");
+    QRegularExpressionMatch match = methodRegex.match(text);
+
+    if (!match.hasMatch()) {
+        // 如果不是请求项（如分组），使用默认绘制
+        QStyledItemDelegate::paint(painter, option, index);
+        return;
+    }
+
+    // 提取方法和请求名称
+    QString method = match.captured(1);
+    QString requestName = match.captured(2);
+
+    // 绘制背景
+    painter->save();
+    if (option.state & QStyle::State_Selected) {
+        painter->fillRect(option.rect, option.palette.highlight());
+    } else if (option.state & QStyle::State_MouseOver) {
+        painter->fillRect(option.rect, option.palette.midlight());
+    }
+
+    // 设置方法的颜色
+    QColor methodColor;
+    if (method == "GET") {
+        methodColor = QColor("#2563eb"); // 蓝色
+    } else if (method == "POST") {
+        methodColor = QColor("#dc2626"); // 红色
+    } else if (method == "PUT") {
+        methodColor = QColor("#ea580c"); // 橙色
+    } else if (method == "DELETE") {
+        methodColor = QColor("#dc2626"); // 红色
+    } else if (method == "PATCH") {
+        methodColor = QColor("#16a34a"); // 绿色
+    } else {
+        methodColor = QColor("#666666"); // 灰色
+    }
+
+    // 绘制方法部分（带颜色）
+    QRect methodRect = option.rect;
+    methodRect.setLeft(methodRect.left() + 4); // 左边距
+
+    QFont methodFont = option.font;
+    methodFont.setBold(true);
+    painter->setFont(methodFont);
+
+    if (option.state & QStyle::State_Selected) {
+        painter->setPen(option.palette.highlightedText().color());
+    } else {
+        painter->setPen(methodColor);
+    }
+
+    QString methodText = method;
+    QFontMetrics fm(methodFont);
+    int methodWidth = fm.horizontalAdvance(methodText);
+    painter->drawText(methodRect, Qt::AlignLeft | Qt::AlignVCenter, methodText);
+
+    // 绘制请求名称部分（默认颜色）
+    QRect nameRect = methodRect;
+    nameRect.setLeft(nameRect.left() + methodWidth + 6); // 方法后留间距
+
+    QFont nameFont = option.font;
+    nameFont.setBold(false);
+    painter->setFont(nameFont);
+
+    if (option.state & QStyle::State_Selected) {
+        painter->setPen(option.palette.highlightedText().color());
+    } else {
+        painter->setPen(option.palette.text().color());
+    }
+
+    painter->drawText(nameRect, Qt::AlignLeft | Qt::AlignVCenter, requestName);
+
+    painter->restore();
 }
 
 QWidget* HttpRequestTreeDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const

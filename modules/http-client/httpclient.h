@@ -55,7 +55,7 @@
 // 前置声明
 class HttpRequestTreeModel;
 
-// 自定义树视图项委托，用于优化inline编辑样式
+// 自定义树视图项委托，用于优化inline编辑样式和绘制高亮方法
 class HttpRequestTreeDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
@@ -63,6 +63,7 @@ class HttpRequestTreeDelegate : public QStyledItemDelegate
 public:
     explicit HttpRequestTreeDelegate(QObject* parent = nullptr);
 
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     void setEditorData(QWidget* editor, const QModelIndex& index) const override;
     void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
@@ -388,7 +389,7 @@ private:
 
     // 搜索组件
     QLineEdit* m_searchLineEdit;
-    QPushButton* m_clearSearchBtn;
+
     QMap<int, QString> m_requestSearchCache; // 缓存请求的搜索文本
 
     // 存储管理器
