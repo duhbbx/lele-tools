@@ -101,13 +101,30 @@ void Ping::setupUI() {
     // 添加到分割器
     QWidget* topWidget = new QWidget();
     QVBoxLayout* topLayout = new QVBoxLayout(topWidget);
+
+    // 设置布局顶对齐
+    topLayout->setAlignment(Qt::AlignTop);
+
+    // 可选：去掉多余间距
+    topLayout->setSpacing(5);       // 控件间间距
+    topLayout->setContentsMargins(0,0,0,0); // 外边距
+
+
     topLayout->addWidget(inputGroup);
     topLayout->addWidget(controlGroup);
     topLayout->addLayout(buttonLayout);
 
+
+
+
     mainSplitter->addWidget(topWidget);
     mainSplitter->addWidget(resultsWidget);
     mainSplitter->addWidget(statsGroup);
+
+    mainSplitter->setStretchFactor(0, 0); // topWidget 不拉伸
+    mainSplitter->setStretchFactor(1, 1); // resultsWidget 可拉伸
+    mainSplitter->setStretchFactor(2, 0); // statsGroup 不拉伸
+
 
     // 添加到主布局
     mainLayout->addWidget(mainSplitter);
@@ -132,6 +149,9 @@ void Ping::setupInputArea() {
     inputLayout->addWidget(resolveBtn, 0, 2);
     inputLayout->addWidget(ipLabel, 1, 0);
     inputLayout->addWidget(ipValueLabel, 1, 1, 1, 2);
+
+    inputGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+
 }
 
 void Ping::setupControlArea() {
@@ -163,6 +183,9 @@ void Ping::setupControlArea() {
     controlLayout->addWidget(timeoutSpinBox);
     controlLayout->addWidget(continuousCheck);
     controlLayout->addStretch();
+
+    controlGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+
 }
 
 void Ping::setupResultsArea() {
@@ -178,6 +201,8 @@ void Ping::setupResultsArea() {
     resultsTable->horizontalHeader()->setStretchLastSection(true);
     resultsTable->setAlternatingRowColors(true);
     resultsTable->verticalHeader()->setVisible(false);
+
+    resultsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     resultsLayout->addWidget(resultsLabel);
     resultsLayout->addWidget(resultsTable);

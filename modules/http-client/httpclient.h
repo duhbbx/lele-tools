@@ -195,15 +195,15 @@ struct HttpRequestTab {
 
     // 请求体
     QComboBox* bodyTypeCombo;
-    QTextEdit* bodyEdit;
+    QPlainTextEdit* bodyEdit;
     QPushButton* formatBodyBtn;
 
     // 响应区域
     QWidget* responseWidget;
     QGroupBox* responseGroup;
     QTabWidget* responseTabs;
-    QTextEdit* responseBodyEdit;
-    QTextEdit* rawResponseEdit;
+    QPlainTextEdit* responseBodyEdit;
+    QPlainTextEdit* rawResponseEdit;
     QLabel* statusLabel;
     QLabel* timeLabel;
     QPushButton* copyResponseBtn;

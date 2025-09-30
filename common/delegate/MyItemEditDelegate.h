@@ -18,6 +18,7 @@ public:
             lineEdit->setStyleSheet(
                 "border: none;"
                 "padding: 0px;"
+                "margin: 0px;"
                 "background: #eafaea;"
             );
         }

@@ -114,15 +114,20 @@ QTableWidget {
     gridline-color: #dee2e6;
     background-color: #ffffff;
     alternate-background-color: #f8f9fa;
+    outline: none;
 }
 QTableWidget::item {
     outline: 0;
     border-bottom: 1px solid #dee2e6;
 }
+QTableWidget::item:focus {
+    outline: none;
+}
 QTableWidget::item:selected {
     padding: 0px;
     background-color: #007bff;
     color: white;
+    outline: none;
 }
 
 QHeaderView::section {
@@ -369,7 +374,7 @@ void HttpClient::onRequestError(QNetworkReply::NetworkError error) {
         currentTab->statusLabel->setText(
             tr("状态: 错误 - HTTP %1").arg(statusCode)
         );
-        currentTab->responseBodyEdit->setText(
+        currentTab->responseBodyEdit->setPlainText(
             tr("请求错误: HTTP %1, %2").arg(statusCode).arg(errorString)
         );
 
@@ -421,7 +426,7 @@ void HttpClient::onFormatResponseClicked() {
         formatted = response;
     }
 
-    tab->responseBodyEdit->setText(formatted);
+    tab->responseBodyEdit->setPlainText(formatted);
 }
 
 void HttpClient::onSaveResponseClicked() {
@@ -727,7 +732,7 @@ void HttpClient::displayResponse() {
 
     // 显示响应体
     QString responseBody = QString::fromUtf8(tab->responseInfo.body);
-    tab->responseBodyEdit->setText(responseBody);
+    tab->responseBodyEdit->setPlainText(responseBody);
 
     // 显示原始响应
     QString rawResponse = QString("状态行: HTTP/1.1 %1 %2\n")
@@ -742,7 +747,7 @@ void HttpClient::displayResponse() {
     rawResponse += "\n响应体:\n";
     rawResponse += responseBody;
 
-    tab->rawResponseEdit->setText(rawResponse);
+    tab->rawResponseEdit->setPlainText(rawResponse);
 }
 
 QString HttpClient::formatJsonResponse(const QString& json) {
@@ -939,7 +944,7 @@ void HttpClient::onFormatBodyClicked() {
     }
 
     if (formatted != content) {
-        tab->bodyEdit->setText(formatted);
+        tab->bodyEdit->setPlainText(formatted);
         // 格式化成功不再弹出提示
     } else {
         QMessageBox::warning(this, tr("错误"), errorMsg);
@@ -1909,6 +1914,8 @@ void HttpClient::setupTabParametersTab(HttpRequestTab* tab) {
     tab->paramsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     tab->paramsTable->setColumnWidth(2, 60);
 
+    tab->paramsTable->setItemDelegate(new MyDelegate(tab->paramsTable));
+
     layout->addWidget(tab->paramsTable);
 
     // 按钮行
@@ -1965,6 +1972,8 @@ void HttpClient::setupTabCookiesTab(HttpRequestTab* tab) {
     tab->cookiesTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     tab->cookiesTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     tab->cookiesTable->setColumnWidth(2, 60);
+
+    tab->cookiesTable->setItemDelegate(new MyDelegate(tab->cookiesTable));
 
     layout->addWidget(tab->cookiesTable);
 
@@ -2051,7 +2060,7 @@ void HttpClient::setupTabBodyTab(HttpRequestTab* tab) {
     layout->addLayout(topLayout);
 
     // 请求体内容
-    tab->bodyEdit = new QTextEdit();
+    tab->bodyEdit = new QPlainTextEdit();
     tab->bodyEdit->setPlaceholderText(tr("在这里输入请求体内容..."));
     // 取消固定高度，让布局自己决定
     tab->bodyEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -2106,12 +2115,12 @@ void HttpClient::setupTabResponseArea(HttpRequestTab* tab) {
     tab->responseTabs = new QTabWidget();
 
     // 响应体标签页
-    tab->responseBodyEdit = new QTextEdit();
+    tab->responseBodyEdit = new QPlainTextEdit();
     tab->responseBodyEdit->setReadOnly(true);
     tab->responseTabs->addTab(tab->responseBodyEdit, tr("响应体"));
 
     // 原始响应标签页
-    tab->rawResponseEdit = new QTextEdit();
+    tab->rawResponseEdit = new QPlainTextEdit();
     tab->rawResponseEdit->setReadOnly(true);
     tab->rawResponseEdit->setFont(QFont("Consolas", 10));
     tab->responseTabs->addTab(tab->rawResponseEdit, tr("原始响应"));
