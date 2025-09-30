@@ -242,7 +242,7 @@ QTableWidget {
     gridline-color: #dee2e6;
     background-color: #ffffff;
     alternate-background-color: #f8f9fa;
-    border-bottom: none;
+    border-bottom: 1px solid #dee2e6;
 }
 
 /* 表格项样式 - 关键：完全去掉边框，避免与网格线重叠 */

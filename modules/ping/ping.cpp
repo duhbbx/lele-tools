@@ -210,7 +210,6 @@ void Ping::setupResultsArea() {
 
 void Ping::setupStatisticsArea() {
     statsGroup = new QGroupBox("📈 统计信息");
-    statsGroup->setFixedHeight(120);
     statsLayout = new QGridLayout(statsGroup);
 
     sentLabel = new QLabel(tr("已发送:"));

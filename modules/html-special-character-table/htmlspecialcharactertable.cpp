@@ -52,9 +52,9 @@ void HtmlSpecialCharacterTable::setupUI() {
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(10, 10, 10, 10);
 
-    // 1. 顶部搜索区域 - 固定高度
+    // 1. 顶部搜索区域 - 根据内容自适应高度
     setupSearchArea();
-    searchGroup->setFixedHeight(120); // 固定搜索区域高度
+    searchGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
     mainLayout->addWidget(searchGroup);
 
     // 2. 中间内容区域 - 可拉伸
@@ -77,7 +77,6 @@ void HtmlSpecialCharacterTable::setupUI() {
     
     // 创建底部容器，固定高度
     QWidget* bottomWidget = new QWidget();
-    bottomWidget->setFixedHeight(100); // 固定底部区域高度
     QVBoxLayout* bottomLayout = new QVBoxLayout(bottomWidget);
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(5);
@@ -96,19 +95,16 @@ void HtmlSpecialCharacterTable::setupSearchArea() {
     // 搜索框
     searchEdit = new QLineEdit();
     searchEdit->setPlaceholderText(tr("搜索字符、实体或描述..."));
-    searchEdit->setMinimumWidth(200);
     searchLayout->addWidget(new QLabel(tr("搜索:")));
     searchLayout->addWidget(searchEdit);
 
     clearSearchBtn = new QPushButton(tr("🗑️ 清空"));
-    clearSearchBtn->setMaximumWidth(60);
     searchLayout->addWidget(clearSearchBtn);
 
     // 分类过滤
     searchLayout->addWidget(new QLabel(tr("分类:")));
     categoryCombo = new QComboBox();
     categoryCombo->addItems({ "全部", "基本符号", "标点符号", "数学符号", "货币符号", "箭头符号", "希腊字母", "特殊字符" });
-    categoryCombo->setMinimumWidth(120);
     searchLayout->addWidget(categoryCombo);
 
     // 收藏过滤
