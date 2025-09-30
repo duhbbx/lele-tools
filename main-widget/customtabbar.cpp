@@ -16,15 +16,20 @@ CustomTabBar::CustomTabBar(QWidget *parent)
             background-color: #f8f9fa;
             color: #495057;
             padding: 8px 16px;
-            margin-right: 2px;
             border: 1px solid #dee2e6;
             border-bottom: none;
+            border-top: none;
+            margin-right: -1px;
             min-width: 80px;
         }
+
+        QTabBar::tab:last {
+            margin-right: 0px;
+        }
+
         QTabBar::tab:selected {
             background-color: #ffffff;
             color: #212529;
-            border-bottom: 1px solid #ffffff;
         }
         QTabBar::tab:hover {
             background-color: #e9ecef;

@@ -49,7 +49,6 @@ ScreenCaptureAPI::ScreenCaptureAPI(QObject* parent)
     , m_captureWindow(nullptr)
     , m_pinWindow(nullptr)
     , m_isCapturing(false)
-    , m_timeoutTimer(nullptr)
 {
     LOG_INFO("ScreenCaptureAPI", "=== ScreenCaptureAPI构造函数开始 ===");
 
@@ -58,16 +57,6 @@ ScreenCaptureAPI::ScreenCaptureAPI(QObject* parent)
 
     // 初始化GDI缓存以提高截图性能
     Util::initializeGDICache();
-
-    // 创建超时定时器
-    m_timeoutTimer = new QTimer(this);
-    m_timeoutTimer->setSingleShot(true);
-    connect(m_timeoutTimer, &QTimer::timeout, this, [this]() {
-        LOG_WARNING("ScreenCaptureAPI", "截图操作超时");
-        cancelCapture();
-        emit captureCompleted(CaptureResult::Timeout, QImage());
-    });
-
     LOG_INFO("ScreenCaptureAPI", "=== ScreenCaptureAPI构造函数完成 ===");
 }
 
@@ -241,14 +230,7 @@ void ScreenCaptureAPI::onPinWindowCreated()
 void ScreenCaptureAPI::initializeCapture()
 {
     LOG_DEBUG("ScreenCaptureAPI", "初始化截图环境");
-    
     m_isCapturing = true;
-    
-    // 启动超时定时器
-    if (m_config.timeoutMs > 0) {
-        m_timeoutTimer->start(m_config.timeoutMs);
-    }
-    
     emit captureStarted();
 }
 
@@ -257,11 +239,6 @@ void ScreenCaptureAPI::cleanupCapture()
     LOG_DEBUG("ScreenCaptureAPI", "清理截图资源");
     
     m_isCapturing = false;
-    
-    // 停止超时定时器
-    if (m_timeoutTimer->isActive()) {
-        m_timeoutTimer->stop();
-    }
     
     // 清理截图窗口
     if (m_captureWindow) {

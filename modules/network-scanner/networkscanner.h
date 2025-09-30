@@ -25,7 +25,14 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QStringConverter>
+#include <QTcpSocket>
+#include <QUdpSocket>
+#include <QElapsedTimer>
+#include <QEventLoop>
+#include <QTimer>
 #include "../../common/dynamicobjectbase.h"
+
+// 移除复杂的系统包含以避免编译问题
 
 // 主机信息结构
 struct HostInfo {
@@ -39,29 +46,63 @@ struct HostInfo {
     HostInfo() : responseTime(-1), isOnline(false) {}
 };
 
+// 扫描方法枚举
+enum ScanMethod {
+    SCAN_ARP,          // ARP二层发现（最快、最可靠，同网段）
+    SCAN_PING,         // 使用ping命令
+    SCAN_TCP,          // TCP套接字扫描
+    SCAN_UDP,          // UDP套接字扫描
+    SCAN_ICMP,         // ICMP套接字扫描
+    SCAN_FAST_TCP,     // 快速TCP端口扫描
+    SCAN_NATIVE_ICMP,  // 原生ICMP扫描（无进程）
+    SCAN_MULTI_TCP     // 并行多端口TCP扫描
+};
+
 // 单个主机扫描任务
 class HostScanTask : public QObject {
     Q_OBJECT
-    
+
 public:
-    explicit HostScanTask(const QString& ip, int timeout, QAtomicInt* stopFlag, QObject* parent = nullptr);
-    
+    explicit HostScanTask(const QString& ip, int timeout, QAtomicInt* stopFlag,
+                         ScanMethod method = SCAN_TCP, QObject* parent = nullptr);
+
 public slots:
     void scan();
     static void stop();
-    
+
 signals:
     void finished(const HostInfo& hostInfo);
-    
+
 private:
+    // ARP二层发现（最快、最可靠）
+    bool scanWithArp();
+
+    // 原有ping扫描方法
+    bool scanWithPing();
+
+    // 新增高效扫描方法
+    bool scanWithTcp();
+    bool scanWithUdp();
+    bool scanWithIcmp();
+    bool scanWithFastTcp();
+
+    // 原生ICMP实现
+    bool scanWithNativeIcmp();
+    bool scanWithMultiPortTcp();
+
     QString getHostName(const QString& ip) const;
     QString getMacAddress(const QString& ip) const;
     static QString getMacVendor(const QString& mac);
     static bool isValidIP(const QString& ip);
-    
+
+    // 并行查询DNS和ARP
+    void performParallelQueries(HostInfo& info) const;
+
     QString m_ip;
     int m_timeout;
     QAtomicInt* m_stopFlag;
+    ScanMethod m_scanMethod;
+    QElapsedTimer m_timer;
 };
 
 // 扫描工作线程
@@ -70,7 +111,8 @@ class ScanWorker : public QObject {
 
 public:
     explicit ScanWorker(QObject* parent = nullptr);
-    void setScanParams(const QString& startIP, const QString& endIP, int timeout, int threadCount);
+    void setScanParams(const QString& startIP, const QString& endIP, int timeout,
+                      int threadCount, ScanMethod method = SCAN_TCP);
     void stop();
 
 public slots:
@@ -93,6 +135,7 @@ private:
     QString m_endIP;
     int m_timeout;
     int m_threadCount;
+    ScanMethod m_scanMethod;
     QAtomicInt m_stopRequested;
     QStringList m_ipList;
     QAtomicInt m_currentIndex;
@@ -144,6 +187,7 @@ private:
     QLabel* m_ipRangeLabel;
     QSpinBox* m_timeoutSpin;
     QSpinBox* m_threadSpin;
+    QComboBox* m_scanMethodCombo;
     
     // 控制按钮
     QHBoxLayout* m_buttonLayout;

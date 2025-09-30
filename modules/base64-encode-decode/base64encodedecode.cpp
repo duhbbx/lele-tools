@@ -62,17 +62,6 @@ void Base64EncodeDecode::setupToolbar() {
 
     // 状态标签
     statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setFixedHeight(32);
-    statusLabel->setStyleSheet(R"(
-        QLabel {
-            color: #666; 
-            font-weight: bold; 
-            padding: 6px 12px; 
-            background: #f9f9f9; 
-            border-radius: 0px; 
-            border: 1px solid #ddd;
-        }
-    )");
 
     toolbarLayout->addWidget(encodeBtn);
     toolbarLayout->addWidget(decodeBtn);

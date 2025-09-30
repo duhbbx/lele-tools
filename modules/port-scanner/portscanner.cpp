@@ -8,7 +8,7 @@
 #include <QSplitter>
 #include <QScrollBar>
 
-// 注册动态对象
+// 注册动态对�?
 REGISTER_DYNAMICOBJECT(PortScanner);
 
 PortScanner::PortScanner(QWidget *parent)
@@ -31,7 +31,7 @@ PortScanner::PortScanner(QWidget *parent)
     tableTimer->setInterval(10); // 10ms 间隔
     connect(tableTimer, &QTimer::timeout, this, &PortScanner::updateTableBatch);
 
-    // 启动时自动刷新一次
+    // 启动时自动刷新一�?
     QTimer::singleShot(100, this, &PortScanner::refreshPortList);
 }
 
@@ -57,7 +57,7 @@ void PortScanner::setupUI()
     refreshButton->setFixedHeight(35);
     refreshButton->setMinimumWidth(150);
 
-    cancelButton = new QPushButton("❌ 取消扫描");
+    cancelButton = new QPushButton("�?取消扫描");
     cancelButton->setFixedHeight(35);
     cancelButton->setMinimumWidth(120);
     cancelButton->setVisible(false);
@@ -84,34 +84,47 @@ void PortScanner::setupUI()
     searchGroup = new QGroupBox("搜索过滤");
     searchLayout = new QHBoxLayout(searchGroup);
 
+    // 端口过滤下拉框
+    QComboBox* portFilterCombo = new QComboBox();
+    portFilterCombo->addItem("不限", "all");
+    portFilterCombo->addItem("只查询本地端口", "local");
+    portFilterCombo->addItem("只查询远程端口", "remote");
+    portFilterCombo->setFixedWidth(140);
+    portFilterCombo->setObjectName("portFilterCombo");
+
     searchTypeCombo = new QComboBox();
     searchTypeCombo->addItem("全部", "all");
-    searchTypeCombo->addItem("端口号", "port");
-    searchTypeCombo->addItem("进程名", "process");
-    searchTypeCombo->addItem("进程ID", "pid");
+    searchTypeCombo->addItem("端口", "port");
+    searchTypeCombo->addItem("进程名名", "process");
+    searchTypeCombo->addItem("进程名ID", "pid");
     searchTypeCombo->addItem("协议", "protocol");
-    searchTypeCombo->addItem("状态", "state");
+    searchTypeCombo->addItem("状态态", "state");
     searchTypeCombo->setFixedWidth(100);
 
     searchEdit = new QLineEdit();
-    searchEdit->setPlaceholderText("输入搜索关键词...");
+    searchEdit->setPlaceholderText("输入搜索关键字...");
     searchEdit->setFixedHeight(30);
 
     searchButton = new QPushButton("🔍 搜索");
     searchButton->setFixedHeight(30);
     searchButton->setFixedWidth(80);
 
-    clearButton = new QPushButton("❌ 清除");
+    clearButton = new QPushButton("✖ 清除");
     clearButton->setFixedHeight(30);
     clearButton->setFixedWidth(80);
 
+    searchLayout->addWidget(new QLabel("端口过滤:"));
+    searchLayout->addWidget(portFilterCombo);
     searchLayout->addWidget(new QLabel("搜索类型:"));
     searchLayout->addWidget(searchTypeCombo);
-    searchLayout->addWidget(new QLabel("关键词:"));
+    searchLayout->addWidget(new QLabel("关键字:"));
     searchLayout->addWidget(searchEdit);
     searchLayout->addWidget(searchButton);
     searchLayout->addWidget(clearButton);
     searchLayout->addStretch();
+
+    // 连接端口过滤信号
+    connect(portFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PortScanner::searchPorts);
 
     // 表格
     portTable = new QTableWidget();
@@ -124,32 +137,32 @@ void PortScanner::setupUI()
 
 void PortScanner::setupTable()
 {
-    // 设置列
-    QStringList headers = {"协议", "本地地址", "本地端口", "远程地址", "远程端口", "状态", "进程名", "进程ID"};
+    // 设置列?
+    QStringList headers = {"协议", "本地地址", "本地端口", "远程地址", "远程端口", "状态", "进程名", "进程名ID"};
     portTable->setColumnCount(headers.size());
     portTable->setHorizontalHeaderLabels(headers);
 
-    // 表格属性
+    // 表格属性?
     portTable->setAlternatingRowColors(true);
     portTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     portTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     portTable->setSortingEnabled(true);
     portTable->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    // 表头属性
+    // 表头属性?
     QHeaderView* header = portTable->horizontalHeader();
     header->setStretchLastSection(false);
     header->setSectionResizeMode(QHeaderView::Interactive);
 
-    // 设置列宽
+    // 设置列列宽
     portTable->setColumnWidth(0, 60);   // 协议
     portTable->setColumnWidth(1, 120);  // 本地地址
     portTable->setColumnWidth(2, 80);   // 本地端口
     portTable->setColumnWidth(3, 120);  // 远程地址
     portTable->setColumnWidth(4, 80);   // 远程端口
-    portTable->setColumnWidth(5, 100);  // 状态
-    portTable->setColumnWidth(6, 150);  // 进程名
-    portTable->setColumnWidth(7, 80);   // 进程ID
+    portTable->setColumnWidth(5, 100);  // 状态?
+    portTable->setColumnWidth(6, 150);  // 进程名?
+    portTable->setColumnWidth(7, 80);   // 进程名ID
 
     // 垂直表头
     portTable->verticalHeader()->setVisible(false);
@@ -169,7 +182,7 @@ void PortScanner::setupConnections()
 
 void PortScanner::refreshPortList()
 {
-    // 如果已有进程正在运行，先取消
+    // 如果已有进程名正在运行，先取消
     if (currentProcess && currentProcess->state() != QProcess::NotRunning) {
         currentProcess->kill();
         currentProcess->waitForFinished(1000);
@@ -213,7 +226,7 @@ void PortScanner::refreshPortList()
 
                 if (exitCode == 0) {
                     QString output = currentProcess->readAllStandardOutput();
-                    // 开始分批处理
+                    // 开始分批处�?
                     portInfoList.clear();
                     pendingLines = output.split('\n');
                     currentLineIndex = 0;
@@ -222,11 +235,11 @@ void PortScanner::refreshPortList()
                     parseTimer->start();
                 } else {
                     QString errorOutput = currentProcess->readAllStandardError();
-                    if (exitCode != -1) { // -1 表示被手动终止
+                    if (exitCode != -1) { // -1 表示被手动终�?
                         QMessageBox::warning(this, "错误", QString("获取端口信息失败: %1").arg(errorOutput));
                         countLabel->setText("获取失败");
                     } else {
-                        countLabel->setText("扫描已取消");
+                        countLabel->setText("扫描已取消?);
                     }
 
                     progressBar->setVisible(false);
@@ -270,7 +283,7 @@ void PortScanner::cancelScan()
 
 void PortScanner::processBatchLines()
 {
-    const int batchSize = 50; // 每批处理50行
+    const int batchSize = 50; // 每批处理50行?
     int processed = 0;
 
     while (currentLineIndex < pendingLines.size() && processed < batchSize) {
@@ -302,7 +315,7 @@ void PortScanner::processBatchLines()
         }
     }
 
-    // 检查是否完成
+    // 检查是否完�?
     if (currentLineIndex >= pendingLines.size()) {
         parseTimer->stop();
 
@@ -345,7 +358,7 @@ void PortScanner::parseNetstatLineWindows(const QString& line)
     PortInfo info;
     info.protocol = parts[0];
 
-    // 解析本地地址和端口
+    // 解析本地地址和端�?
     QString localAddr = parts[1];
     int lastColon = localAddr.lastIndexOf(':');
     if (lastColon > 0) {
@@ -353,7 +366,7 @@ void PortScanner::parseNetstatLineWindows(const QString& line)
         info.localPort = localAddr.mid(lastColon + 1);
     }
 
-    // 解析远程地址和端口
+    // 解析远程地址和端�?
     if (parts.size() > 2) {
         QString remoteAddr = parts[2];
         int lastColon = remoteAddr.lastIndexOf(':');
@@ -363,20 +376,20 @@ void PortScanner::parseNetstatLineWindows(const QString& line)
         }
     }
 
-    // 状态 (TCP才有)
+    // 状态?(TCP才有)
     if (parts.size() > 3 && info.protocol.toUpper() == "TCP") {
         info.state = parts[3];
         if (parts.size() > 4) {
             info.processId = parts[4];
         }
     } else if (info.protocol.toUpper() == "UDP") {
-        info.state = ""; // UDP无状态
+        info.state = ""; // UDP无状态态?
         if (parts.size() > 3) {
             info.processId = parts[3];
         }
     }
 
-    // 获取进程名
+    // 获取进程名?
     info.processName = getProcessName(info.processId);
 
     portInfoList.append(info);
@@ -393,7 +406,7 @@ void PortScanner::parseNetstatLineLinux(const QString& line)
     PortInfo info;
     info.protocol = parts[0].toUpper();
 
-    // 解析本地地址和端口
+    // 解析本地地址和端�?
     QString localAddr = parts[3];
     int lastColon = localAddr.lastIndexOf(':');
     if (lastColon > 0) {
@@ -401,7 +414,7 @@ void PortScanner::parseNetstatLineLinux(const QString& line)
         info.localPort = localAddr.mid(lastColon + 1);
     }
 
-    // 解析远程地址和端口
+    // 解析远程地址和端�?
     if (parts.size() > 4) {
         QString remoteAddr = parts[4];
         int lastColon = remoteAddr.lastIndexOf(':');
@@ -411,12 +424,12 @@ void PortScanner::parseNetstatLineLinux(const QString& line)
         }
     }
 
-    // 状态
+    // 状态?
     if (parts.size() > 5) {
         info.state = parts[5];
     }
 
-    // 进程信息 (最后一列 PID/进程名)
+    // 进程名信息 (最后一列PID/进程名?
     if (parts.size() > 6) {
         QString processInfo = parts[6];
         if (processInfo != "-") {
@@ -436,7 +449,7 @@ QString PortScanner::getProcessName(const QString& pid)
     if (pid.isEmpty() || pid == "0") return "System";
 
 #ifdef Q_OS_WIN
-    // Windows: 使用tasklist命令获取进程名
+    // Windows: 使用tasklist命令获取进程名?
     QProcess process;
     process.start("tasklist", QStringList() << "/FI" << QString("PID eq %1").arg(pid) << "/FO" << "CSV" << "/NH");
 
@@ -446,7 +459,7 @@ QString PortScanner::getProcessName(const QString& pid)
         if (!lines.isEmpty()) {
             QString line = lines.first().trimmed();
             if (!line.isEmpty()) {
-                // CSV格式: "进程名","PID","会话名","会话#","内存使用"
+                // CSV格式: "进程名?,"PID","会话名?,"会话名#","内存使用"
                 QStringList parts = line.split(',');
                 if (!parts.isEmpty()) {
                     QString processName = parts[0];
@@ -478,12 +491,12 @@ void PortScanner::populateTable(const QList<PortInfo>& portList)
         portTable->setItem(i, 6, new QTableWidgetItem(info.processName));
         portTable->setItem(i, 7, new QTableWidgetItem(info.processId));
 
-        // 根据协议设置行颜色
+        // 根据协议设置列行颜色?
         QColor rowColor;
         if (info.protocol.toUpper() == "TCP") {
-            rowColor = QColor(232, 245, 255); // 淡蓝色
+            rowColor = QColor(232, 245, 255); // 淡蓝�?
         } else {
-            rowColor = QColor(245, 255, 232); // 淡绿色
+            rowColor = QColor(245, 255, 232); // 淡绿�?
         }
 
         for (int j = 0; j < 8; ++j) {
@@ -502,42 +515,82 @@ void PortScanner::searchPorts()
     QString searchText = searchEdit->text().trimmed();
     QString searchType = searchTypeCombo->currentData().toString();
 
-    if (searchText.isEmpty()) {
-        clearSearch();
-        return;
-    }
+    // 获取端口过滤类型
+    QComboBox* portFilterCombo = findChild<QComboBox*>("portFilterCombo");
+    QString portFilter = portFilterCombo ? portFilterCombo->currentData().toString() : "all";
 
     filteredPortInfoList.clear();
 
-    for (const PortInfo& info : portInfoList) {
-        bool match = false;
+    // 用于本地端口去重的集合
+    QSet<QString> localPortSet;
 
-        if (searchType == "all") {
-            match = info.protocol.contains(searchText, Qt::CaseInsensitive) ||
-                   info.localAddress.contains(searchText, Qt::CaseInsensitive) ||
-                   info.localPort.contains(searchText, Qt::CaseInsensitive) ||
-                   info.remoteAddress.contains(searchText, Qt::CaseInsensitive) ||
-                   info.remotePort.contains(searchText, Qt::CaseInsensitive) ||
-                   info.state.contains(searchText, Qt::CaseInsensitive) ||
-                   info.processName.contains(searchText, Qt::CaseInsensitive) ||
-                   info.processId.contains(searchText, Qt::CaseInsensitive);
-        } else if (searchType == "port") {
-            match = info.localPort.contains(searchText, Qt::CaseInsensitive) ||
-                   info.remotePort.contains(searchText, Qt::CaseInsensitive);
-        } else if (searchType == "process") {
-            match = info.processName.contains(searchText, Qt::CaseInsensitive);
-        } else if (searchType == "pid") {
-            match = info.processId.contains(searchText, Qt::CaseInsensitive);
-        } else if (searchType == "protocol") {
-            match = info.protocol.contains(searchText, Qt::CaseInsensitive);
-        } else if (searchType == "state") {
-            match = info.state.contains(searchText, Qt::CaseInsensitive);
+    for (const PortInfo& info : portInfoList) {
+        // 首先应用端口过滤
+        bool portMatch = true;
+        if (portFilter == "local") {
+            // 只查询本地端口：排除远程端口�?0, *, 或空的连�?
+            portMatch = !info.localPort.isEmpty() &&
+                       (info.remotePort == "0" || info.remotePort == "*" || info.remotePort.isEmpty() ||
+                        info.remoteAddress == "0.0.0.0" || info.remoteAddress == "*" || info.remoteAddress.isEmpty());
+
+            // 去重：如果匹配，检查是否已存在
+            if (portMatch) {
+                QString localKey = QString("%1:%2:%3").arg(info.protocol).arg(info.localAddress).arg(info.localPort);
+                if (localPortSet.contains(localKey)) {
+                    continue; // 跳过重复的本地端口
+                }
+                localPortSet.insert(localKey);
+            }
+        } else if (portFilter == "remote") {
+            // 只查询远程端口：只显示有实际远程连接�?
+            portMatch = !info.remotePort.isEmpty() &&
+                       info.remotePort != "0" &&
+                       info.remotePort != "*" &&
+                       !info.remoteAddress.isEmpty() &&
+                       info.remoteAddress != "0.0.0.0" &&
+                       info.remoteAddress != "*";
         }
 
-        if (match) {
+        if (!portMatch) {
+            continue;
+        }
+
+        // 然后应用搜索过滤
+        bool searchMatch = true;
+        if (!searchText.isEmpty()) {
+            if (searchType == "all") {
+                searchMatch = info.protocol.contains(searchText, Qt::CaseInsensitive) ||
+                       info.localAddress.contains(searchText, Qt::CaseInsensitive) ||
+                       info.localPort.contains(searchText, Qt::CaseInsensitive) ||
+                       info.remoteAddress.contains(searchText, Qt::CaseInsensitive) ||
+                       info.remotePort.contains(searchText, Qt::CaseInsensitive) ||
+                       info.state.contains(searchText, Qt::CaseInsensitive) ||
+                       info.processName.contains(searchText, Qt::CaseInsensitive) ||
+                       info.processId.contains(searchText, Qt::CaseInsensitive);
+            } else if (searchType == "port") {
+                searchMatch = info.localPort.contains(searchText, Qt::CaseInsensitive) ||
+                       info.remotePort.contains(searchText, Qt::CaseInsensitive);
+            } else if (searchType == "process") {
+                searchMatch = info.processName.contains(searchText, Qt::CaseInsensitive);
+            } else if (searchType == "pid") {
+                searchMatch = info.processId.contains(searchText, Qt::CaseInsensitive);
+            } else if (searchType == "protocol") {
+                searchMatch = info.protocol.contains(searchText, Qt::CaseInsensitive);
+            } else if (searchType == "state") {
+                searchMatch = info.state.contains(searchText, Qt::CaseInsensitive);
+            }
+        }
+
+        if (searchMatch) {
             filteredPortInfoList.append(info);
         }
     }
+
+    // 按本地端口从小到大排序
+    std::sort(filteredPortInfoList.begin(), filteredPortInfoList.end(),
+              [](const PortInfo& a, const PortInfo& b) {
+                  return a.localPort.toInt() < b.localPort.toInt();
+              });
 
     populateTable(filteredPortInfoList);
     countLabel->setText(QString("显示: %1 / 总数: %2").arg(filteredPortInfoList.size()).arg(portInfoList.size()));
@@ -604,7 +657,7 @@ void PortScanner::exportToFile()
     stream.setEncoding(QStringConverter::Utf8);
 
     // 写入表头
-    QStringList headers = {"协议", "本地地址", "本地端口", "远程地址", "远程端口", "状态", "进程名", "进程ID"};
+    QStringList headers = {"协议", "本地地址", "本地端口", "远程地址", "远程端口", "状态", "进程名", "进程名ID"};
     stream << headers.join(',') << '\n';
 
     // 写入数据
@@ -618,12 +671,12 @@ void PortScanner::exportToFile()
     }
 
     file.close();
-    showStatusMessage(QString("已导出 %1 条记录到 %2").arg(dataList.size()).arg(fileName), 3000);
+    showStatusMessage(QString("已导�?%1 条记录到 %2").arg(dataList.size()).arg(fileName), 3000);
 }
 
 void PortScanner::showStatusMessage(const QString& message, int timeout)
 {
-    // 这里可以添加状态栏消息或者临时提示
+    // 这里可以添加状态态栏消息或者临时提示?
     // 暂时使用简单的工具提示
     countLabel->setToolTip(message);
     QTimer::singleShot(timeout, [this]() {
@@ -636,12 +689,12 @@ void PortScanner::resizeTableColumns()
     // 自动调整列宽
     portTable->resizeColumnsToContents();
 
-    // 确保最小宽度
+    // 确保最小宽�?
     for (int i = 0; i < portTable->columnCount(); ++i) {
         int currentWidth = portTable->columnWidth(i);
         int minWidth = 60;
-        if (i == 1 || i == 3) minWidth = 100; // 地址列
-        if (i == 6) minWidth = 120; // 进程名列
+        if (i == 1 || i == 3) minWidth = 100; // 地址�?
+        if (i == 6) minWidth = 120; // 进程名名列
 
         if (currentWidth < minWidth) {
             portTable->setColumnWidth(i, minWidth);
@@ -651,97 +704,7 @@ void PortScanner::resizeTableColumns()
 
 void PortScanner::applyStyles()
 {
-    this->setStyleSheet(R"(
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #cccccc;
-            border-radius: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-        }
 
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 15px;
-            padding: 0 8px 0 8px;
-            color: #2c3e50;
-        }
-
-        QPushButton {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-weight: bold;
-        }
-
-        QPushButton:hover {
-            background-color: #2980b9;
-        }
-
-        QPushButton:pressed {
-            background-color: #21618c;
-        }
-
-        QPushButton:disabled {
-            background-color: #bdc3c7;
-        }
-
-        QLineEdit {
-            border: 2px solid #bdc3c7;
-            border-radius: 4px;
-            padding: 5px;
-            font-size: 14px;
-        }
-
-        QLineEdit:focus {
-            border-color: #3498db;
-        }
-
-        QComboBox {
-            border: 2px solid #bdc3c7;
-            border-radius: 4px;
-            padding: 5px;
-            background-color: white;
-        }
-
-        QTableWidget {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            gridline-color: #ecf0f1;
-            background-color: white;
-            selection-background-color: #3498db;
-        }
-
-        QTableWidget::item {
-            padding: 8px;
-        }
-
-        QTableWidget::item:selected {
-            background-color: #3498db;
-            color: white;
-        }
-
-        QHeaderView::section {
-            background-color: #34495e;
-            color: white;
-            border: none;
-            padding: 8px;
-            font-weight: bold;
-        }
-
-        QProgressBar {
-            border: 2px solid #bdc3c7;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        QProgressBar::chunk {
-            background-color: #3498db;
-            border-radius: 2px;
-        }
-    )");
 }
 
 void PortScanner::populateTableAsync()
@@ -751,19 +714,19 @@ void PortScanner::populateTableAsync()
     portTable->setRowCount(portInfoList.size());
     countLabel->setText("正在更新表格...");
 
-    // 开始分批更新表格
+    // 开始分批更新表�?
     tableTimer->start();
 }
 
 void PortScanner::updateTableBatch()
 {
-    const int batchSize = 100; // 每批更新100行
+    const int batchSize = 100; // 每批更新100�?
     int processed = 0;
 
     while (currentTableIndex < portInfoList.size() && processed < batchSize) {
         const PortInfo& info = portInfoList[currentTableIndex];
 
-        // 创建表格项
+        // 创建表格�?
         portTable->setItem(currentTableIndex, 0, new QTableWidgetItem(info.protocol));
         portTable->setItem(currentTableIndex, 1, new QTableWidgetItem(info.localAddress));
         portTable->setItem(currentTableIndex, 2, new QTableWidgetItem(info.localPort));
@@ -776,13 +739,13 @@ void PortScanner::updateTableBatch()
         currentTableIndex++;
         processed++;
 
-        // 每处理200行更新一次进度
+        // 每处�?00行更新一次进�?
         if (currentTableIndex % 200 == 0) {
             countLabel->setText(QString("正在更新表格... (%1/%2)").arg(currentTableIndex).arg(portInfoList.size()));
         }
     }
 
-    // 检查是否完成
+    // 检查是否完�?
     if (currentTableIndex >= portInfoList.size()) {
         tableTimer->stop();
         countLabel->setText(QString("端口总数: %1").arg(portInfoList.size()));
@@ -790,7 +753,7 @@ void PortScanner::updateTableBatch()
         // 调整列宽
         resizeTableColumns();
 
-        // 恢复UI状态
+        // 恢复UI状态态?
         progressBar->setVisible(false);
         refreshButton->setEnabled(true);
         cancelButton->setVisible(false);
@@ -818,7 +781,7 @@ void PortScanner::scanPortsWithWindowsAPI()
     countLabel->setText("正在整理数据...");
     QApplication::processEvents();
 
-    // 开始分批更新表格
+    // 开始分批更新表�?
     populateTableAsync();
     filteredPortInfoList = portInfoList;
 }

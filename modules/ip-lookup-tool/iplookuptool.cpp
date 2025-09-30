@@ -9,8 +9,7 @@ REGISTER_DYNAMICOBJECT(IpLookupTool);
 // SingleIpLookup 实现
 SingleIpLookup::SingleIpLookup(QWidget* parent)
     : QWidget(parent)
-    , m_currentReply(nullptr) {
-
+      , m_currentReply(nullptr) {
     m_networkManager = new QNetworkAccessManager(this);
     setupUI();
 }
@@ -229,15 +228,15 @@ void SingleIpLookup::onClearClicked() {
 
 void SingleIpLookup::onCopyResultClicked() {
     QString result = QString("IP地址: %1\n国家: %2\n省/州: %3\n城市: %4\nISP: %5\n组织: %6\n时区: %7\n坐标: %8\nASN: %9")
-                        .arg(m_ipLabel->text())
-                        .arg(m_countryLabel->text())
-                        .arg(m_regionLabel->text())
-                        .arg(m_cityLabel->text())
-                        .arg(m_ispLabel->text())
-                        .arg(m_orgLabel->text())
-                        .arg(m_timezoneLabel->text())
-                        .arg(m_coordinatesLabel->text())
-                        .arg(m_asnLabel->text());
+                     .arg(m_ipLabel->text())
+                     .arg(m_countryLabel->text())
+                     .arg(m_regionLabel->text())
+                     .arg(m_cityLabel->text())
+                     .arg(m_ispLabel->text())
+                     .arg(m_orgLabel->text())
+                     .arg(m_timezoneLabel->text())
+                     .arg(m_coordinatesLabel->text())
+                     .arg(m_asnLabel->text());
 
     QApplication::clipboard()->setText(result);
     QMessageBox::information(this, "成功", "查询结果已复制到剪贴板");
@@ -284,7 +283,7 @@ void SingleIpLookup::lookupIp(const QString& ip) {
     // 这在 MSVC 下可能被当成函数声明（所谓 Most Vexing Parse 问题），结果 networkRequest 就不是对象了。
     // QNetworkRequest networkRequest(QUrl(url));
     // chatgpt 牛逼
-    QNetworkRequest networkRequest {QUrl(url)};
+    QNetworkRequest networkRequest { QUrl(url) };
     networkRequest.setRawHeader(QByteArray("User-Agent"), QByteArray("IP Lookup Tool 1.0"));
 
     m_currentReply = m_networkManager->get(networkRequest);
@@ -295,7 +294,8 @@ void SingleIpLookup::onNetworkReplyFinished() {
     m_lookupBtn->setEnabled(true);
     m_lookupBtn->setText("🔍 查询");
 
-    if (!m_currentReply) return;
+    if (!m_currentReply)
+        return;
 
     if (m_currentReply->error() == QNetworkReply::NoError) {
         QByteArray data = m_currentReply->readAll();
@@ -383,10 +383,9 @@ QString SingleIpLookup::resolveHostname(const QString& hostname) {
 // BatchIpLookup 实现
 BatchIpLookup::BatchIpLookup(QWidget* parent)
     : QWidget(parent)
-    , m_currentIndex(0)
-    , m_isRunning(false)
-    , m_currentReply(nullptr) {
-
+      , m_currentIndex(0)
+      , m_isRunning(false)
+      , m_currentReply(nullptr) {
     m_networkManager = new QNetworkAccessManager(this);
     m_batchTimer = new QTimer(this);
     m_batchTimer->setSingleShot(true);
@@ -533,31 +532,8 @@ void BatchIpLookup::setupUI() {
 
     m_resultTable = new QTableWidget();
     m_resultTable->setColumnCount(6);
-    QStringList headers = {"IP地址", "国家", "省/州", "城市", "ISP", "状态"};
+    QStringList headers = { "IP地址", "国家", "省/州", "城市", "ISP", "状态" };
     m_resultTable->setHorizontalHeaderLabels(headers);
-
-    // 设置表格样式
-    m_resultTable->setStyleSheet(
-        "QTableWidget {"
-        "border: 1px solid #bdc3c7;"
-        "border-radius: 6px;"
-        "gridline-color: #ecf0f1;"
-        "}"
-        "QHeaderView::section {"
-        "background-color: #34495e;"
-        "color: white;"
-        "padding: 8px;"
-        "border: none;"
-        "font-weight: bold;"
-        "}"
-        "QTableWidget::item {"
-        "padding: 8px;"
-        "}"
-        "QTableWidget::item:selected {"
-        "background-color: #3498db;"
-        "color: white;"
-        "}"
-    );
 
     m_resultTable->horizontalHeader()->setStretchLastSection(false);
     m_resultTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -610,7 +586,7 @@ void BatchIpLookup::setupUI() {
     // 组装主布局
     m_mainSplitter->addWidget(m_inputWidget);
     m_mainSplitter->addWidget(m_resultWidget);
-    m_mainSplitter->setSizes({300, 500});
+    m_mainSplitter->setSizes({ 300, 500 });
 
     m_mainLayout->addLayout(m_controlLayout);
     m_mainLayout->addWidget(m_mainSplitter);
@@ -833,7 +809,7 @@ void BatchIpLookup::lookupNextIp() {
 
     // API查询
     QString url = QString("http://ip-api.com/json/%1?fields=status,message,country,regionName,city,isp,org,timezone,lat,lon,as,query").arg(actualIp);
-    QNetworkRequest networkRequest {QUrl(url)};
+    QNetworkRequest networkRequest { QUrl(url) };
     networkRequest.setRawHeader(QByteArray("User-Agent"), QByteArray("IP Lookup Tool 1.0"));
 
     m_currentReply = m_networkManager->get(networkRequest);
@@ -841,7 +817,8 @@ void BatchIpLookup::lookupNextIp() {
 }
 
 void BatchIpLookup::onNetworkReplyFinished() {
-    if (!m_currentReply || !m_isRunning) return;
+    if (!m_currentReply || !m_isRunning)
+        return;
 
     QString originalIp = m_ipList[m_currentIndex];
     IpLookupResult result;
@@ -888,7 +865,7 @@ void BatchIpLookup::onNetworkReplyFinished() {
 }
 
 void BatchIpLookup::displayResult(const QString& ip, const IpLookupResult& result) {
-    m_results.append({ip, result});
+    m_results.append({ ip, result });
 
     int row = m_resultTable->rowCount();
     m_resultTable->insertRow(row);
@@ -997,9 +974,8 @@ void IpLookupTool::setupUI() {
 // IpApiClient 实现
 IpApiClient::IpApiClient(QObject* parent)
     : QObject(parent)
-    , m_currentReply(nullptr)
-    , m_currentProvider(IpApiProvider::IpApi) {
-
+      , m_currentReply(nullptr)
+      , m_currentProvider(IpApiProvider::IpApi) {
     m_networkManager = new QNetworkAccessManager(this);
 }
 
@@ -1045,7 +1021,8 @@ void IpApiClient::getMyPublicIp() {
 }
 
 void IpApiClient::onNetworkReplyFinished() {
-    if (!m_currentReply) return;
+    if (!m_currentReply)
+        return;
 
     if (m_currentReply->error() == QNetworkReply::NoError) {
         QByteArray data = m_currentReply->readAll();
@@ -1063,20 +1040,20 @@ void IpApiClient::onNetworkReplyFinished() {
 
 QString IpApiClient::getApiUrl(const QString& ip, IpApiProvider provider) {
     switch (provider) {
-        case IpApiProvider::IpApi:
-            return QString("http://ip-api.com/json/%1?fields=status,message,country,regionName,city,isp,org,timezone,lat,lon,as,query").arg(ip);
-        case IpApiProvider::IpInfo:
-            return QString("https://ipinfo.io/%1/json").arg(ip);
-        case IpApiProvider::IpStack:
-            return QString("http://api.ipstack.com/%1?access_key=YOUR_API_KEY").arg(ip);
-        case IpApiProvider::IpGeolocation:
-            return QString("https://api.ipgeolocation.io/ipgeo?apiKey=YOUR_API_KEY&ip=%1").arg(ip);
-        case IpApiProvider::FreeGeoIp:
-            return QString("https://freegeoip.app/json/%1").arg(ip);
-        case IpApiProvider::IpData:
-            return QString("https://api.ipdata.co/%1?api-key=YOUR_API_KEY").arg(ip);
-        default:
-            return QString("http://ip-api.com/json/%1").arg(ip);
+    case IpApiProvider::IpApi:
+        return QString("http://ip-api.com/json/%1?fields=status,message,country,regionName,city,isp,org,timezone,lat,lon,as,query").arg(ip);
+    case IpApiProvider::IpInfo:
+        return QString("https://ipinfo.io/%1/json").arg(ip);
+    case IpApiProvider::IpStack:
+        return QString("http://api.ipstack.com/%1?access_key=YOUR_API_KEY").arg(ip);
+    case IpApiProvider::IpGeolocation:
+        return QString("https://api.ipgeolocation.io/ipgeo?apiKey=YOUR_API_KEY&ip=%1").arg(ip);
+    case IpApiProvider::FreeGeoIp:
+        return QString("https://freegeoip.app/json/%1").arg(ip);
+    case IpApiProvider::IpData:
+        return QString("https://api.ipdata.co/%1?api-key=YOUR_API_KEY").arg(ip);
+    default:
+        return QString("http://ip-api.com/json/%1").arg(ip);
     }
 }
 
@@ -1093,12 +1070,12 @@ IpLookupResult IpApiClient::parseResponse(const QByteArray& data, IpApiProvider 
     QJsonObject json = doc.object();
 
     switch (provider) {
-        case IpApiProvider::IpApi:
-            return parseIpApiResponse(json);
-        case IpApiProvider::IpInfo:
-            return parseIpInfoResponse(json);
-        default:
-            return parseIpApiResponse(json);
+    case IpApiProvider::IpApi:
+        return parseIpApiResponse(json);
+    case IpApiProvider::IpInfo:
+        return parseIpInfoResponse(json);
+    default:
+        return parseIpApiResponse(json);
     }
 }
 
@@ -1151,4 +1128,3 @@ IpLookupResult IpApiClient::parseIpInfoResponse(const QJsonObject& json) {
 
     return result;
 }
-

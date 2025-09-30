@@ -39,6 +39,7 @@ struct PortInfo {
     QString state;          // 连接状态
     QString processName;    // 进程名
     QString processId;      // 进程ID
+    QString processPath;    // 进程路径
 };
 
 class PortScanner : public QWidget, public DynamicObjectBase

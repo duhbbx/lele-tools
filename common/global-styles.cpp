@@ -96,7 +96,7 @@ QString GlobalStyles::getButtonStyle() {
 QString GlobalStyles::getInputStyle() {
     return R"(
         QLineEdit, QDoubleSpinBox {
-            border: 2px solid #e1e5e9;
+            border: 1px solid #e1e5e9;
             padding: 2px 2px;
             font-size: 10pt;
             font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
@@ -110,7 +110,7 @@ QString GlobalStyles::getInputStyle() {
             background: transparent;
         }
         QTextEdit, QPlainTextEdit {
-            border: 2px solid #e1e5e9;
+            border: 1px solid #e1e5e9;
             padding: 4px 4px;
             font-size: 10pt;
             font-family: Consolas;
@@ -154,7 +154,6 @@ QString GlobalStyles::getInputStyle() {
 
   QSpinBox {
         border: 1px solid #cccccc;
-        border-radius: 4px;
         padding: 2px 8px;
         font-size: 13px;
         background-color: #ffffff;
@@ -244,28 +243,32 @@ QString GlobalStyles::getGlobalStyle() {
             background-color: #4CAF50;
             border-radius: 5px;
         }
-        QTableWidget {
-            border: 1px solid #dee2e6;
-            gridline-color: #e9ecef;
-            font-size: 10pt;
-            background-color: white;
-        }
-        QTableWidget::item {
-            padding: 4px 8px;
-            font-size: 10pt;
-            border-bottom: 1px solid #e9ecef;
-        }
-        QTableWidget::item:selected {
-            background-color: #e8f5e8;
-            color: #333333;
-        }
-        QHeaderView::section {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            padding: 4px 8px;
-            font-weight: bold;
-            font-size: 10pt;
-        }
+QTableWidget {
+    gridline-color: #dee2e6;
+    background-color: #ffffff;
+    alternate-background-color: #f8f9fa;
+}
+QTableWidget::item {
+    padding: 2px;
+    border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+    border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+}
+QTableWidget::item:selected {
+    background-color: #007bff;
+    color: white;
+}
+
+QHeaderView::section {
+    background-color: #f8f9fa;
+    padding: 4px;
+    border: 1px solid #dee2e6;
+    border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+    border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+}
+
+QHeaderView::section:last {
+    margin-right: -1px;    /* 解决左右 tab 边框重叠 */
+}
         QLabel {
             font-size: 10pt;
         }

@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     // 截图功能固定为显示工具栏模式
 
     this->setWindowTitle(tr("乐乐的工具箱"));
-    this->resize(1200, 800);
+    this->resize(1600, 1200);
 
     // 移除标题栏，设置为无边框窗口
     this->setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
@@ -1201,7 +1201,6 @@ void MainWindow::setupScreenCapture() {
     defaultConfig.hideCursor = false;
     defaultConfig.quality = 95;
     defaultConfig.format = "PNG";
-    defaultConfig.timeoutMs = 0;
     m_screenCapture->setDefaultConfig(defaultConfig);
     qDebug() << "截图默认配置已设置";
 #endif

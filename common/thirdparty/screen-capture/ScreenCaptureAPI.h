@@ -83,7 +83,6 @@ public:
         bool hideCursor = false;                     ///< 是否隐藏鼠标光标
         int quality = 100;                           ///< 图片质量（1-100）
         QString format = "PNG";                      ///< 图片格式
-        int timeoutMs = 30000;                       ///< 超时时间（毫秒）
     };
 
 public:
@@ -249,8 +248,7 @@ private:
     QImage m_lastCaptureImage;                                         ///< 最后一次截图
     bool m_isCapturing;                                                ///< 是否正在截图
     std::function<void(CaptureResult, const QImage&)> m_callback;      ///< 异步回调
-    QTimer* m_timeoutTimer;                                            ///< 超时定时器
-    
+
     // 禁用拷贝构造和赋值
     ScreenCaptureAPI(const ScreenCaptureAPI&) = delete;
     ScreenCaptureAPI& operator=(const ScreenCaptureAPI&) = delete;

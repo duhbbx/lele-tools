@@ -180,12 +180,11 @@ void HttpClient::setupToolbar() {
 // onClearAllClicked function removed - clear all functionality no longer needed
 
 void HttpClient::onSendRequestClicked() {
-    HttpRequestTab* currentTab = getCurrentTab();
+    const HttpRequestTab* currentTab = getCurrentTab();
     if (!currentTab)
         return;
 
-    QString host = currentTab->hostEdit->text().trimmed();
-    if (host.isEmpty()) {
+    if (const QString host = currentTab->hostEdit->text().trimmed(); host.isEmpty()) {
         QMessageBox::information(this, tr("提示"), tr("请输入主机地址"));
         return;
     }
