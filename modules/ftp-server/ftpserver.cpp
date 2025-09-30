@@ -80,14 +80,16 @@ void FTPServer::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
 
-    // 创建菜单栏
+    // 创建菜单栏 - 固定高度，不拉伸
     m_menuBar = new QMenuBar(this);
-    mainLayout->addWidget(m_menuBar);
+    m_menuBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    mainLayout->addWidget(m_menuBar, 0);
 
-    // 创建主分割器
+    // 创建主分割器 - 占据所有剩余空间
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
-    mainLayout->addWidget(m_mainSplitter);
+    mainLayout->addWidget(m_mainSplitter, 1); // 拉伸因子为1，占据所有剩余高度
 
     // 左侧：配置和用户管理
     m_leftTabs = new QTabWidget(this);
@@ -126,9 +128,10 @@ void FTPServer::setupUI()
     // 设置分割器比例
     m_mainSplitter->setSizes({400, 800});
 
-    // 创建状态栏
+    // 创建状态栏 - 固定高度，不拉伸
     m_statusBar = new QStatusBar(this);
-    mainLayout->addWidget(m_statusBar);
+    m_statusBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    mainLayout->addWidget(m_statusBar, 0);
 }
 
 void FTPServer::setupConfigWidget()
