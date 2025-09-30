@@ -15,6 +15,14 @@ Ping::Ping() : QWidget(nullptr), DynamicObjectBase(), isPinging(false), currentS
     // 初始化统计数据
     statistics = { 0, 0, 0, 0.0, 999999.0, 0.0, 0.0, "" };
 
+    // 初始化进程和定时器
+    pingProcess = nullptr;
+    pingTimer = new QTimer(this);
+    timeoutTimer = new QTimer(this);
+
+    connect(pingTimer, &QTimer::timeout, this, &Ping::onPingFinished);
+    connect(timeoutTimer, &QTimer::timeout, this, &Ping::onPingTimeout);
+
     setupUI();
 
     // 连接信号槽
@@ -278,42 +286,274 @@ void Ping::onResolveHost() {
 }
 
 void Ping::startPingProcess() {
-    // 简化实现：模拟ping结果
-    updateStatus("Ping功能已简化实现", false);
+    if (pingProcess) {
+        delete pingProcess;
+    }
+
+    pingProcess = new QProcess(this);
+    connect(pingProcess, &QProcess::readyReadStandardOutput, this, &Ping::processPingOutput);
+    connect(pingProcess, &QProcess::readyReadStandardError, this, &Ping::processPingError);
+    connect(pingProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &Ping::pingProcessFinished);
+
+    // 构建ping命令
+    QString program;
+    QStringList arguments;
+
+#ifdef Q_OS_WIN
+    program = "ping";
+    arguments << "-n" << "1";  // 发送一个包
+    arguments << "-w" << QString::number(timeoutSpinBox->value());  // 超时时间(ms)
+
+    // 检查是否需要指定包大小(可选)
+    // arguments << "-l" << "32";  // 数据包大小
+
+    arguments << currentHost;
+#else
+    // Linux/Unix/Mac
+    program = "ping";
+    arguments << "-c" << "1";  // 发送一个包
+    arguments << "-W" << QString::number(timeoutSpinBox->value() / 1000);  // 超时时间(秒)
+    arguments << currentHost;
+#endif
+
+    // 启动ping进程
+    pingProcess->start(program, arguments);
+
+    if (!pingProcess->waitForStarted()) {
+        updateStatus("无法启动ping命令", true);
+        onStopPing();
+        return;
+    }
+
+    // 启动超时定时器
+    timeoutTimer->start(timeoutSpinBox->value() + 1000);
 }
 
 void Ping::stopPingProcess() {
-    // 简化实现
+    if (pingProcess && pingProcess->state() != QProcess::NotRunning) {
+        pingProcess->kill();
+        pingProcess->waitForFinished(1000);
+    }
+
+    pingTimer->stop();
+    timeoutTimer->stop();
 }
 
 void Ping::processPingOutput() {
-    // 简化实现
+    if (!pingProcess) return;
+
+    QString output = QString::fromLocal8Bit(pingProcess->readAllStandardOutput());
+
+    if (output.isEmpty()) return;
+
+    // 解析ping输出
+    PingResult result = parsePingOutput(output);
+    result.host = currentHost;
+    result.ip = resolvedIP.isEmpty() ? currentHost : resolvedIP;
+    result.sequenceNumber = ++currentSequence;
+
+    // 添加结果
+    addPingResult(result);
+
+    // 更新统计
+    statistics.packetsSent++;
+    if (result.success) {
+        statistics.packetsReceived++;
+        if (result.responseTime < statistics.minTime) {
+            statistics.minTime = result.responseTime;
+        }
+        if (result.responseTime > statistics.maxTime) {
+            statistics.maxTime = result.responseTime;
+        }
+    } else {
+        statistics.packetsLost++;
+    }
+
+    updateStatistics();
 }
 
 void Ping::processPingError() {
-    // 简化实现
+    if (!pingProcess) return;
+
+    QString error = QString::fromLocal8Bit(pingProcess->readAllStandardError());
+    updateStatus("Ping错误: " + error, true);
 }
 
 void Ping::pingProcessFinished(int exitCode, QProcess::ExitStatus exitStatus) {
-    Q_UNUSED(exitCode)
-    Q_UNUSED(exitStatus)
+    timeoutTimer->stop();
+
+    // 如果进程异常退出
+    if (exitStatus == QProcess::CrashExit) {
+        PingResult result;
+        result.host = currentHost;
+        result.ip = resolvedIP;
+        result.sequenceNumber = ++currentSequence;
+        result.success = false;
+        result.errorMessage = "进程崩溃";
+        addPingResult(result);
+
+        statistics.packetsSent++;
+        statistics.packetsLost++;
+        updateStatistics();
+    }
+    // 如果有输出但是exitCode != 0，表示ping失败
+    else if (exitCode != 0) {
+        // 输出已经在processPingOutput中处理了
+        // 如果没有输出，说明是超时或其他错误
+        if (currentSequence == statistics.packetsSent) {
+            // 已经处理过了
+        } else {
+            PingResult result;
+            result.host = currentHost;
+            result.ip = resolvedIP;
+            result.sequenceNumber = ++currentSequence;
+            result.success = false;
+            result.errorMessage = "请求超时";
+            addPingResult(result);
+
+            statistics.packetsSent++;
+            statistics.packetsLost++;
+            updateStatistics();
+        }
+    }
+
+    // 检查是否继续ping
+    if (isPinging) {
+        if (continuousCheck->isChecked() || currentSequence < countSpinBox->value()) {
+            // 延迟后继续下一次ping
+            pingTimer->start(intervalSpinBox->value());
+        } else {
+            // 完成所有ping
+            onStopPing();
+            updateStatus(QString("Ping完成，共发送%1个包").arg(statistics.packetsSent), false);
+        }
+    }
 }
 
 PingResult Ping::parsePingOutput(const QString& output) {
-    Q_UNUSED(output)
     PingResult result;
+    result.success = false;
+    result.responseTime = 0;
+    result.ttl = 0;
+
+#ifdef Q_OS_WIN
+    // Windows ping输出格式:
+    // 来自 14.215.177.38 的回复: 字节=32 时间=8ms TTL=54
+    // 请求超时。
+
+    QRegularExpression successRegex(R"(来自\s+([^\s]+)\s+的回复.*时间[=<](\d+)ms.*TTL=(\d+))");
+    QRegularExpression timeoutRegex(R"(请求超时|Request timed out|Destination host unreachable|找不到主机)");
+
+    QRegularExpressionMatch match = successRegex.match(output);
+    if (match.hasMatch()) {
+        result.success = true;
+        result.ip = match.captured(1);
+        result.responseTime = match.captured(2).toDouble();
+        result.ttl = match.captured(3).toInt();
+    } else if (timeoutRegex.match(output).hasMatch()) {
+        result.success = false;
+        result.errorMessage = "请求超时";
+    }
+#else
+    // Linux/Mac ping输出格式:
+    // 64 bytes from 14.215.177.38: icmp_seq=1 ttl=54 time=8.123 ms
+
+    QRegularExpression successRegex(R"((\d+)\s+bytes from\s+([^:]+).*ttl=(\d+).*time=([\d.]+)\s*ms)");
+    QRegularExpression timeoutRegex(R"(timeout|no answer|unreachable)");
+
+    QRegularExpressionMatch match = successRegex.match(output);
+    if (match.hasMatch()) {
+        result.success = true;
+        result.ip = match.captured(2);
+        result.ttl = match.captured(3).toInt();
+        result.responseTime = match.captured(4).toDouble();
+    } else if (timeoutRegex.match(output).hasMatch()) {
+        result.success = false;
+        result.errorMessage = "请求超时";
+    }
+#endif
+
     return result;
 }
 
 void Ping::addPingResult(const PingResult& result) {
-    Q_UNUSED(result)
+    pingResults.append(result);
+
+    // 添加到表格
+    int row = resultsTable->rowCount();
+    resultsTable->insertRow(row);
+
+    QTableWidgetItem* seqItem = new QTableWidgetItem(QString::number(result.sequenceNumber));
+    QTableWidgetItem* hostItem = new QTableWidgetItem(result.host);
+    QTableWidgetItem* ipItem = new QTableWidgetItem(result.ip);
+    QTableWidgetItem* timeItem = new QTableWidgetItem(
+        result.success ? QString("%1 ms").arg(result.responseTime, 0, 'f', 1) : "-"
+    );
+    QTableWidgetItem* ttlItem = new QTableWidgetItem(
+        result.success ? QString::number(result.ttl) : "-"
+    );
+    QTableWidgetItem* statusItem = new QTableWidgetItem(
+        result.success ? "✓ 成功" : "✗ " + result.errorMessage
+    );
+
+    // 设置居中对齐
+    seqItem->setTextAlignment(Qt::AlignCenter);
+    timeItem->setTextAlignment(Qt::AlignCenter);
+    ttlItem->setTextAlignment(Qt::AlignCenter);
+    statusItem->setTextAlignment(Qt::AlignCenter);
+
+    // 设置颜色
+    if (result.success) {
+        statusItem->setForeground(QBrush(QColor("#4CAF50")));
+    } else {
+        statusItem->setForeground(QBrush(QColor("#f44336")));
+    }
+
+    resultsTable->setItem(row, 0, seqItem);
+    resultsTable->setItem(row, 1, hostItem);
+    resultsTable->setItem(row, 2, ipItem);
+    resultsTable->setItem(row, 3, timeItem);
+    resultsTable->setItem(row, 4, ttlItem);
+    resultsTable->setItem(row, 5, statusItem);
+
+    // 滚动到最新行
+    resultsTable->scrollToBottom();
+
+    // 更新状态
+    QString status = result.success
+        ? QString("Ping成功: %1ms").arg(result.responseTime, 0, 'f', 1)
+        : QString("Ping失败: %1").arg(result.errorMessage);
+    updateStatus(status, !result.success);
 }
 
 void Ping::updateStatistics() {
+    // 计算丢包率
+    if (statistics.packetsSent > 0) {
+        statistics.lossPercentage = (double)statistics.packetsLost * 100.0 / statistics.packetsSent;
+    } else {
+        statistics.lossPercentage = 0.0;
+    }
+
+    // 计算平均响应时间
+    if (statistics.packetsReceived > 0) {
+        double totalTime = 0;
+        for (const PingResult& result : pingResults) {
+            if (result.success) {
+                totalTime += result.responseTime;
+            }
+        }
+        statistics.avgTime = totalTime / statistics.packetsReceived;
+    } else {
+        statistics.avgTime = 0.0;
+        statistics.minTime = 0.0;
+        statistics.maxTime = 0.0;
+    }
+
     sentValueLabel->setText(QString::number(statistics.packetsSent));
     receivedValueLabel->setText(QString::number(statistics.packetsReceived));
     lossValueLabel->setText(QString("%1%").arg(statistics.lossPercentage, 0, 'f', 1));
-    minValueLabel->setText(QString("%1ms").arg(statistics.minTime, 0, 'f', 1));
+    minValueLabel->setText(QString("%1ms").arg(statistics.minTime == 999999.0 ? 0.0 : statistics.minTime, 0, 'f', 1));
     maxValueLabel->setText(QString("%1ms").arg(statistics.maxTime, 0, 'f', 1));
     avgValueLabel->setText(QString("%1ms").arg(statistics.avgTime, 0, 'f', 1));
 }
@@ -326,7 +566,37 @@ void Ping::updateStatus(const QString& message, bool isError) {
 }
 
 void Ping::onPingFinished() {
+    // 定时器触发，开始下一次ping
+    if (isPinging) {
+        startPingProcess();
+    }
 }
 
 void Ping::onPingTimeout() {
+    // 超时处理
+    if (pingProcess && pingProcess->state() != QProcess::NotRunning) {
+        pingProcess->kill();
+
+        PingResult result;
+        result.host = currentHost;
+        result.ip = resolvedIP;
+        result.sequenceNumber = ++currentSequence;
+        result.success = false;
+        result.errorMessage = "请求超时";
+        addPingResult(result);
+
+        statistics.packetsSent++;
+        statistics.packetsLost++;
+        updateStatistics();
+
+        // 继续下一次ping
+        if (isPinging) {
+            if (continuousCheck->isChecked() || currentSequence < countSpinBox->value()) {
+                pingTimer->start(intervalSpinBox->value());
+            } else {
+                onStopPing();
+                updateStatus(QString("Ping完成，共发送%1个包").arg(statistics.packetsSent), false);
+            }
+        }
+    }
 }

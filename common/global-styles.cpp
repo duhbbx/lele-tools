@@ -252,6 +252,7 @@ QTableWidget::item {
     padding: 2px;
     border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
     border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+    outline: none;       /* 关键：去掉虚线 */
 }
 QTableWidget::item:selected {
     background-color: #007bff;

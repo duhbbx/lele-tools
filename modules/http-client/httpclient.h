@@ -360,7 +360,7 @@ private:
 
     // 表格管理
     void populateParametersTable();
-    void populateHeadersTable();
+    static void populateHeadersTable();
     void populateCookiesTable();
     void addTableRow(QTableWidget* table, const KeyValuePair& pair);
     void removeSelectedTableRows(QTableWidget* table);

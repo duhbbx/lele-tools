@@ -2,11 +2,30 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QRegularExpression>
+#include <QtConcurrent>
 
 REGISTER_DYNAMICOBJECT(CharacterCounter);
 
-CharacterCounter::CharacterCounter() {
+CharacterCounter::CharacterCounter() : isCalculating(false) {
+    // 初始化定时器和监视器
+    updateTimer = new QTimer(this);
+    updateTimer->setSingleShot(true);
+    updateTimer->setInterval(300); // 300ms防抖延迟
+
+    statsWatcher = new QFutureWatcher<CharacterStats>(this);
+
     setupUI();
+
+    // 连接信号
+    connect(updateTimer, &QTimer::timeout, this, &CharacterCounter::performUpdate);
+    connect(statsWatcher, &QFutureWatcher<CharacterStats>::finished, this, &CharacterCounter::onStatsCalculated);
+}
+
+CharacterCounter::~CharacterCounter() {
+    // 等待异步任务完成
+    if (statsWatcher->isRunning()) {
+        statsWatcher->waitForFinished();
+    }
 }
 
 void CharacterCounter::setupUI() {
@@ -29,17 +48,17 @@ void CharacterCounter::setupUI() {
     editorTitle->setStyleSheet("font-weight: bold; font-size: 14px; color: #333; padding: 5px;");
     editorLayout->addWidget(editorTitle);
 
-    // 文本编辑框
-    textEdit = new QTextEdit;
+    // 使用QPlainTextEdit替代QTextEdit以获得更好的大文本性能
+    textEdit = new QPlainTextEdit;
     textEdit->setPlaceholderText("请在此输入或粘贴需要统计的文本内容...");
     textEdit->setStyleSheet(
-        "QTextEdit {"
+        "QPlainTextEdit {"
         "    border: 2px solid #ddd;"
         "    padding: 2px;"
         "    font-size: 11px;"
         "    font-family: 'Microsoft YaHei', 'Consolas', monospace;"
         "}"
-        "QTextEdit:focus {"
+        "QPlainTextEdit:focus {"
         "    border-color: #0078d7;"
         "}"
     );
@@ -175,18 +194,19 @@ void CharacterCounter::setupUI() {
 
     mainLayout->addWidget(mainSplitter);
 
-    // 连接信号槽
-    connect(textEdit, &QTextEdit::textChanged, this, &CharacterCounter::onTextChanged);
+    // 连接信号槽 - 使用scheduleUpdate而不是直接更新
+    connect(textEdit, &QPlainTextEdit::textChanged, this, &CharacterCounter::scheduleUpdate);
     connect(clearBtn, &QPushButton::clicked, this, &CharacterCounter::onClearText);
     connect(copyBtn, &QPushButton::clicked, this, &CharacterCounter::onCopyText);
     connect(pasteBtn, &QPushButton::clicked, this, &CharacterCounter::onPasteText);
 
     // 初始化统计
-    updateStatistics();
+    CharacterStats initialStats;
+    updateStatisticsDisplay(initialStats);
 }
 
 void CharacterCounter::onTextChanged() {
-    updateStatistics();
+    // 此函数已不再使用，由scheduleUpdate替代
 }
 
 void CharacterCounter::onClearText() {
@@ -201,30 +221,74 @@ void CharacterCounter::onPasteText() {
     textEdit->insertPlainText(QApplication::clipboard()->text());
 }
 
-void CharacterCounter::updateStatistics() {
+void CharacterCounter::scheduleUpdate() {
+    // 重启定时器，实现防抖效果
+    updateTimer->start();
+}
+
+void CharacterCounter::performUpdate() {
+    // 如果正在计算，则跳过
+    if (isCalculating.load()) {
+        // 重新调度
+        updateTimer->start();
+        return;
+    }
+
+    // 获取文本
     QString text = textEdit->toPlainText();
 
-    totalCharsValue->setText(QString::number(countTotalCharacters(text)));
-    chineseCharsValue->setText(QString::number(countChineseCharacters(text)));
-    englishCharsValue->setText(QString::number(countEnglishCharacters(text)));
-    digitsValue->setText(QString::number(countDigits(text)));
-    punctuationValue->setText(QString::number(countPunctuation(text)));
-    whitespaceValue->setText(QString::number(countWhitespace(text)));
-    specialCharsValue->setText(QString::number(countSpecialCharacters(text)));
-    linesValue->setText(QString::number(countLines(text)));
-    wordsValue->setText(QString::number(countWords(text)));
-    bytesValue->setText(QString::number(countBytes(text)));
+    // 标记正在计算
+    isCalculating.store(true);
+
+    // 在后台线程异步计算统计信息
+    QFuture<CharacterStats> future = QtConcurrent::run([text]() {
+        return CharacterCounter::calculateStatistics(text);
+    });
+
+    statsWatcher->setFuture(future);
 }
 
-int CharacterCounter::countTotalCharacters(const QString& text) {
-    return text.length();
+void CharacterCounter::onStatsCalculated() {
+    // 标记计算完成
+    isCalculating.store(false);
+
+    // 获取结果并更新显示
+    CharacterStats stats = statsWatcher->result();
+    updateStatisticsDisplay(stats);
 }
 
-int CharacterCounter::countChineseCharacters(const QString& text) {
-    int count = 0;
+void CharacterCounter::updateStatisticsDisplay(const CharacterStats& stats) {
+    totalCharsValue->setText(QString::number(stats.totalChars));
+    chineseCharsValue->setText(QString::number(stats.chineseChars));
+    englishCharsValue->setText(QString::number(stats.englishChars));
+    digitsValue->setText(QString::number(stats.digits));
+    punctuationValue->setText(QString::number(stats.punctuation));
+    whitespaceValue->setText(QString::number(stats.whitespace));
+    specialCharsValue->setText(QString::number(stats.specialChars));
+    linesValue->setText(QString::number(stats.lines));
+    wordsValue->setText(QString::number(stats.words));
+    bytesValue->setText(QString::number(stats.bytes));
+}
+
+// 优化后的统计函数：一次遍历完成所有统计
+CharacterStats CharacterCounter::calculateStatistics(const QString& text) {
+    CharacterStats stats;
+
+    stats.totalChars = text.length();
+    stats.bytes = text.toUtf8().size();
+
+    // 行数统计
+    if (text.isEmpty()) {
+        stats.lines = 0;
+    } else {
+        stats.lines = text.count('\n') + 1;
+    }
+
+    // 单次遍历完成所有字符分类统计
     for (const QChar& ch : text) {
         ushort unicode = ch.unicode();
-        // Unicode中文字符范围
+
+        // 中文字符
         if ((unicode >= 0x4E00 && unicode <= 0x9FFF) ||  // CJK统一汉字
             (unicode >= 0x3400 && unicode <= 0x4DBF) ||  // CJK扩展A
             (unicode >= 0x20000 && unicode <= 0x2A6DF) || // CJK扩展B
@@ -233,102 +297,39 @@ int CharacterCounter::countChineseCharacters(const QString& text) {
             (unicode >= 0x2B820 && unicode <= 0x2CEAF) || // CJK扩展E
             (unicode >= 0x3000 && unicode <= 0x303F) ||  // CJK符号和标点
             (unicode >= 0xFF00 && unicode <= 0xFFEF)) {  // 全角字符
-            count++;
+            stats.chineseChars++;
+            stats.words++; // 每个中文字符算一个词
         }
-    }
-    return count;
-}
-
-int CharacterCounter::countEnglishCharacters(const QString& text) {
-    int count = 0;
-    for (const QChar& ch : text) {
-        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
-            count++;
+        // 英文字符
+        else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+            stats.englishChars++;
         }
-    }
-    return count;
-}
-
-int CharacterCounter::countDigits(const QString& text) {
-    int count = 0;
-    for (const QChar& ch : text) {
-        if (ch.isDigit()) {
-            count++;
+        // 数字
+        else if (ch.isDigit()) {
+            stats.digits++;
         }
-    }
-    return count;
-}
-
-int CharacterCounter::countPunctuation(const QString& text) {
-    int count = 0;
-    for (const QChar& ch : text) {
-        if (ch.isPunct()) {
-            count++;
+        // 空白字符
+        else if (ch.isSpace()) {
+            stats.whitespace++;
         }
-    }
-    return count;
-}
-
-int CharacterCounter::countWhitespace(const QString& text) {
-    int count = 0;
-    for (const QChar& ch : text) {
-        if (ch.isSpace()) {
-            count++;
+        // 标点符号
+        else if (ch.isPunct()) {
+            stats.punctuation++;
         }
-    }
-    return count;
-}
-
-int CharacterCounter::countSpecialCharacters(const QString& text) {
-    int count = 0;
-    for (const QChar& ch : text) {
-        // 特殊字符：非字母、非数字、非空白、非标点的字符
-        if (!ch.isLetterOrNumber() && !ch.isSpace() && !ch.isPunct()) {
-            count++;
-        }
-    }
-    return count;
-}
-
-int CharacterCounter::countLines(const QString& text) {
-    if (text.isEmpty()) {
-        return 0;
-    }
-    return text.count('\n') + 1;
-}
-
-int CharacterCounter::countWords(const QString& text) {
-    if (text.trimmed().isEmpty()) {
-        return 0;
-    }
-
-    int wordCount = 0;
-
-    // 先统计中文字符数（每个中文字符算一个词）
-    for (const QChar& ch : text) {
-        ushort unicode = ch.unicode();
-        if ((unicode >= 0x4E00 && unicode <= 0x9FFF) ||  // CJK统一汉字
-            (unicode >= 0x3400 && unicode <= 0x4DBF) ||  // CJK扩展A
-            (unicode >= 0x20000 && unicode <= 0x2A6DF) || // CJK扩展B
-            (unicode >= 0x2A700 && unicode <= 0x2B73F) || // CJK扩展C
-            (unicode >= 0x2B740 && unicode <= 0x2B81F) || // CJK扩展D
-            (unicode >= 0x2B820 && unicode <= 0x2CEAF)) { // CJK扩展E
-            wordCount++;
+        // 特殊字符
+        else if (!ch.isLetterOrNumber() && !ch.isSpace() && !ch.isPunct()) {
+            stats.specialChars++;
         }
     }
 
-    // 再统计英文单词（按空白字符分隔）
+    // 英文单词统计（使用正则表达式）
     QRegularExpression englishWordRegex(R"([a-zA-Z]+(?:'[a-zA-Z]+)?)");
     QRegularExpressionMatchIterator matches = englishWordRegex.globalMatch(text);
 
     while (matches.hasNext()) {
         matches.next();
-        wordCount++;
+        stats.words++;
     }
 
-    return wordCount;
-}
-
-int CharacterCounter::countBytes(const QString& text) {
-    return text.toUtf8().size();
+    return stats;
 }

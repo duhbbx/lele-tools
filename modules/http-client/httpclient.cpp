@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <functional>
 
+#include "../../common/delegate/MyItemEditDelegate.h"
+
 REGISTER_DYNAMICOBJECT(HttpClient);
 
 HttpClient::HttpClient() : QWidget(nullptr), DynamicObjectBase() {
@@ -114,10 +116,11 @@ QTableWidget {
     alternate-background-color: #f8f9fa;
 }
 QTableWidget::item {
-    padding: 2px;
+    outline: 0;
     border-bottom: 1px solid #dee2e6;
 }
 QTableWidget::item:selected {
+    padding: 0px;
     background-color: #007bff;
     color: white;
 }
@@ -1932,6 +1935,9 @@ void HttpClient::setupTabHeadersTab(HttpRequestTab* tab) {
     tab->headersTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     tab->headersTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     tab->headersTable->setColumnWidth(2, 60);
+
+    tab->headersTable->setItemDelegate(new MyDelegate(tab->headersTable));
+
 
     layout->addWidget(tab->headersTable);
 
