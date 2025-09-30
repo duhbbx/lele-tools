@@ -245,33 +245,69 @@ QString GlobalStyles::getGlobalStyle() {
             background-color: #4CAF50;
             border-radius: 5px;
         }
+/* 表格整体样式 */
 QTableWidget {
-border: 1px solid #dee2e6;
+    border: 1px solid #dee2e6;
     gridline-color: #dee2e6;
     background-color: #ffffff;
     alternate-background-color: #f8f9fa;
 }
+
+/* 表格项样式 - 关键：完全去掉边框，避免与网格线重叠 */
 QTableWidget::item {
-    padding: 2px;
-    border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
-    border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
-    outline: none;       /* 关键：去掉虚线 */
+    padding: 4px;
+    border: none;
+    outline: none;
 }
+
+/* 选中项样式 */
 QTableWidget::item:selected {
     background-color: #007bff;
     color: white;
 }
 
-QHeaderView::section {
-    background-color: #f8f9fa;
-    padding: 4px;
-    border: 1px solid #dee2e6;
-    border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
-    border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
+/* 悬停项样式 */
+QTableWidget::item:hover {
+    background-color: #e9ecef;
 }
 
+/* 选中并悬停 */
+QTableWidget::item:selected:hover {
+    background-color: #0056b3;
+}
+
+/* 表头样式 - 关键：只保留右边和下边框，避免重叠 */
+QHeaderView::section {
+    background-color: #f8f9fa;
+    padding: 6px 4px;
+    border: none;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* 第一个表头单元格 */
+QHeaderView::section:first {
+    border-left: none;
+}
+
+/* 最后一个表头单元格 */
 QHeaderView::section:last {
-    margin-right: -1px;    /* 解决左右 tab 边框重叠 */
+    border-right: none;
+}
+
+/* 表头悬停效果 */
+QHeaderView::section:hover {
+    background-color: #e9ecef;
+}
+
+/* 角落按钮样式（左上角的交叉区域） */
+QTableCornerButton::section {
+    background-color: #f8f9fa;
+    border: none;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
 }
         QLabel {
             font-size: 10pt;

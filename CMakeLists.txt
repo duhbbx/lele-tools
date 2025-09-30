@@ -194,6 +194,7 @@ set(PROJECT_SOURCES
         main-widget/mainwindowtabwidget.cpp main-widget/mainwindowtabwidget.h
         common/dynamicobjectbase.cpp common/dynamicobjectbase.h
         common/customtabwidget.cpp common/customtabwidget.h
+        common/customtablewidget.cpp common/customtablewidget.h
         common/global-styles.cpp common/global-styles.h
         common/thirdparty/pugixml/pugixml.cpp common/thirdparty/pugixml/pugixml.hpp common/thirdparty/pugixml/pugiconfig.hpp
         common/validator/myintvalidator.cpp
