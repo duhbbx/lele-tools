@@ -17,10 +17,15 @@ public:
         if (auto lineEdit = qobject_cast<QLineEdit*>(editor)) {
             lineEdit->setStyleSheet(
                 "border: none;"
-                "padding: 0px;"
-                "margin: 0px;"
+                "padding: 0;"
+                "margin: 0;"
                 "background: #eafaea;"
             );
+
+            // 关键：让 editor 高度和行高一致
+            int rowHeight = option.rect.height();
+            lineEdit->setFixedHeight(rowHeight);
+            lineEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft); // 垂直居中
         }
         return editor;
     }

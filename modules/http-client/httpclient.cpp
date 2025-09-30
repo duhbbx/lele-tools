@@ -118,7 +118,9 @@ QTableWidget {
 }
 QTableWidget::item {
     outline: 0;
-    border-bottom: 1px solid #dee2e6;
+    border-left: 0;   /* 去掉 header 下边框，避免和 table 重叠 */
+    border-top: 0;   /* 去掉 header 下边框，避免和 table 重叠 */
+    padding: 0;
 }
 QTableWidget::item:focus {
     outline: none;
@@ -1918,6 +1920,11 @@ void HttpClient::setupTabParametersTab(HttpRequestTab* tab) {
 
     layout->addWidget(tab->paramsTable);
 
+    // 添加8个空白行
+    for (int i = 0; i < 8; ++i) {
+        addTableRow(tab->paramsTable, KeyValuePair("", "", true));
+    }
+
     // 按钮行
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     tab->addParamBtn = new QPushButton(tr("添加"));
@@ -1945,8 +1952,18 @@ void HttpClient::setupTabHeadersTab(HttpRequestTab* tab) {
 
     tab->headersTable->setItemDelegate(new MyDelegate(tab->headersTable));
 
-
     layout->addWidget(tab->headersTable);
+
+    // 添加常用的header默认行
+    addTableRow(tab->headersTable, KeyValuePair("Content-Type", "", false));
+    addTableRow(tab->headersTable, KeyValuePair("Authorization", "", false));
+    addTableRow(tab->headersTable, KeyValuePair("Accept", "", false));
+    addTableRow(tab->headersTable, KeyValuePair("User-Agent", "", false));
+
+    // 添加5个空白行
+    for (int i = 0; i < 5; ++i) {
+        addTableRow(tab->headersTable, KeyValuePair("", "", true));
+    }
 
     // 按钮行
     QHBoxLayout* buttonLayout = new QHBoxLayout();
@@ -1976,6 +1993,11 @@ void HttpClient::setupTabCookiesTab(HttpRequestTab* tab) {
     tab->cookiesTable->setItemDelegate(new MyDelegate(tab->cookiesTable));
 
     layout->addWidget(tab->cookiesTable);
+
+    // 添加8个空白行
+    for (int i = 0; i < 8; ++i) {
+        addTableRow(tab->cookiesTable, KeyValuePair("", "", true));
+    }
 
     // 按钮行
     QHBoxLayout* buttonLayout = new QHBoxLayout();
