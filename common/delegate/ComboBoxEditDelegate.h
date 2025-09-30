@@ -12,7 +12,7 @@
 #include <QCompleter>
 #include <QStringListModel>
 
-class ComboBoxEditDelegate : public QStyledItemDelegate {
+class ComboBoxEditDelegate final : public QStyledItemDelegate {
     Q_OBJECT
 
 public:
@@ -47,33 +47,44 @@ public:
         completer->setFilterMode(Qt::MatchContains); // 支持包含匹配
         comboBox->setCompleter(completer);
 
-        // 样式设置
-        comboBox->setStyleSheet(
-            "QComboBox {"
-            "    border: none;"
-            "    padding: 0 0px;"
-            "    background: #eafaea;"
-            "}"
-            // "QComboBox::drop-down {"
-            // "    border: none;"
-            // "    width: 20px;"
-            // "}"
-            // "QComboBox::down-arrow {"
-            // "    image: none;"
-            // "    border: none;"
-            // "    width: 0px;"
-            // "}"
-            "QComboBox QAbstractItemView {"
-            "    border: 1px solid #ccc;"
-            "    background: white;"
-            "    selection-background-color: #0078d7;"
-            "    selection-color: white;"
-            "}"
-        );
-
         // 设置高度与行高一致
         int rowHeight = option.rect.height();
         comboBox->setFixedHeight(rowHeight);
+
+        // 设置 ComboBox 和 LineEdit 样式，消除间隙
+        comboBox->setStyleSheet(R"(
+            QComboBox {
+                padding: 0px;
+                margin: 0px;
+                border: none;
+                border-radius: 0px;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox QAbstractItemView {
+                min-height: 20px;
+            }
+            QComboBox QAbstractItemView::item {
+                height: 20px;
+                padding: 4px 4px;
+            }
+        )");
+
+        // 设置内部 LineEdit 样式
+        if (QLineEdit* lineEdit = comboBox->lineEdit()) {
+            lineEdit->setStyleSheet(R"(
+                QLineEdit {
+                    padding: 0px 0px;
+                    margin: 0px;
+                    border: none;
+                    background: transparent;
+                }
+            )");
+            lineEdit->setContentsMargins(0, 0, 0, 0);
+            lineEdit->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        }
 
         return comboBox;
     }

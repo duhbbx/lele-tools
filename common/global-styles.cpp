@@ -129,7 +129,6 @@ QString GlobalStyles::getInputStyle() {
 
         QComboBox {
             border: 1px solid #ccc;
-            padding: 4px 8px;
             background-color: #f9f9f9;
             font-size: 14px;
         }
@@ -137,22 +136,14 @@ QString GlobalStyles::getInputStyle() {
             border: 1px solid #0078d7; /* 鼠标悬停边框 */
         }
 
-        QComboBox::drop-down {
-            border: none;
-            width: 25px;
-            height: 20px;
-        }
-        QComboBox::down-arrow {
-            image: url(:/icons/arrow-down.svg); /* 自定义下拉箭头 */
-            width: 12px;
-            height: 12px;
-        }
         QComboBox QAbstractItemView {
             border: 1px solid #ccc;
             background: white;
             selection-background-color: #0078d7;
             selection-color: white;
+            min-height: 30px;   /* 每个选项的最小高度 */
         }
+
 
   QSpinBox {
         border: 1px solid #cccccc;
@@ -255,7 +246,8 @@ QTableWidget {
 
 /* 表格项样式 - 关键：完全去掉边框，避免与网格线重叠 */
 QTableWidget::item {
-    padding: 4px;
+    padding: 0px;
+    margin: 0px;
     border: none;
     outline: none;
 }
