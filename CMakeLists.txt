@@ -200,6 +200,8 @@ set(PROJECT_SOURCES
         ${TS_FILES}
         ${WINDOWS_RC_FILES}
         common/delegate/MyItemEditDelegate.h
+        common/delegate/ComboBoxEditDelegate.h
+        common/delegate/ComboBoxEditDelegate.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

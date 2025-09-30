@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "../../common/delegate/MyItemEditDelegate.h"
+#include "../../common/delegate/ComboBoxEditDelegate.h"
 
 REGISTER_DYNAMICOBJECT(HttpClient);
 
@@ -115,6 +116,8 @@ QTableWidget {
     background-color: #ffffff;
     alternate-background-color: #f8f9fa;
     outline: none;
+    border: 1px solid #dee2e6;
+
 }
 QTableWidget::item {
     outline: 0;
@@ -122,6 +125,7 @@ QTableWidget::item {
     border-top: 0;   /* 去掉 header 下边框，避免和 table 重叠 */
     padding: 0;
 }
+
 QTableWidget::item:focus {
     outline: none;
 }
@@ -1838,10 +1842,7 @@ void HttpClient::setupTabUI(HttpRequestTab* tab) {
     tab->portSpin = new QSpinBox();
     tab->portSpin->setRange(1, 65535);
     tab->portSpin->setValue(443);
-    tab->portSpin->setMinimumWidth(70);
-    tab->portSpin->setMaximumWidth(70);
     topLayout->addWidget(tab->portSpin);
-
     topLayout->addSpacing(10);
 
     // 主机
@@ -1950,7 +1951,44 @@ void HttpClient::setupTabHeadersTab(HttpRequestTab* tab) {
     tab->headersTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
     tab->headersTable->setColumnWidth(2, 60);
 
-    tab->headersTable->setItemDelegate(new MyDelegate(tab->headersTable));
+    // 为第0列(键)设置带下拉的Delegate，包含常用HTTP请求头
+    QStringList commonHeaders = {
+        "Accept",
+        "Accept-Charset",
+        "Accept-Encoding",
+        "Accept-Language",
+        "Authorization",
+        "Cache-Control",
+        "Connection",
+        "Content-Encoding",
+        "Content-Language",
+        "Content-Length",
+        "Content-Type",
+        "Cookie",
+        "Date",
+        "Host",
+        "If-Match",
+        "If-Modified-Since",
+        "If-None-Match",
+        "If-Range",
+        "If-Unmodified-Since",
+        "Origin",
+        "Pragma",
+        "Range",
+        "Referer",
+        "User-Agent",
+        "X-Requested-With",
+        "X-Forwarded-For",
+        "X-Forwarded-Proto",
+        "X-API-Key",
+        "X-Auth-Token"
+    };
+
+    auto* keyDelegate = new ComboBoxEditDelegate(commonHeaders, tab->headersTable);
+    tab->headersTable->setItemDelegateForColumn(0, keyDelegate);
+
+    // 为第1列(值)和其他列使用默认Delegate
+    tab->headersTable->setItemDelegateForColumn(1, new MyDelegate(tab->headersTable));
 
     layout->addWidget(tab->headersTable);
 

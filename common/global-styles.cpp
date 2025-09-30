@@ -136,9 +136,11 @@ QString GlobalStyles::getInputStyle() {
         QComboBox:hover {
             border: 1px solid #0078d7; /* 鼠标悬停边框 */
         }
+
         QComboBox::drop-down {
             border: none;
             width: 25px;
+            height: 20px;
         }
         QComboBox::down-arrow {
             image: url(:/icons/arrow-down.svg); /* 自定义下拉箭头 */
@@ -244,6 +246,7 @@ QString GlobalStyles::getGlobalStyle() {
             border-radius: 5px;
         }
 QTableWidget {
+border: 1px solid #dee2e6;
     gridline-color: #dee2e6;
     background-color: #ffffff;
     alternate-background-color: #f8f9fa;
