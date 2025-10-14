@@ -18,6 +18,8 @@
 #include <QRegularExpression>
 #include <QApplication>
 #include <QFileInfo>
+#include <QMenu>
+#include <QDir>
 #include "../../common/dynamicobjectbase.h"
 
 #ifdef Q_OS_WIN
@@ -60,6 +62,9 @@ private slots:
     void exportToFile();
     void processBatchLines();
     void updateTableBatch();
+    void showContextMenu(const QPoint& pos);
+    void onKillProcessRequested();
+    void onShowProcessPathRequested();
 
 private:
     // UI 组件
@@ -118,8 +123,10 @@ private:
     void scanTcpConnections();
     void scanUdpConnections();
     QString getProcessNameByPid(DWORD pid);
+    QString getProcessPathByPid(DWORD pid);
     QString getStateString(DWORD state);
     QString formatAddress(DWORD addr, WORD port);
+    void killProcessByPid(DWORD pid);
 #endif
 
     // 样式

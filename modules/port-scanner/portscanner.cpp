@@ -137,8 +137,8 @@ void PortScanner::setupUI()
 
 void PortScanner::setupTable()
 {
-    // 设置列?
-    QStringList headers = {"协议", "本地地址", "本地端口", "远程地址", "远程端口", "状态", "进程名", "进程名ID"};
+    // 设置列
+    QStringList headers = {"协议", "本地地址", "本地端口", "远程地址", "远程端口", "状态", "进程名", "进程ID", "进程路径"};
     portTable->setColumnCount(headers.size());
     portTable->setHorizontalHeaderLabels(headers);
 
@@ -154,15 +154,16 @@ void PortScanner::setupTable()
     header->setStretchLastSection(false);
     header->setSectionResizeMode(QHeaderView::Interactive);
 
-    // 设置列列宽
+    // 设置列宽
     portTable->setColumnWidth(0, 60);   // 协议
     portTable->setColumnWidth(1, 120);  // 本地地址
     portTable->setColumnWidth(2, 80);   // 本地端口
     portTable->setColumnWidth(3, 120);  // 远程地址
     portTable->setColumnWidth(4, 80);   // 远程端口
-    portTable->setColumnWidth(5, 100);  // 状态?
-    portTable->setColumnWidth(6, 150);  // 进程名?
-    portTable->setColumnWidth(7, 80);   // 进程名ID
+    portTable->setColumnWidth(5, 100);  // 状态
+    portTable->setColumnWidth(6, 150);  // 进程名
+    portTable->setColumnWidth(7, 80);   // 进程ID
+    portTable->setColumnWidth(8, 300);  // 进程路径
 
     // 垂直表头
     portTable->verticalHeader()->setVisible(false);
@@ -178,6 +179,7 @@ void PortScanner::setupConnections()
     connect(clearButton, &QPushButton::clicked, this, &PortScanner::clearSearch);
     connect(searchEdit, &QLineEdit::returnPressed, this, &PortScanner::searchPorts);
     connect(portTable, &QTableWidget::cellDoubleClicked, this, &PortScanner::onTableItemDoubleClicked);
+    connect(portTable, &QTableWidget::customContextMenuRequested, this, &PortScanner::showContextMenu);
 }
 
 void PortScanner::refreshPortList()
@@ -490,16 +492,17 @@ void PortScanner::populateTable(const QList<PortInfo>& portList)
         portTable->setItem(i, 5, new QTableWidgetItem(info.state));
         portTable->setItem(i, 6, new QTableWidgetItem(info.processName));
         portTable->setItem(i, 7, new QTableWidgetItem(info.processId));
+        portTable->setItem(i, 8, new QTableWidgetItem(info.processPath));
 
-        // 根据协议设置列行颜色?
+        // 根据协议设置行颜色
         QColor rowColor;
         if (info.protocol.toUpper() == "TCP") {
-            rowColor = QColor(232, 245, 255); // 淡蓝�?
+            rowColor = QColor(232, 245, 255); // 淡蓝色
         } else {
-            rowColor = QColor(245, 255, 232); // 淡绿�?
+            rowColor = QColor(245, 255, 232); // 淡绿色
         }
 
-        for (int j = 0; j < 8; ++j) {
+        for (int j = 0; j < 9; ++j) {
             if (portTable->item(i, j)) {
                 portTable->item(i, j)->setBackground(rowColor);
             }
@@ -726,7 +729,7 @@ void PortScanner::updateTableBatch()
     while (currentTableIndex < portInfoList.size() && processed < batchSize) {
         const PortInfo& info = portInfoList[currentTableIndex];
 
-        // 创建表格�?
+        // 创建表格项
         portTable->setItem(currentTableIndex, 0, new QTableWidgetItem(info.protocol));
         portTable->setItem(currentTableIndex, 1, new QTableWidgetItem(info.localAddress));
         portTable->setItem(currentTableIndex, 2, new QTableWidgetItem(info.localPort));
@@ -735,6 +738,7 @@ void PortScanner::updateTableBatch()
         portTable->setItem(currentTableIndex, 5, new QTableWidgetItem(info.state));
         portTable->setItem(currentTableIndex, 6, new QTableWidgetItem(info.processName));
         portTable->setItem(currentTableIndex, 7, new QTableWidgetItem(info.processId));
+        portTable->setItem(currentTableIndex, 8, new QTableWidgetItem(info.processPath));
 
         currentTableIndex++;
         processed++;
@@ -808,6 +812,7 @@ void PortScanner::scanTcpConnections()
                     info.state = getStateString(row.dwState);
                     info.processId = QString::number(row.dwOwningPid);
                     info.processName = getProcessNameByPid(row.dwOwningPid);
+                    info.processPath = getProcessPathByPid(row.dwOwningPid);
 
                     portInfoList.append(info);
                 }
@@ -839,6 +844,7 @@ void PortScanner::scanUdpConnections()
                     info.state = "LISTENING";
                     info.processId = QString::number(row.dwOwningPid);
                     info.processName = getProcessNameByPid(row.dwOwningPid);
+                    info.processPath = getProcessPathByPid(row.dwOwningPid);
 
                     portInfoList.append(info);
                 }
@@ -866,6 +872,48 @@ QString PortScanner::getProcessNameByPid(DWORD pid)
     }
 
     return QString("PID:%1").arg(pid);
+}
+
+QString PortScanner::getProcessPathByPid(DWORD pid)
+{
+    if (pid == 0) return "System";
+
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+    if (hProcess) {
+        TCHAR processPath[MAX_PATH];
+        DWORD size = MAX_PATH;
+
+        if (QueryFullProcessImageName(hProcess, 0, processPath, &size)) {
+            CloseHandle(hProcess);
+            return QString::fromWCharArray(processPath);
+        }
+        CloseHandle(hProcess);
+    }
+
+    return QString("");
+}
+
+void PortScanner::killProcessByPid(DWORD pid)
+{
+    if (pid == 0 || pid == 4) {
+        QMessageBox::warning(this, "警告", "无法终止系统进程！");
+        return;
+    }
+
+    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+    if (hProcess) {
+        if (TerminateProcess(hProcess, 0)) {
+            CloseHandle(hProcess);
+            QMessageBox::information(this, "成功", QString("进程 PID:%1 已被终止").arg(pid));
+            // 自动重新扫描
+            QTimer::singleShot(500, this, &PortScanner::refreshPortList);
+        } else {
+            CloseHandle(hProcess);
+            QMessageBox::critical(this, "错误", QString("无法终止进程 PID:%1\n可能需要管理员权限").arg(pid));
+        }
+    } else {
+        QMessageBox::critical(this, "错误", QString("无法打开进程 PID:%1\n可能需要管理员权限").arg(pid));
+    }
 }
 
 QString PortScanner::getStateString(DWORD state)
@@ -899,5 +947,114 @@ QString PortScanner::formatAddress(DWORD addr, WORD port)
         .arg((addr >> 24) & 0xFF);
 
     return QString("%1:%2").arg(ipStr).arg(port);
+}
+
+void PortScanner::showContextMenu(const QPoint& pos)
+{
+    QTableWidgetItem* item = portTable->itemAt(pos);
+    if (!item) return;
+
+    int row = item->row();
+    QTableWidgetItem* pidItem = portTable->item(row, 7); // 进程ID列
+    QTableWidgetItem* pathItem = portTable->item(row, 8); // 进程路径列
+
+    if (!pidItem) return;
+
+    QMenu contextMenu(this);
+
+    // 查看进程路径
+    QAction* showPathAction = contextMenu.addAction("📁 查看进程路径");
+    showPathAction->setEnabled(!pathItem || !pathItem->text().isEmpty());
+
+    // 杀死进程
+    QAction* killProcessAction = contextMenu.addAction("❌ 终止进程");
+
+    contextMenu.addSeparator();
+
+    // 复制信息
+    QAction* copyPidAction = contextMenu.addAction("📋 复制进程ID");
+    QAction* copyPathAction = contextMenu.addAction("📋 复制进程路径");
+    copyPathAction->setEnabled(!pathItem || !pathItem->text().isEmpty());
+
+    QAction* selectedAction = contextMenu.exec(portTable->viewport()->mapToGlobal(pos));
+
+    if (selectedAction == showPathAction) {
+        onShowProcessPathRequested();
+    } else if (selectedAction == killProcessAction) {
+        onKillProcessRequested();
+    } else if (selectedAction == copyPidAction) {
+        QApplication::clipboard()->setText(pidItem->text());
+        QMessageBox::information(this, "成功", "进程ID已复制到剪贴板");
+    } else if (selectedAction == copyPathAction && pathItem) {
+        QApplication::clipboard()->setText(pathItem->text());
+        QMessageBox::information(this, "成功", "进程路径已复制到剪贴板");
+    }
+}
+
+void PortScanner::onShowProcessPathRequested()
+{
+    int currentRow = portTable->currentRow();
+    if (currentRow < 0) return;
+
+    QTableWidgetItem* pathItem = portTable->item(currentRow, 8);
+    QTableWidgetItem* nameItem = portTable->item(currentRow, 6);
+
+    if (!pathItem || pathItem->text().isEmpty()) {
+        QMessageBox::information(this, "提示", "无法获取该进程的路径信息");
+        return;
+    }
+
+    QString processPath = pathItem->text();
+    QString processName = nameItem ? nameItem->text() : "未知";
+
+    QString message = QString("进程名: %1\n\n进程路径:\n%2").arg(processName).arg(processPath);
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("进程路径");
+    msgBox.setText(message);
+    msgBox.setIcon(QMessageBox::Information);
+
+    // 添加打开文件位置按钮
+    QPushButton* openLocationBtn = msgBox.addButton("打开文件位置", QMessageBox::ActionRole);
+    msgBox.addButton(QMessageBox::Ok);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == openLocationBtn) {
+        QFileInfo fileInfo(processPath);
+        if (fileInfo.exists()) {
+            QString command = QString("explorer /select,\"%1\"").arg(QDir::toNativeSeparators(processPath));
+            QProcess::startDetached(command);
+        }
+    }
+}
+
+void PortScanner::onKillProcessRequested()
+{
+    int currentRow = portTable->currentRow();
+    if (currentRow < 0) return;
+
+    QTableWidgetItem* pidItem = portTable->item(currentRow, 7);
+    QTableWidgetItem* nameItem = portTable->item(currentRow, 6);
+
+    if (!pidItem) return;
+
+    bool ok;
+    DWORD pid = pidItem->text().toULong(&ok);
+    if (!ok) return;
+
+    QString processName = nameItem ? nameItem->text() : "未知";
+
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this,
+        "确认终止进程",
+        QString("确定要终止进程吗？\n\n进程名: %1\nPID: %2\n\n注意：终止系统进程可能导致系统不稳定！")
+            .arg(processName)
+            .arg(pid),
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+        killProcessByPid(pid);
+    }
 }
 #endif

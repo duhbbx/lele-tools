@@ -937,28 +937,6 @@ void IpLookupTool::setupUI() {
 
     // 创建标签页控件
     m_tabWidget = new QTabWidget();
-    m_tabWidget->setStyleSheet(
-        "QTabWidget::pane {"
-        "border: 1px solid #bdc3c7;"
-        "background-color: white;"
-        "}"
-        "QTabBar::tab {"
-        "background-color: #ecf0f1;"
-        "color: #2c3e50;"
-        "padding: 12px 24px;"
-        "margin-right: 2px;"
-        "border-top-left-radius: 6px;"
-        "border-top-right-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QTabBar::tab:selected {"
-        "background-color: white;"
-        "border-bottom: 2px solid #3498db;"
-        "}"
-        "QTabBar::tab:hover {"
-        "background-color: #d5dbdb;"
-        "}"
-    );
 
     // 创建单个查询标签页
     m_singleLookup = new SingleIpLookup();

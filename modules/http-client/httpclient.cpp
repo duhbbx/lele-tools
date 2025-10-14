@@ -544,8 +544,11 @@ QUrl HttpClient::buildUrl() const {
     }
 
     // 构建基础URL
-    QString urlString = QString("%1://%2:%3%4").arg(protocol).arg(host).arg(port).arg(path);
-    QUrl url(urlString);
+    QUrl url;
+    url.setScheme(protocol);
+    url.setHost(host);
+    url.setPort(port);
+    url.setPath(path);
 
     if (!url.isValid()) {
         return QUrl();
@@ -876,14 +879,6 @@ void HttpClient::onProtocolChanged() {
     HttpRequestTab* tab = getCurrentTab();
     if (!tab)
         return;
-
-    QString protocol = tab->protocolCombo->currentText();
-    // 自动设置端口默认值
-    if (protocol == "https") {
-        tab->portSpin->setValue(443);
-    } else if (protocol == "http") {
-        tab->portSpin->setValue(80);
-    }
     updateFullUrl();
 }
 

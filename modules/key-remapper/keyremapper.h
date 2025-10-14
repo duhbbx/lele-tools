@@ -23,6 +23,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QStandardPaths>
+#include <QStyledItemDelegate>
 #include "../../common/dynamicobjectbase.h"
 
 #ifdef Q_OS_WIN
@@ -52,7 +53,43 @@ struct KeyMapping {
     QString arguments;      // 命令行参数
 };
 
-// 按键捕获窗口
+// 按键捕获单元格编辑器
+class KeyCaptureEditor : public QLineEdit
+{
+    Q_OBJECT
+
+public:
+    explicit KeyCaptureEditor(QWidget *parent = nullptr);
+
+signals:
+    void keyCaptured(int keyCode, const QString& keyName);
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void focusInEvent(QFocusEvent *event) override;
+
+private:
+    QString getKeyNameFromEvent(QKeyEvent *event, int &keyCode);
+};
+
+// 按键捕获委托
+class KeyCaptureDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+
+public:
+    explicit KeyCaptureDelegate(QObject *parent = nullptr);
+
+    QWidget* createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+signals:
+    void keyCaptured(int row, int column, int keyCode, const QString& keyName) const;
+};
+
+// 按键捕获窗口（保留用于兼容）
 class KeyCaptureWidget : public QFrame
 {
     Q_OBJECT
@@ -135,6 +172,7 @@ private:
 
     // 映射表格
     QTableWidget* mappingTable;
+    KeyCaptureDelegate* keyCaptureDelegate;
 
     // 按键捕获
     KeyCaptureWidget* keyCaptureWidget;

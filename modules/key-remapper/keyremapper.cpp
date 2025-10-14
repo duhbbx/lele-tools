@@ -10,6 +10,7 @@
 #include <QKeySequence>
 #include <QDir>
 #include <QProcess>
+#include <QMenu>
 
 // 注册动态对象
 REGISTER_DYNAMICOBJECT(KeyRemapper);
@@ -21,6 +22,129 @@ KeyRemapper* KeyRemapper::s_instance = nullptr;
 std::map<int, int> KeyRemapper::s_keyMappings;
 bool KeyRemapper::s_hookEnabled = false;
 #endif
+
+// KeyCaptureEditor 实现
+KeyCaptureEditor::KeyCaptureEditor(QWidget *parent)
+    : QLineEdit(parent)
+{
+    setReadOnly(true);
+    setPlaceholderText("双击输入按键...");
+}
+
+void KeyCaptureEditor::keyPressEvent(QKeyEvent *event)
+{
+    int keyCode = event->nativeVirtualKey();
+    QString keyName = getKeyNameFromEvent(event, keyCode);
+
+    setText(keyName);
+    emit keyCaptured(keyCode, keyName);
+    event->accept();
+}
+
+void KeyCaptureEditor::focusInEvent(QFocusEvent *event)
+{
+    QLineEdit::focusInEvent(event);
+    setPlaceholderText("按下任意键...");
+}
+
+QString KeyCaptureEditor::getKeyNameFromEvent(QKeyEvent *event, int &keyCode)
+{
+    QString keyName;
+
+#ifdef Q_OS_WIN
+    // Windows 特殊键处理
+    switch (keyCode) {
+    case VK_ESCAPE: keyName = "Escape"; break;
+    case VK_TAB: keyName = "Tab"; break;
+    case VK_RETURN: keyName = "Enter"; break;
+    case VK_SPACE: keyName = "Space"; break;
+    case VK_BACK: keyName = "Backspace"; break;
+    case VK_DELETE: keyName = "Delete"; break;
+    case VK_INSERT: keyName = "Insert"; break;
+    case VK_HOME: keyName = "Home"; break;
+    case VK_END: keyName = "End"; break;
+    case VK_PRIOR: keyName = "Page Up"; break;
+    case VK_NEXT: keyName = "Page Down"; break;
+    case VK_UP: keyName = "Up"; break;
+    case VK_DOWN: keyName = "Down"; break;
+    case VK_LEFT: keyName = "Left"; break;
+    case VK_RIGHT: keyName = "Right"; break;
+    case VK_F1: case VK_F2: case VK_F3: case VK_F4:
+    case VK_F5: case VK_F6: case VK_F7: case VK_F8:
+    case VK_F9: case VK_F10: case VK_F11: case VK_F12:
+        keyName = QString("F%1").arg(keyCode - VK_F1 + 1);
+        break;
+    case VK_LSHIFT: keyName = "Left Shift"; break;
+    case VK_RSHIFT: keyName = "Right Shift"; break;
+    case VK_LCONTROL: keyName = "Left Ctrl"; break;
+    case VK_RCONTROL: keyName = "Right Ctrl"; break;
+    case VK_LMENU: keyName = "Left Alt"; break;
+    case VK_RMENU: keyName = "Right Alt"; break;
+    case VK_LWIN: keyName = "Left Win"; break;
+    case VK_RWIN: keyName = "Right Win"; break;
+    case VK_CAPITAL: keyName = "Caps Lock"; break;
+    case VK_NUMLOCK: keyName = "Num Lock"; break;
+    case VK_SCROLL: keyName = "Scroll Lock"; break;
+    default:
+        if (keyCode >= 'A' && keyCode <= 'Z') {
+            keyName = QChar(keyCode);
+        } else if (keyCode >= '0' && keyCode <= '9') {
+            keyName = QChar(keyCode);
+        } else {
+            keyName = QString("Key_%1").arg(keyCode);
+        }
+        break;
+    }
+#else
+    keyName = event->text().isEmpty() ? QString("Key_%1").arg(keyCode) : event->text().toUpper();
+#endif
+
+    return keyName;
+}
+
+// KeyCaptureDelegate 实现
+KeyCaptureDelegate::KeyCaptureDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
+{
+}
+
+QWidget* KeyCaptureDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    Q_UNUSED(option);
+    Q_UNUSED(index);
+
+    KeyCaptureEditor* editor = new KeyCaptureEditor(parent);
+
+    // 连接信号
+    connect(editor, &KeyCaptureEditor::keyCaptured, this, [this, index](int keyCode, const QString& keyName) {
+        emit keyCaptured(index.row(), index.column(), keyCode, keyName);
+    });
+
+    return editor;
+}
+
+void KeyCaptureDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
+{
+    KeyCaptureEditor* captureEditor = qobject_cast<KeyCaptureEditor*>(editor);
+    if (captureEditor) {
+        QString value = index.model()->data(index, Qt::DisplayRole).toString();
+        captureEditor->setText(value);
+    }
+}
+
+void KeyCaptureDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
+{
+    KeyCaptureEditor* captureEditor = qobject_cast<KeyCaptureEditor*>(editor);
+    if (captureEditor) {
+        model->setData(index, captureEditor->text(), Qt::EditRole);
+    }
+}
+
+void KeyCaptureDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    Q_UNUSED(index);
+    editor->setGeometry(option.rect);
+}
 
 // KeyCaptureWidget 实现
 KeyCaptureWidget::KeyCaptureWidget(QWidget *parent)
@@ -175,6 +299,9 @@ KeyRemapper::KeyRemapper(QWidget *parent)
     s_instance = this;
 #endif
 
+    // 创建键捕获委托
+    keyCaptureDelegate = new KeyCaptureDelegate(this);
+
     setupUI();
     setupTable();
     setupConnections();
@@ -206,125 +333,131 @@ void KeyRemapper::setupUI()
 {
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(10, 10, 10, 10);
-    mainLayout->setSpacing(10);
+    mainLayout->setSpacing(5);
 
-    // 创建分割器
-    mainSplitter = new QSplitter(Qt::Vertical);
-
-    // 控制区域
+    // 精简的控制区域
     controlGroup = new QGroupBox("控制面板");
     controlLayout = new QHBoxLayout(controlGroup);
+    controlGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
-    addButton = new QPushButton("➕ 按键映射");
-    addButton->setFixedHeight(35);
+    // 主要按钮
+    addButton = new QPushButton("➕ 新建");
+    addButton->setFixedHeight(32);
+    addButton->setFixedWidth(80);
 
-    addAppButton = new QPushButton("🚀 启动应用");
-    addAppButton->setFixedHeight(35);
+    removeButton = new QPushButton("➖ 删除");
+    removeButton->setFixedHeight(32);
+    removeButton->setFixedWidth(80);
 
-    addCommandButton = new QPushButton("⚡ 执行命令");
-    addCommandButton->setFixedHeight(35);
+    clearButton = new QPushButton("🗑️ 清空");
+    clearButton->setFixedHeight(32);
+    clearButton->setFixedWidth(80);
 
-    removeButton = new QPushButton("➖ 删除映射");
-    removeButton->setFixedHeight(35);
+    // 文件操作按钮
+    saveButton = new QPushButton("💾 保存");
+    saveButton->setFixedHeight(32);
+    saveButton->setFixedWidth(80);
 
-    editButton = new QPushButton("✏️ 编辑映射");
-    editButton->setFixedHeight(35);
+    loadButton = new QPushButton("📂 加载");
+    loadButton->setFixedHeight(32);
+    loadButton->setFixedWidth(80);
 
-    clearButton = new QPushButton("🗑️ 清空所有");
-    clearButton->setFixedHeight(35);
-
-    saveButton = new QPushButton("💾 保存配置");
-    saveButton->setFixedHeight(35);
-
-    loadButton = new QPushButton("📂 加载配置");
-    loadButton->setFixedHeight(35);
-
-    resetButton = new QPushButton("🔄 重置默认");
-    resetButton->setFixedHeight(35);
-
-    enableGlobalHook = new QCheckBox("启用全局按键拦截");
+    // 全局钩子开关
+    enableGlobalHook = new QCheckBox("启用全局拦截");
     enableGlobalHook->setChecked(false);
 
-    statusLabel = new QLabel("状态: 已准备");
+    statusLabel = new QLabel("已就绪");
     statusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
 
     controlLayout->addWidget(addButton);
-    controlLayout->addWidget(addAppButton);
-    controlLayout->addWidget(addCommandButton);
-    controlLayout->addWidget(editButton);
     controlLayout->addWidget(removeButton);
     controlLayout->addWidget(clearButton);
+    controlLayout->addWidget(new QLabel(" | "));
     controlLayout->addWidget(saveButton);
     controlLayout->addWidget(loadButton);
-    controlLayout->addWidget(resetButton);
     controlLayout->addStretch();
     controlLayout->addWidget(enableGlobalHook);
+    controlLayout->addWidget(new QLabel(" | "));
     controlLayout->addWidget(statusLabel);
-
-    // 按键捕获区域
-    captureGroup = new QGroupBox("按键捕获");
-    QVBoxLayout* captureLayout = new QVBoxLayout(captureGroup);
-
-    keyCaptureWidget = new KeyCaptureWidget();
-    captureLayout->addWidget(keyCaptureWidget);
 
     // 映射表格
     mappingTable = new QTableWidget();
+    mappingTable->setContextMenuPolicy(Qt::CustomContextMenu);
 
     // 布局组装
-    mainSplitter->addWidget(controlGroup);
-    mainSplitter->addWidget(captureGroup);
-    mainSplitter->addWidget(mappingTable);
+    mainLayout->addWidget(controlGroup, 0); // 固定高度
+    mainLayout->addWidget(mappingTable, 1); // 拉伸占据剩余空间
 
-    // 设置分割器比例
-    mainSplitter->setStretchFactor(0, 0); // 控制面板固定
-    mainSplitter->setStretchFactor(1, 0); // 捕获区域固定
-    mainSplitter->setStretchFactor(2, 1); // 表格可拉伸
+    // 不再需要KeyCaptureWidget，直接在表格中捕获
+    keyCaptureWidget = nullptr;
 
-    mainLayout->addWidget(mainSplitter);
+    // 保留这些按钮的引用但不显示，用于保持兼容性
+    addAppButton = nullptr;
+    addCommandButton = nullptr;
+    editButton = nullptr;
+    resetButton = nullptr;
+    captureGroup = nullptr;
 }
 
 void KeyRemapper::setupTable()
 {
-    // 设置列
-    QStringList headers = {"启用", "原始按键", "类型", "目标", "详细信息"};
+    // 设置列：启用、原始按键（可点击捕获）、类型、目标（可点击捕获/选择）、操作
+    QStringList headers = {"启用", "原始按键", "映射类型", "目标/动作", "详细信息", "操作"};
     mappingTable->setColumnCount(headers.size());
     mappingTable->setHorizontalHeaderLabels(headers);
 
     // 表格属性
     mappingTable->setAlternatingRowColors(true);
     mappingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    mappingTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    mappingTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     mappingTable->setSortingEnabled(false);
+    mappingTable->setEditTriggers(QAbstractItemView::DoubleClicked); // 允许双击编辑
+
+    // 设置键捕获委托到"原始按键"和"目标按键"列
+    mappingTable->setItemDelegateForColumn(1, keyCaptureDelegate);
+    mappingTable->setItemDelegateForColumn(3, keyCaptureDelegate);
 
     // 表头属性
     QHeaderView* header = mappingTable->horizontalHeader();
-    header->setStretchLastSection(false);
-    header->setSectionResizeMode(QHeaderView::ResizeToContents);
+    header->setStretchLastSection(true);
+    header->setSectionResizeMode(QHeaderView::Interactive);
 
     // 设置列宽
     mappingTable->setColumnWidth(0, 60);   // 启用
-    mappingTable->setColumnWidth(1, 120);  // 原始按键
-    mappingTable->setColumnWidth(2, 80);   // 类型
-    mappingTable->setColumnWidth(3, 150);  // 目标
-    mappingTable->setColumnWidth(4, 200);  // 详细信息
+    mappingTable->setColumnWidth(1, 150);  // 原始按键
+    mappingTable->setColumnWidth(2, 100);  // 类型
+    mappingTable->setColumnWidth(3, 200);  // 目标
+    mappingTable->setColumnWidth(4, 250);  // 详细信息
+    mappingTable->setColumnWidth(5, 120);  // 操作
 
     // 垂直表头
     mappingTable->verticalHeader()->setVisible(false);
-    mappingTable->verticalHeader()->setDefaultSectionSize(30);
+    mappingTable->verticalHeader()->setDefaultSectionSize(35);
 }
 
 void KeyRemapper::setupConnections()
 {
-    connect(addButton, &QPushButton::clicked, this, &KeyRemapper::addNewMapping);
-    connect(addAppButton, &QPushButton::clicked, this, &KeyRemapper::addAppLauncher);
-    connect(addCommandButton, &QPushButton::clicked, this, &KeyRemapper::addCommandLauncher);
+    connect(addButton, &QPushButton::clicked, [this]() {
+        // 弹出菜单选择映射类型
+        QMenu menu(this);
+        QAction* keyToKeyAction = menu.addAction("➕ 按键到按键");
+        QAction* keyToAppAction = menu.addAction("🚀 按键启动应用");
+        QAction* keyToCommandAction = menu.addAction("⚡ 按键执行命令");
+
+        QAction* selected = menu.exec(QCursor::pos());
+        if (selected == keyToKeyAction) {
+            addNewMapping();
+        } else if (selected == keyToAppAction) {
+            addAppLauncher();
+        } else if (selected == keyToCommandAction) {
+            addCommandLauncher();
+        }
+    });
+
     connect(removeButton, &QPushButton::clicked, this, &KeyRemapper::removeMapping);
-    connect(editButton, &QPushButton::clicked, this, &KeyRemapper::editMapping);
     connect(clearButton, &QPushButton::clicked, this, &KeyRemapper::clearAllMappings);
     connect(saveButton, &QPushButton::clicked, this, &KeyRemapper::saveProfile);
     connect(loadButton, &QPushButton::clicked, this, &KeyRemapper::loadProfile);
-    connect(resetButton, &QPushButton::clicked, this, &KeyRemapper::resetToDefault);
 
     connect(enableGlobalHook, &QCheckBox::toggled, [this](bool enabled) {
         if (enabled) {
@@ -334,43 +467,111 @@ void KeyRemapper::setupConnections()
         }
     });
 
-    connect(mappingTable, &QTableWidget::cellChanged, this, &KeyRemapper::toggleMapping);
+    // 表格单元格点击事件
+    connect(mappingTable, &QTableWidget::cellClicked, this, &KeyRemapper::toggleMapping);
     connect(mappingTable, &QTableWidget::cellDoubleClicked, this, &KeyRemapper::onKeyMappingDoubleClick);
 
-    connect(keyCaptureWidget, &KeyCaptureWidget::keyCaptured, this, [this](int keyCode, const QString& keyName) {
-        if (capturingOriginal) {
-            onOriginalKeyCaptured(keyCode, keyName);
-        } else {
-            onMappedKeyCaptured(keyCode, keyName);
+    // 右键菜单
+    connect(mappingTable, &QTableWidget::customContextMenuRequested, [this](const QPoint& pos) {
+        QTableWidgetItem* item = mappingTable->itemAt(pos);
+        if (!item) return;
+
+        QMenu menu(this);
+        QAction* editAction = menu.addAction("✏️ 编辑映射");
+        QAction* deleteAction = menu.addAction("➖ 删除映射");
+        menu.addSeparator();
+        QAction* duplicateAction = menu.addAction("📋 复制映射");
+
+        QAction* selected = menu.exec(mappingTable->viewport()->mapToGlobal(pos));
+        if (selected == editAction) {
+            editMapping();
+        } else if (selected == deleteAction) {
+            removeMapping();
+        } else if (selected == duplicateAction) {
+            // 实现复制功能
+            int row = item->row();
+            if (row >= 0 && row < keyMappings.size()) {
+                KeyMapping newMapping = keyMappings[row];
+                newMapping.originalKey = 0;
+                newMapping.originalKeyName = "双击设置";
+                keyMappings.append(newMapping);
+                populateTable();
+            }
+        }
+    });
+
+    // 委托按键捕获信号
+    connect(keyCaptureDelegate, &KeyCaptureDelegate::keyCaptured, this, [this](int row, int column, int keyCode, const QString& keyName) {
+        if (row >= 0 && row < keyMappings.size()) {
+            if (column == 1) { // 原始按键列
+                keyMappings[row].originalKey = keyCode;
+                keyMappings[row].originalKeyName = keyName;
+            } else if (column == 3 && keyMappings[row].type == MappingType::KeyToKey) { // 目标按键列（仅按键映射类型）
+                keyMappings[row].mappedKey = keyCode;
+                keyMappings[row].mappedKeyName = keyName;
+            }
+            populateTable();
+            updateGlobalMappings();
+            showStatusMessage("按键已更新", 2000);
         }
     });
 }
 
 void KeyRemapper::addNewMapping()
 {
-    currentEditingRow = -1; // 新增模式
-    currentMappingType = MappingType::KeyToKey;
-    capturingOriginal = true;
-    keyCaptureWidget->startCapture("请按下要重新映射的原始按键...");
-    showStatusMessage("按键映射: 请按下要重新映射的原始按键", 0);
+    // 直接添加一个空的映射到表格
+    KeyMapping newMapping;
+    newMapping.originalKey = 0;
+    newMapping.mappedKey = 0;
+    newMapping.originalKeyName = "双击设置";
+    newMapping.mappedKeyName = "双击设置";
+    newMapping.enabled = true;
+    newMapping.type = MappingType::KeyToKey;
+
+    keyMappings.append(newMapping);
+    populateTable();
+
+    // 自动选中新添加的行
+    int newRow = keyMappings.size() - 1;
+    mappingTable->selectRow(newRow);
+
+    showStatusMessage("已添加新映射，请双击单元格设置按键", 3000);
 }
 
 void KeyRemapper::addAppLauncher()
 {
-    currentEditingRow = -1; // 新增模式
-    currentMappingType = MappingType::KeyToApp;
-    capturingOriginal = true;
-    keyCaptureWidget->startCapture("请按下要启动应用程序的按键...");
-    showStatusMessage("应用启动: 请按下要启动应用程序的按键", 0);
+    // 直接添加一个空的应用启动映射到表格
+    KeyMapping newMapping;
+    newMapping.originalKey = 0;
+    newMapping.originalKeyName = "双击设置";
+    newMapping.enabled = true;
+    newMapping.type = MappingType::KeyToApp;
+    newMapping.appName = "未设置";
+
+    keyMappings.append(newMapping);
+    currentEditingRow = keyMappings.size() - 1;
+    populateTable();
+
+    // 直接显示应用选择对话框
+    showAppSelector(MappingType::KeyToApp);
 }
 
 void KeyRemapper::addCommandLauncher()
 {
-    currentEditingRow = -1; // 新增模式
-    currentMappingType = MappingType::KeyToCommand;
-    capturingOriginal = true;
-    keyCaptureWidget->startCapture("请按下要执行命令的按键...");
-    showStatusMessage("命令执行: 请按下要执行命令的按键", 0);
+    // 直接添加一个空的命令执行映射到表格
+    KeyMapping newMapping;
+    newMapping.originalKey = 0;
+    newMapping.originalKeyName = "双击设置";
+    newMapping.enabled = true;
+    newMapping.type = MappingType::KeyToCommand;
+    newMapping.command = "未设置";
+
+    keyMappings.append(newMapping);
+    currentEditingRow = keyMappings.size() - 1;
+    populateTable();
+
+    // 直接显示命令配置对话框
+    showAppSelector(MappingType::KeyToCommand);
 }
 
 void KeyRemapper::removeMapping()
@@ -388,10 +589,15 @@ void KeyRemapper::editMapping()
 {
     int currentRow = mappingTable->currentRow();
     if (currentRow >= 0 && currentRow < keyMappings.size()) {
-        currentEditingRow = currentRow;
-        capturingOriginal = true;
-        keyCaptureWidget->startCapture("请按下要重新映射的原始按键...");
-        showStatusMessage("编辑模式: 请按下要重新映射的原始按键", 0);
+        const KeyMapping& mapping = keyMappings[currentRow];
+        if (mapping.type == MappingType::KeyToApp || mapping.type == MappingType::KeyToCommand) {
+            // 对于应用和命令类型，显示配置对话框
+            currentEditingRow = currentRow;
+            showAppSelector(mapping.type);
+        } else {
+            // 对于按键映射，提示用户双击单元格编辑
+            showStatusMessage("请双击单元格编辑按键", 2000);
+        }
     }
 }
 
@@ -466,64 +672,45 @@ void KeyRemapper::resetToDefault()
 
 void KeyRemapper::onKeyMappingDoubleClick(int row, int column)
 {
-    if (column == 1 || column == 2) { // 原始按键或映射按键列
-        currentEditingRow = row;
-        capturingOriginal = (column == 1);
+    if (row < 0 || row >= keyMappings.size()) {
+        return;
+    }
 
-        QString prompt = capturingOriginal ?
-            "请按下新的原始按键..." :
-            "请按下要映射到的目标按键...";
+    const KeyMapping& mapping = keyMappings[row];
 
-        keyCaptureWidget->startCapture(prompt);
-        showStatusMessage(prompt, 0);
+    // 列1：原始按键列 - 始终允许双击编辑（由delegate处理）
+    if (column == 1) {
+        // 由KeyCaptureDelegate自动处理
+        return;
+    }
+
+    // 列3：目标/动作列
+    if (column == 3) {
+        if (mapping.type == MappingType::KeyToKey) {
+            // 按键映射类型：由delegate处理按键捕获
+            return;
+        } else {
+            // 应用启动或命令执行类型：打开配置对话框
+            currentEditingRow = row;
+            showAppSelector(mapping.type);
+        }
     }
 }
 
 void KeyRemapper::onOriginalKeyCaptured(int keyCode, const QString& keyName)
 {
-    if (currentEditingRow == -1) {
-        // 新增模式
-        KeyMapping newMapping;
-        newMapping.originalKey = keyCode;
-        newMapping.originalKeyName = keyName;
-        newMapping.enabled = true;
-        newMapping.type = currentMappingType;
-
-        keyMappings.append(newMapping);
-        currentEditingRow = keyMappings.size() - 1;
-
-        if (currentMappingType == MappingType::KeyToKey) {
-            // 按键映射：继续捕获目标按键
-            capturingOriginal = false;
-            keyCaptureWidget->startCapture("请按下要映射到的目标按键...");
-            showStatusMessage("请按下要映射到的目标按键", 0);
-        } else {
-            // 应用启动或命令执行：显示应用选择对话框
-            showAppSelector(currentMappingType);
-        }
-    } else {
-        // 编辑模式，更新原始按键
-        keyMappings[currentEditingRow].originalKey = keyCode;
-        keyMappings[currentEditingRow].originalKeyName = keyName;
-        populateTable();
-        updateGlobalMappings();
-        showStatusMessage("原始按键已更新");
-        currentEditingRow = -1;
-    }
+    // 此函数保留为空，不再使用KeyCaptureWidget
+    // 按键捕获现在通过表格的委托直接处理
+    Q_UNUSED(keyCode);
+    Q_UNUSED(keyName);
 }
 
 void KeyRemapper::onMappedKeyCaptured(int keyCode, const QString& keyName)
 {
-    if (currentEditingRow >= 0 && currentEditingRow < keyMappings.size()) {
-        keyMappings[currentEditingRow].mappedKey = keyCode;
-        keyMappings[currentEditingRow].mappedKeyName = keyName;
-        populateTable();
-        updateGlobalMappings();
-        showStatusMessage(QString("按键映射已添加: %1 → %2")
-                         .arg(keyMappings[currentEditingRow].originalKeyName)
-                         .arg(keyMappings[currentEditingRow].mappedKeyName));
-        currentEditingRow = -1;
-    }
+    // 此函数保留为空，不再使用KeyCaptureWidget
+    // 按键捕获现在通过表格的委托直接处理
+    Q_UNUSED(keyCode);
+    Q_UNUSED(keyName);
 }
 
 void KeyRemapper::populateTable()
@@ -539,10 +726,22 @@ void KeyRemapper::populateTable()
         enableItem->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
         mappingTable->setItem(i, 0, enableItem);
 
-        // 其他列
-        mappingTable->setItem(i, 1, new QTableWidgetItem(mapping.originalKeyName));
+        // 原始按键列 - 允许编辑
+        QTableWidgetItem* originalKeyItem = new QTableWidgetItem(mapping.originalKeyName);
+        originalKeyItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
+        mappingTable->setItem(i, 1, originalKeyItem);
+
+        // 映射类型列
         mappingTable->setItem(i, 2, new QTableWidgetItem(getMappingTypeString(mapping.type)));
-        mappingTable->setItem(i, 3, new QTableWidgetItem(getMappingDisplayText(mapping)));
+
+        // 目标/动作列 - 只有按键映射类型允许编辑
+        QTableWidgetItem* targetItem = new QTableWidgetItem(getMappingDisplayText(mapping));
+        if (mapping.type == MappingType::KeyToKey) {
+            targetItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
+        } else {
+            targetItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        }
+        mappingTable->setItem(i, 3, targetItem);
 
         QString details;
         if (mapping.type == MappingType::KeyToApp) {
@@ -578,9 +777,6 @@ void KeyRemapper::populateTable()
         for (int j = 0; j < 5; ++j) {
             if (mappingTable->item(i, j)) {
                 mappingTable->item(i, j)->setBackground(rowColor);
-                if (j > 0) { // 除了第一列，其他列不可编辑
-                    mappingTable->item(i, j)->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-                }
             }
         }
     }
@@ -817,19 +1013,30 @@ void KeyRemapper::setupAppSelectorDialog()
 
 void KeyRemapper::showAppSelector(MappingType type)
 {
+    if (currentEditingRow < 0 || currentEditingRow >= keyMappings.size()) {
+        return;
+    }
+
+    const KeyMapping& mapping = keyMappings[currentEditingRow];
+
     if (type == MappingType::KeyToApp) {
         appSelectorDialog->setWindowTitle("配置应用程序启动");
         appPathEdit->setPlaceholderText("选择要启动的应用程序文件...");
+
+        // 填充现有数据
+        appPathEdit->setText(mapping.appPath);
+        appNameEdit->setText(mapping.appName);
+        workingDirEdit->setText(mapping.workingDir);
+        argumentsEdit->setText(mapping.arguments);
     } else if (type == MappingType::KeyToCommand) {
         appSelectorDialog->setWindowTitle("配置命令执行");
         appPathEdit->setPlaceholderText("输入要执行的命令...");
-    }
 
-    // 清空输入框
-    appPathEdit->clear();
-    appNameEdit->clear();
-    workingDirEdit->clear();
-    argumentsEdit->clear();
+        // 填充现有数据
+        appPathEdit->setText(mapping.command);
+        workingDirEdit->setText(mapping.workingDir);
+        argumentsEdit->setText(mapping.arguments);
+    }
 
     appSelectorDialog->show();
     appSelectorDialog->raise();
