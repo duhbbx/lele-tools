@@ -1984,38 +1984,10 @@ jobs:
         cp "$EXE" ~/rpmbuild/SOURCES/lele-tools
         chmod 755 ~/rpmbuild/SOURCES/lele-tools
 
-        cat > ~/rpmbuild/SOURCES/lele-tools.desktop << 'DESK'
-[Desktop Entry]
-Type=Application
-Name=Lele Tools
-Comment=Collection of useful tools
-Exec=lele-tools
-Icon=lele-tools
-Categories=Utility;
-DESK
+        printf '[Desktop Entry]\nType=Application\nName=Lele Tools\nComment=Collection of useful tools\nExec=lele-tools\nIcon=lele-tools\nCategories=Utility;\n' > ~/rpmbuild/SOURCES/lele-tools.desktop
 
         # 写 spec 文件，%install 段负责复制文件到 BUILDROOT
-        cat > ~/rpmbuild/SPECS/lele-tools.spec << SPEC
-Name:    lele-tools
-Version: ${VERSION}
-Release: 1
-Summary: Collection of useful desktop utilities
-License: MIT
-URL:     https://github.com/duhbbx/lele-tools
-
-%description
-A cross-platform Qt-based toolbox application.
-
-%install
-mkdir -p %{buildroot}/usr/bin
-mkdir -p %{buildroot}/usr/share/applications
-install -m 755 %{_sourcedir}/lele-tools %{buildroot}/usr/bin/lele-tools
-install -m 644 %{_sourcedir}/lele-tools.desktop %{buildroot}/usr/share/applications/lele-tools.desktop
-
-%files
-/usr/bin/lele-tools
-/usr/share/applications/lele-tools.desktop
-SPEC
+        printf 'Name:    lele-tools\nVersion: %s\nRelease: 1\nSummary: Collection of useful desktop utilities\nLicense: MIT\nURL:     https://github.com/duhbbx/lele-tools\n\n%%description\nA cross-platform Qt-based toolbox application.\n\n%%install\nmkdir -p %%{buildroot}/usr/bin\nmkdir -p %%{buildroot}/usr/share/applications\ninstall -m 755 %%{_sourcedir}/lele-tools %%{buildroot}/usr/bin/lele-tools\ninstall -m 644 %%{_sourcedir}/lele-tools.desktop %%{buildroot}/usr/share/applications/lele-tools.desktop\n\n%%files\n/usr/bin/lele-tools\n/usr/share/applications/lele-tools.desktop\n' "$VERSION" > ~/rpmbuild/SPECS/lele-tools.spec
 
         rpmbuild -bb ~/rpmbuild/SPECS/lele-tools.spec
 
