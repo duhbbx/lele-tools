@@ -1819,150 +1819,96 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Linux 构建任务（Ubuntu / Debian / Fedora）
+  # 使用 matrix 策略，各发行版使用原生包管理器安装依赖
   build-linux:
     runs-on: ubuntu-latest
-    if: false
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            container: ''               # 不使用容器，直接在 runner 上跑
+            pkg_fmt: deb
+          - distro: debian
+            container: 'debian:bookworm'
+            pkg_fmt: deb
+          - distro: fedora
+            container: 'fedora:41'
+            pkg_fmt: rpm
+
+    container: ${{ matrix.container || null }}
+
     steps:
+    - name: Install container prerequisites (Debian/Fedora)
+      if: matrix.container != ''
+      shell: bash
+      run: |
+        if command -v apt-get &>/dev/null; then
+          apt-get update && apt-get install -y git sudo curl wget
+        elif command -v dnf &>/dev/null; then
+          dnf install -y git sudo curl wget which
+        fi
+
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          cmake \
-          ninja-build \
-          pkg-config \
-          libgl1-mesa-dev \
-          libxkbcommon-dev \
-          libxcb-xinerama0-dev \
-          libxcb-cursor-dev \
-          libfontconfig1-dev \
-          libfreetype6-dev \
-          libx11-dev \
-          libx11-xcb-dev \
-          libxext-dev \
-          libxfixes-dev \
-          libxi-dev \
-          libxrender-dev \
-          libxcb1-dev \
-          libxcb-glx0-dev \
-          libxcb-keysyms1-dev \
-          libxcb-image0-dev \
-          libxcb-shm0-dev \
-          libxcb-icccm4-dev \
-          libxcb-sync-dev \
-          libxcb-xfixes0-dev \
-          libxcb-shape0-dev \
-          libxcb-randr0-dev \
-          libxcb-render-util0-dev \
-          libxcb-util-dev \
-          libxcb-xkb-dev \
-          libxkbcommon-x11-dev
-          
-    # 步骤2: 检查Linux平台Qt可用性
-    # 在安装前检查架构和模块的可用性，避免安装失败
-    - name: Check Qt availability (Linux)
-      run: |
-        echo "检查Qt ${{ env.QT_VERSION_LINUX }} 在Linux平台的可用性..."
-        pip install aqtinstall
-        
-        # 检查可用架构
-        echo "=== 可用架构 ==="
-        python -m aqt list-qt linux desktop --arch ${{ env.QT_VERSION_LINUX }} || echo "无法获取架构列表"
-        
-        # 检查可用模块
-        echo "=== 可用模块 ==="
-        python -m aqt list-qt linux desktop --modules ${{ env.QT_VERSION_LINUX }} gcc_64 || echo "无法获取模块列表"
-        
-    # 步骤3: 安装Qt框架（Linux版本）
-    # 使用渐进式安装策略确保Qt能够成功安装
-    - name: Setup Qt (Base)
-      id: qt-install-base
-      uses: jurplel/install-qt-action@v3
       with:
-        version: ${{ env.QT_VERSION_LINUX }} # Linux Qt版本 6.7.2
-        host: linux                        # Linux主机
-        target: desktop                    # 桌面应用
-        arch: gcc_64                         # GCC 64位架构
-        cache: true                        # 启用缓存
-        # 不安装额外模块，先确保基础Qt可用
-        
-    # 尝试安装多媒体模块（可选）
-    - name: Setup Qt Multimedia (Optional)
-      id: qt-multimedia
-      continue-on-error: true              # 允许失败，不影响整体构建
-      run: |
-        echo "尝试安装Qt Multimedia模块..."
-        pip install aqtinstall
-        python -m aqt install-qt linux desktop ${{ env.QT_VERSION_LINUX }} gcc_64 --modules qtmultimedia --outputdir ${{ runner.workspace }}/Qt || echo "Qt Multimedia安装失败，将禁用摄像头功能"
-        
-    # Linux 依赖缓存优化
-    - name: Cache system dependencies
-      uses: actions/cache@v4
-      id: system-deps-cache
-      with:
-        path: |
-          /var/cache/apt/archives
-          /usr/local/lib/libredis++*
-          /usr/local/lib/libhiredis*
-          /usr/local/include/hiredis
-          /usr/local/include/sw
-        key: ${{ runner.os }}-system-deps-redis-opencv-mysql-v3
-        restore-keys: |
-          ${{ runner.os }}-system-deps-redis-opencv-mysql
-          ${{ runner.os }}-system-deps
-        
-    - name: Setup redis-plus-plus
-      if: steps.system-deps-cache.outputs.cache-hit != 'true'
-      run: |
-        echo "Installing hiredis and redis-plus-plus from source..."
-        
-        # Install dependencies
-        sudo apt-get install -y git cmake build-essential
-        
-        # First install hiredis with CMake support
-        echo "Installing hiredis..."
-        cd /tmp
-        git clone https://github.com/redis/hiredis.git
-        cd hiredis
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SSL=OFF
-        make -j$(nproc)
-        sudo make install
-        
-        # Then install redis-plus-plus
-        echo "Installing redis-plus-plus..."
-        cd /tmp
-        git clone https://github.com/sewenew/redis-plus-plus.git
-        cd redis-plus-plus
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
-        make -j$(nproc)
-        sudo make install
-        
-        echo "hiredis and redis-plus-plus installed successfully!"
-        
-    - name: Update library cache
-      run: |
-        sudo ldconfig
-        
-    - name: Setup OpenCV and MySQL
-      run: |
-        echo "Installing OpenCV..."
-        sudo apt-get install -y libopencv-dev libopencv-contrib-dev
-        echo "OpenCV installed successfully!"
+        submodules: recursive
 
-        echo "Installing MySQL development libraries..."
-        sudo apt-get install -y libmysqlclient-dev
-        echo "MySQL libraries installed successfully!"
-        
+    # ──────────────────────────────────────────────
+    # 安装依赖：Ubuntu / Debian（apt）
+    # ──────────────────────────────────────────────
+    - name: Install dependencies (apt)
+      if: matrix.pkg_fmt == 'deb'
+      shell: bash
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        # 容器内无 sudo 权限时直接跑；runner 上用 sudo
+        SUDO=""
+        if [ "$(id -u)" != "0" ]; then SUDO="sudo"; fi
+
+        $SUDO apt-get update
+        $SUDO apt-get install -y \
+          build-essential cmake ninja-build pkg-config \
+          qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools \
+          qt6-l10n-tools libqt6sql6-sqlite \
+          libqt6concurrent6 libqt6network6 libqt6printsupport6 libqt6sql6 \
+          qt6-multimedia-dev \
+          qt6-webengine-dev qt6-webengine-dev-tools || true \
+          libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
+          libxcb-cursor-dev libxcb-xinerama0-dev \
+          libfontconfig1-dev libfreetype6-dev \
+          libx11-dev libx11-xcb-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
+          libxcb1-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev \
+          libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync-dev libxcb-xfixes0-dev \
+          libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev \
+          libxcb-util-dev libxcb-xkb-dev \
+          libopencv-dev libmysqlclient-dev libssh-dev libhiredis-dev \
+          libpcap-dev dpkg-dev file
+
+    # ──────────────────────────────────────────────
+    # 安装依赖：Fedora（dnf）
+    # ──────────────────────────────────────────────
+    - name: Install dependencies (dnf)
+      if: matrix.distro == 'fedora'
+      shell: bash
+      run: |
+        dnf install -y \
+          gcc-c++ cmake ninja-build pkg-config \
+          qt6-qtbase-devel qt6-qttools-devel qt6-linguist \
+          qt6-qtmultimedia-devel \
+          qt6-qtwebengine-devel || true \
+          mesa-libGL-devel libxkbcommon-devel libxkbcommon-x11-devel \
+          fontconfig-devel freetype-devel \
+          libX11-devel libXext-devel libXfixes-devel libXi-devel libXrender-devel \
+          libxcb-devel xcb-util-devel xcb-util-keysyms-devel xcb-util-image-devel \
+          xcb-util-renderutil-devel xcb-util-cursor-devel \
+          opencv-devel mysql-devel libssh-devel hiredis-devel \
+          libpcap-devel rpm-build file
+
     - name: Set version
       id: version
+      shell: bash
       run: |
         version="${{ github.event.inputs.version }}"
         if [ -z "$version" ]; then
@@ -1975,101 +1921,87 @@ jobs:
         fi
         echo "Version: $version"
         echo "version=$version" >> $GITHUB_OUTPUT
-        
+
     - name: Build project
       id: build
+      shell: bash
       run: |
-        echo "=== Linux Build Started ==="
-        echo "Build Type: Release"
-        
+        set -e
+        echo "=== Linux Build (${{ matrix.distro }}) ==="
+
         PROJECT_ROOT=$(pwd)
         BUILD_DIR="$PROJECT_ROOT/build"
-        
-        echo "Project Root: $PROJECT_ROOT"
-        echo "Build Directory: $BUILD_DIR"
-        
-        # Clean and create build directory
-        rm -rf "$BUILD_DIR"
-        mkdir -p "$BUILD_DIR"
+        rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR"
         cd "$BUILD_DIR"
-        
-        echo "Configuring project..."
-        
-        # 根据Qt Multimedia可用性配置构建选项
-        CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_REDIS=ON -DWITH_OPENCV=ON -DWITH_MYSQL=ON"
-        
-        # 检查Qt Multimedia是否可用
-        if [ -d "$Qt6_DIR/lib/cmake/Qt6Multimedia" ]; then
-            echo "Qt Multimedia可用，启用摄像头功能"
-            CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=ON"
+
+        # 基础 CMake 参数
+        CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DWITH_OPENCV=ON \
+          -DWITH_MYSQL=ON \
+          -DWITH_LIBSSH=ON \
+          -DWITH_PCAP=ON \
+          -DENABLE_REDIS=OFF"
+
+        # 检测 Qt Multimedia
+        if pkg-config --exists Qt6Multimedia 2>/dev/null || \
+           find /usr -path '*/cmake/Qt6Multimedia/Qt6MultimediaConfig.cmake' 2>/dev/null | grep -q .; then
+          CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=ON"
         else
-            echo "Qt Multimedia不可用，禁用摄像头功能"
-            CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=OFF"
+          CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=OFF"
         fi
-        
-        echo "CMake配置参数: $CMAKE_ARGS"
-        cmake $PROJECT_ROOT $CMAKE_ARGS
-          
-        if [ $? -ne 0 ]; then
-            echo "Project configuration failed!"
-            exit 1
-        fi
-        
-        echo "Compiling project..."
-        cmake --build . --parallel
-        
-        if [ $? -ne 0 ]; then
-            echo "Project compilation failed!"
-            exit 1
-        fi
-        
-        echo "Build successful!"
-        
-        # Find executable
+
+        echo "CMake args: $CMAKE_ARGS"
+        cmake "$PROJECT_ROOT" $CMAKE_ARGS
+        cmake --build . --parallel $(nproc)
+
         EXE_FILE=$(find "$BUILD_DIR" -name "lele-tools" -type f -executable | head -n1)
         if [ -z "$EXE_FILE" ]; then
-            EXE_FILE=$(find "$BUILD_DIR" -name "*lele*" -type f -executable | head -n1)
+          echo "Executable not found!" && exit 1
         fi
-        
-        if [ -z "$EXE_FILE" ]; then
-            echo "Executable not found!"
-            exit 1
-        fi
-        
+
         echo "Found executable: $EXE_FILE"
-        
-        EXE_DIR=$(dirname "$EXE_FILE")
-        EXE_NAME=$(basename "$EXE_FILE")
-        
         echo "exe_path=$EXE_FILE" >> $GITHUB_OUTPUT
-        echo "exe_dir=$EXE_DIR" >> $GITHUB_OUTPUT
-        echo "exe_name=$EXE_NAME" >> $GITHUB_OUTPUT
         echo "build_dir=$BUILD_DIR" >> $GITHUB_OUTPUT
-        
-        cd "$PROJECT_ROOT"
-        
-    - name: Create AppImage
-      id: create_appimage
-      if: github.event_name != 'pull_request'
+
+    # ──────────────────────────────────────────────
+    # 打包 .deb（Ubuntu / Debian）
+    # ──────────────────────────────────────────────
+    - name: Package .deb
+      id: pkg_deb
+      if: matrix.pkg_fmt == 'deb' && github.event_name != 'pull_request'
+      shell: bash
       run: |
-        echo "Creating AppImage package..."
-        
+        set -e
         VERSION="${{ steps.version.outputs.version }}"
-        BUILD_DIR="${{ steps.build.outputs.build_dir }}"
-        EXE_FILE="${{ steps.build.outputs.exe_path }}"
-        
-        # Download linuxdeploy and Qt plugin
-        wget -c -nv "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
-        wget -c -nv "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
-        
-        chmod +x linuxdeploy*.AppImage
-        
-        # Create AppDir structure
-        mkdir -p AppDir/usr/bin
-        cp "$EXE_FILE" AppDir/usr/bin/
-        
-        # Create desktop file
-        cat > AppDir/lele-tools.desktop << EOF
+        DISTRO="${{ matrix.distro }}"
+        EXE="${{ steps.build.outputs.exe_path }}"
+        PKG_NAME="lele-tools_${VERSION}_${DISTRO}_amd64"
+
+        mkdir -p "${PKG_NAME}/DEBIAN"
+        mkdir -p "${PKG_NAME}/usr/bin"
+        mkdir -p "${PKG_NAME}/usr/share/applications"
+        mkdir -p "${PKG_NAME}/usr/share/icons/hicolor/256x256/apps"
+
+        cp "$EXE" "${PKG_NAME}/usr/bin/lele-tools"
+        chmod 755 "${PKG_NAME}/usr/bin/lele-tools"
+
+        # control 文件
+        cat > "${PKG_NAME}/DEBIAN/control" << CTRL
+        Package: lele-tools
+        Version: ${VERSION}
+        Section: utils
+        Priority: optional
+        Architecture: amd64
+        Depends: libqt6widgets6, libqt6network6, libqt6concurrent6, libqt6sql6, libqt6printsupport6
+        Maintainer: lele-tools maintainers
+        Description: Lele Tools - Collection of useful desktop utilities
+         A cross-platform Qt-based toolbox application.
+        CTRL
+        # 去掉行首多余空格（heredoc 缩进导致）
+        sed -i 's/^        //' "${PKG_NAME}/DEBIAN/control"
+
+        # desktop 文件
+        cat > "${PKG_NAME}/usr/share/applications/lele-tools.desktop" << DESK
         [Desktop Entry]
         Type=Application
         Name=Lele Tools
@@ -2077,43 +2009,89 @@ jobs:
         Exec=lele-tools
         Icon=lele-tools
         Categories=Utility;
-        EOF
-        
-        # Create a simple icon (you should replace this with your actual icon)
-        mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
-        # For now, create a placeholder icon
-        convert -size 256x256 xc:blue AppDir/usr/share/icons/hicolor/256x256/apps/lele-tools.png || echo "No icon created"
-        
-        # Deploy Qt dependencies and create AppImage
-        export QMAKE=$Qt6_DIR/bin/qmake
-        ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
-        
-        # Find the created AppImage
-        APPIMAGE_FILE=$(find . -name "*.AppImage" | head -n1)
-        if [ -n "$APPIMAGE_FILE" ]; then
-            # Rename to include version
-            NEW_NAME="LeleTools-$VERSION-x86_64.AppImage"
-            mv "$APPIMAGE_FILE" "$NEW_NAME"
-            
-            APPIMAGE_SIZE=$(du -h "$NEW_NAME" | cut -f1)
-            echo "AppImage created: $NEW_NAME ($APPIMAGE_SIZE)"
-            
-            echo "appimage_path=$(pwd)/$NEW_NAME" >> $GITHUB_OUTPUT
-            echo "appimage_name=$NEW_NAME" >> $GITHUB_OUTPUT
-            echo "appimage_size=$APPIMAGE_SIZE" >> $GITHUB_OUTPUT
-        else
-            echo "Failed to create AppImage"
-            echo "appimage_path=" >> $GITHUB_OUTPUT
-            echo "appimage_name=" >> $GITHUB_OUTPUT
-            echo "appimage_size=0" >> $GITHUB_OUTPUT
+        DESK
+        sed -i 's/^        //' "${PKG_NAME}/usr/share/applications/lele-tools.desktop"
+
+        # 如果有图标就复制
+        if [ -f "resources/app-icon.png" ]; then
+          cp resources/app-icon.png "${PKG_NAME}/usr/share/icons/hicolor/256x256/apps/lele-tools.png"
         fi
-        
-    - name: Upload Linux build artifacts
+
+        dpkg-deb --build "${PKG_NAME}"
+        echo "pkg_path=$(pwd)/${PKG_NAME}.deb" >> $GITHUB_OUTPUT
+        echo "pkg_name=${PKG_NAME}.deb" >> $GITHUB_OUTPUT
+
+    # ──────────────────────────────────────────────
+    # 打包 .rpm（Fedora）
+    # ──────────────────────────────────────────────
+    - name: Package .rpm
+      id: pkg_rpm
+      if: matrix.distro == 'fedora' && github.event_name != 'pull_request'
+      shell: bash
+      run: |
+        set -e
+        VERSION="${{ steps.version.outputs.version }}"
+        EXE="${{ steps.build.outputs.exe_path }}"
+
+        # rpmbuild 目录结构
+        mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+        mkdir -p ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/bin
+        mkdir -p ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/share/applications
+
+        cp "$EXE" ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/bin/lele-tools
+        chmod 755 ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/bin/lele-tools
+
+        cat > ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/share/applications/lele-tools.desktop << DESK
+        [Desktop Entry]
+        Type=Application
+        Name=Lele Tools
+        Comment=Collection of useful tools
+        Exec=lele-tools
+        Icon=lele-tools
+        Categories=Utility;
+        DESK
+        sed -i 's/^        //' ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/share/applications/lele-tools.desktop
+
+        cat > ~/rpmbuild/SPECS/lele-tools.spec << SPEC
+        Name:    lele-tools
+        Version: ${VERSION}
+        Release: 1
+        Summary: Collection of useful desktop utilities
+        License: MIT
+        URL:     https://github.com/duhbbx/lele-tools
+
+        %description
+        A cross-platform Qt-based toolbox application.
+
+        %install
+        # 文件已预先放置在 BUILDROOT 中
+
+        %files
+        /usr/bin/lele-tools
+        /usr/share/applications/lele-tools.desktop
+        SPEC
+        sed -i 's/^        //' ~/rpmbuild/SPECS/lele-tools.spec
+
+        rpmbuild -bb --buildroot ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64 \
+          ~/rpmbuild/SPECS/lele-tools.spec
+
+        RPM_FILE=$(find ~/rpmbuild/RPMS -name "*.rpm" | head -n1)
+        RPM_NAME="lele-tools-${VERSION}-1.fedora.x86_64.rpm"
+        cp "$RPM_FILE" "$(pwd)/$RPM_NAME"
+
+        echo "pkg_path=$(pwd)/$RPM_NAME" >> $GITHUB_OUTPUT
+        echo "pkg_name=$RPM_NAME" >> $GITHUB_OUTPUT
+
+    # ──────────────────────────────────────────────
+    # 上传产物
+    # ──────────────────────────────────────────────
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: lele-tools-linux-${{ steps.version.outputs.version }}
+        name: lele-tools-${{ matrix.distro }}-${{ steps.version.outputs.version }}
         path: |
-          LeleTools-*.AppImage
+          ${{ steps.pkg_deb.outputs.pkg_path }}
+          ${{ steps.pkg_rpm.outputs.pkg_path }}
           ${{ steps.build.outputs.exe_path }}
         retention-days: 90
 
