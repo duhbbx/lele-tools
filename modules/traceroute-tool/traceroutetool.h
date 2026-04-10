@@ -118,6 +118,7 @@ private:
     int m_socket;
 #ifdef WITH_PCAP
     pcap_t *m_pcapHandle;
+    bool initializeNpcap();
 #endif
     void cleanupUnix();
 #endif
