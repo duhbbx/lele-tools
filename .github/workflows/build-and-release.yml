@@ -1977,47 +1977,47 @@ jobs:
         VERSION="${{ steps.version.outputs.version }}"
         EXE="${{ steps.build.outputs.exe_path }}"
 
-        # rpmbuild 目录结构
+        # 准备 rpmbuild 目录和源文件
         mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-        mkdir -p ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/bin
-        mkdir -p ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/share/applications
 
-        cp "$EXE" ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/bin/lele-tools
-        chmod 755 ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/bin/lele-tools
+        # 把可执行文件和 desktop 文件放到 SOURCES
+        cp "$EXE" ~/rpmbuild/SOURCES/lele-tools
+        chmod 755 ~/rpmbuild/SOURCES/lele-tools
 
-        cat > ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/share/applications/lele-tools.desktop << DESK
-        [Desktop Entry]
-        Type=Application
-        Name=Lele Tools
-        Comment=Collection of useful tools
-        Exec=lele-tools
-        Icon=lele-tools
-        Categories=Utility;
-        DESK
-        sed -i 's/^        //' ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64/usr/share/applications/lele-tools.desktop
+        cat > ~/rpmbuild/SOURCES/lele-tools.desktop << 'DESK'
+[Desktop Entry]
+Type=Application
+Name=Lele Tools
+Comment=Collection of useful tools
+Exec=lele-tools
+Icon=lele-tools
+Categories=Utility;
+DESK
 
+        # 写 spec 文件，%install 段负责复制文件到 BUILDROOT
         cat > ~/rpmbuild/SPECS/lele-tools.spec << SPEC
-        Name:    lele-tools
-        Version: ${VERSION}
-        Release: 1
-        Summary: Collection of useful desktop utilities
-        License: MIT
-        URL:     https://github.com/duhbbx/lele-tools
+Name:    lele-tools
+Version: ${VERSION}
+Release: 1
+Summary: Collection of useful desktop utilities
+License: MIT
+URL:     https://github.com/duhbbx/lele-tools
 
-        %description
-        A cross-platform Qt-based toolbox application.
+%description
+A cross-platform Qt-based toolbox application.
 
-        %install
-        # 文件已预先放置在 BUILDROOT 中
+%install
+mkdir -p %{buildroot}/usr/bin
+mkdir -p %{buildroot}/usr/share/applications
+install -m 755 %{_sourcedir}/lele-tools %{buildroot}/usr/bin/lele-tools
+install -m 644 %{_sourcedir}/lele-tools.desktop %{buildroot}/usr/share/applications/lele-tools.desktop
 
-        %files
-        /usr/bin/lele-tools
-        /usr/share/applications/lele-tools.desktop
-        SPEC
-        sed -i 's/^        //' ~/rpmbuild/SPECS/lele-tools.spec
+%files
+/usr/bin/lele-tools
+/usr/share/applications/lele-tools.desktop
+SPEC
 
-        rpmbuild -bb --buildroot ~/rpmbuild/BUILDROOT/lele-tools-${VERSION}-1.x86_64 \
-          ~/rpmbuild/SPECS/lele-tools.spec
+        rpmbuild -bb ~/rpmbuild/SPECS/lele-tools.spec
 
         RPM_FILE=$(find ~/rpmbuild/RPMS -name "*.rpm" | head -n1)
         RPM_NAME="lele-tools-${VERSION}-1.fedora.x86_64.rpm"
