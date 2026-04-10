@@ -1753,72 +1753,6 @@ jobs:
             echo "zip_size=0" >> $env:GITHUB_OUTPUT
         }
         
-    - name: Create release
-      id: create_release
-      if: |
-        (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', steps.version.outputs.version) }}
-        name: Lele Tools ${{ steps.version.outputs.version }}
-        body: |
-          ## Lele Tools ${{ steps.version.outputs.version }}
-          
-          ### 📦 下载选项
-          
-          **🎯 推荐下载**：
-          - **便携版 (ZIP)**: `${{ steps.create_portable.outputs.zip_name }}` (${{ steps.create_portable.outputs.zip_size }} MB)
-            - 解压即用，无需安装
-            - 包含所有必要的依赖文件
-          
-          ${{ steps.create_installer.outputs.installer_name && format('- **安装包 (EXE)**: `{0}` ({1} MB)', steps.create_installer.outputs.installer_name, steps.create_installer.outputs.installer_size) || '- **安装包**: 构建中未生成（Qt Installer Framework不可用）' }}
-          
-          ### 🚀 功能特性
-          - 🛠️ 多种实用工具集合
-          - 🎨 现代化用户界面
-          - 🔧 一键构建、部署和打包
-          - 📱 支持多种格式转换
-          - 🔐 文本加密解密功能
-          - 🌐 网络工具集成
-          
-          ### 🔧 使用说明
-          
-          **便携版使用**：
-          1. 下载 ZIP 文件
-          2. 解压到任意目录
-          3. 运行 `lele-tools.exe`
-          
-          **安装包使用**：
-          1. 下载 EXE 安装包
-          2. 以管理员身份运行
-          3. 按向导完成安装
-          
-          ### 📋 系统要求
-          - Windows 10/11 (x64)
-          - Visual C++ Redistributable 2022
-          
-          ### 🔨 构建信息
-          - **构建时间**: ${{ github.event.head_commit.timestamp }}
-          - **构建类型**: Release
-          - **Qt版本**: ${{ env.QT_VERSION }}
-          - **OpenCV支持**: ${{ env.OPENCV_VERSION && 'Yes' || 'No' }}
-          - **提交哈希**: `${{ github.sha }}`
-          - **分支**: ${{ github.ref_name }}
-          
-          ---
-          
-          > 💡 **提示**: 首次使用推荐下载便携版，无需安装即可体验所有功能！
-        files: |
-          LeleTools_*_Portable.zip
-          LeleToolsInstaller_*.exe
-          LeleTools-*-x86_64.AppImage
-        draft: false
-        prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        fail_on_unmatched_files: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Linux 构建任务（Ubuntu / Debian / Fedora）
   # 使用 matrix 策略，各发行版使用原生包管理器安装依赖
   build-linux:
@@ -2215,3 +2149,100 @@ jobs:
         path: |
           ${{ steps.package.outputs.dmg_path }}
         retention-days: 90
+
+  # ================================================================
+  # 统一发布 Release
+  # 等待所有平台构建完成后，下载全部产物并创建 GitHub Release
+  # ================================================================
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-macos, build-linux]
+    # 仅在以下条件触发：推送到主分支、推送 tag、或手动触发选择创建 Release
+    if: |
+      always() &&
+      !contains(needs.*.result, 'cancelled') &&
+      (needs.build-windows.result == 'success' || needs.build-macos.result == 'success' || needs.build-linux.result == 'success') &&
+      github.event_name != 'pull_request' &&
+      (
+        (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+      )
+
+    steps:
+    - name: Set version
+      id: version
+      run: |
+        version="${{ github.event.inputs.version }}"
+        if [ -z "$version" ]; then
+            if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+                version="${{ github.ref_name }}"
+                version="${version#v}"
+            else
+                version="1.0.${{ github.run_number }}"
+            fi
+        fi
+        echo "version=$version" >> $GITHUB_OUTPUT
+
+    # 下载所有平台的构建产物
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: release-assets
+        merge-multiple: false
+
+    - name: Collect release files
+      id: collect
+      run: |
+        echo "=== 所有下载的产物 ==="
+        find release-assets -type f | sort
+        echo ""
+
+        # 创建统一的 release 目录
+        mkdir -p release-files
+
+        # 收集所有可发布的文件（.exe, .zip, .dmg, .deb, .rpm, .AppImage, 独立可执行文件）
+        find release-assets -type f \( \
+          -name "*.exe" -o -name "*.zip" -o -name "*.dmg" \
+          -o -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" \
+        \) -exec cp {} release-files/ \;
+
+        echo "=== 将要上传到 Release 的文件 ==="
+        ls -lh release-files/ || echo "（无文件）"
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', steps.version.outputs.version) }}
+        name: Lele Tools ${{ steps.version.outputs.version }}
+        body: |
+          ## Lele Tools ${{ steps.version.outputs.version }}
+
+          ### 下载
+
+          | 平台 | 格式 | 说明 |
+          |------|------|------|
+          | Windows | `.zip` 便携版 | 解压即用，推荐 |
+          | Windows | `.exe` 安装包 | 向导式安装 |
+          | macOS | `.dmg` | 拖拽安装 |
+          | Ubuntu | `.deb` | `sudo dpkg -i xxx.deb` |
+          | Debian | `.deb` | `sudo dpkg -i xxx.deb` |
+          | Fedora | `.rpm` | `sudo dnf install xxx.rpm` |
+
+          ### 系统要求
+
+          - **Windows**: Windows 10/11 (x64)，需要 Visual C++ Redistributable 2022
+          - **macOS**: macOS 11.0+ (Apple Silicon & Intel)
+          - **Ubuntu**: 22.04 / 24.04 (amd64)
+          - **Debian**: Bookworm 12+ (amd64)
+          - **Fedora**: 41+ (x86_64)
+
+          ### 构建信息
+          - 构建时间: ${{ github.event.head_commit.timestamp }}
+          - 提交: `${{ github.sha }}`
+          - 分支: ${{ github.ref_name }}
+        files: release-files/*
+        draft: false
+        prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        fail_on_unmatched_files: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
