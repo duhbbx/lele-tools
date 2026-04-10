@@ -1843,7 +1843,7 @@ jobs:
           libxcb-devel xcb-util-devel xcb-util-keysyms-devel xcb-util-image-devel \
           xcb-util-renderutil-devel xcb-util-cursor-devel \
           opencv-devel libssh-devel hiredis-devel \
-          libpcap-devel rpm-build file
+          libpcap-devel rpm-build file patchelf
 
         # 可选依赖
         dnf install -y qt6-qtmultimedia-devel || echo "qt6-qtmultimedia-devel 不可用，跳过"
@@ -1980,9 +1980,15 @@ jobs:
         # 准备 rpmbuild 目录和源文件
         mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
-        # 把可执行文件和 desktop 文件放到 SOURCES
+        # 把可执行文件放到 SOURCES，并清理异常 RPATH
         cp "$EXE" ~/rpmbuild/SOURCES/lele-tools
         chmod 755 ~/rpmbuild/SOURCES/lele-tools
+        # 移除含空段的 RPATH（Fedora rpmbuild 严格检查）
+        if command -v patchelf &>/dev/null; then
+          patchelf --remove-rpath ~/rpmbuild/SOURCES/lele-tools || true
+        elif command -v chrpath &>/dev/null; then
+          chrpath -d ~/rpmbuild/SOURCES/lele-tools || true
+        fi
 
         printf '[Desktop Entry]\nType=Application\nName=Lele Tools\nComment=Collection of useful tools\nExec=lele-tools\nIcon=lele-tools\nCategories=Utility;\n' > ~/rpmbuild/SOURCES/lele-tools.desktop
 
