@@ -242,24 +242,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-# WebEngine components (optional for GitHub Actions compatibility)
-find_package(Qt6 COMPONENTS WebEngineCore QUIET)
-if(Qt6WebEngineCore_FOUND)
-    message(STATUS "Qt6 WebEngineCore found")
-    target_link_libraries(lele-tools PRIVATE Qt6::WebEngineCore)
-    add_definitions(-DWITH_WEBENGINE_CORE)
-else()
-    message(WARNING "Qt6 WebEngineCore not found - some features may be disabled")
-endif()
-
-find_package(Qt6 COMPONENTS WebEngineWidgets QUIET)
-if(Qt6WebEngineWidgets_FOUND)
-    message(STATUS "Qt6 WebEngineWidgets found")
-    target_link_libraries(lele-tools PRIVATE Qt6::WebEngineWidgets)
-    add_definitions(-DWITH_WEBENGINE_WIDGETS)
-else()
-    message(WARNING "Qt6 WebEngineWidgets not found - some features may be disabled")
-endif()
+# WebEngine 已移除：项目无源码使用，且体积占比极大（~200MB+）
 
 target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport ${QT_MULTIMEDIA_LIBS} yaml-cpp ScreenCaptureLib)
 

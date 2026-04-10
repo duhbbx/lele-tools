@@ -921,7 +921,7 @@ jobs:
         target: desktop                      # 目标平台（桌面应用）
         arch: win64_msvc2022_64             # 架构（64位Windows + MSVC2022）
         tools: 'tools_ifw'                  # Qt安装框架工具（用于创建安装包）
-        modules: 'qtwebengine qtmultimedia' # 额外模块（Web引擎 + 多媒体）
+        modules: 'qtmultimedia' # 额外模块（多媒体）
         cache: true                          # 启用缓存加速后续构建
         
     - name: Debug Qt installation
@@ -1823,7 +1823,7 @@ jobs:
 
         # 可选依赖（部分发行版仓库可能没有）
         $SUDO apt-get install -y qt6-multimedia-dev || echo "qt6-multimedia-dev 不可用，跳过"
-        $SUDO apt-get install -y qt6-webengine-dev qt6-webengine-dev-tools || echo "qt6-webengine-dev 不可用，跳过"
+        # WebEngine 已移除，不再安装
         $SUDO apt-get install -y libmysqlclient-dev || $SUDO apt-get install -y default-libmysqlclient-dev || echo "MySQL dev 不可用，跳过"
 
     # ──────────────────────────────────────────────
@@ -1847,7 +1847,7 @@ jobs:
 
         # 可选依赖
         dnf install -y qt6-qtmultimedia-devel || echo "qt6-qtmultimedia-devel 不可用，跳过"
-        dnf install -y qt6-qtwebengine-devel || echo "qt6-qtwebengine-devel 不可用，跳过"
+        # WebEngine 已移除，不再安装
         dnf install -y mysql-devel || dnf install -y mariadb-devel || echo "MySQL/MariaDB dev 不可用，跳过"
 
     - name: Set version
@@ -2054,7 +2054,7 @@ jobs:
         host: mac
         target: desktop
         arch: clang_64
-        modules: 'qtmultimedia qtwebengine qtwebchannel qtpositioning'
+        modules: 'qtmultimedia'
         cache: true
 
     - name: Set version
