@@ -1682,18 +1682,19 @@ jobs:
         }
         
     - name: Upload portable ZIP artifact
+      if: steps.create_portable.outputs.zip_path != ''
       uses: actions/upload-artifact@v4
       with:
-        name: lele-tools-portable-${{ steps.version.outputs.version }}
-        path: "*_Portable.zip"
+        name: lele-tools-windows-${{ steps.version.outputs.version }}
+        path: ${{ steps.create_portable.outputs.zip_path }}
         retention-days: 90
-        
+
     - name: Upload installer artifact
       if: github.event_name != 'pull_request' && steps.create_installer.outputs.installer_path != ''
       uses: actions/upload-artifact@v4
       with:
-        name: lele-tools-installer-${{ steps.version.outputs.version }}
-        path: "LeleToolsInstaller_*.exe"
+        name: lele-tools-windows-installer-${{ steps.version.outputs.version }}
+        path: ${{ steps.create_installer.outputs.installer_path }}
         retention-days: 90
         
     - name: Upload build artifacts (Debug)
