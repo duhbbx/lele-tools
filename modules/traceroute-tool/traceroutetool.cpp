@@ -187,13 +187,14 @@ bool TracerouteWorker::initializeIcmp()
 }
 #endif
 
+#ifdef Q_OS_WIN
 void TracerouteWorker::cleanupWindows()
 {
     if (m_socket != INVALID_SOCKET) {
         closesocket(m_socket);
         m_socket = INVALID_SOCKET;
     }
-    
+
 #ifdef WITH_PCAP
     if (m_pcapHandle) {
         pcap_close(m_pcapHandle);
@@ -207,9 +208,10 @@ void TracerouteWorker::cleanupWindows()
         m_icmpHandle = INVALID_HANDLE_VALUE;
     }
 #endif
-    
+
     WSACleanup();
 }
+#endif
 
 void TracerouteWorker::cleanup()
 {

@@ -47,6 +47,15 @@
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "kernel32.lib")
+#elif defined(Q_OS_MACOS)
+#include <sys/utsname.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
+#include <unistd.h>
+#include <fstream>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #else
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>

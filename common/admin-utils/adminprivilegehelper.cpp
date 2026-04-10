@@ -1,4 +1,6 @@
 #include "adminprivilegehelper.h"
+
+#ifdef Q_OS_WIN
 #include <QProcess>
 #include <QCoreApplication>
 #include <QDir>
@@ -444,3 +446,4 @@ QString ContextMenuManager::getRegistryPath(ContextMenuType type) {
             return "";
     }
 }
+#endif // Q_OS_WIN

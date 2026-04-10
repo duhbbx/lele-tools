@@ -4,7 +4,10 @@
 #include <QString>
 #include <QStringList>
 #include <functional>
+
+#ifdef Q_OS_WIN
 #include <Windows.h>
+#endif
 
 class AdminPrivilegeHelper {
 public:
@@ -37,6 +40,7 @@ public:
         }
     }
 
+#ifdef Q_OS_WIN
     // 写入注册表（需要管理员权限）
     static bool writeRegistry(HKEY hKey, const QString& subKey, const QString& valueName, const QString& data);
     static bool writeRegistryDWORD(HKEY hKey, const QString& subKey, const QString& valueName, DWORD data);
@@ -44,6 +48,7 @@ public:
     // 删除注册表项（需要管理员权限）
     static bool deleteRegistryKey(HKEY hKey, const QString& subKey);
     static bool deleteRegistryValue(HKEY hKey, const QString& subKey, const QString& valueName);
+#endif
 
     // 创建Windows任务计划（需要管理员权限）
     static bool createScheduledTask(const QString& taskName, const QString& executable, const QString& arguments = QString());

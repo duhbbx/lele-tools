@@ -2116,3 +2116,124 @@ jobs:
           LeleTools-*.AppImage
           ${{ steps.build.outputs.exe_path }}
         retention-days: 90
+
+  # macOS 构建任务
+  # 负责构建 macOS 版本的 .app 与 .dmg 安装包
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # 安装系统依赖（通过 Homebrew）
+    # - cmake / ninja: 构建工具
+    # - opencv: 计算机视觉（可选模块）
+    # - mysql-client: MySQL 原生支持
+    # - libssh: SSH/SFTP 工具
+    # - hiredis / redis-plus-plus: Redis 客户端
+    # - pkg-config: 依赖查找
+    # 注意：Npcap 仅 Windows 可用，macOS 系统自带 libpcap，无需额外安装
+    - name: Install system dependencies (Homebrew)
+      run: |
+        brew update
+        brew install cmake ninja pkg-config opencv mysql-client libssh hiredis
+        # redis-plus-plus 在 Homebrew 中名为 redis-plus-plus
+        brew install redis-plus-plus || echo "redis-plus-plus 安装失败，将禁用 Redis 支持"
+        # 让 pkg-config 能找到 mysql-client
+        echo "PKG_CONFIG_PATH=$(brew --prefix mysql-client)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+        echo "$(brew --prefix mysql-client)/bin" >> $GITHUB_PATH
+
+    # 安装 Qt 6（macOS / clang_64）
+    - name: Setup Qt (macOS)
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION_WINDOWS }}
+        host: mac
+        target: desktop
+        arch: clang_64
+        modules: 'qtmultimedia qtwebengine qtwebchannel qtpositioning'
+        cache: true
+
+    - name: Set version
+      id: version
+      run: |
+        version="${{ github.event.inputs.version }}"
+        if [ -z "$version" ]; then
+            if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+                version="${{ github.ref_name }}"
+                version="${version#v}"
+            else
+                version="1.0.${{ github.run_number }}"
+            fi
+        fi
+        echo "Version: $version"
+        echo "version=$version" >> $GITHUB_OUTPUT
+
+    - name: Build project
+      id: build
+      run: |
+        set -e
+        echo "=== macOS Build Started ==="
+        PROJECT_ROOT=$(pwd)
+        BUILD_DIR="$PROJECT_ROOT/build"
+        rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR"
+        cd "$BUILD_DIR"
+
+        CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DWITH_OPENCV=ON \
+          -DWITH_MYSQL=ON \
+          -DENABLE_REDIS=ON \
+          -DWITH_LIBSSH=ON \
+          -DWITH_PCAP=OFF \
+          -DWITH_QT_MULTIMEDIA=ON \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0"
+
+        cmake "$PROJECT_ROOT" $CMAKE_ARGS
+        cmake --build . --parallel
+
+        APP_BUNDLE=$(find "$BUILD_DIR" -name "lele-tools.app" -type d | head -n1)
+        if [ -z "$APP_BUNDLE" ]; then
+            echo "未找到 lele-tools.app"
+            ls -la "$BUILD_DIR"
+            exit 1
+        fi
+        echo "app_bundle=$APP_BUNDLE" >> $GITHUB_OUTPUT
+        echo "build_dir=$BUILD_DIR" >> $GITHUB_OUTPUT
+
+    # 使用 macdeployqt 打包成 .dmg
+    - name: Package .app and create .dmg
+      id: package
+      run: |
+        set -e
+        VERSION="${{ steps.version.outputs.version }}"
+        APP_BUNDLE="${{ steps.build.outputs.app_bundle }}"
+        BUILD_DIR="${{ steps.build.outputs.build_dir }}"
+
+        echo "运行 macdeployqt..."
+        macdeployqt "$APP_BUNDLE" -dmg -verbose=2
+
+        DMG_FILE=$(find "$BUILD_DIR" -maxdepth 3 -name "lele-tools.dmg" | head -n1)
+        if [ -z "$DMG_FILE" ]; then
+            echo "macdeployqt 未生成 dmg，使用 hdiutil 手动打包"
+            STAGING="$BUILD_DIR/dmg-staging"
+            mkdir -p "$STAGING"
+            cp -R "$APP_BUNDLE" "$STAGING/"
+            DMG_FILE="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
+            hdiutil create -volname "LeleTools" -srcfolder "$STAGING" -ov -format UDZO "$DMG_FILE"
+        else
+            NEW_NAME="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
+            mv "$DMG_FILE" "$NEW_NAME"
+            DMG_FILE="$NEW_NAME"
+        fi
+        echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
+
+    - name: Upload macOS build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: lele-tools-macos-${{ steps.version.outputs.version }}
+        path: |
+          ${{ steps.package.outputs.dmg_path }}
+        retention-days: 90

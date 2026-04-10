@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Connection.h"
-#include <QMutex>
-#include <memory>
 
 #ifdef WITH_REDIS_PLUS_PLUS
+#include <QMutex>
+#include <memory>
 #include <sw/redis++/redis++.h>
-#endif
 
 namespace Connx {
 
@@ -89,7 +88,9 @@ protected slots:
 
 private:
 
+#ifdef WITH_REDIS_PLUS_PLUS
     QVariant parseRedisReply(redisReply* reply);
+#endif
     // 内部方法
     bool authenticate();
     QVariant executeRedisCommand(const QString& command, const QVariantList& params = QVariantList());
@@ -102,10 +103,11 @@ private:
 #endif
     
     // Redis客户端
-
+#ifdef WITH_REDIS_PLUS_PLUS
     std::unique_ptr<sw::redis::Redis> m_redis;
     std::unique_ptr<sw::redis::ConnectionOptions> m_connOpts;
     std::unique_ptr<sw::redis::ConnectionPoolOptions> m_poolOpts;
+#endif
 
     // 状态管理
     QMutex m_commandMutex;
@@ -116,3 +118,4 @@ private:
 };
 
 } // namespace Connx
+#endif // WITH_REDIS_PLUS_PLUS

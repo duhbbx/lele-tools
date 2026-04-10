@@ -179,7 +179,9 @@ void PortScanner::setupConnections()
     connect(clearButton, &QPushButton::clicked, this, &PortScanner::clearSearch);
     connect(searchEdit, &QLineEdit::returnPressed, this, &PortScanner::searchPorts);
     connect(portTable, &QTableWidget::cellDoubleClicked, this, &PortScanner::onTableItemDoubleClicked);
+#ifdef Q_OS_WIN
     connect(portTable, &QTableWidget::customContextMenuRequested, this, &PortScanner::showContextMenu);
+#endif
 }
 
 void PortScanner::refreshPortList()
@@ -241,7 +243,7 @@ void PortScanner::refreshPortList()
                         QMessageBox::warning(this, "错误", QString("获取端口信息失败: %1").arg(errorOutput));
                         countLabel->setText("获取失败");
                     } else {
-                        countLabel->setText("扫描已取消?);
+                        countLabel->setText("扫描已取消");
                     }
 
                     progressBar->setVisible(false);

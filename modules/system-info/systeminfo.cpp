@@ -1,5 +1,6 @@
 #include "systeminfo.h"
 #include <QApplication>
+#include <QStorageInfo>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
@@ -238,6 +239,39 @@ QList<DiskInfo> SystemInfoWorker::getWindowsDiskInfo()
         }
     }
     
+    return disks;
+}
+#endif
+
+#if !defined(Q_OS_WIN)
+// macOS / Linux stub implementations
+::SystemInfo SystemInfoWorker::getLinuxSystemInfo()
+{
+    ::SystemInfo info;
+    info.osName = QSysInfo::prettyProductName();
+    info.osVersion = QSysInfo::productVersion();
+    info.cpuArchitecture = QSysInfo::currentCpuArchitecture();
+    info.computerName = QSysInfo::machineHostName();
+    return info;
+}
+
+QList<DiskInfo> SystemInfoWorker::getLinuxDiskInfo()
+{
+    QList<DiskInfo> disks;
+    for (const QStorageInfo &storage : QStorageInfo::mountedVolumes()) {
+        if (storage.isValid() && storage.isReady() && !storage.isReadOnly()) {
+            DiskInfo disk;
+            disk.device = storage.device();
+            disk.mountPoint = storage.rootPath();
+            disk.fileSystem = QString::fromUtf8(storage.fileSystemType());
+            disk.totalSpace = storage.bytesTotal();
+            disk.availableSpace = storage.bytesAvailable();
+            disk.usedSpace = disk.totalSpace - disk.availableSpace;
+            disk.usagePercent = disk.totalSpace > 0 ? (double)disk.usedSpace / disk.totalSpace * 100.0 : 0;
+            disk.isReady = true;
+            disks.append(disk);
+        }
+    }
     return disks;
 }
 #endif

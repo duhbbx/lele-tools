@@ -3,7 +3,9 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QTimer>
+#ifdef Q_OS_WIN
 #include <Windows.h>
+#endif
 
 REGISTER_DYNAMICOBJECT(WindowsSettings);
 

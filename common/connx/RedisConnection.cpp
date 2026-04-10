@@ -1,4 +1,6 @@
 #include "RedisConnection.h"
+
+#ifdef WITH_REDIS_PLUS_PLUS
 #include <QTcpSocket>
 #include <QSslSocket>
 #include <QDebug>
@@ -730,3 +732,4 @@ namespace Connx {
         return stats;
     }
 } // namespace Connx
+#endif // WITH_REDIS_PLUS_PLUS

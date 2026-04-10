@@ -6,8 +6,14 @@
 #include <QString>
 #include "toolusagetracker.h"
 
+#ifdef _WIN32
+#define DYNAMIC_CALL __stdcall
+#else
+#define DYNAMIC_CALL
+#endif
+
 #define REGISTER_DYNAMICOBJECT(name)                                        \
-DynamicObjectBase* _stdcall Create_##name() {                               \
+DynamicObjectBase* DYNAMIC_CALL Create_##name() {                           \
     return new name;                                                        \
 }											                                \
 struct Register##name {											            \
@@ -47,7 +53,7 @@ private:
 
 class DynamicObjectFactory
 {
-    typedef DynamicObjectBase*(_stdcall* DynamicCreateObject)();
+    typedef DynamicObjectBase*(DYNAMIC_CALL* DynamicCreateObject)();
 
 public:
     static DynamicObjectFactory* Instance();

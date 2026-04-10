@@ -62,9 +62,11 @@ private slots:
     void exportToFile();
     void processBatchLines();
     void updateTableBatch();
+#ifdef Q_OS_WIN
     void showContextMenu(const QPoint& pos);
     void onKillProcessRequested();
     void onShowProcessPathRequested();
+#endif
 
 private:
     // UI 组件

@@ -27,6 +27,8 @@
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "wininet.lib")
 #pragma comment(lib, "shell32.lib")
+#else
+#include <unistd.h>
 #endif
 
 REGISTER_DYNAMICOBJECT(HostsEditor);
