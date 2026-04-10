@@ -1369,316 +1369,71 @@ jobs:
       continue-on-error: true
       shell: powershell
       run: |
-        # Run the original installer creation logic
         Write-Host "Creating installer package..." -ForegroundColor Green
-        
-        # Use the logic from your build.ps1 script here
         $Version = "${{ steps.version.outputs.version }}"
-        $BuildDir = "${{ steps.build.outputs.build_dir }}"
         $ExeDir = "${{ steps.build.outputs.exe_dir }}"
-        
-        # Find Qt installation - use same logic as build script
-        $QtPath = $env:Qt6_DIR
-        if (-not $QtPath) {
-            $QtPath = $env:QT_ROOT_DIR
-        }
-        if (-not $QtPath -or -not (Test-Path $QtPath)) {
-            # Fallback to common paths
-            $PossiblePaths = @(
-                (Join-Path $env:RUNNER_WORKSPACE "Qt\$env:QT_VERSION\msvc2022_64"),
-                "C:\Qt\$env:QT_VERSION\msvc2022_64",
-                (Join-Path $env:GITHUB_WORKSPACE "..\Qt\$env:QT_VERSION\msvc2022_64")
-            )
-            foreach ($Path in $PossiblePaths) {
-                if (Test-Path $Path) {
-                    $QtPath = $Path
-                    break
-                }
-            }
-        }
-        
-        if (-not $QtPath -or -not (Test-Path $QtPath)) {
-            Write-Host "ERROR: Qt installation not found for installer creation!" -ForegroundColor Red
-            throw "Qt installation not found!"
-        }
-        
-        # Search for Qt Installer Framework in multiple possible locations
-        Write-Host "Searching for Qt Installer Framework..." -ForegroundColor Yellow
-        
-        $IFWSearchPaths = @(
-            (Join-Path $QtPath "../../Tools/QtInstallerFramework/4.10/bin"),
-            (Join-Path $QtPath "../../../Tools/QtInstallerFramework/4.10/bin"),
-            (Join-Path $env:RUNNER_WORKSPACE "Qt/Tools/QtInstallerFramework/4.10/bin"),
-            "C:\Qt\Tools\QtInstallerFramework\4.10\bin"
-        )
-        
-        $IFWPath = ""
-        foreach ($SearchPath in $IFWSearchPaths) {
-            Write-Host "  Checking: $SearchPath" -ForegroundColor Gray
-            if (Test-Path $SearchPath) {
-                $IFWPath = $SearchPath
-                Write-Host "  Found IFW at: $IFWPath" -ForegroundColor Green
-                break
-            }
-        }
-        
-        # If not found in fixed paths, try wildcard search
-        if ([string]::IsNullOrEmpty($IFWPath)) {
-            Write-Host "  Trying wildcard search..." -ForegroundColor Gray
-            $WildcardPaths = @(
-                "$QtPath/../../../Tools/QtInstallerFramework/*/bin",
-                "$env:RUNNER_WORKSPACE/Qt/Tools/QtInstallerFramework/*/bin",
-                "C:\Qt\Tools\QtInstallerFramework\*\bin"
-            )
-            
-            foreach ($WildPath in $WildcardPaths) {
-                try {
-                    $FoundPath = Get-ChildItem -Path $WildPath -Directory -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object FullName
-                    if ($FoundPath) {
-                        $IFWPath = $FoundPath
-                        Write-Host "  Found IFW via wildcard at: $IFWPath" -ForegroundColor Green
-                        break
-                    }
-                } catch {
-                    # Ignore errors in wildcard search
-                }
-            }
-        }
-        
-        if ([string]::IsNullOrEmpty($IFWPath)) {
-            Write-Host "WARNING: Qt Installer Framework not found in any location" -ForegroundColor Yellow
-        }
-        
         $ProjectRoot = Get-Location
+
+        # 查找 Qt Installer Framework
+        $IFWPath = ""
+        $SearchPaths = @(
+          (Join-Path $env:RUNNER_WORKSPACE "Qt/Tools/QtInstallerFramework"),
+          "C:\Qt\Tools\QtInstallerFramework"
+        )
+        foreach ($base in $SearchPaths) {
+          if (Test-Path $base) {
+            $found = Get-ChildItem -Path $base -Directory | Sort-Object Name -Descending | Select-Object -First 1
+            if ($found) {
+              $IFWPath = Join-Path $found.FullName "bin"
+              Write-Host "Found IFW: $IFWPath"
+              break
+            }
+          }
+        }
+
+        if (-not $IFWPath -or -not (Test-Path $IFWPath)) {
+          Write-Host "Qt Installer Framework not found, skipping"
+          echo "installer_path=" >> $env:GITHUB_OUTPUT
+          echo "installer_name=" >> $env:GITHUB_OUTPUT
+          echo "installer_size=0" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        # 准备 IFW 目录结构
         $IFWProject = Join-Path $ProjectRoot "project_installer"
         $ConfigDir = Join-Path $IFWProject "config"
         $PackagesDir = Join-Path $IFWProject "packages\com.leletools"
         $MetaDir = Join-Path $PackagesDir "meta"
         $DataDir = Join-Path $PackagesDir "data"
-        $ConfigXmlPath = Join-Path $ConfigDir "config.xml"
-        $PackageXmlPath = Join-Path $MetaDir "package.xml"
-        $InstallScriptPath = Join-Path $MetaDir "installscript.qs"
-        
-        # Ensure installer directories exist
-        Write-Host "Creating installer directory structure..." -ForegroundColor Yellow
-        if (-not (Test-Path $ConfigDir)) {
-            New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
-        }
-        if (-not (Test-Path $MetaDir)) {
-            New-Item -ItemType Directory -Path $MetaDir -Force | Out-Null
-        }
-        if (-not (Test-Path $DataDir)) {
-            New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
-        }
-        
-        # Copy application files
-        Write-Host "Copying application files..." -ForegroundColor Yellow
-        
-        $FilesToCopy = Get-ChildItem -Path $ExeDir -File | 
-            Where-Object { ($_.Extension -eq ".exe" -or $_.Extension -eq ".dll") -and 
-                           $_.Name -notlike "*Installer*" }
-        
-        foreach ($file in $FilesToCopy) {
-            Copy-Item -Path $file.FullName -Destination $DataDir -Force
-            Write-Host "  Copied: $($file.Name)" -ForegroundColor Green
-        }
-        
-        # Copy Redis DLL files if they exist
-        $VcpkgBinPath = "$env:VCPKG_INSTALLED_DIR\bin"
-        if (Test-Path $VcpkgBinPath) {
-            $RedisDlls = Get-ChildItem -Path $VcpkgBinPath -Filter "*.dll" |
-                Where-Object { $_.Name -like "*redis*" -or $_.Name -like "*hiredis*" }
 
-            foreach ($dll in $RedisDlls) {
-                Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                Write-Host "  Copied Redis DLL: $($dll.Name)" -ForegroundColor Green
-            }
-        }
+        New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $MetaDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
 
-        # Copy LibSSH DLL files if they exist
-        if (Test-Path $VcpkgBinPath) {
-            Write-Host "Checking for LibSSH DLL files..." -ForegroundColor Yellow
-            $LibSSHDlls = Get-ChildItem -Path $VcpkgBinPath -Filter "*.dll" |
-                Where-Object { $_.Name -like "*ssh*" -or $_.Name -like "*crypto*" -or $_.Name -like "*ssl*" }
+        # 复制所有已部署的文件到 data 目录（windeployqt 已处理好依赖）
+        Copy-Item -Path "$ExeDir\*" -Destination $DataDir -Recurse -Force
+        Write-Host "Copied deployed files to installer data directory"
 
-            foreach ($dll in $LibSSHDlls) {
-                try {
-                    Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                    Write-Host "  Copied LibSSH DLL: $($dll.Name)" -ForegroundColor Green
-                } catch {
-                    Write-Host "  Warning: Failed to copy LibSSH DLL: $($dll.Name)" -ForegroundColor Yellow
-                }
-            }
+        # 创建安装包
+        $BinaryCreator = Join-Path $IFWPath "binarycreator.exe"
+        $InstallerName = "LeleToolsInstaller_v$($Version.Replace('.','_')).exe"
+        $InstallerPath = Join-Path $ProjectRoot $InstallerName
+        $ConfigXml = Join-Path $ConfigDir "config.xml"
+        $PackagesRoot = Join-Path $IFWProject "packages"
+
+        & $BinaryCreator --offline-only -c $ConfigXml -p $PackagesRoot $InstallerPath
+
+        if (($LASTEXITCODE -eq 0) -and (Test-Path $InstallerPath)) {
+          $Size = [math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)
+          Write-Host "Installer created: $InstallerName ($Size MB)"
+          echo "installer_path=$InstallerPath" >> $env:GITHUB_OUTPUT
+          echo "installer_name=$InstallerName" >> $env:GITHUB_OUTPUT
+          echo "installer_size=$Size" >> $env:GITHUB_OUTPUT
         } else {
-            Write-Host "  Info: vcpkg bin directory not found: $VcpkgBinPath" -ForegroundColor Gray
-        }
-
-        # Copy OpenCV DLL files
-        $OpenCVBinPath = "C:\opencv\build\x64\vc16\bin"
-        if (Test-Path $OpenCVBinPath) {
-            Write-Host "Copying OpenCV DLL files..." -ForegroundColor Yellow
-
-            # List all DLL files first for debugging
-            $AllDlls = Get-ChildItem -Path $OpenCVBinPath -Filter "*.dll"
-            Write-Host "Available OpenCV DLLs in $OpenCVBinPath :" -ForegroundColor Cyan
-            foreach ($dll in $AllDlls) {
-                Write-Host "  $($dll.Name)" -ForegroundColor Gray
-            }
-
-            # Copy all OpenCV DLL files
-            foreach ($dll in $AllDlls) {
-                try {
-                    Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                    Write-Host "  ✓ Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
-                } catch {
-                    Write-Host "  ✗ Failed to copy OpenCV DLL: $($dll.Name) - $($_.Exception.Message)" -ForegroundColor Red
-                }
-            }
-
-            # Verify OpenCV DLLs were copied
-            $CopiedOpenCVDlls = Get-ChildItem -Path $DataDir -Filter "*opencv*.dll"
-            Write-Host "OpenCV DLLs copied to portable package: $($CopiedOpenCVDlls.Count)" -ForegroundColor Cyan
-            foreach ($dll in $CopiedOpenCVDlls) {
-                Write-Host "  ✓ $($dll.Name)" -ForegroundColor Green
-            }
-        } else {
-            Write-Host "  Warning: OpenCV bin directory not found: $OpenCVBinPath" -ForegroundColor Yellow
-            Write-Host "  Attempting alternative OpenCV paths..." -ForegroundColor Yellow
-
-            # Try alternative OpenCV paths
-            $AlternativePaths = @(
-                "C:\opencv\build\x64\vc15\bin",
-                "C:\opencv\build\bin",
-                "C:\opencv\x64\vc16\bin",
-                "C:\opencv\x64\vc15\bin"
-            )
-
-            $found = $false
-            foreach ($altPath in $AlternativePaths) {
-                if (Test-Path $altPath) {
-                    Write-Host "  Found alternative OpenCV path: $altPath" -ForegroundColor Yellow
-                    $OpenCVDlls = Get-ChildItem -Path $altPath -Filter "*opencv*.dll"
-                    foreach ($dll in $OpenCVDlls) {
-                        try {
-                            Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                            Write-Host "  ✓ Copied OpenCV DLL: $($dll.Name)" -ForegroundColor Green
-                            $found = $true
-                        } catch {
-                            Write-Host "  ✗ Failed to copy OpenCV DLL: $($dll.Name)" -ForegroundColor Red
-                        }
-                    }
-                    break
-                }
-            }
-
-            if (-not $found) {
-                Write-Host "  ⚠️  No OpenCV DLLs found in any location - portable package will be missing OpenCV support" -ForegroundColor Yellow
-            }
-        }
-
-        # Copy MySQL Connector DLL files
-        $MySQLBinPaths = @(
-            "C:\mysql-connector\lib64",
-            "C:\mysql-connector\bin"
-        )
-
-        foreach ($binPath in $MySQLBinPaths) {
-            if (Test-Path $binPath) {
-                Write-Host "Copying MySQL DLL files from $binPath..." -ForegroundColor Yellow
-                $MySQLDlls = Get-ChildItem -Path $binPath -Filter "*.dll" |
-                    Where-Object { $_.Name -like "*mysql*" -or $_.Name -like "*ssl*" -or $_.Name -like "*crypto*" }
-
-                foreach ($dll in $MySQLDlls) {
-                    try {
-                        Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                        Write-Host "  Copied MySQL DLL: $($dll.Name)" -ForegroundColor Green
-                    } catch {
-                        Write-Host "  Warning: Failed to copy MySQL DLL: $($dll.Name)" -ForegroundColor Yellow
-                    }
-                }
-            } else {
-                Write-Host "  Info: MySQL bin directory not found: $binPath" -ForegroundColor Gray
-            }
-        }
-
-        # Copy Npcap/WinPcap DLL files (optional for network tools)
-        $NpcapPaths = @(
-            "C:\Windows\System32\Npcap",        # Npcap installation directory
-            "C:\Windows\System32",               # May contain wpcap.dll
-            "C:\WinPcap"                        # Legacy WinPcap directory
-        )
-
-        $PcapDllFound = $false
-        foreach ($npcapPath in $NpcapPaths) {
-            if (Test-Path $npcapPath) {
-                Write-Host "Checking for pcap DLLs in $npcapPath..." -ForegroundColor Yellow
-
-                # Look for wpcap.dll and packet.dll
-                $PcapDlls = Get-ChildItem -Path $npcapPath -Filter "*.dll" |
-                    Where-Object { $_.Name -like "*wpcap*" -or $_.Name -like "*packet*" }
-
-                foreach ($dll in $PcapDlls) {
-                    try {
-                        Copy-Item -Path $dll.FullName -Destination $DataDir -Force
-                        Write-Host "  Copied Npcap DLL: $($dll.Name)" -ForegroundColor Green
-                        $PcapDllFound = $true
-                    } catch {
-                        Write-Host "  Warning: Failed to copy Npcap DLL: $($dll.Name)" -ForegroundColor Yellow
-                    }
-                }
-            }
-        }
-
-        if (-not $PcapDllFound) {
-            Write-Host "  Info: No Npcap/WinPcap DLLs found - network capture features will use fallback methods" -ForegroundColor Gray
-            Write-Host "  Note: Npcap can be installed from https://npcap.com/ for enhanced network functionality" -ForegroundColor Gray
-        }
-
-        # Copy Qt directories
-        $QtDirs = @('platforms', 'imageformats', 'styles', 'translations', 'iconengines', 'generic', 'networkinformation', 'tls')
-        foreach ($qtDir in $QtDirs) {
-            $QtDirPath = Join-Path $ExeDir $qtDir
-            if (Test-Path $QtDirPath) {
-                $TargetPath = Join-Path $DataDir $qtDir
-                Copy-Item -Path $QtDirPath -Destination $TargetPath -Recurse -Force
-                Write-Host "  Copied directory: $qtDir" -ForegroundColor Green
-            }
-        }
-        
-        # Create installer
-        if ([string]::IsNullOrEmpty($IFWPath)) {
-            Write-Host "WARNING: Qt Installer Framework not found, skipping installer creation" -ForegroundColor Yellow
-            Write-Host "Installer creation requires Qt Installer Framework to be installed" -ForegroundColor Yellow
-            
-            # Set dummy output variables to prevent workflow failure
-            echo "installer_path=" >> $env:GITHUB_OUTPUT
-            echo "installer_name=" >> $env:GITHUB_OUTPUT
-            echo "installer_size=0" >> $env:GITHUB_OUTPUT
-        } else {
-            $BinaryCreator = Join-Path $IFWPath "binarycreator.exe"
-            $InstallerName = "LeleToolsInstaller_v$($Version.Replace('.','_')).exe"
-            $InstallerPath = Join-Path $ProjectRoot $InstallerName
-            
-            Write-Host "Creating installer: $InstallerName" -ForegroundColor Yellow
-            $PackagesRootDir = Split-Path $DataDir -Parent | Split-Path -Parent
-            
-            & $BinaryCreator --offline-only -c $ConfigXmlPath -p $PackagesRootDir $InstallerPath
-            
-            if ($LASTEXITCODE -eq 0 -and (Test-Path $InstallerPath)) {
-                $InstallerSize = [math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)
-                Write-Host "Installer created successfully!" -ForegroundColor Green
-                Write-Host "  File: $InstallerPath" -ForegroundColor Cyan
-                Write-Host "  Size: $InstallerSize MB" -ForegroundColor Cyan
-                
-                echo "installer_path=$InstallerPath" >> $env:GITHUB_OUTPUT
-                echo "installer_name=$InstallerName" >> $env:GITHUB_OUTPUT
-                echo "installer_size=$InstallerSize" >> $env:GITHUB_OUTPUT
-            } else {
-                Write-Host "WARNING: Installer creation failed, but continuing..." -ForegroundColor Yellow
-                echo "installer_path=" >> $env:GITHUB_OUTPUT
-                echo "installer_name=" >> $env:GITHUB_OUTPUT
-                echo "installer_size=0" >> $env:GITHUB_OUTPUT
-            }
+          Write-Host "Installer creation failed"
+          echo "installer_path=" >> $env:GITHUB_OUTPUT
+          echo "installer_name=" >> $env:GITHUB_OUTPUT
+          echo "installer_size=0" >> $env:GITHUB_OUTPUT
         }
         
     - name: Upload portable ZIP artifact
