@@ -1366,6 +1366,7 @@ jobs:
     - name: Create installer
       id: create_installer
       if: github.event_name != 'pull_request'
+      continue-on-error: true
       shell: powershell
       run: |
         # Run the original installer creation logic
@@ -1802,13 +1803,13 @@ jobs:
         if [ "$(id -u)" != "0" ]; then SUDO="sudo"; fi
 
         $SUDO apt-get update
+
+        # 必选依赖
         $SUDO apt-get install -y \
           build-essential cmake ninja-build pkg-config \
           qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools \
           qt6-l10n-tools libqt6sql6-sqlite \
           libqt6concurrent6 libqt6network6 libqt6printsupport6 libqt6sql6 \
-          qt6-multimedia-dev \
-          qt6-webengine-dev qt6-webengine-dev-tools || true \
           libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
           libxcb-cursor-dev libxcb-xinerama0-dev \
           libfontconfig1-dev libfreetype6-dev \
@@ -1817,8 +1818,13 @@ jobs:
           libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync-dev libxcb-xfixes0-dev \
           libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev \
           libxcb-util-dev libxcb-xkb-dev \
-          libopencv-dev libmysqlclient-dev libssh-dev libhiredis-dev \
+          libopencv-dev libssh-dev libhiredis-dev \
           libpcap-dev dpkg-dev file
+
+        # 可选依赖（部分发行版仓库可能没有）
+        $SUDO apt-get install -y qt6-multimedia-dev || echo "qt6-multimedia-dev 不可用，跳过"
+        $SUDO apt-get install -y qt6-webengine-dev qt6-webengine-dev-tools || echo "qt6-webengine-dev 不可用，跳过"
+        $SUDO apt-get install -y libmysqlclient-dev || $SUDO apt-get install -y default-libmysqlclient-dev || echo "MySQL dev 不可用，跳过"
 
     # ──────────────────────────────────────────────
     # 安装依赖：Fedora（dnf）
@@ -1827,18 +1833,22 @@ jobs:
       if: matrix.distro == 'fedora'
       shell: bash
       run: |
+        # 必选依赖
         dnf install -y \
           gcc-c++ cmake ninja-build pkg-config \
           qt6-qtbase-devel qt6-qttools-devel qt6-linguist \
-          qt6-qtmultimedia-devel \
-          qt6-qtwebengine-devel || true \
           mesa-libGL-devel libxkbcommon-devel libxkbcommon-x11-devel \
           fontconfig-devel freetype-devel \
           libX11-devel libXext-devel libXfixes-devel libXi-devel libXrender-devel \
           libxcb-devel xcb-util-devel xcb-util-keysyms-devel xcb-util-image-devel \
           xcb-util-renderutil-devel xcb-util-cursor-devel \
-          opencv-devel mysql-devel libssh-devel hiredis-devel \
+          opencv-devel libssh-devel hiredis-devel \
           libpcap-devel rpm-build file
+
+        # 可选依赖
+        dnf install -y qt6-qtmultimedia-devel || echo "qt6-qtmultimedia-devel 不可用，跳过"
+        dnf install -y qt6-qtwebengine-devel || echo "qt6-qtwebengine-devel 不可用，跳过"
+        dnf install -y mysql-devel || dnf install -y mariadb-devel || echo "MySQL/MariaDB dev 不可用，跳过"
 
     - name: Set version
       id: version

@@ -39,7 +39,9 @@ TracerouteWorker::TracerouteWorker(QObject *parent)
 #endif
 #else
     , m_socket(-1)
+#ifdef WITH_PCAP
     , m_pcapHandle(nullptr)
+#endif
 #endif
 {
     initializeNetwork();

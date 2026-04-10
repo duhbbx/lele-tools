@@ -45,8 +45,10 @@
 #endif
 
 #else
-// Linux/macOS平台使用libpcap
+// Linux/macOS平台
+#ifdef WITH_PCAP
 #include <pcap/pcap.h>
+#endif
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
@@ -114,7 +116,9 @@ private:
 #else
     // Linux/macOS特定实现
     int m_socket;
+#ifdef WITH_PCAP
     pcap_t *m_pcapHandle;
+#endif
     void cleanupUnix();
 #endif
     
