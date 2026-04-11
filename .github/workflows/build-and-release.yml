@@ -1838,10 +1838,8 @@ jobs:
         rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR"
         cd "$BUILD_DIR"
 
-        # macOS 关闭 OpenCV：brew 的 OpenCV 依赖 OpenBLAS → libomp，
-        # macdeployqt 打包后 OpenMP 多实例冲突导致启动 abort
         CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
-          -DWITH_OPENCV=OFF \
+          -DWITH_OPENCV=ON \
           -DWITH_MYSQL=ON \
           -DENABLE_REDIS=OFF \
           -DWITH_LIBSSH=ON \
@@ -1871,21 +1869,21 @@ jobs:
         BUILD_DIR="${{ steps.build.outputs.build_dir }}"
 
         echo "运行 macdeployqt..."
-        macdeployqt "$APP_BUNDLE" -dmg -verbose=2
+        macdeployqt "$APP_BUNDLE" -verbose=2
 
-        DMG_FILE=$(find "$BUILD_DIR" -maxdepth 3 -name "lele-tools.dmg" | head -n1)
-        if [ -z "$DMG_FILE" ]; then
-            echo "macdeployqt 未生成 dmg，使用 hdiutil 手动打包"
-            STAGING="$BUILD_DIR/dmg-staging"
-            mkdir -p "$STAGING"
-            cp -R "$APP_BUNDLE" "$STAGING/"
-            DMG_FILE="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
-            hdiutil create -volname "LeleTools" -srcfolder "$STAGING" -ov -format UDZO "$DMG_FILE"
-        else
-            NEW_NAME="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
-            mv "$DMG_FILE" "$NEW_NAME"
-            DMG_FILE="$NEW_NAME"
-        fi
+        # 解决 OpenCV/OpenBLAS 带入的 libomp 多实例冲突：
+        # 设置 KMP_DUPLICATE_LIB_OK=TRUE 允许 OpenMP 多实例共存
+        PLIST="$APP_BUNDLE/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c "Add :LSEnvironment dict" "$PLIST" 2>/dev/null || true
+        /usr/libexec/PlistBuddy -c "Add :LSEnvironment:KMP_DUPLICATE_LIB_OK string TRUE" "$PLIST"
+        echo "已写入 LSEnvironment KMP_DUPLICATE_LIB_OK=TRUE"
+
+        # 打 DMG
+        STAGING="$BUILD_DIR/dmg-staging"
+        mkdir -p "$STAGING"
+        cp -R "$APP_BUNDLE" "$STAGING/"
+        DMG_FILE="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
+        hdiutil create -volname "LeleTools" -srcfolder "$STAGING" -ov -format UDZO "$DMG_FILE"
         echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
 
     - name: Upload macOS build artifacts
