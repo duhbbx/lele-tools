@@ -96,6 +96,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     rightPanel = new QWidget();
     rightPanel->setContentsMargins(0, 0, 0, 0);
     rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    rightPanel->setMinimumWidth(400); // 防止内容 widget 撑宽整个窗口
     rightPanel->setStyleSheet("background-color: #ffffff;");
 
     // 创建右侧标签页窗口
@@ -226,10 +227,14 @@ void MainWindow::itemClickedSlot(QListWidgetItem* item) {
         return;
     }
     // 用 QScrollArea 包裹，防止内容 widget 的 minimumSize 撑宽整个窗口
+    widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     auto* scrollArea = new QScrollArea();
     scrollArea->setWidget(widget);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setMinimumWidth(0);
     // 添加新的工具页面作为标签页
     const int index = rightTabWidget->addTab(scrollArea, title);
     rightTabWidget->setCurrentIndex(index);
