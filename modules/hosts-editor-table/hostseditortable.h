@@ -165,7 +165,6 @@ private:
     QSplitter* mainSplitter;
     
     // 工具栏
-    QGroupBox* toolbarGroup;
     QHBoxLayout* toolbarLayout;
     QPushButton* loadBtn;
     QPushButton* saveBtn;
@@ -187,12 +186,9 @@ private:
     QLabel* searchResultLabel;
     
     // 表格区域
-    QGroupBox* tableGroup;
-    QVBoxLayout* tableLayout;
     QTableWidget* hostsTable;
-    
+
     // 快速添加区域
-    QGroupBox* quickAddGroup;
     QGridLayout* quickAddLayout;
     QLineEdit* ipEdit;
     QLineEdit* hostnameEdit;

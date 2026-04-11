@@ -119,16 +119,16 @@ void CustomTabBar::paintEvent(QPaintEvent *event)
                 painter.drawEllipse(closeRect);
             }
 
-            // 绘制 X 图标
+            // 绘制 X 图标（基于中心点计算，确保完美居中）
             QColor xColor = (i == m_hoveredCloseButton || i == m_pressedCloseButton)
                             ? QColor("#495057") : QColor("#868e96");
-            painter.setPen(QPen(xColor, 1.2, Qt::SolidLine, Qt::RoundCap));
+            painter.setPen(QPen(xColor, 1.3, Qt::SolidLine, Qt::RoundCap));
             painter.setBrush(Qt::NoBrush);
-            int m = 5; // X 的内边距
-            painter.drawLine(closeRect.left() + m, closeRect.top() + m,
-                             closeRect.right() - m, closeRect.bottom() - m);
-            painter.drawLine(closeRect.right() - m, closeRect.top() + m,
-                             closeRect.left() + m, closeRect.bottom() - m);
+            qreal cx = closeRect.x() + closeRect.width() / 2.0;
+            qreal cy = closeRect.y() + closeRect.height() / 2.0;
+            qreal half = 3.0; // X 半径
+            painter.drawLine(QPointF(cx - half, cy - half), QPointF(cx + half, cy + half));
+            painter.drawLine(QPointF(cx + half, cy - half), QPointF(cx - half, cy + half));
 
             m_closeRects[i] = closeRect;
         } else {

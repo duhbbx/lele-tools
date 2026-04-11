@@ -128,20 +128,50 @@ QString GlobalStyles::getInputStyle() {
         }
 
         QComboBox {
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
-            font-size: 14px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px 28px 4px 8px;
+            background-color: #fff;
+            font-size: 9pt;
+            color: #495057;
+            min-height: 20px;
         }
         QComboBox:hover {
-            border: 1px solid #0078d7; /* 鼠标悬停边框 */
+            border-color: #adb5bd;
         }
-
+        QComboBox:focus {
+            border-color: #80bdff;
+        }
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: center right;
+            width: 20px;
+            border: none;
+        }
+        QComboBox::down-arrow {
+            image: none;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #868e96;
+            margin-right: 6px;
+        }
         QComboBox QAbstractItemView {
-            border: 1px solid #ccc;
-            background: white;
-            selection-background-color: #0078d7;
-            selection-color: white;
-            min-height: 30px;   /* 每个选项的最小高度 */
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 9pt;
+            color: #495057;
+            padding: 2px;
+            outline: none;
+            selection-background-color: #e9ecef;
+            selection-color: #212529;
+        }
+        QComboBox QAbstractItemView::item {
+            padding: 4px 8px;
+            min-height: 24px;
+        }
+        QComboBox QAbstractItemView::item:hover {
+            background-color: #f1f3f5;
         }
 
 

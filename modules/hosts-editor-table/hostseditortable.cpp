@@ -68,8 +68,49 @@ HostsEditor::~HostsEditor() {
 
 void HostsEditor::setupUI() {
     mainLayout = new QVBoxLayout(this);
-    mainLayout->setSpacing(8);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
+    mainLayout->setSpacing(4);
+    mainLayout->setContentsMargins(8, 6, 8, 6);
+
+    setStyleSheet(R"(
+        QPushButton {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 9pt;
+            color: #495057;
+            background: transparent;
+        }
+        QPushButton:hover { background-color: #e9ecef; }
+        QPushButton:pressed { background-color: #dee2e6; }
+        QPushButton:disabled { color: #adb5bd; }
+        QLineEdit {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 9pt;
+            background: #fff;
+        }
+        QLineEdit:focus { border-color: #80bdff; }
+        QTableWidget {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 9pt;
+            gridline-color: #f1f3f5;
+            selection-background-color: #e9ecef;
+            selection-color: #212529;
+        }
+        QHeaderView::section {
+            background-color: #f8f9fa;
+            border: none;
+            border-bottom: 1px solid #dee2e6;
+            border-right: 1px solid #f1f3f5;
+            padding: 4px 8px;
+            font-size: 9pt;
+            font-weight: 500;
+            color: #495057;
+        }
+        QLabel { font-size: 9pt; color: #495057; }
+    )");
 
     setupToolbar();
     setupTableArea();
@@ -78,26 +119,19 @@ void HostsEditor::setupUI() {
 }
 
 void HostsEditor::setupToolbar() {
-    toolbarGroup = new QGroupBox(tr("🛠️ Hosts文件编辑器"));
-    toolbarLayout = new QHBoxLayout(toolbarGroup);
+    toolbarLayout = new QHBoxLayout();
+    toolbarLayout->setContentsMargins(0, 0, 0, 0);
+    toolbarLayout->setSpacing(2);
 
-    loadBtn = new QPushButton(tr("📂 重新加载"));
-    saveBtn = new QPushButton(tr("💾 保存文件"));
-    addBtn = new QPushButton(tr("➕ 添加条目"));
-    removeBtn = new QPushButton(tr("🗑️ 删除条目"));
-    toggleBtn = new QPushButton(tr("🔄 启用/禁用"));
-    clearBtn = new QPushButton(tr("🧹 清空全部"));
-    flushDnsBtn = new QPushButton(tr("🔄 刷新DNS"));
+    loadBtn = new QPushButton(tr("重新加载"));
+    saveBtn = new QPushButton(tr("保存"));
+    addBtn = new QPushButton(tr("添加"));
+    removeBtn = new QPushButton(tr("删除"));
+    toggleBtn = new QPushButton(tr("启用/禁用"));
+    clearBtn = new QPushButton(tr("清空"));
+    flushDnsBtn = new QPushButton(tr("刷新DNS"));
 
-    // 设置按钮样式
-    saveBtn->setStyleSheet(
-        "QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; }");
-    flushDnsBtn->setStyleSheet(
-        "QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
-    removeBtn->setStyleSheet(
-        "QPushButton { background-color: #dc3545; color: white; } QPushButton:hover { background-color: #c82333; }");
-    clearBtn->setStyleSheet(
-        "QPushButton { background-color: #fd7e14; color: white; } QPushButton:hover { background-color: #e66100; }");
+    saveBtn->setEnabled(false);
 
     toolbarLayout->addWidget(loadBtn);
     toolbarLayout->addWidget(saveBtn);
@@ -108,72 +142,58 @@ void HostsEditor::setupToolbar() {
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(flushDnsBtn);
 
-    mainLayout->addWidget(toolbarGroup);
+    mainLayout->addLayout(toolbarLayout);
 }
 
 void HostsEditor::setupTableArea() {
-    tableGroup = new QGroupBox(tr("📋 Hosts条目列表"));
-    tableLayout = new QVBoxLayout(tableGroup);
-
     hostsTable = new QTableWidget();
     hostsTable->setColumnCount(4);
     hostsTable->setHorizontalHeaderLabels(QStringList() << tr("状态") << tr("IP地址") << tr("主机名") << tr("注释"));
 
-    // 设置表格属性
     hostsTable->setAlternatingRowColors(true);
     hostsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     hostsTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     hostsTable->setSortingEnabled(true);
     hostsTable->verticalHeader()->setVisible(false);
+    hostsTable->setShowGrid(false);
 
-    // 设置列宽
     QHeaderView* header = hostsTable->horizontalHeader();
     header->setStretchLastSection(true);
-    hostsTable->setColumnWidth(0, 80);
-    hostsTable->setColumnWidth(1, 150);
+    hostsTable->setColumnWidth(0, 60);
+    hostsTable->setColumnWidth(1, 140);
     hostsTable->setColumnWidth(2, 200);
-    
-    // 设置行高
+
     QHeaderView* verticalHeader = hostsTable->verticalHeader();
-    verticalHeader->setDefaultSectionSize(35); // 设置默认行高为35像素
-    verticalHeader->setMinimumSectionSize(30); // 设置最小行高为30像素
-    
-    // 设置字体和行高
-    QFont tableFont = hostsTable->font();
-    tableFont.setPointSize(11);
-    hostsTable->setFont(tableFont);
-    
-    // 设置自定义委托以控制编辑器样式
+    verticalHeader->setDefaultSectionSize(28);
+    verticalHeader->setMinimumSectionSize(24);
+
     HostsTableDelegate* delegate = new HostsTableDelegate(this);
     hostsTable->setItemDelegate(delegate);
 
-    tableLayout->addWidget(hostsTable);
-    mainLayout->addWidget(tableGroup);
+    mainLayout->addWidget(hostsTable, 1);
 }
 
 void HostsEditor::setupQuickAddArea() {
-    quickAddGroup = new QGroupBox(tr("⚡ 快速添加Hosts条目"));
-    quickAddLayout = new QGridLayout(quickAddGroup);
+    quickAddLayout = new QGridLayout();
+    quickAddLayout->setContentsMargins(0, 2, 0, 0);
+    quickAddLayout->setSpacing(4);
 
     ipEdit = new QLineEdit();
-    ipEdit->setPlaceholderText(tr("输入IP地址 (例: 127.0.0.1)"));
+    ipEdit->setPlaceholderText(tr("IP地址"));
 
     hostnameEdit = new QLineEdit();
-    hostnameEdit->setPlaceholderText(tr("输入主机名 (例: example.com)"));
+    hostnameEdit->setPlaceholderText(tr("主机名"));
 
     commentEdit = new QLineEdit();
-    commentEdit->setPlaceholderText(tr("输入注释 (可选)"));
+    commentEdit->setPlaceholderText(tr("注释 (可选)"));
 
-    enabledCheck = new QCheckBox(tr("启用此条目"));
+    enabledCheck = new QCheckBox(tr("启用"));
     enabledCheck->setChecked(true);
 
-    quickAddBtn = new QPushButton(tr("➕ 添加到Hosts"));
-    quickAddBtn->setStyleSheet(
-        "QPushButton { background-color: #28a745; color: white; min-width: 120px; } QPushButton:hover { background-color: #218838; }");
+    quickAddBtn = new QPushButton(tr("添加"));
 
-    // 常用hosts下拉框
     commonHostsCombo = new QComboBox();
-    commonHostsCombo->addItem(tr("选择常用hosts..."));
+    commonHostsCombo->addItem(tr("常用模板..."));
     commonHostsCombo->addItem("127.0.0.1 localhost");
     commonHostsCombo->addItem("0.0.0.0 ads.google.com");
     commonHostsCombo->addItem("0.0.0.0 facebook.com");
@@ -190,34 +210,32 @@ void HostsEditor::setupQuickAddArea() {
         }
     });
 
-    quickAddLayout->addWidget(new QLabel(tr("IP地址:")), 0, 0);
-    quickAddLayout->addWidget(ipEdit, 0, 1);
-    quickAddLayout->addWidget(new QLabel(tr("主机名:")), 0, 2);
-    quickAddLayout->addWidget(hostnameEdit, 0, 3);
-    quickAddLayout->addWidget(new QLabel(tr("注释:")), 1, 0);
-    quickAddLayout->addWidget(commentEdit, 1, 1);
-    quickAddLayout->addWidget(enabledCheck, 1, 2);
-    quickAddLayout->addWidget(quickAddBtn, 1, 3);
-    quickAddLayout->addWidget(new QLabel(tr("常用:")), 2, 0);
-    quickAddLayout->addWidget(commonHostsCombo, 2, 1, 1, 3);
+    quickAddLayout->addWidget(ipEdit, 0, 0);
+    quickAddLayout->addWidget(hostnameEdit, 0, 1);
+    quickAddLayout->addWidget(commentEdit, 0, 2);
+    quickAddLayout->addWidget(enabledCheck, 0, 3);
+    quickAddLayout->addWidget(quickAddBtn, 0, 4);
+    quickAddLayout->addWidget(commonHostsCombo, 0, 5);
 
-    mainLayout->addWidget(quickAddGroup);
+    mainLayout->addLayout(quickAddLayout);
 }
 
 void HostsEditor::setupStatusArea() {
     statusLayout = new QHBoxLayout();
+    statusLayout->setContentsMargins(0, 0, 0, 0);
 
     statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
+    statusLabel->setStyleSheet("color: #868e96; font-size: 9pt;");
 
     entriesCountLabel = new QLabel(tr("条目: 0"));
-    entriesCountLabel->setStyleSheet("color: #6c757d;");
+    entriesCountLabel->setStyleSheet("color: #868e96; font-size: 9pt;");
 
-    adminStatusLabel = new QLabel(tr("权限检查中..."));
+    adminStatusLabel = new QLabel();
+    adminStatusLabel->setStyleSheet("font-size: 9pt;");
 
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
-    progressBar->setMaximumHeight(20);
+    progressBar->setMaximumHeight(16);
 
     statusLayout->addWidget(statusLabel);
     statusLayout->addWidget(entriesCountLabel);
