@@ -107,8 +107,21 @@ lupdate -locations none ./ -ts translations/lele-tools_en_US.ts translations/lel
 | 邮箱 | duhbbx@gmail.com |
 | 微信 | tuhoooo |
 
-### 扫码加微信
+### 扫码联系
 
-<img src="resources/wechat-qr.jpg" width="200" alt="微信二维码" />
+<table>
+  <tr>
+    <td align="center">
+      <img src="resources/wechat-qr.jpg" width="280" alt="微信二维码" /><br/>
+      <b>添加微信</b>
+    </td>
+    <td align="center">
+      <img src="resources/donate-qr.jpg" width="280" alt="赞赏码" /><br/>
+      <b>请作者喝杯咖啡</b>
+    </td>
+  </tr>
+</table>
 
 欢迎扫码添加微信沟通需求，我们将竭诚为您服务！
+
+如果这个项目对您有帮助，欢迎打赏支持，您的支持是我持续开发的动力！
