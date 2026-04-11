@@ -11,5 +11,6 @@
         <file>resources/app-icon-128.png</file>
         <file>resources/app-icon-256.png</file>
         <file>resources/wechat-qr.jpg</file>
+        <file>resources/donate-qr.jpg</file>
     </qresource>
 </RCC>

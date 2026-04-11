@@ -681,7 +681,7 @@ void MainWindow::closeTab(int index) {
 void MainWindow::showAbout() {
     QDialog* aboutDialog = new QDialog(this);
     aboutDialog->setWindowTitle(tr("关于乐乐的工具箱"));
-    aboutDialog->setFixedSize(520, 480);
+    aboutDialog->setFixedSize(520, 540);
 
     auto* layout = new QVBoxLayout(aboutDialog);
     layout->setSpacing(12);
@@ -726,19 +726,41 @@ void MainWindow::showAbout() {
     bizLabel->setWordWrap(true);
     layout->addWidget(bizLabel);
 
-    // 微信二维码
-    auto* qrLabel = new QLabel();
-    QPixmap qr(":/resources/wechat-qr.jpg");
-    if (!qr.isNull()) {
-        qrLabel->setPixmap(qr.scaled(160, 160, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    }
-    qrLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(qrLabel);
+    // 二维码区域（微信 + 打赏并排）
+    auto* qrRow = new QHBoxLayout();
+    qrRow->setSpacing(16);
 
-    auto* qrTip = new QLabel(tr("扫码添加微信"));
-    qrTip->setAlignment(Qt::AlignCenter);
-    qrTip->setStyleSheet("color:#868e96; font-size:8pt;");
-    layout->addWidget(qrTip);
+    // 微信二维码
+    auto* wechatBox = new QVBoxLayout();
+    auto* wechatQr = new QLabel();
+    QPixmap wechatPx(":/resources/wechat-qr.jpg");
+    if (!wechatPx.isNull())
+        wechatQr->setPixmap(wechatPx.scaled(130, 130, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    wechatQr->setAlignment(Qt::AlignCenter);
+    auto* wechatTip = new QLabel(tr("添加微信"));
+    wechatTip->setAlignment(Qt::AlignCenter);
+    wechatTip->setStyleSheet("color:#868e96; font-size:8pt;");
+    wechatBox->addWidget(wechatQr);
+    wechatBox->addWidget(wechatTip);
+
+    // 打赏二维码
+    auto* donateBox = new QVBoxLayout();
+    auto* donateQr = new QLabel();
+    QPixmap donatePx(":/resources/donate-qr.jpg");
+    if (!donatePx.isNull())
+        donateQr->setPixmap(donatePx.scaled(130, 130, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    donateQr->setAlignment(Qt::AlignCenter);
+    auto* donateTip = new QLabel(tr("请作者喝杯咖啡"));
+    donateTip->setAlignment(Qt::AlignCenter);
+    donateTip->setStyleSheet("color:#868e96; font-size:8pt;");
+    donateBox->addWidget(donateQr);
+    donateBox->addWidget(donateTip);
+
+    qrRow->addStretch();
+    qrRow->addLayout(wechatBox);
+    qrRow->addLayout(donateBox);
+    qrRow->addStretch();
+    layout->addLayout(qrRow);
 
     layout->addStretch();
 
