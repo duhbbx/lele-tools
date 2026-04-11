@@ -70,19 +70,15 @@ private:
     QVBoxLayout* mainLayout;
     
     // 工具栏
-    QGroupBox* toolbarGroup;
     QHBoxLayout* toolbarLayout;
     QPushButton* loadBtn;
     QPushButton* saveBtn;
     QPushButton* flushDnsBtn;
     QPushButton* resetBtn;
     QPushButton* backupBtn;
-    
+
     // 编辑区域
-    QGroupBox* editorGroup;
-    QVBoxLayout* editorLayout;
     QTextEdit* hostsTextEdit;
-    QLabel* infoLabel;
     
     // 状态区域
     QHBoxLayout* statusLayout;

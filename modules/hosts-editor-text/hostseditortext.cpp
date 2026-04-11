@@ -57,145 +57,105 @@ SimpleHostsEditor::~SimpleHostsEditor()
 void SimpleHostsEditor::setupUI()
 {
     mainLayout = new QVBoxLayout(this);
-    mainLayout->setSpacing(8);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
-    
+    mainLayout->setSpacing(4);
+    mainLayout->setContentsMargins(8, 6, 8, 6);
+
     setupToolbar();
     setupEditorArea();
     setupStatusArea();
-    
-    // 应用全局样式
+
     setStyleSheet(R"(
         QPushButton {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px 16px;
-            border-radius: 0px;
-            border: 1px solid #ccc;
-            font-size: 10pt;
-            font-weight: bold;
-            min-width: 80px;
-            background-color: #f8f9fa;
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 9pt;
+            color: #495057;
+            background: transparent;
         }
-        QPushButton:hover { 
-            background-color: #e9ecef; 
-            border-color: #adb5bd;
+        QPushButton:hover {
+            background-color: #e9ecef;
         }
         QPushButton:pressed {
             background-color: #dee2e6;
         }
         QPushButton:disabled {
-            background-color: #e9ecef;
-            color: #6c757d;
-            border-color: #dee2e6;
-        }
-        QGroupBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-weight: bold;
-            border: 2px solid #dee2e6;
-            border-radius: 0px;
-            margin-top: 1ex;
-            padding-top: 10px;
-            font-size: 12pt;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
+            color: #adb5bd;
         }
         QTextEdit {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
             font-size: 10pt;
-            border: 2px solid #ced4da;
-            border-radius: 0px;
-            background-color: white;
-            line-height: 1.4;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background-color: #fff;
+            selection-background-color: #b3d7ff;
         }
         QTextEdit:focus {
             border-color: #80bdff;
-            outline: 0;
-        }
-        QLabel {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 10pt;
         }
     )");
 }
 
 void SimpleHostsEditor::setupToolbar()
 {
-    toolbarGroup = new QGroupBox(tr("📝 Hosts文本编辑器"));
-    toolbarLayout = new QHBoxLayout(toolbarGroup);
-    
-    loadBtn = new QPushButton(tr("📂 重新加载"));
-    saveBtn = new QPushButton(tr("💾 保存文件"));
-    flushDnsBtn = new QPushButton(tr("🔄 刷新DNS"));
-    resetBtn = new QPushButton(tr("🔄 重置为默认"));
-    backupBtn = new QPushButton(tr("📋 创建备份"));
-    
-    // 设置按钮样式
-    saveBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white; } QPushButton:hover { background-color: #218838; } QPushButton:disabled { background-color: #6c757d; }");
-    flushDnsBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
-    resetBtn->setStyleSheet("QPushButton { background-color: #ffc107; color: #212529; } QPushButton:hover { background-color: #e0a800; }");
-    backupBtn->setStyleSheet("QPushButton { background-color: #6f42c1; color: white; } QPushButton:hover { background-color: #5a32a3; }");
-    
+    toolbarLayout = new QHBoxLayout();
+    toolbarLayout->setContentsMargins(0, 0, 0, 0);
+    toolbarLayout->setSpacing(2);
+
+    loadBtn = new QPushButton(tr("重新加载"));
+    saveBtn = new QPushButton(tr("保存"));
+    flushDnsBtn = new QPushButton(tr("刷新DNS"));
+    resetBtn = new QPushButton(tr("重置"));
+    backupBtn = new QPushButton(tr("备份"));
+
+    saveBtn->setEnabled(false);
+
     toolbarLayout->addWidget(loadBtn);
     toolbarLayout->addWidget(saveBtn);
     toolbarLayout->addWidget(backupBtn);
     toolbarLayout->addWidget(resetBtn);
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(flushDnsBtn);
-    
-    mainLayout->addWidget(toolbarGroup);
+
+    mainLayout->addLayout(toolbarLayout);
 }
 
 void SimpleHostsEditor::setupEditorArea()
 {
-    editorGroup = new QGroupBox(tr("📄 Hosts文件内容"));
-    editorLayout = new QVBoxLayout(editorGroup);
-    
-    // 信息标签
-    infoLabel = new QLabel(tr("💡 提示：直接编辑hosts文件内容，格式为：IP地址 主机名 # 注释"));
-    infoLabel->setStyleSheet("color: #6c757d; font-style: italic; padding: 5px; background-color: #f8f9fa; border-radius: 0px;");
-    infoLabel->setWordWrap(true);
-    
-    // 文本编辑器
     hostsTextEdit = new QTextEdit();
-    hostsTextEdit->setMinimumHeight(400);
-    hostsTextEdit->setPlaceholderText(tr("# Hosts文件内容将在这里显示\n# 格式示例：\n# 127.0.0.1    localhost\n# 0.0.0.0      example.com    # 阻止访问example.com"));
-    
-    // 设置等宽字体
-    QFont font("Consolas", 11);
+    hostsTextEdit->setPlaceholderText(tr("# 格式：IP地址  主机名  # 注释\n# 127.0.0.1    localhost"));
+
+    QFont font("Menlo", 11);
     font.setStyleHint(QFont::Monospace);
     hostsTextEdit->setFont(font);
-    
-    editorLayout->addWidget(infoLabel);
-    editorLayout->addWidget(hostsTextEdit);
-    
-    mainLayout->addWidget(editorGroup);
+
+    mainLayout->addWidget(hostsTextEdit, 1);
 }
 
 void SimpleHostsEditor::setupStatusArea()
 {
     statusLayout = new QHBoxLayout();
-    
+    statusLayout->setContentsMargins(0, 0, 0, 0);
+
     statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setStyleSheet("color: #28a745; font-weight: bold;");
-    
+    statusLabel->setStyleSheet("color: #868e96; font-size: 9pt;");
+
     lineCountLabel = new QLabel(tr("行数: 0"));
-    lineCountLabel->setStyleSheet("color: #6c757d;");
-    
-    adminStatusLabel = new QLabel(tr("权限检查中..."));
-    
+    lineCountLabel->setStyleSheet("color: #868e96; font-size: 9pt;");
+
+    adminStatusLabel = new QLabel();
+    adminStatusLabel->setStyleSheet("font-size: 9pt;");
+
     progressBar = new QProgressBar();
     progressBar->setVisible(false);
-    progressBar->setMaximumHeight(20);
-    
+    progressBar->setMaximumHeight(16);
+
     statusLayout->addWidget(statusLabel);
     statusLayout->addWidget(lineCountLabel);
     statusLayout->addStretch();
     statusLayout->addWidget(progressBar);
     statusLayout->addWidget(adminStatusLabel);
-    
+
     mainLayout->addLayout(statusLayout);
 }
 
