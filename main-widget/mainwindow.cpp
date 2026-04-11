@@ -245,6 +245,11 @@ void MainWindow::createTitleBar() {
     titleLayout->setSpacing(0);
 
     // 创建菜单栏
+#ifdef Q_OS_MAC
+    // macOS: 使用原生全局菜单栏（屏幕顶部）
+    customMenuBar = new QMenuBar(nullptr);
+#else
+    // Windows/Linux: 嵌入自定义标题栏
     customMenuBar = new QMenuBar();
     customMenuBar->setStyleSheet(
         "QMenuBar {"
@@ -278,9 +283,8 @@ void MainWindow::createTitleBar() {
     // 设置菜单栏的大小策略为最小
     customMenuBar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
-    // 在这里我们稍后会填充菜单
-
     titleLayout->addWidget(customMenuBar);
+#endif
     titleLayout->addStretch(); // 占用剩余空间，推动窗口控制按钮到右侧
 
     // 创建窗口控制按钮
