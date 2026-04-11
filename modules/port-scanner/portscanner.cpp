@@ -259,8 +259,11 @@ void PortScanner::refreshPortList()
 #ifdef Q_OS_WIN
     // Windows: netstat -ano
     currentProcess->start("netstat", QStringList() << "-ano");
+#elif defined(Q_OS_MAC)
+    // macOS: netstat -an -p tcp / lsof
+    currentProcess->start("lsof", QStringList() << "-iTCP" << "-sTCP:LISTEN" << "-nP");
 #else
-    // Linux/Mac: netstat -tulnp
+    // Linux: netstat -tulnp
     currentProcess->start("netstat", QStringList() << "-tulnp");
 #endif
 #endif
@@ -294,20 +297,26 @@ void PortScanner::processBatchLines()
         const QString& line = pendingLines[currentLineIndex];
         QString trimmedLine = line.trimmed();
 
-        if (!trimmedLine.isEmpty() &&
-            !trimmedLine.startsWith("活动连接") &&
-            !trimmedLine.startsWith("协议") &&
-            !trimmedLine.startsWith("Proto") &&
-            !trimmedLine.startsWith("Active") &&
-            (trimmedLine.startsWith("tcp") || trimmedLine.startsWith("udp") ||
-             trimmedLine.startsWith("TCP") || trimmedLine.startsWith("UDP"))) {
-
-#ifdef Q_OS_WIN
-            parseNetstatLineWindows(trimmedLine);
-#else
-            parseNetstatLineLinux(trimmedLine);
-#endif
+        if (trimmedLine.isEmpty()) {
+            currentLineIndex++;
+            processed++;
+            continue;
         }
+
+#ifdef Q_OS_MAC
+        // lsof 输出：跳过标题行
+        if (!trimmedLine.startsWith("COMMAND")) {
+            parseLsofLineMac(trimmedLine);
+        }
+#elif defined(Q_OS_WIN)
+        if (trimmedLine.startsWith("TCP") || trimmedLine.startsWith("UDP")) {
+            parseNetstatLineWindows(trimmedLine);
+        }
+#else
+        if (trimmedLine.startsWith("tcp") || trimmedLine.startsWith("udp")) {
+            parseNetstatLineLinux(trimmedLine);
+        }
+#endif
 
         currentLineIndex++;
         processed++;
@@ -335,18 +344,20 @@ void PortScanner::parseNetstatOutput(const QString& output)
 
     for (const QString& line : lines) {
         QString trimmedLine = line.trimmed();
-        if (trimmedLine.isEmpty() || trimmedLine.startsWith("活动连接") ||
-            trimmedLine.startsWith("协议") || trimmedLine.startsWith("Proto") ||
-            trimmedLine.startsWith("Active") || trimmedLine.startsWith("tcp") == false &&
-            trimmedLine.startsWith("udp") == false && trimmedLine.startsWith("TCP") == false &&
-            trimmedLine.startsWith("UDP") == false) {
-            continue;
-        }
+        if (trimmedLine.isEmpty()) continue;
 
-#ifdef Q_OS_WIN
-        parseNetstatLineWindows(trimmedLine);
+#ifdef Q_OS_MAC
+        if (!trimmedLine.startsWith("COMMAND")) {
+            parseLsofLineMac(trimmedLine);
+        }
+#elif defined(Q_OS_WIN)
+        if (trimmedLine.startsWith("TCP") || trimmedLine.startsWith("UDP")) {
+            parseNetstatLineWindows(trimmedLine);
+        }
 #else
-        parseNetstatLineLinux(trimmedLine);
+        if (trimmedLine.startsWith("tcp") || trimmedLine.startsWith("udp")) {
+            parseNetstatLineLinux(trimmedLine);
+        }
 #endif
     }
 }
@@ -444,6 +455,49 @@ void PortScanner::parseNetstatLineLinux(const QString& line)
             }
         }
     }
+
+    portInfoList.append(info);
+}
+
+void PortScanner::parseLsofLineMac(const QString& line)
+{
+    // lsof -iTCP -sTCP:LISTEN -nP 输出格式:
+    // COMMAND  PID USER FD TYPE DEVICE SIZE/OFF NODE NAME
+    // rapportd 627 a9   10u IPv4 ...   0t0      TCP  *:50092 (LISTEN)
+
+    QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+    if (parts.size() < 9) return;
+
+    PortInfo info;
+    info.processName = parts[0];
+    info.processId = parts[1];
+
+    // NODE 列是 TCP/UDP
+    info.protocol = parts[7].toUpper();
+
+    // NAME 列格式: *:port 或 127.0.0.1:port (LISTEN)
+    QString name = parts[8];
+    // 去掉尾部的 (LISTEN) 等状态
+    int parenIdx = name.indexOf('(');
+    if (parenIdx > 0) {
+        name = name.left(parenIdx).trimmed();
+    }
+    // 如果下一列是 (LISTEN)，取状态
+    if (parts.size() > 9) {
+        QString stateStr = parts[9];
+        stateStr.remove('(').remove(')');
+        info.state = stateStr;
+    }
+
+    int lastColon = name.lastIndexOf(':');
+    if (lastColon >= 0) {
+        info.localAddress = name.left(lastColon);
+        if (info.localAddress == "*") info.localAddress = "0.0.0.0";
+        info.localPort = name.mid(lastColon + 1);
+    }
+
+    info.remoteAddress = "*";
+    info.remotePort = "*";
 
     portInfoList.append(info);
 }

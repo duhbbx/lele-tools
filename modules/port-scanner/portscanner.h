@@ -115,6 +115,7 @@ private:
     void parseNetstatOutput(const QString& output);
     void parseNetstatLineWindows(const QString& line);
     void parseNetstatLineLinux(const QString& line);
+    void parseLsofLineMac(const QString& line);
     QString getProcessName(const QString& pid);
     void showStatusMessage(const QString& message, int timeout = 3000);
     void resizeTableColumns();
