@@ -7,6 +7,7 @@
 #include <QTranslator>
 #include <QSettings>
 #include <QDebug>
+#include "common/logger.h"
 
 #ifdef Q_OS_WIN
 #include <io.h>
@@ -36,17 +37,12 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    // 设置Qt消息输出格式，让CLion能更好地显示
-    qSetMessagePattern("[%{time hh:mm:ss.zzz}] %{type}: %{message}");
-    
-    qDebug() << "=== Lele Tools Starting ===";
-    qDebug() << "Hello from qDebug!";
-    std::cout << "Hello from std::cout" << std::endl;
-    
-    // 输出到stderr，这样CLion更容易捕获
-    std::cerr << "Debug: Application initializing..." << std::endl;
-
     QApplication a(argc, argv);
+
+    // 初始化日志系统（输出到文件 + stderr）
+    Logger::instance().init();
+    qInfo() << "=== Lele Tools Starting ===";
+    qInfo() << "Log file:" << Logger::instance().logFilePath();
 
     // 设置应用程序图标
     QIcon appIcon;

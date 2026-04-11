@@ -196,7 +196,7 @@ void FTPServer::setupConfigWidget()
     QVBoxLayout* controlLayout = new QVBoxLayout(controlGroup);
 
     m_startStopButton = new QPushButton(tr("启动服务器"));
-    m_startStopButton->setMinimumHeight(40);
+    m_startStopButton->setMinimumHeight(30);
     controlLayout->addWidget(m_startStopButton);
 
     layout->addWidget(controlGroup);
@@ -1608,7 +1608,7 @@ FTPUserDialog::FTPUserDialog(const FTPUserInfo& user, QWidget* parent)
 
 void FTPUserDialog::setupUI()
 {
-    setMinimumSize(500, 400);
+    setMinimumSize(500, 300);
 
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 

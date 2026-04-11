@@ -540,11 +540,13 @@ void CameraTool::onStartCameraClicked()
         connect(m_imageCapture, &QImageCapture::errorOccurred, this, &CameraTool::onImageCaptureError);
         
         // 启动摄像头
+        qInfo() << "Starting camera:" << device.description() << "id:" << device.id();
         m_camera->start();
-        
+
         logMessage(QString(tr("正在启动摄像头: %1")).arg(device.description()));
-        
+
     } catch (const std::exception& e) {
+        qCritical() << "Camera start failed:" << e.what();
         QMessageBox::critical(this, tr("错误"), QString(tr("启动摄像头失败: %1")).arg(e.what()));
         logMessage(QString(tr("启动摄像头失败: %1")).arg(e.what()));
     }
@@ -672,6 +674,7 @@ void CameraTool::onCameraActiveChanged(bool active)
 
 void CameraTool::onCameraErrorOccurred(QCamera::Error error, const QString &errorString)
 {
+    qCritical() << "Camera error" << static_cast<int>(error) << ":" << errorString;
     QString errorMsg = QString(tr("摄像头错误 [%1]: %2")).arg(static_cast<int>(error)).arg(errorString);
     logMessage(errorMsg);
     QMessageBox::critical(this, tr("摄像头错误"), errorMsg);

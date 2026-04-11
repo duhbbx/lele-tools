@@ -2086,7 +2086,7 @@ void HttpClient::setupTabBodyTab(HttpRequestTab* tab) {
     tab->bodyEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // 如果你希望初始高度有限制，可以设置最小高度
-    tab->bodyEdit->setMinimumHeight(100);
+    tab->bodyEdit->setMinimumHeight(50);
 
     // ❌ 删除 setMaximumHeight(200);
     // tab->bodyEdit->setMaximumHeight(200);

@@ -170,7 +170,7 @@ SingleImageWatermark::SingleImageWatermark(QWidget* parent)
 
 void SingleImageWatermark::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
+    m_mainLayout->setContentsMargins(6, 6, 6, 6);
 
     // 主分割器
     m_mainSplitter = new QSplitter(Qt::Horizontal);
@@ -190,7 +190,7 @@ void SingleImageWatermark::setupUI() {
         "background-color: #3498db;"
         "color: white;"
         "border: none;"
-        "padding: 12px 24px;"
+        "padding: 8px 16px;"
         "border-radius: 6px;"
         "font-weight: bold;"
         "font-size: 14px;"
@@ -308,7 +308,7 @@ void SingleImageWatermark::setupUI() {
         "background-color: #27ae60;"
         "color: white;"
         "border: none;"
-        "padding: 10px 20px;"
+        "padding: 6px 14px;"
         "border-radius: 6px;"
         "font-weight: bold;"
         "}"
@@ -325,7 +325,7 @@ void SingleImageWatermark::setupUI() {
         "background-color: #e74c3c;"
         "color: white;"
         "border: none;"
-        "padding: 10px 20px;"
+        "padding: 6px 14px;"
         "border-radius: 6px;"
         "font-weight: bold;"
         "}"
@@ -374,7 +374,7 @@ void SingleImageWatermark::setupUI() {
         "color: #7f8c8d;"
         "font-size: 16px;"
         "font-style: italic;"
-        "min-height: 400px;"
+        "min-height: 200px;"
         "}"
     );
     m_previewImageLabel->setCursor(Qt::PointingHandCursor);
@@ -664,7 +664,7 @@ BatchImageWatermark::~BatchImageWatermark() {
 
 void BatchImageWatermark::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
+    m_mainLayout->setContentsMargins(6, 6, 6, 6);
 
     // 主分割器
     m_mainSplitter = new QSplitter(Qt::Horizontal);
@@ -686,7 +686,7 @@ void BatchImageWatermark::setupUI() {
         "border: 2px dashed #bdc3c7;"
         "border-radius: 6px;"
         "background-color: #f8f9fa;"
-        "min-height: 120px;"
+        "min-height: 60px;"
         "}"
         "QListWidget::item {"
         "padding: 4px;"
@@ -825,7 +825,7 @@ void BatchImageWatermark::setupUI() {
         "background-color: #27ae60;"
         "color: white;"
         "border: none;"
-        "padding: 12px 24px;"
+        "padding: 8px 16px;"
         "border-radius: 6px;"
         "font-weight: bold;"
         "font-size: 14px;"
@@ -843,7 +843,7 @@ void BatchImageWatermark::setupUI() {
         "background-color: #e74c3c;"
         "color: white;"
         "border: none;"
-        "padding: 12px 24px;"
+        "padding: 8px 16px;"
         "border-radius: 6px;"
         "font-weight: bold;"
         "font-size: 14px;"
@@ -1146,7 +1146,7 @@ void ImageWatermark::setupUI() {
         "QTabBar::tab {"
         "background-color: #ecf0f1;"
         "color: #2c3e50;"
-        "padding: 12px 24px;"
+        "padding: 8px 16px;"
         "margin-right: 2px;"
         "border-top-left-radius: 6px;"
         "border-top-right-radius: 6px;"
