@@ -5,6 +5,7 @@ CustomTabBar::CustomTabBar(QWidget *parent)
     : QTabBar(parent), m_hoveredTab(-1), m_hoveredCloseButton(-1), m_pressedCloseButton(-1)
 {
     setMouseTracking(true);  // 必须开启鼠标追踪
+    setElideMode(Qt::ElideRight); // 标签名过长时右侧省略
     
     // 加载关闭按钮图标
     m_closeNormalIcon = QPixmap(":/resources/close.svg");
@@ -21,6 +22,7 @@ CustomTabBar::CustomTabBar(QWidget *parent)
             border-top: none;
             margin-right: -1px;
             min-width: 80px;
+            max-width: 200px;
         }
 
         QTabBar::tab:last {

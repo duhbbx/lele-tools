@@ -3,6 +3,7 @@
 #include <iostream>
 #include <QLabel>
 #include <QListWidget>
+#include <QScrollArea>
 #include <QBoxLayout>
 #include "../tool-list/toollist.h"
 #include <QObject>
@@ -224,8 +225,13 @@ void MainWindow::itemClickedSlot(QListWidgetItem* item) {
     if (!widget) {
         return;
     }
+    // 用 QScrollArea 包裹，防止内容 widget 的 minimumSize 撑宽整个窗口
+    auto* scrollArea = new QScrollArea();
+    scrollArea->setWidget(widget);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
     // 添加新的工具页面作为标签页
-    const int index = rightTabWidget->addTab(widget, title);
+    const int index = rightTabWidget->addTab(scrollArea, title);
     rightTabWidget->setCurrentIndex(index);
 
     // 更新窗口标题显示当前工具
