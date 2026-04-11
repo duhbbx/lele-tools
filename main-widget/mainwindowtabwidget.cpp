@@ -9,6 +9,9 @@ MainWindowTabWidget::MainWindowTabWidget(QWidget* parent)
     // 启用关闭按钮
     setTabsClosable(true);
 
+    // macOS 默认 tab 居中，强制左对齐
+    setDocumentMode(true);
+
     // 设置基本样式
     setStyleSheet(R"(
         QTabWidget::pane {
