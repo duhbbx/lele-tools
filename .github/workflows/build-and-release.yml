@@ -831,6 +831,7 @@ jobs:
           ${{ runner.os }}-vcpkg-v2
 
     - name: Setup vcpkg and install LibSSH
+      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
       shell: powershell
       run: |
         Write-Host "Setting up vcpkg and installing LibSSH..." -ForegroundColor Green
