@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(lele-tools VERSION 0.1 LANGUAGES CXX)
+project(lele-tools VERSION 1.2.0 LANGUAGES CXX)
 
 # 添加自定义模块路径，告诉 CMake 去哪里找 Find*.cmake
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -243,6 +243,14 @@ else()
 endif()
 
 # WebEngine 已移除：项目无源码使用，且体积占比极大（~200MB+）
+
+# 将版本号传递给源码
+target_compile_definitions(lele-tools PRIVATE
+    APP_VERSION="${PROJECT_VERSION}"
+    APP_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+    APP_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+    APP_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+)
 
 target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport ${QT_MULTIMEDIA_LIBS} yaml-cpp ScreenCaptureLib)
 

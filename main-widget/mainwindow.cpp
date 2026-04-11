@@ -4,6 +4,8 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QScrollArea>
+#include <QDialog>
+#include <QFrame>
 #include <QBoxLayout>
 #include "../tool-list/toollist.h"
 #include <QObject>
@@ -109,10 +111,35 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_bPressed(false)
     // 创建欢迎页面
     QWidget* welcomePage = new QWidget();
     QVBoxLayout* welcomeLayout = new QVBoxLayout(welcomePage);
-    QLabel* welcomeLabel = new QLabel(tr("欢迎使用乐乐的工具箱\n\n请从左侧菜单选择要使用的工具"));
-    welcomeLabel->setAlignment(Qt::AlignCenter);
-    welcomeLabel->setStyleSheet("font-size: 18px; color: #666; padding: 50px;");
-    welcomeLayout->addWidget(welcomeLabel);
+    welcomeLayout->setAlignment(Qt::AlignCenter);
+
+    auto* welcomeTitle = new QLabel(tr("乐乐的工具箱"));
+    welcomeTitle->setAlignment(Qt::AlignCenter);
+    welcomeTitle->setStyleSheet("font-size: 22px; font-weight: bold; color: #212529; margin-bottom: 4px;");
+
+    auto* welcomeVer = new QLabel(QString("v%1").arg(APP_VERSION));
+    welcomeVer->setAlignment(Qt::AlignCenter);
+    welcomeVer->setStyleSheet("font-size: 11px; color: #adb5bd; margin-bottom: 16px;");
+
+    auto* welcomeHint = new QLabel(tr("请从左侧菜单选择要使用的工具"));
+    welcomeHint->setAlignment(Qt::AlignCenter);
+    welcomeHint->setStyleSheet("font-size: 13px; color: #868e96;");
+
+    auto* welcomeDev = new QLabel(
+        "<p style='color:#adb5bd;font-size:10px;'>"
+        + tr("武汉斯凯勒网络科技有限公司") +
+        " | <a href='https://www.skyler.uno' style='color:#74c0fc;text-decoration:none;'>www.skyler.uno</a></p>"
+    );
+    welcomeDev->setAlignment(Qt::AlignCenter);
+    welcomeDev->setOpenExternalLinks(true);
+
+    welcomeLayout->addStretch();
+    welcomeLayout->addWidget(welcomeTitle);
+    welcomeLayout->addWidget(welcomeVer);
+    welcomeLayout->addWidget(welcomeHint);
+    welcomeLayout->addSpacing(20);
+    welcomeLayout->addWidget(welcomeDev);
+    welcomeLayout->addStretch();
 
     rightTabWidget->addTab(welcomePage, tr("首页"));
 
@@ -652,12 +679,71 @@ void MainWindow::closeTab(int index) {
 }
 
 void MainWindow::showAbout() {
-    QMessageBox::about(this, tr("关于乐乐的工具箱"),
-                       tr("<h2>乐乐的工具箱</h2>"
-                           "<p>版本 1.0</p>"
-                           "<p>一个集成了多种实用工具的桌面应用程序。</p>"
-                           "<p>包含了编码解码、格式转换、文本处理、图像处理等多种常用工具。</p>"
-                           "<p>© 2024 乐乐工作室</p>"));
+    QDialog* aboutDialog = new QDialog(this);
+    aboutDialog->setWindowTitle(tr("关于乐乐的工具箱"));
+    aboutDialog->setFixedSize(520, 480);
+
+    auto* layout = new QVBoxLayout(aboutDialog);
+    layout->setSpacing(12);
+    layout->setContentsMargins(24, 20, 24, 20);
+
+    // 标题和版本
+    auto* titleLabel = new QLabel(QString("<h2 style='margin:0;color:#212529;'>%1</h2>"
+                                          "<p style='color:#868e96;margin:4px 0;'>v%2</p>")
+                                  .arg(tr("乐乐的工具箱"), APP_VERSION));
+    titleLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(titleLabel);
+
+    // 简介
+    auto* descLabel = new QLabel(tr("一个集成了多种实用工具的跨平台桌面应用程序。"));
+    descLabel->setAlignment(Qt::AlignCenter);
+    descLabel->setStyleSheet("color:#495057; font-size:10pt;");
+    layout->addWidget(descLabel);
+
+    // 分割线
+    auto* line1 = new QFrame();
+    line1->setFrameShape(QFrame::HLine);
+    line1->setStyleSheet("color:#e9ecef;");
+    layout->addWidget(line1);
+
+    // 开发者信息
+    auto* devInfo = new QLabel(
+        "<p style='margin:2px 0;'><b>" + tr("开发者") + ":</b> " + tr("武汉斯凯勒网络科技有限公司") + "</p>"
+        "<p style='margin:2px 0;'><b>" + tr("官网") + ":</b> <a href='https://www.skyler.uno' style='color:#228be6;text-decoration:none;'>www.skyler.uno</a></p>"
+        "<p style='margin:2px 0;'><b>" + tr("邮箱") + ":</b> duhbbx@gmail.com</p>"
+        "<p style='margin:2px 0;'><b>" + tr("微信") + ":</b> tuhoooo</p>"
+    );
+    devInfo->setOpenExternalLinks(true);
+    devInfo->setStyleSheet("font-size:9pt; color:#495057;");
+    layout->addWidget(devInfo);
+
+    // 业务推广
+    auto* bizLabel = new QLabel(
+        "<p style='color:#868e96;font-size:9pt;text-align:center;'>"
+        + tr("我们提供专业的软件开发服务：小程序 / App / 桌面PC应用 开发") + "</p>"
+    );
+    bizLabel->setAlignment(Qt::AlignCenter);
+    bizLabel->setWordWrap(true);
+    layout->addWidget(bizLabel);
+
+    // 微信二维码
+    auto* qrLabel = new QLabel();
+    QPixmap qr(":/resources/wechat-qr.jpg");
+    if (!qr.isNull()) {
+        qrLabel->setPixmap(qr.scaled(160, 160, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    qrLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(qrLabel);
+
+    auto* qrTip = new QLabel(tr("扫码添加微信"));
+    qrTip->setAlignment(Qt::AlignCenter);
+    qrTip->setStyleSheet("color:#868e96; font-size:8pt;");
+    layout->addWidget(qrTip);
+
+    layout->addStretch();
+
+    aboutDialog->exec();
+    aboutDialog->deleteLater();
 }
 
 void MainWindow::showHelp() {
