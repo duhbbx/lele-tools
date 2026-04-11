@@ -1841,7 +1841,7 @@ jobs:
         CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DWITH_OPENCV=ON \
           -DWITH_MYSQL=ON \
-          -DENABLE_REDIS=ON \
+          -DENABLE_REDIS=OFF \
           -DWITH_LIBSSH=ON \
           -DWITH_PCAP=OFF \
           -DWITH_QT_MULTIMEDIA=ON \
