@@ -38,7 +38,9 @@ FTPServer::FTPServer(QWidget* parent)
     m_config.rootDirectory = QDir::homePath() + "/FTPServer";
 
     setupUI();
+#ifndef Q_OS_MAC
     setupMenuBar();
+#endif
     loadSettings();
 
     // 创建服务器核心
@@ -80,10 +82,12 @@ void FTPServer::setupUI()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
+#ifndef Q_OS_MAC
     // 创建菜单栏 - 固定高度，不拉伸
     m_menuBar = new QMenuBar(this);
     m_menuBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     mainLayout->addWidget(m_menuBar, 0);
+#endif
 
     // 创建主分割器 - 占据所有剩余空间
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);

@@ -51,9 +51,11 @@ void SSHClient::setupUI()
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(5, 5, 5, 5);
 
+#ifndef Q_OS_MAC
     // 菜单栏
     setupMenuBar();
     mainLayout->addWidget(m_menuBar);
+#endif
 
     // 主分割器
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);

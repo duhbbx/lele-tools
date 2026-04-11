@@ -26,7 +26,9 @@ FTPClient::FTPClient(QWidget* parent)
 {
     setWindowTitle(tr("FTP客户端"));
     setupUI();
+#ifndef Q_OS_MAC
     setupMenuBar();
+#endif
     loadSettings();
 
     // 连接信号
@@ -53,10 +55,12 @@ void FTPClient::setupUI()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
+#ifndef Q_OS_MAC
     // 创建菜单栏 - 固定高度，不拉伸
     m_menuBar = new QMenuBar(this);
     m_menuBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     mainLayout->addWidget(m_menuBar, 0);
+#endif
 
     // 创建主分割器 - 占据所有剩余空间
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
