@@ -7,18 +7,18 @@
 #include <QMutexLocker>
 #include <iostream>
 
-Logger& Logger::instance() {
-    static Logger inst;
+AppLogger& AppLogger::instance() {
+    static AppLogger inst;
     return inst;
 }
 
-Logger::~Logger() {
+AppLogger::~AppLogger() {
     if (m_logFile.isOpen()) {
         m_logFile.close();
     }
 }
 
-void Logger::init(const QString& logDir) {
+void AppLogger::init(const QString& logDir) {
     if (m_initialized) return;
 
     // 确定日志目录
@@ -58,12 +58,12 @@ void Logger::init(const QString& logDir) {
     stream.flush();
 }
 
-QString Logger::logFilePath() const {
+QString AppLogger::logFilePath() const {
     return m_logFile.fileName();
 }
 
-void Logger::messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
-    Logger& logger = instance();
+void AppLogger::messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg) {
+    AppLogger& logger = instance();
     QMutexLocker locker(&logger.m_mutex);
 
     QString level;

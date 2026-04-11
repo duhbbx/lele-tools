@@ -40,9 +40,9 @@ int main(int argc, char* argv[]) {
     QApplication a(argc, argv);
 
     // 初始化日志系统（输出到文件 + stderr）
-    Logger::instance().init();
+    AppLogger::instance().init();
     qInfo() << "=== Lele Tools Starting ===";
-    qInfo() << "Log file:" << Logger::instance().logFilePath();
+    qInfo() << "Log file:" << AppLogger::instance().logFilePath();
 
     // 设置应用程序图标
     QIcon appIcon;

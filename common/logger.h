@@ -5,9 +5,9 @@
 #include <QFile>
 #include <QMutex>
 
-class Logger {
+class AppLogger {
 public:
-    static Logger& instance();
+    static AppLogger& instance();
 
     // 初始化日志系统，安装 Qt 消息处理器
     void init(const QString& logDir = QString());
@@ -16,10 +16,10 @@ public:
     QString logFilePath() const;
 
 private:
-    Logger() = default;
-    ~Logger();
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
+    AppLogger() = default;
+    ~AppLogger();
+    AppLogger(const AppLogger&) = delete;
+    AppLogger& operator=(const AppLogger&) = delete;
 
     static void messageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
