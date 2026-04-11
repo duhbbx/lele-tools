@@ -34,8 +34,6 @@ FTPServer::FTPServer(QWidget* parent)
     , m_totalConnections(0)
 {
     setWindowTitle(tr("FTP服务器"));
-    setMinimumSize(1200, 800);
-
     // 初始化配置
     m_config.rootDirectory = QDir::homePath() + "/FTPServer";
 
@@ -93,7 +91,7 @@ void FTPServer::setupUI()
 
     // 左侧：配置和用户管理
     m_leftTabs = new QTabWidget(this);
-    m_leftTabs->setMinimumWidth(400);
+    m_leftTabs->setMinimumWidth(250);
     m_leftTabs->setMaximumWidth(500);
 
     // 服务器配置标签页

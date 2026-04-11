@@ -47,8 +47,6 @@ SSHClient::~SSHClient()
 void SSHClient::setupUI()
 {
     setWindowTitle(tr("SSH客户端"));
-    setMinimumSize(1000, 600);
-
     // 主布局
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(5, 5, 5, 5);

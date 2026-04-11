@@ -24,8 +24,6 @@ ChineseCopybook::ChineseCopybook(QWidget* parent)
     , m_currentPageIndex(0)
 {
     setWindowTitle(tr("汉字字帖生成器"));
-    setMinimumSize(1000, 700);
-
     setupUI();
     updateConfig();
 }

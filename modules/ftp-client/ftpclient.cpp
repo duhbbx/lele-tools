@@ -25,8 +25,6 @@ FTPClient::FTPClient(QWidget* parent)
     , m_isConnected(false)
 {
     setWindowTitle(tr("FTP客户端"));
-    setMinimumSize(1000, 700);
-
     setupUI();
     setupMenuBar();
     loadSettings();
@@ -66,8 +64,8 @@ void FTPClient::setupUI()
 
     // 左侧：连接管理器
     m_connectionManager = new FTPConnectionManager(this);
-    m_connectionManager->setMinimumWidth(300);
-    m_connectionManager->setMaximumWidth(400);
+    m_connectionManager->setMinimumWidth(200);
+    m_connectionManager->setMaximumWidth(350);
     m_mainSplitter->addWidget(m_connectionManager);
 
     // 右侧：标签页
