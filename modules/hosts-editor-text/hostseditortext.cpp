@@ -18,6 +18,7 @@
 #else
 #include <unistd.h>
 #endif
+#include <QProcess>
 
 REGISTER_DYNAMICOBJECT(SimpleHostsEditor);
 
@@ -448,10 +449,74 @@ bool SimpleHostsEditor::saveWithElevation()
         updateStatusMessage(tr("权限提升失败: 未知错误"), true);
         return false;
     }
+#elif defined(Q_OS_MAC)
+    // macOS: 写入临时文件，通过 osascript 调用 sudo cp 提权复制到 /etc/hosts
+    try {
+        QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch());
+
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            updateStatusMessage(tr("无法创建临时文件: %1").arg(file.errorString()), true);
+            return false;
+        }
+        QTextStream out(&file);
+        out.setEncoding(QStringConverter::Utf8);
+        out << hostsTextEdit->toPlainText();
+        file.close();
+
+        // osascript 弹出密码框执行 sudo cp
+        QString script = QString(
+            "do shell script \"cp %1 %2\" with administrator privileges"
+        ).arg(tempFile, hostsFilePath);
+
+        QProcess process;
+        process.start("osascript", QStringList() << "-e" << script);
+        process.waitForFinished(30000);
+
+        QFile::remove(tempFile);
+
+        if (process.exitCode() == 0) {
+            return true;
+        } else {
+            QString err = process.readAllStandardError().trimmed();
+            if (err.contains("User canceled") || err.contains("(-128)")) {
+                updateStatusMessage(tr("用户取消了权限提升"), true);
+            } else {
+                updateStatusMessage(tr("权限提升失败: %1").arg(err), true);
+            }
+            return false;
+        }
+    } catch (...) {
+        updateStatusMessage(tr("权限提升失败: 未知错误"), true);
+        return false;
+    }
 #else
-    // Linux/Mac系统使用pkexec或sudo
-    updateStatusMessage(tr("Linux/Mac系统暂不支持权限提升"), true);
-    return false;
+    // Linux: 使用 pkexec
+    try {
+        QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch());
+
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            updateStatusMessage(tr("无法创建临时文件"), true);
+            return false;
+        }
+        QTextStream out(&file);
+        out.setEncoding(QStringConverter::Utf8);
+        out << hostsTextEdit->toPlainText();
+        file.close();
+
+        QProcess process;
+        process.start("pkexec", QStringList() << "cp" << tempFile << hostsFilePath);
+        process.waitForFinished(30000);
+
+        QFile::remove(tempFile);
+        return process.exitCode() == 0;
+    } catch (...) {
+        updateStatusMessage(tr("权限提升失败: 未知错误"), true);
+        return false;
+    }
 #endif
 }
 
@@ -485,9 +550,25 @@ void SimpleHostsEditor::flushDnsWithAPI()
     } else {
         updateStatusMessage(tr("无法加载DNS API"), true);
     }
+#elif defined(Q_OS_MAC)
+    // macOS: dscacheutil -flushcache + killall mDNSResponder
+    QProcess process;
+    process.start("dscacheutil", QStringList() << "-flushcache");
+    process.waitForFinished(5000);
+    QProcess::execute("killall", QStringList() << "-HUP" << "mDNSResponder");
+    updateStatusMessage(tr("DNS缓存刷新成功"), false);
 #else
-    // Linux/Mac系统
-    updateStatusMessage(tr("DNS缓存刷新功能仅支持Windows系统"), true);
+    // Linux: systemd-resolve --flush-caches 或 resolvectl flush-caches
+    QProcess process;
+    process.start("resolvectl", QStringList() << "flush-caches");
+    process.waitForFinished(5000);
+    if (process.exitCode() == 0) {
+        updateStatusMessage(tr("DNS缓存刷新成功"), false);
+    } else {
+        // fallback
+        QProcess::execute("systemd-resolve", QStringList() << "--flush-caches");
+        updateStatusMessage(tr("DNS缓存刷新完成"), false);
+    }
 #endif
 }
 

@@ -419,9 +419,68 @@ bool HostsEditor::saveWithElevation() {
         updateStatus("权限提升失败: 未知错误", true);
         return false;
     }
+#elif defined(Q_OS_MAC)
+    // macOS: 写入临时文件，通过 osascript 调用 sudo cp 提权
+    try {
+        QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch());
+
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            updateStatus(tr("无法创建临时文件"), true);
+            return false;
+        }
+        QTextStream out(&file);
+        out.setEncoding(QStringConverter::Utf8);
+        out << generateHostsContent();
+        file.close();
+
+        QString script = QString(
+            "do shell script \"cp %1 %2\" with administrator privileges"
+        ).arg(tempFile, hostsFilePath);
+
+        QProcess process;
+        process.start("osascript", QStringList() << "-e" << script);
+        process.waitForFinished(30000);
+        QFile::remove(tempFile);
+
+        if (process.exitCode() == 0) return true;
+
+        QString err = process.readAllStandardError().trimmed();
+        if (err.contains("User canceled") || err.contains("(-128)"))
+            updateStatus(tr("用户取消了权限提升"), true);
+        else
+            updateStatus(tr("权限提升失败: %1").arg(err), true);
+        return false;
+    } catch (...) {
+        updateStatus(tr("权限提升失败: 未知错误"), true);
+        return false;
+    }
 #else
-    // Linux/Mac系统使用pkexec或sudo
-    return false;
+    // Linux: 使用 pkexec
+    try {
+        QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString tempFile = tempPath + "/hosts_temp_" + QString::number(QDateTime::currentMSecsSinceEpoch());
+
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            updateStatus(tr("无法创建临时文件"), true);
+            return false;
+        }
+        QTextStream out(&file);
+        out.setEncoding(QStringConverter::Utf8);
+        out << generateHostsContent();
+        file.close();
+
+        QProcess process;
+        process.start("pkexec", QStringList() << "cp" << tempFile << hostsFilePath);
+        process.waitForFinished(30000);
+        QFile::remove(tempFile);
+        return process.exitCode() == 0;
+    } catch (...) {
+        updateStatus(tr("权限提升失败: 未知错误"), true);
+        return false;
+    }
 #endif
 }
 
