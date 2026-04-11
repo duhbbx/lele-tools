@@ -1838,8 +1838,10 @@ jobs:
         rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR"
         cd "$BUILD_DIR"
 
+        # macOS 关闭 OpenCV：brew 的 OpenCV 依赖 OpenBLAS → libomp，
+        # macdeployqt 打包后 OpenMP 多实例冲突导致启动 abort
         CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
-          -DWITH_OPENCV=ON \
+          -DWITH_OPENCV=OFF \
           -DWITH_MYSQL=ON \
           -DENABLE_REDIS=OFF \
           -DWITH_LIBSSH=ON \
