@@ -35,6 +35,7 @@ permissions:
 # 全局环境变量
 # 统一管理版本号，便于维护和升级
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # 强制所有 action 使用 Node.js 24
   QT_VERSION_WINDOWS: '6.9.1'   # Windows平台Qt版本
   QT_VERSION_LINUX: '6.5.3'     # Linux平台Qt版本（LTS稳定版）
   CMAKE_VERSION: '3.28'          # CMake构建工具版本
