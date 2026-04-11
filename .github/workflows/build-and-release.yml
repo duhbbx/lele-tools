@@ -9,11 +9,9 @@ name: Build and Release Lele Tools
 # 4. 手动触发 - 可自定义参数
 on:
   push:
-    branches: [ main, master ]    # 推送到主分支时触发
-    tags: [ 'v*' ]               # 推送版本标签时触发（如 v1.0.0）
-  pull_request:
-    branches: [ main, master ]    # PR 时仅构建不发布
-  workflow_dispatch:              # 手动触发
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
     inputs:
       version:
         description: 'Version number (e.g., 1.2.0)'
@@ -43,9 +41,46 @@ env:
   OPENCV_VERSION: '4.12.0'       # OpenCV计算机视觉库版本（可选）
 
 jobs:
+  # 检查是否需要构建：tag/手动触发直接通过，push 到 master 需要攒够 10 个 commit
+  check-should-build:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+    - name: Check commit count since last tag
+      id: check
+      run: |
+        # tag 推送或手动触发：直接构建
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          echo "should_build=true" >> $GITHUB_OUTPUT
+          echo "Tag or manual trigger, building."
+          exit 0
+        fi
+
+        # push 到 master：检查距上次 tag 的 commit 数
+        git clone --bare --filter=blob:none https://github.com/${{ github.repository }}.git repo
+        cd repo
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          COUNT=$(git rev-list --count HEAD)
+        else
+          COUNT=$(git rev-list --count ${LAST_TAG}..HEAD)
+        fi
+        echo "Commits since last tag ($LAST_TAG): $COUNT"
+
+        if [ "$COUNT" -ge 10 ]; then
+          echo "should_build=true" >> $GITHUB_OUTPUT
+          echo "$COUNT commits accumulated, building."
+        else
+          echo "should_build=false" >> $GITHUB_OUTPUT
+          echo "Only $COUNT commits, skipping build (need 10)."
+        fi
+
   # Windows构建任务
   # 负责构建Windows版本的可执行文件、安装包和便携包
   build-windows:
+    needs: check-should-build
+    if: needs.check-should-build.outputs.should_build == 'true'
     runs-on: windows-latest    # Use latest Windows virtual machine
     
     steps:
@@ -1515,6 +1550,8 @@ jobs:
   # Linux 构建任务（Ubuntu / Debian / Fedora）
   # 使用 matrix 策略，各发行版使用原生包管理器安装依赖
   build-linux:
+    needs: check-should-build
+    if: needs.check-should-build.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -1778,6 +1815,8 @@ jobs:
   # macOS 构建任务
   # 负责构建 macOS 版本的 .app 与 .dmg 安装包
   build-macos:
+    needs: check-should-build
+    if: needs.check-should-build.outputs.should_build == 'true'
     runs-on: macos-latest
 
     steps:
@@ -1918,7 +1957,7 @@ jobs:
   # ================================================================
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-windows, build-macos, build-linux]
+    needs: [check-should-build, build-windows, build-macos, build-linux]
     # 仅在以下条件触发：推送到主分支、推送 tag、或手动触发选择创建 Release
     if: |
       always() &&
