@@ -1880,12 +1880,28 @@ jobs:
         /usr/libexec/PlistBuddy -c "Add :LSEnvironment:KMP_DUPLICATE_LIB_OK string TRUE" "$PLIST"
         echo "已写入 LSEnvironment KMP_DUPLICATE_LIB_OK=TRUE"
 
-        # 打 DMG
+        # 打 DMG（带 Applications 快捷方式，方便拖动安装）
         STAGING="$BUILD_DIR/dmg-staging"
-        mkdir -p "$STAGING"
+        rm -rf "$STAGING" && mkdir -p "$STAGING"
         cp -R "$APP_BUNDLE" "$STAGING/"
+        ln -s /Applications "$STAGING/Applications"
+
+        # 创建临时可读写 DMG
+        DMG_TEMP="$BUILD_DIR/LeleTools-temp.dmg"
         DMG_FILE="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
-        hdiutil create -volname "LeleTools" -srcfolder "$STAGING" -ov -format UDZO "$DMG_FILE"
+        hdiutil create -volname "LeleTools" -srcfolder "$STAGING" -ov -format UDRW "$DMG_TEMP"
+
+        # 挂载并设置窗口样式（图标大小、窗口尺寸、图标位置）
+        MOUNT_DIR=$(hdiutil attach -readwrite -noverify "$DMG_TEMP" | grep '/Volumes/' | awk '{print $3}')
+        echo "Mounted at: $MOUNT_DIR"
+
+        # 用 AppleScript 设置 Finder 窗口外观（图标位置、窗口大小）
+        osascript -e 'tell application "Finder"' -e 'tell disk "LeleTools"' -e 'open' -e 'set current view of container window to icon view' -e 'set toolbar visible of container window to false' -e 'set statusbar visible of container window to false' -e 'set the bounds of container window to {200, 120, 720, 400}' -e 'set viewOptions to the icon view options of container window' -e 'set icon size of viewOptions to 80' -e 'set arrangement of viewOptions to not arranged' -e 'set position of item "lele-tools.app" of container window to {130, 140}' -e 'set position of item "Applications" of container window to {390, 140}' -e 'close' -e 'open' -e 'update without registering applications' -e 'delay 1' -e 'close' -e 'end tell' -e 'end tell' || echo "AppleScript 设置窗口样式失败（CI 环境可能无 GUI），跳过"
+
+        # 卸载并转为压缩只读 DMG
+        hdiutil detach "$MOUNT_DIR" -force
+        hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_FILE"
+        rm -f "$DMG_TEMP"
         echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
 
     - name: Upload macOS build artifacts
