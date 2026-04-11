@@ -681,7 +681,7 @@ void MainWindow::closeTab(int index) {
 void MainWindow::showAbout() {
     QDialog* aboutDialog = new QDialog(this);
     aboutDialog->setWindowTitle(tr("关于乐乐的工具箱"));
-    aboutDialog->setFixedSize(520, 540);
+    aboutDialog->setFixedSize(560, 620);
 
     auto* layout = new QVBoxLayout(aboutDialog);
     layout->setSpacing(12);
@@ -735,7 +735,7 @@ void MainWindow::showAbout() {
     auto* wechatQr = new QLabel();
     QPixmap wechatPx(":/resources/wechat-qr.jpg");
     if (!wechatPx.isNull())
-        wechatQr->setPixmap(wechatPx.scaled(130, 130, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        wechatQr->setPixmap(wechatPx.scaled(180, 180, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     wechatQr->setAlignment(Qt::AlignCenter);
     auto* wechatTip = new QLabel(tr("添加微信"));
     wechatTip->setAlignment(Qt::AlignCenter);
@@ -748,7 +748,7 @@ void MainWindow::showAbout() {
     auto* donateQr = new QLabel();
     QPixmap donatePx(":/resources/donate-qr.jpg");
     if (!donatePx.isNull())
-        donateQr->setPixmap(donatePx.scaled(130, 130, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        donateQr->setPixmap(donatePx.scaled(180, 180, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     donateQr->setAlignment(Qt::AlignCenter);
     auto* donateTip = new QLabel(tr("请作者喝杯咖啡"));
     donateTip->setAlignment(Qt::AlignCenter);
