@@ -10,7 +10,7 @@ AboutDialog::AboutDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("关于乐乐的工具箱"));
-    setFixedSize(620, 680);
+    setFixedSize(680, 780);
     setupUI();
 }
 
@@ -50,12 +50,12 @@ void AboutDialog::setupUI()
     );
     devInfo->setOpenExternalLinks(true);
     devInfo->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
-    devInfo->setStyleSheet("font-size:9pt; color:#495057;");
+    devInfo->setStyleSheet("font-size:12pt; color:#495057;");
     layout->addWidget(devInfo);
 
     // 业务推广
     auto* bizLabel = new QLabel(
-        "<p style='color:#868e96;font-size:9pt;text-align:center;'>"
+        "<p style='color:#868e96;font-size:12pt;text-align:center;'>"
         + tr("我们提供专业的软件开发服务：小程序 / App / 桌面PC应用 开发") + "</p>"
     );
     bizLabel->setAlignment(Qt::AlignCenter);
@@ -72,7 +72,7 @@ void AboutDialog::setupUI()
     auto* wechatQr = new QLabel();
     QPixmap wechatPx(":/resources/wechat-qr.jpg");
     if (!wechatPx.isNull())
-        wechatQr->setPixmap(wechatPx.scaled(220, 220, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        wechatQr->setPixmap(wechatPx.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     wechatQr->setAlignment(Qt::AlignCenter);
     auto* wechatTip = new QLabel(tr("添加微信"));
     wechatTip->setAlignment(Qt::AlignCenter);
@@ -85,7 +85,7 @@ void AboutDialog::setupUI()
     auto* donateQr = new QLabel();
     QPixmap donatePx(":/resources/donate-qr.jpg");
     if (!donatePx.isNull())
-        donateQr->setPixmap(donatePx.scaled(220, 220, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        donateQr->setPixmap(donatePx.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     donateQr->setAlignment(Qt::AlignCenter);
     auto* donateTip = new QLabel(tr("请作者喝杯咖啡"));
     donateTip->setAlignment(Qt::AlignCenter);
