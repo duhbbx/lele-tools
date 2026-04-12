@@ -25,7 +25,9 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "Regex Content Generator", "RegExContentGen"},
 {"xxx", "Random Password Generator", "RandomPasswordGen"},
 {"xxx", "Telnet Tool", "Telnet"},
+#ifdef Q_OS_WIN
 {"xxx", "Windows Settings", "WindowsSettings"},
+#endif
 {"xxx", "Hosts Editor (Table)", "HostsEditor"},
 {"xxx", "Hosts Editor (Text)", "SimpleHostsEditor"},
 {"xxx", "Ping Tool", "Ping"},
