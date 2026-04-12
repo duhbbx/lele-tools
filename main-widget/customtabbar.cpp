@@ -13,16 +13,13 @@ CustomTabBar::CustomTabBar(QWidget *parent)
         QTabBar::tab {
             background-color: #f8f9fa;
             color: #495057;
-            padding: 6px 28px 6px 12px;
+            padding: 6px 12px;
             border: 1px solid #dee2e6;
             border-bottom: none;
             border-top: none;
             margin-right: -1px;
             min-width: 80px;
             max-width: 200px;
-        }
-        QTabBar::tab:first {
-            padding-right: 12px;
         }
         QTabBar::tab:last {
             margin-right: 0px;
@@ -45,9 +42,9 @@ CustomTabBar::CustomTabBar(QWidget *parent)
 QSize CustomTabBar::tabSizeHint(int index) const
 {
     QSize size = QTabBar::tabSizeHint(index);
-    // 首页 tab (index 0) 不需要关闭按钮的额外空间
+    // 非首页 tab 右侧留出关闭按钮空间（16px 按钮 + 6px 间距）
     if (index > 0) {
-        size.setWidth(qMax(size.width(), 90));
+        size.setWidth(size.width() + 22);
     }
     return size;
 }
