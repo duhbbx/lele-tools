@@ -10,7 +10,8 @@ AboutDialog::AboutDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("关于乐乐的工具箱"));
-    setFixedSize(680, 780);
+    setMinimumWidth(680);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
     setupUI();
 }
 
@@ -110,5 +111,7 @@ void AboutDialog::setupUI()
     qrRow->addStretch();
     layout->addLayout(qrRow);
 
-    layout->addStretch();
+    // 让对话框自适应内容高度
+    adjustSize();
+    setFixedSize(size());
 }
