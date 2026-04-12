@@ -9,6 +9,8 @@
 #include <QLineEdit>
 #include <QComboBox>
 #include <QListWidget>
+#include <QTableWidget>
+#include <QStackedWidget>
 #include <QStyledItemDelegate>
 #include <QHash>
 #include <QPixmap>
@@ -96,11 +98,13 @@ private slots:
     void onEmptyRecycleBin();
     void onEditTags();
     void onOpenInExplorer();
+    void onToggleView();
 
 private:
     void setupUI();
     void initDatabase();
     void loadImages();
+    void loadTableView();
     void importImage(const QString& filePath);
     QPixmap getThumbnail(const QString& storedName, int maxWidth, int maxHeight);
     QString storagePath() const;
@@ -119,11 +123,15 @@ private:
     QPushButton* m_addBtn = nullptr;
     QPushButton* m_pasteBtn = nullptr;
     QPushButton* m_recycleBinBtn = nullptr;
+    QPushButton* m_viewToggleBtn = nullptr;
     QListWidget* m_listWidget = nullptr;
+    QTableWidget* m_tableWidget = nullptr;
+    QStackedWidget* m_viewStack = nullptr;
     QLabel* m_statusLabel = nullptr;
 
     // State
     bool m_showingRecycleBin = false;
+    bool m_isTableView = false;
     QHash<QString, QPixmap> m_thumbnailCache;
     ImageCardDelegate* m_delegate = nullptr;
     SqliteWrapper::SqliteManager* m_db = nullptr;

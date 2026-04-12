@@ -6,6 +6,8 @@
 #include <QStandardPaths>
 #include <QUrl>
 #include <QProcess>
+#include <QDebug>
+#include <QHeaderView>
 
 REGISTER_DYNAMICOBJECT(ImageCollection);
 
@@ -135,6 +137,7 @@ void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
 
 ImageCollection::ImageCollection()
 {
+    qRegisterMetaType<ImageInfo>("ImageInfo");
     setAcceptDrops(true);
     m_db = SqliteWrapper::SqliteManager::getDefaultInstance();
     initDatabase();
@@ -204,9 +207,15 @@ void ImageCollection::setupUI()
     m_recycleBinBtn = new QPushButton(QStringLiteral("Recycle Bin"));
     m_toolbarLayout->addWidget(m_recycleBinBtn);
 
+    m_viewToggleBtn = new QPushButton(QStringLiteral("Table View"));
+    m_toolbarLayout->addWidget(m_viewToggleBtn);
+
     m_mainLayout->addLayout(m_toolbarLayout);
 
-    // List widget
+    // Stacked widget for card/table views
+    m_viewStack = new QStackedWidget;
+
+    // List widget (card view) - index 0
     m_listWidget = new QListWidget;
     m_listWidget->setViewMode(QListView::IconMode);
     m_listWidget->setResizeMode(QListView::Adjust);
@@ -221,7 +230,36 @@ void ImageCollection::setupUI()
     m_delegate->setThumbnailCache(&m_thumbnailCache);
     m_listWidget->setItemDelegate(m_delegate);
 
-    m_mainLayout->addWidget(m_listWidget, 1);
+    m_viewStack->addWidget(m_listWidget); // index 0
+
+    // Table widget (table view) - index 1
+    m_tableWidget = new QTableWidget;
+    m_tableWidget->setColumnCount(6);
+    m_tableWidget->setHorizontalHeaderLabels({
+        QStringLiteral("Thumbnail"),
+        QStringLiteral("Filename"),
+        QStringLiteral("Size"),
+        QStringLiteral("Dimensions"),
+        QStringLiteral("Tags"),
+        QStringLiteral("Date")
+    });
+    m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tableWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_tableWidget->setAlternatingRowColors(true);
+    m_tableWidget->setShowGrid(false);
+    m_tableWidget->verticalHeader()->setVisible(false);
+    m_tableWidget->horizontalHeader()->setStretchLastSection(true);
+    m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tableWidget->setIconSize(QSize(48, 48));
+    m_tableWidget->setColumnWidth(0, 60);
+    m_tableWidget->setColumnWidth(1, 200);
+    m_tableWidget->setColumnWidth(2, 80);
+    m_tableWidget->setColumnWidth(3, 100);
+    m_tableWidget->setColumnWidth(4, 150);
+
+    m_viewStack->addWidget(m_tableWidget); // index 1
+
+    m_mainLayout->addWidget(m_viewStack, 1);
 
     // Status bar
     m_statusLabel = new QLabel;
@@ -235,6 +273,9 @@ void ImageCollection::setupUI()
         "QLineEdit { border:1px solid #dee2e6; border-radius:4px; padding:3px 8px; font-size:9pt; }"
         "QComboBox { border:1px solid #dee2e6; border-radius:4px; padding:3px 8px; font-size:9pt; }"
         "QListWidget { border:1px solid #dee2e6; border-radius:4px; background:#fafafa; }"
+        "QTableWidget { border:1px solid #dee2e6; border-radius:4px; background:#fafafa; alternate-background-color:#f8f9fa; }"
+        "QTableWidget::item { padding:4px; }"
+        "QHeaderView::section { background:#f1f3f5; border:none; padding:6px 8px; font-size:9pt; color:#495057; }"
     ));
 
     // Connections
@@ -246,6 +287,7 @@ void ImageCollection::setupUI()
             this, &ImageCollection::onTagFilterChanged);
     connect(m_listWidget, &QListWidget::itemDoubleClicked, this, &ImageCollection::onItemDoubleClicked);
     connect(m_listWidget, &QListWidget::customContextMenuRequested, this, &ImageCollection::onItemContextMenu);
+    connect(m_viewToggleBtn, &QPushButton::clicked, this, &ImageCollection::onToggleView);
 }
 
 // ---- Storage helpers ----
@@ -328,10 +370,16 @@ void ImageCollection::loadImages()
     sql += QStringLiteral(" ORDER BY created_at DESC");
 
     auto result = m_db->select(sql, params);
-    if (!result.success) return;
+    if (!result.success) {
+        qDebug() << "[ImageCollection] DB select failed";
+        return;
+    }
+
+    qDebug() << "[ImageCollection] DB select returned" << result.data.size() << "rows";
 
     QString searchText = m_searchEdit ? m_searchEdit->text().trimmed() : QString();
 
+    int addedCount = 0;
     for (const QVariant& row : result.data) {
         QVariantMap record = row.toMap();
         ImageInfo info = imageInfoFromRecord(record);
@@ -347,8 +395,12 @@ void ImageCollection::loadImages()
         item->setData(Qt::UserRole, QVariant::fromValue(info));
         item->setSizeHint(QSize(180, 200));
         m_listWidget->addItem(item);
+        ++addedCount;
     }
 
+    qDebug() << "[ImageCollection] Added" << addedCount << "items to list widget";
+
+    loadTableView();
     updateStatusBar();
 }
 
@@ -381,7 +433,9 @@ void ImageCollection::importImage(const QString& filePath)
     QString storedName = QUuid::createUuid().toString(QUuid::WithoutBraces) + "." + ext;
 
     QString destPath = storagePath() + storedName;
-    if (!QFile::copy(filePath, destPath)) return;
+    bool copyOk = QFile::copy(filePath, destPath);
+    qDebug() << "[ImageCollection] Copy" << filePath << "->" << destPath << ":" << (copyOk ? "OK" : "FAILED");
+    if (!copyOk) return;
 
     QImageReader reader(destPath);
     reader.setAutoTransform(true);
@@ -397,6 +451,83 @@ void ImageCollection::importImage(const QString& filePath)
     data["notes"] = QString();
 
     m_db->insert("image_collection", data);
+    qDebug() << "[ImageCollection] Inserted into DB:" << fi.fileName()
+             << "stored as" << storedName
+             << "size:" << fi.size()
+             << "dimensions:" << imgSize;
+}
+
+// ---- View toggle ----
+
+void ImageCollection::onToggleView()
+{
+    m_isTableView = !m_isTableView;
+    m_viewStack->setCurrentIndex(m_isTableView ? 1 : 0);
+    m_viewToggleBtn->setText(m_isTableView ? QStringLiteral("Card View") : QStringLiteral("Table View"));
+    loadImages();
+}
+
+void ImageCollection::loadTableView()
+{
+    m_tableWidget->setRowCount(0);
+
+    QString sql = QStringLiteral("SELECT * FROM image_collection WHERE is_deleted = :deleted");
+    QVariantMap params;
+    params[":deleted"] = m_showingRecycleBin ? 1 : 0;
+
+    if (m_tagFilter && m_tagFilter->currentIndex() > 0) {
+        QString tag = m_tagFilter->currentText();
+        sql += QStringLiteral(" AND (',' || tags || ',') LIKE :tag");
+        params[":tag"] = QStringLiteral("%,") + tag + QStringLiteral(",%");
+    }
+
+    sql += QStringLiteral(" ORDER BY created_at DESC");
+
+    auto result = m_db->select(sql, params);
+    if (!result.success) return;
+
+    QString searchText = m_searchEdit ? m_searchEdit->text().trimmed() : QString();
+
+    for (const QVariant& row : result.data) {
+        QVariantMap record = row.toMap();
+        ImageInfo info = imageInfoFromRecord(record);
+
+        if (!searchText.isEmpty() && !info.fileName.contains(searchText, Qt::CaseInsensitive))
+            continue;
+
+        int r = m_tableWidget->rowCount();
+        m_tableWidget->insertRow(r);
+        m_tableWidget->setRowHeight(r, 52);
+
+        // Column 0: Thumbnail
+        QPixmap thumb = getThumbnail(info.storedName, 48, 48);
+        auto* thumbItem = new QTableWidgetItem;
+        if (!thumb.isNull())
+            thumbItem->setIcon(QIcon(thumb.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
+        thumbItem->setData(Qt::UserRole, QVariant::fromValue(info));
+        m_tableWidget->setItem(r, 0, thumbItem);
+
+        // Column 1: Filename
+        m_tableWidget->setItem(r, 1, new QTableWidgetItem(info.fileName));
+
+        // Column 2: File size
+        m_tableWidget->setItem(r, 2, new QTableWidgetItem(formatFileSize(info.fileSize)));
+
+        // Column 3: Dimensions
+        QString dims = (info.width > 0 && info.height > 0)
+                           ? QStringLiteral("%1x%2").arg(info.width).arg(info.height)
+                           : QStringLiteral("-");
+        m_tableWidget->setItem(r, 3, new QTableWidgetItem(dims));
+
+        // Column 4: Tags
+        m_tableWidget->setItem(r, 4, new QTableWidgetItem(info.tags.join(QStringLiteral(", "))));
+
+        // Column 5: Date
+        QString dateStr = info.createdAt.isValid()
+                              ? info.createdAt.toString(QStringLiteral("yyyy-MM-dd HH:mm"))
+                              : QStringLiteral("-");
+        m_tableWidget->setItem(r, 5, new QTableWidgetItem(dateStr));
+    }
 }
 
 // ---- Slots ----
