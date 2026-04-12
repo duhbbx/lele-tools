@@ -50,7 +50,7 @@ QHash<QString, ImageCardDelegate::TagColor> ImageCardDelegate::tagColors()
 QSize ImageCardDelegate::sizeHint(const QStyleOptionViewItem& /*option*/,
                                   const QModelIndex& /*index*/) const
 {
-    return QSize(180, 200);
+    return QSize(166, 170);
 }
 
 void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
@@ -59,7 +59,7 @@ void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    QRect cardRect = option.rect.adjusted(4, 4, -4, -4);
+    QRect cardRect = option.rect.adjusted(3, 3, -3, -3);
 
     // Background
     painter->setPen(Qt::NoPen);
@@ -77,18 +77,19 @@ void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
         painter->drawRoundedRect(cardRect.adjusted(1, 1, -1, -1), 6, 6);
     }
 
-    // Thumbnail
+    // Thumbnail — 填满卡片宽度，只留 4px 边距
     auto info = index.data(Qt::UserRole).value<ImageInfo>();
+    int thumbPad = 4;
+    int thumbW = cardRect.width() - thumbPad * 2;
+    int thumbH = cardRect.height() - 40; // 底部留给文字和标签
 
     if (m_cache) {
         QPixmap thumb = m_cache->value(info.storedName);
         if (!thumb.isNull()) {
-            QRect thumbArea(cardRect.left() + 10, cardRect.top() + 6, 160, 130);
-            // 缩略图已按 DPR 渲染，计算逻辑像素尺寸用于居中
+            QRect thumbArea(cardRect.left() + thumbPad, cardRect.top() + thumbPad, thumbW, thumbH);
             qreal dpr = thumb.devicePixelRatio();
             int logicalW = static_cast<int>(thumb.width() / dpr);
             int logicalH = static_cast<int>(thumb.height() / dpr);
-            // 如果逻辑尺寸超出区域，再缩放
             if (logicalW > thumbArea.width() || logicalH > thumbArea.height()) {
                 QSize fit = QSize(logicalW, logicalH).scaled(thumbArea.size(), Qt::KeepAspectRatio);
                 logicalW = fit.width();
@@ -102,10 +103,11 @@ void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
 
     // Filename
     QFont font;
-    font.setPointSize(9);
+    font.setPointSize(8);
     painter->setFont(font);
     painter->setPen(QColor(0x49, 0x50, 0x57));
-    QRect textRect(cardRect.left() + 6, cardRect.top() + 140, cardRect.width() - 12, 20);
+    int textY = cardRect.bottom() - 34;
+    QRect textRect(cardRect.left() + 4, textY, cardRect.width() - 8, 16);
     QString elidedName = painter->fontMetrics().elidedText(info.fileName, Qt::ElideMiddle, textRect.width());
     painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignVCenter, elidedName);
 
@@ -113,13 +115,13 @@ void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
     if (!info.tags.isEmpty()) {
         auto colors = tagColors();
         QFont tagFont;
-        tagFont.setPointSize(8);
+        tagFont.setPointSize(7);
         painter->setFont(tagFont);
         QFontMetrics tagFm(tagFont);
 
-        int chipX = cardRect.left() + 6;
-        int chipY = cardRect.top() + 164;
-        int maxRight = cardRect.right() - 6;
+        int chipX = cardRect.left() + 4;
+        int chipY = cardRect.bottom() - 16;
+        int maxRight = cardRect.right() - 4;
 
         for (const QString& tag : info.tags) {
             int chipWidth = tagFm.horizontalAdvance(tag) + 10;
@@ -232,7 +234,7 @@ void ImageCollection::setupUI()
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     m_listWidget->setIconSize(QSize(160, 130));
-    m_listWidget->setGridSize(QSize(188, 208));
+    m_listWidget->setGridSize(QSize(172, 176));
     m_listWidget->setSpacing(4);
 
     m_delegate = new ImageCardDelegate(this);
@@ -409,7 +411,7 @@ void ImageCollection::loadImages()
 
         auto* item = new QListWidgetItem;
         item->setData(Qt::UserRole, QVariant::fromValue(info));
-        item->setSizeHint(QSize(180, 200));
+        item->setSizeHint(QSize(166, 170));
         m_listWidget->addItem(item);
         ++addedCount;
     }
