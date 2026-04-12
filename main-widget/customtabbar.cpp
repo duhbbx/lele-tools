@@ -87,10 +87,26 @@ void CustomTabBar::paintEvent(QPaintEvent *event)
     for (int i = 0; i < count(); ++i) {
         initStyleOption(&opt, i);
         painter.drawControl(QStyle::CE_TabBarTabShape, opt);
-        painter.drawControl(QStyle::CE_TabBarTabLabel, opt);
 
-        // 首页 (index 0) 不绘制关闭按钮
-        if (i == 0) continue;
+        if (i == 0) {
+            // 首页：正常绘制文字，不绘制关闭按钮
+            painter.drawControl(QStyle::CE_TabBarTabLabel, opt);
+            continue;
+        }
+
+        // 非首页：手动绘制文字，右侧留出关闭按钮空间
+        {
+            QRect textRect = opt.rect;
+            textRect.setRight(textRect.right() - 24); // 留 24px 给关闭按钮
+            painter.save();
+            painter.setPen(opt.state & QStyle::State_Selected ? QColor("#212529") : QColor("#495057"));
+            QFont f = painter.font();
+            f.setPointSize(9);
+            painter.setFont(f);
+            QString elidedText = painter.fontMetrics().elidedText(opt.text, Qt::ElideRight, textRect.width() - 16);
+            painter.drawText(textRect, Qt::AlignCenter, elidedText);
+            painter.restore();
+        }
 
         // 只在悬停时显示关闭按钮
         if (i == m_hoveredTab) {

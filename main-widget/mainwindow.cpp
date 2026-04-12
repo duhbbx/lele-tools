@@ -692,12 +692,14 @@ void MainWindow::showAbout() {
                                           "<p style='color:#868e96;margin:4px 0;'>v%2</p>")
                                   .arg(tr("乐乐的工具箱"), APP_VERSION));
     titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(titleLabel);
 
     // 简介
     auto* descLabel = new QLabel(tr("一个集成了多种实用工具的跨平台桌面应用程序。"));
     descLabel->setAlignment(Qt::AlignCenter);
     descLabel->setStyleSheet("color:#495057; font-size:10pt;");
+    descLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(descLabel);
 
     // 分割线
@@ -714,6 +716,7 @@ void MainWindow::showAbout() {
         "<p style='margin:2px 0;'><b>" + tr("微信") + ":</b> tuhoooo</p>"
     );
     devInfo->setOpenExternalLinks(true);
+    devInfo->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
     devInfo->setStyleSheet("font-size:9pt; color:#495057;");
     layout->addWidget(devInfo);
 
@@ -724,6 +727,7 @@ void MainWindow::showAbout() {
     );
     bizLabel->setAlignment(Qt::AlignCenter);
     bizLabel->setWordWrap(true);
+    bizLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(bizLabel);
 
     // 二维码区域（微信 + 打赏并排）
