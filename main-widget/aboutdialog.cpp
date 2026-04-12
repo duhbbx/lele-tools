@@ -67,12 +67,20 @@ void AboutDialog::setupUI()
     auto* qrRow = new QHBoxLayout();
     qrRow->setSpacing(16);
 
+    // 获取屏幕 DPR（Retina 屏为 2.0）
+    qreal dpr = this->devicePixelRatioF();
+    int displaySize = 260;
+    int renderSize = static_cast<int>(displaySize * dpr);
+
     // 微信二维码
     auto* wechatBox = new QVBoxLayout();
     auto* wechatQr = new QLabel();
     QPixmap wechatPx(":/resources/wechat-qr.jpg");
-    if (!wechatPx.isNull())
-        wechatQr->setPixmap(wechatPx.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    if (!wechatPx.isNull()) {
+        QPixmap scaled = wechatPx.scaled(renderSize, renderSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        scaled.setDevicePixelRatio(dpr);
+        wechatQr->setPixmap(scaled);
+    }
     wechatQr->setAlignment(Qt::AlignCenter);
     auto* wechatTip = new QLabel(tr("添加微信"));
     wechatTip->setAlignment(Qt::AlignCenter);
@@ -84,8 +92,11 @@ void AboutDialog::setupUI()
     auto* donateBox = new QVBoxLayout();
     auto* donateQr = new QLabel();
     QPixmap donatePx(":/resources/donate-qr.jpg");
-    if (!donatePx.isNull())
-        donateQr->setPixmap(donatePx.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    if (!donatePx.isNull()) {
+        QPixmap scaled = donatePx.scaled(renderSize, renderSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        scaled.setDevicePixelRatio(dpr);
+        donateQr->setPixmap(scaled);
+    }
     donateQr->setAlignment(Qt::AlignCenter);
     auto* donateTip = new QLabel(tr("请作者喝杯咖啡"));
     donateTip->setAlignment(Qt::AlignCenter);
