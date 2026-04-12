@@ -521,7 +521,7 @@ void ImageCollection::loadTableView()
         QPixmap thumb = getThumbnail(info.storedName, 48, 48);
         auto* thumbItem = new QTableWidgetItem;
         if (!thumb.isNull())
-            thumbItem->setIcon(QIcon(thumb.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
+            thumbItem->setIcon(QIcon(thumb));
         thumbItem->setData(Qt::UserRole, QVariant::fromValue(info));
         m_tableWidget->setItem(r, 0, thumbItem);
 
