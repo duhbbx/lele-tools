@@ -190,6 +190,7 @@ endif()
 set(PROJECT_SOURCES
         main.cpp
         main-widget/mainwindow.cpp main-widget/mainwindow.h
+        main-widget/aboutdialog.cpp main-widget/aboutdialog.h
         main-widget/customtabbar.cpp main-widget/customtabbar.h
         main-widget/mainwindowtabwidget.cpp main-widget/mainwindowtabwidget.h
         common/dynamicobjectbase.cpp common/dynamicobjectbase.h
