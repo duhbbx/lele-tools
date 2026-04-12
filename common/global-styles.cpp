@@ -96,12 +96,13 @@ QString GlobalStyles::getButtonStyle() {
 QString GlobalStyles::getInputStyle() {
     return R"(
         QLineEdit, QDoubleSpinBox {
-            border: 1px solid #e1e5e9;
-            padding: 2px 2px;
-            font-size: 10pt;
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            background-color: white;
-            color: #333333;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 9pt;
+            background-color: #fff;
+            color: #495057;
+            min-height: 20px;
         }
         QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
             width: 0px;
@@ -110,16 +111,20 @@ QString GlobalStyles::getInputStyle() {
             background: transparent;
         }
         QTextEdit, QPlainTextEdit {
-            border: 1px solid #e1e5e9;
-            padding: 4px 4px;
-            font-size: 10pt;
-            font-family: Consolas;
-            background-color: white;
-            color: #333333;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 9pt;
+            font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+            background-color: #fff;
+            color: #495057;
         }
         QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QDoubleSpinBox:focus {
-            border-color: #4CAF50;
+            border-color: #80bdff;
             outline: none;
+        }
+        QLineEdit:hover, QDoubleSpinBox:hover {
+            border-color: #adb5bd;
         }
         QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QDoubleSpinBox:disabled {
             background-color: #f5f5f5;
@@ -175,22 +180,27 @@ QString GlobalStyles::getInputStyle() {
         }
 
 
-  QSpinBox {
-        border: 1px solid #cccccc;
-        padding: 2px 8px;
-        font-size: 13px;
-        background-color: #ffffff;
-        selection-background-color: #2563eb; /* Fluent 蓝色 */
-    }
-    QSpinBox:focus {
-        border: 1px solid #2563eb;
-    }
-    QSpinBox::up-button, QSpinBox::down-button {
-        width: 0px;
-        height: 0px;
-        border: none;
-        background: transparent;
-    }
+        QSpinBox {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 9pt;
+            background-color: #fff;
+            color: #495057;
+            min-height: 20px;
+        }
+        QSpinBox:hover {
+            border-color: #adb5bd;
+        }
+        QSpinBox:focus {
+            border-color: #80bdff;
+        }
+        QSpinBox::up-button, QSpinBox::down-button {
+            width: 0px;
+            height: 0px;
+            border: none;
+            background: transparent;
+        }
 
     )";
 }
