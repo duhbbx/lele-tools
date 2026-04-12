@@ -247,7 +247,7 @@ void ImageCollection::setupUI()
     m_tableWidget = new QTableWidget;
     m_tableWidget->setColumnCount(6);
     m_tableWidget->setHorizontalHeaderLabels({
-        QStringLiteral("Thumbnail"),
+        QStringLiteral(""),
         QStringLiteral("Filename"),
         QStringLiteral("Size"),
         QStringLiteral("Dimensions"),
