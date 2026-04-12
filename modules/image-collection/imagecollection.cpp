@@ -358,13 +358,13 @@ void ImageCollection::loadImages()
 
     QString sql = QStringLiteral("SELECT * FROM image_collection WHERE is_deleted = :deleted");
     QVariantMap params;
-    params[":deleted"] = m_showingRecycleBin ? 1 : 0;
+    params["deleted"] = m_showingRecycleBin ? 1 : 0;
 
     // Tag filter
     if (m_tagFilter && m_tagFilter->currentIndex() > 0) {
         QString tag = m_tagFilter->currentText();
         sql += QStringLiteral(" AND (',' || tags || ',') LIKE :tag");
-        params[":tag"] = QStringLiteral("%,") + tag + QStringLiteral(",%");
+        params["tag"] = QStringLiteral("%,") + tag + QStringLiteral(",%");
     }
 
     sql += QStringLiteral(" ORDER BY created_at DESC");
@@ -473,12 +473,12 @@ void ImageCollection::loadTableView()
 
     QString sql = QStringLiteral("SELECT * FROM image_collection WHERE is_deleted = :deleted");
     QVariantMap params;
-    params[":deleted"] = m_showingRecycleBin ? 1 : 0;
+    params["deleted"] = m_showingRecycleBin ? 1 : 0;
 
     if (m_tagFilter && m_tagFilter->currentIndex() > 0) {
         QString tag = m_tagFilter->currentText();
         sql += QStringLiteral(" AND (',' || tags || ',') LIKE :tag");
-        params[":tag"] = QStringLiteral("%,") + tag + QStringLiteral(",%");
+        params["tag"] = QStringLiteral("%,") + tag + QStringLiteral(",%");
     }
 
     sql += QStringLiteral(" ORDER BY created_at DESC");
@@ -633,7 +633,7 @@ void ImageCollection::onItemContextMenu(const QPoint& pos)
         QVariantMap data;
         data["tags"] = tagsStr;
         QVariantMap whereParams;
-        whereParams[":id"] = info.id;
+        whereParams["id"] = info.id;
         m_db->update("image_collection", data, "id = :id", whereParams);
         loadImages();
     });
@@ -668,7 +668,7 @@ void ImageCollection::onSoftDelete()
         data["is_deleted"] = 1;
         data["deleted_at"] = QDateTime::currentDateTime().toString(Qt::ISODate);
         QVariantMap whereParams;
-        whereParams[":id"] = info.id;
+        whereParams["id"] = info.id;
         m_db->update("image_collection", data, "id = :id", whereParams);
     }
     loadImages();
@@ -683,7 +683,7 @@ void ImageCollection::onRestore()
         data["is_deleted"] = 0;
         data["deleted_at"] = QVariant();
         QVariantMap whereParams;
-        whereParams[":id"] = info.id;
+        whereParams["id"] = info.id;
         m_db->update("image_collection", data, "id = :id", whereParams);
     }
     loadImages();
@@ -703,7 +703,7 @@ void ImageCollection::onPermanentDelete()
         QFile::remove(storagePath() + info.storedName);
         m_thumbnailCache.remove(info.storedName);
         QVariantMap whereParams;
-        whereParams[":id"] = info.id;
+        whereParams["id"] = info.id;
         m_db->remove("image_collection", "id = :id", whereParams);
     }
     loadImages();
@@ -727,7 +727,7 @@ void ImageCollection::onEmptyRecycleBin()
     }
 
     QVariantMap whereParams;
-    whereParams[":del"] = 1;
+    whereParams["del"] = 1;
     m_db->remove("image_collection", "is_deleted = :del", whereParams);
     loadImages();
 }
