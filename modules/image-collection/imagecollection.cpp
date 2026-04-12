@@ -84,10 +84,19 @@ void ImageCardDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
         QPixmap thumb = m_cache->value(info.storedName);
         if (!thumb.isNull()) {
             QRect thumbArea(cardRect.left() + 10, cardRect.top() + 6, 160, 130);
-            QPixmap scaled = thumb.scaled(thumbArea.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            int x = thumbArea.left() + (thumbArea.width() - scaled.width()) / 2;
-            int y = thumbArea.top() + (thumbArea.height() - scaled.height()) / 2;
-            painter->drawPixmap(x, y, scaled);
+            // 缩略图已按 DPR 渲染，计算逻辑像素尺寸用于居中
+            qreal dpr = thumb.devicePixelRatio();
+            int logicalW = static_cast<int>(thumb.width() / dpr);
+            int logicalH = static_cast<int>(thumb.height() / dpr);
+            // 如果逻辑尺寸超出区域，再缩放
+            if (logicalW > thumbArea.width() || logicalH > thumbArea.height()) {
+                QSize fit = QSize(logicalW, logicalH).scaled(thumbArea.size(), Qt::KeepAspectRatio);
+                logicalW = fit.width();
+                logicalH = fit.height();
+            }
+            int x = thumbArea.left() + (thumbArea.width() - logicalW) / 2;
+            int y = thumbArea.top() + (thumbArea.height() - logicalH) / 2;
+            painter->drawPixmap(QRect(x, y, logicalW, logicalH), thumb);
         }
     }
 
@@ -335,18 +344,25 @@ QPixmap ImageCollection::getThumbnail(const QString& storedName, int maxWidth, i
     if (m_thumbnailCache.contains(storedName))
         return m_thumbnailCache.value(storedName);
 
+    // Retina 适配：按 DPR 倍数渲染，显示时缩放回逻辑像素
+    qreal dpr = qApp->devicePixelRatio();
+    int renderWidth = static_cast<int>(maxWidth * dpr);
+    int renderHeight = static_cast<int>(maxHeight * dpr);
+
     QString filePath = storagePath() + storedName;
     QImageReader reader(filePath);
     reader.setAutoTransform(true);
     QSize origSize = reader.size();
     if (origSize.isValid()) {
-        QSize scaled = origSize.scaled(maxWidth, maxHeight, Qt::KeepAspectRatio);
+        QSize scaled = origSize.scaled(renderWidth, renderHeight, Qt::KeepAspectRatio);
         reader.setScaledSize(scaled);
     }
     QImage image = reader.read();
     QPixmap pix = QPixmap::fromImage(image);
-    if (!pix.isNull())
+    if (!pix.isNull()) {
+        pix.setDevicePixelRatio(dpr);
         m_thumbnailCache.insert(storedName, pix);
+    }
     return pix;
 }
 
