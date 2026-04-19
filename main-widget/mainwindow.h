@@ -62,6 +62,7 @@ public slots:
     void exitApplication();
     void changeLanguage(const QString &language);
     void startScreenCapture();
+    void showToolHelp();
 
 protected:
     void closeEvent(QCloseEvent *event) override;

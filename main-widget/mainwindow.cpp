@@ -5,6 +5,10 @@
 #include <QListWidget>
 #include <QScrollArea>
 #include "aboutdialog.h"
+#include "toolhelp.h"
+#include "../tool-list/module-meta.h"
+#include <QDialog>
+#include <QFrame>
 #include <QBoxLayout>
 #include "../tool-list/toollist.h"
 #include <QObject>
@@ -1043,8 +1047,38 @@ void MainWindow::setupTabDropdown() {
         "}"
     );
 
-    // 将按钮添加到标签页条的右上角
-    rightTabWidget->setCornerWidget(tabDropdownButton, Qt::TopRightCorner);
+    // 创建角落容器，包含帮助按钮和下拉按钮
+    auto* cornerWidget = new QWidget();
+    auto* cornerLayout = new QHBoxLayout(cornerWidget);
+    cornerLayout->setContentsMargins(0, 0, 0, 0);
+    cornerLayout->setSpacing(2);
+
+    auto* helpButton = new QPushButton("?");
+    helpButton->setFixedSize(25, 25);
+    helpButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #f8f9fa;"
+        "    border: 1px solid #dee2e6;"
+        "    border-radius: 0px;"
+        "    color: #495057;"
+        "    font-size: 12px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #e9ecef;"
+        "}"
+        "QPushButton:pressed {"
+        "    background-color: #dee2e6;"
+        "}"
+    );
+    helpButton->setToolTip("工具帮助");
+
+    cornerLayout->addWidget(helpButton);
+    cornerLayout->addWidget(tabDropdownButton);
+
+    rightTabWidget->setCornerWidget(cornerWidget, Qt::TopRightCorner);
+
+    connect(helpButton, &QPushButton::clicked, this, &MainWindow::showToolHelp);
 
     // 连接按钮点击事件
     connect(tabDropdownButton, &QPushButton::clicked, [this]() {
@@ -1390,5 +1424,83 @@ void MainWindow::showScreenshotTooltip(const QString& message) {
 
     // 3秒后自动隐藏并销毁
     QTimer::singleShot(3000, tooltip, &QWidget::deleteLater);
+}
+
+void MainWindow::showToolHelp() {
+    int index = rightTabWidget->currentIndex();
+    if (index < 0) return;
+
+    QString tabTitle = rightTabWidget->tabText(index);
+
+    // Find the titleKey from module-meta by matching the tab title
+    QString titleKey;
+    for (const auto& meta : moduleMetaArray) {
+        if (meta.getLocalizedTitle() == tabTitle) {
+            titleKey = meta.titleKey;
+            break;
+        }
+    }
+
+    const ToolHelpInfo* help = ToolHelp::get(titleKey.isEmpty() ? tabTitle : titleKey);
+
+    if (!help) {
+        QMessageBox::information(this, tr("帮助"), tr("暂无该工具的帮助信息。"));
+        return;
+    }
+
+    // Show a nice dialog
+    QDialog* dlg = new QDialog(this);
+    dlg->setWindowTitle(help->title + tr(" - 帮助"));
+    dlg->setMinimumWidth(450);
+    auto* layout = new QVBoxLayout(dlg);
+    layout->setSpacing(10);
+    layout->setContentsMargins(20, 16, 20, 16);
+
+    auto* titleLbl = new QLabel("<h3>" + help->title + "</h3>");
+    titleLbl->setStyleSheet("color:#212529;");
+    layout->addWidget(titleLbl);
+
+    auto* descLbl = new QLabel(help->description);
+    descLbl->setWordWrap(true);
+    descLbl->setStyleSheet("color:#495057; font-size:10pt;");
+    descLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(descLbl);
+
+    // Separator
+    auto* line = new QFrame();
+    line->setFrameShape(QFrame::HLine);
+    line->setStyleSheet("color:#e9ecef;");
+    layout->addWidget(line);
+
+    auto* usageTitleLbl = new QLabel("<b>" + tr("使用方法") + "</b>");
+    usageTitleLbl->setStyleSheet("color:#212529; font-size:10pt;");
+    layout->addWidget(usageTitleLbl);
+
+    auto* usageLbl = new QLabel(help->usage);
+    usageLbl->setWordWrap(true);
+    usageLbl->setStyleSheet("color:#495057; font-size:9pt;");
+    usageLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(usageLbl);
+
+    if (!help->notes.isEmpty()) {
+        auto* notesTitle = new QLabel("<b>" + tr("注意事项") + "</b>");
+        notesTitle->setStyleSheet("color:#212529; font-size:10pt;");
+        layout->addWidget(notesTitle);
+
+        auto* notesLbl = new QLabel(help->notes);
+        notesLbl->setWordWrap(true);
+        notesLbl->setStyleSheet("color:#868e96; font-size:9pt;");
+        notesLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        layout->addWidget(notesLbl);
+    }
+
+    auto* platformLbl = new QLabel(tr("适用平台: ") + help->platforms);
+    platformLbl->setStyleSheet("color:#adb5bd; font-size:8pt;");
+    layout->addWidget(platformLbl);
+
+    dlg->adjustSize();
+    dlg->setFixedSize(dlg->size());
+    dlg->exec();
+    dlg->deleteLater();
 }
 
