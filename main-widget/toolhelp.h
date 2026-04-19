@@ -8,6 +8,7 @@ struct ToolHelpInfo {
     QString title;
     QString description;
     QString usage;
+    QString principle;   // 实现原理：算法、库、接口
     QString notes;
     QString platforms;
 };

@@ -1482,6 +1482,18 @@ void MainWindow::showToolHelp() {
     usageLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(usageLbl);
 
+    if (!help->principle.isEmpty()) {
+        auto* principleTitle = new QLabel("<b>" + tr("实现原理") + "</b>");
+        principleTitle->setStyleSheet("color:#212529; font-size:10pt;");
+        layout->addWidget(principleTitle);
+
+        auto* principleLbl = new QLabel(help->principle);
+        principleLbl->setWordWrap(true);
+        principleLbl->setStyleSheet("color:#495057; font-size:9pt;");
+        principleLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        layout->addWidget(principleLbl);
+    }
+
     if (!help->notes.isEmpty()) {
         auto* notesTitle = new QLabel("<b>" + tr("注意事项") + "</b>");
         notesTitle->setStyleSheet("color:#212529; font-size:10pt;");
