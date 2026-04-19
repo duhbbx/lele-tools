@@ -13,6 +13,8 @@
 #include <QFileInfo>
 #include <QApplication>
 #include <QDateTime>
+#include <QStandardPaths>
+#include <QDesktopServices>
 #include <QTransform>
 #include <QStyledItemDelegate>
 
@@ -350,10 +352,11 @@ void ImagesToPdf::onExportPdf()
         return;
     }
 
-    QString defaultName = QString("images_%1.pdf")
+    QString downloadDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    QString defaultPath = downloadDir + QString("/images_%1.pdf")
         .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
     QString savePath = QFileDialog::getSaveFileName(
-        this, tr("保存 PDF"), defaultName, tr("PDF 文件 (*.pdf)"));
+        this, tr("保存 PDF"), defaultPath, tr("PDF 文件 (*.pdf)"));
     if (savePath.isEmpty()) return;
 
     QPdfWriter writer(savePath);
@@ -393,8 +396,22 @@ void ImagesToPdf::onExportPdf()
 
     painter.end();
 
-    QMessageBox::information(this, tr("完成"),
-        tr("PDF 已保存到:\n%1\n\n共 %2 页").arg(savePath).arg(m_listWidget->count()));
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("导出完成"));
+    msgBox.setText(tr("PDF 已保存到:\n%1\n\n共 %2 页").arg(savePath).arg(m_listWidget->count()));
+    msgBox.setIcon(QMessageBox::Information);
+
+    auto* openFileBtn = msgBox.addButton(tr("打开 PDF"), QMessageBox::ActionRole);
+    auto* openDirBtn = msgBox.addButton(tr("打开所在目录"), QMessageBox::ActionRole);
+    msgBox.addButton(QMessageBox::Ok);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == openFileBtn) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(savePath));
+    } else if (msgBox.clickedButton() == openDirBtn) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(savePath).absolutePath()));
+    }
 }
 
 void ImagesToPdf::updateStatus()
