@@ -1,7 +1,12 @@
 #include "systeminfo.h"
 #include <QApplication>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QStorageInfo>
 #include <QMessageBox>
+#ifndef Q_OS_WIN
+#include <netdb.h>
+#endif
 #include <QFileDialog>
 #include <QTextStream>
 #include <QDebug>
@@ -244,14 +249,154 @@ QList<DiskInfo> SystemInfoWorker::getWindowsDiskInfo()
 #endif
 
 #if !defined(Q_OS_WIN)
-// macOS / Linux stub implementations
+
+// macOS / Linux 系统信息实现
 ::SystemInfo SystemInfoWorker::getLinuxSystemInfo()
 {
     ::SystemInfo info;
+
+    // 操作系统
     info.osName = QSysInfo::prettyProductName();
     info.osVersion = QSysInfo::productVersion();
     info.cpuArchitecture = QSysInfo::currentCpuArchitecture();
+    info.architecture = QSysInfo::currentCpuArchitecture();
     info.computerName = QSysInfo::machineHostName();
+    info.userName = qEnvironmentVariable("USER");
+
+#ifdef Q_OS_MAC
+    // CPU 名称
+    char cpuBrand[256] = {0};
+    size_t cpuBrandLen = sizeof(cpuBrand);
+    if (sysctlbyname("machdep.cpu.brand_string", cpuBrand, &cpuBrandLen, nullptr, 0) == 0)
+        info.cpuName = QString::fromUtf8(cpuBrand).trimmed();
+
+    // CPU 核心数
+    int physCores = 0, logCores = 0;
+    size_t intSize = sizeof(int);
+    sysctlbyname("hw.physicalcpu", &physCores, &intSize, nullptr, 0);
+    sysctlbyname("hw.logicalcpu", &logCores, &intSize, nullptr, 0);
+    info.physicalCores = physCores;
+    info.logicalCores = logCores;
+
+    // CPU 频率（Apple Silicon 可能没有，fallback 0）
+    uint64_t cpuFreq = 0;
+    size_t freqSize = sizeof(cpuFreq);
+    if (sysctlbyname("hw.cpufrequency", &cpuFreq, &freqSize, nullptr, 0) == 0)
+        info.cpuFrequency = cpuFreq / 1000000.0; // Hz → MHz
+    else
+        info.cpuFrequency = 0;
+
+    // 内存
+    uint64_t totalMem = 0;
+    size_t memSize = sizeof(totalMem);
+    sysctlbyname("hw.memsize", &totalMem, &memSize, nullptr, 0);
+    info.totalMemory = totalMem;
+
+    // 可用内存（通过 mach API）
+    vm_size_t pageSize;
+    mach_port_t machPort = mach_host_self();
+    host_page_size(machPort, &pageSize);
+
+    vm_statistics64_data_t vmStats;
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    if (host_statistics64(machPort, HOST_VM_INFO64,
+                          reinterpret_cast<host_info64_t>(&vmStats), &count) == KERN_SUCCESS) {
+        quint64 freeMem = (quint64)(vmStats.free_count + vmStats.inactive_count) * pageSize;
+        info.availableMemory = freeMem;
+        info.usedMemory = info.totalMemory - freeMem;
+        info.memoryUsagePercent = info.totalMemory > 0
+            ? (double)info.usedMemory / info.totalMemory * 100.0 : 0;
+    }
+
+    // 交换内存
+    struct xsw_usage swapUsage;
+    size_t swapSize = sizeof(swapUsage);
+    if (sysctlbyname("vm.swapusage", &swapUsage, &swapSize, nullptr, 0) == 0) {
+        info.totalSwap = swapUsage.xsu_total;
+        info.usedSwap = swapUsage.xsu_used;
+        info.availableSwap = swapUsage.xsu_avail;
+    }
+#else
+    // Linux 实现
+    info.userName = qEnvironmentVariable("USER");
+
+    // CPU 信息从 /proc/cpuinfo 读取
+    QFile cpuFile("/proc/cpuinfo");
+    if (cpuFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&cpuFile);
+        int coreCount = 0;
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            if (line.startsWith("model name") && info.cpuName.isEmpty())
+                info.cpuName = line.section(':', 1).trimmed();
+            if (line.startsWith("processor"))
+                coreCount++;
+            if (line.startsWith("cpu MHz") && info.cpuFrequency == 0)
+                info.cpuFrequency = line.section(':', 1).trimmed().toDouble();
+        }
+        info.logicalCores = coreCount;
+        cpuFile.close();
+    }
+
+    // 内存从 /proc/meminfo
+    QFile memFile("/proc/meminfo");
+    if (memFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&memFile);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            if (line.startsWith("MemTotal:"))
+                info.totalMemory = line.section(':', 1).trimmed().split(' ').first().toULongLong() * 1024;
+            else if (line.startsWith("MemAvailable:"))
+                info.availableMemory = line.section(':', 1).trimmed().split(' ').first().toULongLong() * 1024;
+            else if (line.startsWith("SwapTotal:"))
+                info.totalSwap = line.section(':', 1).trimmed().split(' ').first().toULongLong() * 1024;
+            else if (line.startsWith("SwapFree:"))
+                info.availableSwap = line.section(':', 1).trimmed().split(' ').first().toULongLong() * 1024;
+        }
+        info.usedMemory = info.totalMemory - info.availableMemory;
+        info.usedSwap = info.totalSwap - info.availableSwap;
+        info.memoryUsagePercent = info.totalMemory > 0
+            ? (double)info.usedMemory / info.totalMemory * 100.0 : 0;
+        memFile.close();
+    }
+#endif
+
+    // 网络信息（macOS/Linux 通用，使用 ifaddrs）
+    struct ifaddrs *ifaddr;
+    if (getifaddrs(&ifaddr) == 0) {
+        for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+            if (ifa->ifa_addr == nullptr) continue;
+            if (ifa->ifa_addr->sa_family == AF_INET) {
+                char host[NI_MAXHOST];
+                getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
+                            host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+                QString ifName = QString::fromUtf8(ifa->ifa_name);
+                QString ip = QString::fromUtf8(host);
+                if (ifName != "lo" && ifName != "lo0" && !ip.startsWith("127.")) {
+                    info.networkInterfaces.append(QString("%1: %2").arg(ifName, ip));
+                    if (info.primaryIP.isEmpty())
+                        info.primaryIP = ip;
+                }
+            }
+        }
+        freeifaddrs(ifaddr);
+    }
+
+    // 屏幕信息
+    QList<QScreen*> screens = QGuiApplication::screens();
+    for (QScreen* screen : screens) {
+        QSize size = screen->size();
+        qreal dpr = screen->devicePixelRatio();
+        info.monitors.append(QString("%1 (%2x%3 @%4x)")
+            .arg(screen->name())
+            .arg(size.width()).arg(size.height())
+            .arg(dpr, 0, 'f', 1));
+    }
+    if (!screens.isEmpty()) {
+        QSize primary = screens.first()->size();
+        info.resolution = QString("%1x%2").arg(primary.width()).arg(primary.height());
+    }
+
     return info;
 }
 
@@ -259,18 +404,26 @@ QList<DiskInfo> SystemInfoWorker::getLinuxDiskInfo()
 {
     QList<DiskInfo> disks;
     for (const QStorageInfo &storage : QStorageInfo::mountedVolumes()) {
-        if (storage.isValid() && storage.isReady() && !storage.isReadOnly()) {
-            DiskInfo disk;
-            disk.device = storage.device();
-            disk.mountPoint = storage.rootPath();
-            disk.fileSystem = QString::fromUtf8(storage.fileSystemType());
-            disk.totalSpace = storage.bytesTotal();
-            disk.availableSpace = storage.bytesAvailable();
-            disk.usedSpace = disk.totalSpace - disk.availableSpace;
-            disk.usagePercent = disk.totalSpace > 0 ? (double)disk.usedSpace / disk.totalSpace * 100.0 : 0;
-            disk.isReady = true;
-            disks.append(disk);
-        }
+        if (!storage.isValid() || !storage.isReady()) continue;
+        // 跳过小分区和系统虚拟分区
+        if (storage.bytesTotal() < 100 * 1024 * 1024) continue; // < 100MB
+        QString rootPath = storage.rootPath();
+        // 跳过 macOS 系统快照和 Linux 虚拟文件系统
+        if (rootPath.startsWith("/System") || rootPath.startsWith("/proc")
+            || rootPath.startsWith("/sys") || rootPath.startsWith("/dev")
+            || rootPath.startsWith("/run")) continue;
+
+        DiskInfo disk;
+        disk.device = QString::fromUtf8(storage.device());
+        disk.mountPoint = rootPath;
+        disk.fileSystem = QString::fromUtf8(storage.fileSystemType());
+        disk.totalSpace = storage.bytesTotal();
+        disk.availableSpace = storage.bytesAvailable();
+        disk.usedSpace = disk.totalSpace - disk.availableSpace;
+        disk.usagePercent = disk.totalSpace > 0
+            ? (double)disk.usedSpace / disk.totalSpace * 100.0 : 0;
+        disk.isReady = true;
+        disks.append(disk);
     }
     return disks;
 }
