@@ -59,6 +59,14 @@ void ColorWheel::mouseMoveEvent(QMouseEvent *event)
     }
 }
 
+void ColorWheel::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && m_mousePressed) {
+        m_mousePressed = false;
+        emit colorPicked(m_currentColor);
+    }
+}
+
 void ColorWheel::resizeEvent(QResizeEvent *event)
 {
     Q_UNUSED(event)
@@ -402,6 +410,7 @@ ColorTools::ColorTools() : QWidget(nullptr), DynamicObjectBase()
     
     // 连接信号槽
     connect(colorWheel, &ColorWheel::colorChanged, this, &ColorTools::onWheelColorChanged);
+    connect(colorWheel, &ColorWheel::colorPicked, this, &ColorTools::onWheelColorPicked);
     connect(hueBar, &ColorBar::valueChanged, this, &ColorTools::onHueChanged);
     connect(saturationBar, &ColorBar::valueChanged, this, &ColorTools::onSaturationChanged);
     connect(valueBar, &ColorBar::valueChanged, this, &ColorTools::onValueChanged);
@@ -936,6 +945,11 @@ void ColorTools::onColorChanged()
 void ColorTools::onWheelColorChanged(const QColor &color)
 {
     setCurrentColor(color);
+}
+
+void ColorTools::onWheelColorPicked(const QColor &color)
+{
+    addColorToHistory(color);
 }
 
 void ColorTools::onHueChanged(int value)

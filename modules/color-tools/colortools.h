@@ -62,11 +62,13 @@ public:
 
 signals:
     void colorChanged(const QColor &color);
+    void colorPicked(const QColor &color);  // 鼠标释放时触发，用于加入历史
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
@@ -187,6 +189,7 @@ public:
 private slots:
     void onColorChanged();
     void onWheelColorChanged(const QColor &color);
+    void onWheelColorPicked(const QColor &color);
     void onHueChanged(int value);
     void onSaturationChanged(int value);
     void onValueChanged(int value);
