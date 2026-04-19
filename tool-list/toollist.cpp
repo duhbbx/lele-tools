@@ -27,8 +27,23 @@ ToolList::ToolList(MainWindow* mainWindow, QWidget* parent) : QWidget(parent) {
 
     searchLineEdit = new QLineEdit;
     searchLineEdit->setPlaceholderText(tr("搜索工具..."));
-    searchLineEdit->setFixedHeight(30);
-    searchLineEdit->setStyleSheet("border: 1px solid #ccc; border-radius: 0px; padding: 5px;");
+    searchLineEdit->setClearButtonEnabled(true);
+    searchLineEdit->setStyleSheet(
+        "QLineEdit {"
+        "    border: 1px solid #dee2e6;"
+        "    border-radius: 6px;"
+        "    padding: 5px 10px;"
+        "    font-size: 9pt;"
+        "    color: #495057;"
+        "    background-color: #fff;"
+        "}"
+        "QLineEdit:focus {"
+        "    border-color: #80bdff;"
+        "}"
+        "QLineEdit::placeholder {"
+        "    color: #adb5bd;"
+        "}"
+    );
 
     searchLayout->addWidget(searchLineEdit);
     // 搜索区域不拉伸，保持固定大小
