@@ -185,34 +185,17 @@ private:
 
     // UI组件
     QVBoxLayout* m_mainLayout;
-    QSplitter* m_mainSplitter;
 
-    // 输入区域
-    QWidget* m_inputWidget;
-    QVBoxLayout* m_inputLayout;
-
-    QGroupBox* m_parent1Group;
-    QFormLayout* m_parent1Layout;
     QComboBox* m_parent1ABOCombo;
     QComboBox* m_parent1RhCombo;
-
-    QGroupBox* m_parent2Group;
-    QFormLayout* m_parent2Layout;
     QComboBox* m_parent2ABOCombo;
     QComboBox* m_parent2RhCombo;
 
-    QGroupBox* m_controlGroup;
-    QVBoxLayout* m_controlLayout;
     QPushButton* m_calculateBtn;
     QPushButton* m_clearBtn;
     QPushButton* m_copyResultBtn;
     QPushButton* m_saveResultBtn;
 
-    // 结果显示区域
-    QWidget* m_resultWidget;
-    QVBoxLayout* m_resultLayout;
-    QGroupBox* m_resultGroup;
-    QVBoxLayout* m_resultGroupLayout;
     QTableWidget* m_resultTable;
 
     // 当前结果

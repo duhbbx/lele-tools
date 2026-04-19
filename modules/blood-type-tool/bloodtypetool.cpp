@@ -264,215 +264,122 @@ BloodTypeCalculator_Widget::BloodTypeCalculator_Widget(QWidget* parent)
 }
 
 void BloodTypeCalculator_Widget::setupUI() {
+    // Global stylesheet
+    setStyleSheet(
+        "QPushButton { padding:4px 10px; border:none; border-radius:4px; font-size:9pt; color:#495057; background:transparent; }"
+        "QPushButton:hover { background-color:#e9ecef; }"
+        "QPushButton:pressed { background-color:#dee2e6; }"
+        "QPushButton:disabled { color:#adb5bd; }"
+        "QLabel { font-size:9pt; color:#495057; }"
+        "QTableWidget { border:1px solid #dee2e6; border-radius:4px; font-size:9pt; gridline-color:#f1f3f5; }"
+        "QHeaderView::section { background-color:#f8f9fa; border:none; border-bottom:1px solid #dee2e6; padding:4px 8px; font-size:9pt; color:#495057; }"
+    );
+
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setSpacing(15);
-    m_mainLayout->setContentsMargins(20, 20, 20, 20);
+    m_mainLayout->setSpacing(8);
+    m_mainLayout->setContentsMargins(12, 8, 12, 12);
 
-    // 创建主分割器
-    m_mainSplitter = new QSplitter(Qt::Horizontal);
+    // --- Toolbar ---
+    auto* toolbarLayout = new QHBoxLayout;
+    toolbarLayout->setSpacing(2);
 
-    // 左侧输入区域
-    m_inputWidget = new QWidget();
-    m_inputWidget->setFixedWidth(350);
-    m_inputLayout = new QVBoxLayout(m_inputWidget);
-
-    QString groupStyle =
-        "QGroupBox {"
-        "font-weight: bold;"
-        "border: 2px solid #bdc3c7;"
-        "margin-top: 10px;"
-        "padding-top: 10px;"
-        "}"
-        "QGroupBox::title {"
-        "subcontrol-origin: margin;"
-        "left: 10px;"
-        "padding: 0 5px 0 5px;"
-        "}";
-
-    // 父本1血型设置
-    m_parent1Group = new QGroupBox(tr("👨 父亲血型"));
-    m_parent1Group->setStyleSheet(groupStyle);
-    m_parent1Layout = new QFormLayout(m_parent1Group);
-
-    m_parent1ABOCombo = new QComboBox();
-    m_parent1ABOCombo->addItems({"A", "B", "AB", "O"});
-
-    m_parent1RhCombo = new QComboBox();
-    m_parent1RhCombo->addItems({tr("阳性(+)"), tr("阴性(-)")});
-    m_parent1RhCombo->setStyleSheet(m_parent1ABOCombo->styleSheet());
-
-    m_parent1Layout->addRow(tr("ABO血型:"), m_parent1ABOCombo);
-    m_parent1Layout->addRow(tr("Rh血型:"), m_parent1RhCombo);
-
-    // 父本2血型设置
-    m_parent2Group = new QGroupBox(tr("👩 母亲血型"));
-    m_parent2Group->setStyleSheet(groupStyle);
-    m_parent2Layout = new QFormLayout(m_parent2Group);
-
-    m_parent2ABOCombo = new QComboBox();
-    m_parent2ABOCombo->addItems({"A", "B", "AB", "O"});
-    m_parent2ABOCombo->setStyleSheet(m_parent1ABOCombo->styleSheet());
-
-    m_parent2RhCombo = new QComboBox();
-    m_parent2RhCombo->addItems({tr("阳性(+)"), tr("阴性(-)")});
-    m_parent2RhCombo->setStyleSheet(m_parent1ABOCombo->styleSheet());
-
-    m_parent2Layout->addRow(tr("ABO血型:"), m_parent2ABOCombo);
-    m_parent2Layout->addRow(tr("Rh血型:"), m_parent2RhCombo);
-
-    // 控制按钮组
-    m_controlGroup = new QGroupBox(tr("操作控制"));
-    m_controlGroup->setStyleSheet(groupStyle);
-    m_controlLayout = new QVBoxLayout(m_controlGroup);
-
-    m_calculateBtn = new QPushButton(tr("🧬 计算遗传概率"));
+    m_calculateBtn = new QPushButton(tr("计算"));
     m_calculateBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #3498db;"
-        "color: white;"
-        "border: none;"
-        "padding: 12px 24px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #2980b9;"
-        "}"
+        "QPushButton { padding:4px 10px; border:none; border-radius:4px; font-size:9pt; color:#228be6; font-weight:bold; background:transparent; }"
+        "QPushButton:hover { background-color:#e9ecef; }"
+        "QPushButton:pressed { background-color:#dee2e6; }"
     );
 
-    m_clearBtn = new QPushButton(tr("🗑️ 清空结果"));
-    m_clearBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #95a5a6;"
-        "color: white;"
-        "border: none;"
-        "padding: 10px 20px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #7f8c8d;"
-        "}"
-    );
-
-    m_copyResultBtn = new QPushButton(tr("📋 复制结果"));
-    m_copyResultBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #27ae60;"
-        "color: white;"
-        "border: none;"
-        "padding: 10px 20px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #219a52;"
-        "}"
-        "QPushButton:disabled {"
-        "background-color: #bdc3c7;"
-        "}"
-    );
-
-    m_saveResultBtn = new QPushButton(tr("💾 保存结果"));
-    m_saveResultBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e74c3c;"
-        "color: white;"
-        "border: none;"
-        "padding: 10px 20px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #c0392b;"
-        "}"
-        "QPushButton:disabled {"
-        "background-color: #bdc3c7;"
-        "}"
-    );
+    m_clearBtn = new QPushButton(tr("清空"));
+    m_copyResultBtn = new QPushButton(tr("复制结果"));
+    m_saveResultBtn = new QPushButton(tr("保存结果"));
 
     m_copyResultBtn->setEnabled(false);
     m_saveResultBtn->setEnabled(false);
 
-    m_controlLayout->addWidget(m_calculateBtn);
-    m_controlLayout->addWidget(m_clearBtn);
-    m_controlLayout->addWidget(m_copyResultBtn);
-    m_controlLayout->addWidget(m_saveResultBtn);
+    toolbarLayout->addWidget(m_calculateBtn);
+    toolbarLayout->addWidget(m_clearBtn);
+    toolbarLayout->addWidget(m_copyResultBtn);
+    toolbarLayout->addWidget(m_saveResultBtn);
+    toolbarLayout->addStretch();
 
-    // 组装左侧布局
-    m_inputLayout->addWidget(m_parent1Group);
-    m_inputLayout->addWidget(m_parent2Group);
-    m_inputLayout->addWidget(m_controlGroup);
-    m_inputLayout->addStretch();
+    m_mainLayout->addLayout(toolbarLayout);
 
-    // 右侧结果区域
-    m_resultWidget = new QWidget();
-    m_resultLayout = new QVBoxLayout(m_resultWidget);
+    // --- Parent selection row ---
+    auto* parentLayout = new QHBoxLayout;
+    parentLayout->setSpacing(12);
 
-    m_resultGroup = new QGroupBox(tr("👶 后代血型遗传概率"));
-    m_resultGroup->setStyleSheet(groupStyle);
-    m_resultGroupLayout = new QVBoxLayout(m_resultGroup);
+    // Father
+    auto* fatherLabel = new QLabel(tr("父亲"));
+    fatherLabel->setStyleSheet("font-weight:bold;");
+    auto* fatherForm = new QFormLayout;
+    fatherForm->setSpacing(4);
+    m_parent1ABOCombo = new QComboBox();
+    m_parent1ABOCombo->addItems({"A", "B", "AB", "O"});
+    m_parent1RhCombo = new QComboBox();
+    m_parent1RhCombo->addItems({tr("阳性(+)"), tr("阴性(-)")});
+    fatherForm->addRow(tr("ABO:"), m_parent1ABOCombo);
+    fatherForm->addRow(tr("Rh:"), m_parent1RhCombo);
 
-    // 结果表格
+    auto* fatherBox = new QVBoxLayout;
+    fatherBox->setSpacing(4);
+    fatherBox->addWidget(fatherLabel);
+    fatherBox->addLayout(fatherForm);
+
+    // Vertical separator
+    auto* separator = new QFrame;
+    separator->setFrameShape(QFrame::VLine);
+    separator->setFrameShadow(QFrame::Plain);
+    separator->setStyleSheet("color:#dee2e6;");
+
+    // Mother
+    auto* motherLabel = new QLabel(tr("母亲"));
+    motherLabel->setStyleSheet("font-weight:bold;");
+    auto* motherForm = new QFormLayout;
+    motherForm->setSpacing(4);
+    m_parent2ABOCombo = new QComboBox();
+    m_parent2ABOCombo->addItems({"A", "B", "AB", "O"});
+    m_parent2RhCombo = new QComboBox();
+    m_parent2RhCombo->addItems({tr("阳性(+)"), tr("阴性(-)")});
+    motherForm->addRow(tr("ABO:"), m_parent2ABOCombo);
+    motherForm->addRow(tr("Rh:"), m_parent2RhCombo);
+
+    auto* motherBox = new QVBoxLayout;
+    motherBox->setSpacing(4);
+    motherBox->addWidget(motherLabel);
+    motherBox->addLayout(motherForm);
+
+    parentLayout->addLayout(fatherBox);
+    parentLayout->addWidget(separator);
+    parentLayout->addLayout(motherBox);
+    parentLayout->addStretch();
+
+    m_mainLayout->addLayout(parentLayout);
+
+    // --- Result table ---
     m_resultTable = new QTableWidget();
     m_resultTable->setColumnCount(4);
     m_resultTable->setHorizontalHeaderLabels({tr("血型"), tr("基因型"), tr("概率"), tr("比例")});
-
-    // 设置表格充满父容器
     m_resultTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // 设置列宽自适应策略
     QHeaderView* header = m_resultTable->horizontalHeader();
-    // 血型列：固定内容宽度
     header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    // 基因型列：固定内容宽度
     header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    // 概率列：固定内容宽度
     header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    // 比例列：拉伸填满剩余空间
     header->setSectionResizeMode(3, QHeaderView::Stretch);
 
-    // 设置最小列宽，确保内容可读性
-    m_resultTable->setColumnWidth(0, 60);   // 血型列最小宽度
-    m_resultTable->setColumnWidth(1, 80);   // 基因型列最小宽度
-    m_resultTable->setColumnWidth(2, 60);   // 概率列最小宽度
-    // 比例列会自动拉伸，无需设置最小宽度
+    m_resultTable->setColumnWidth(0, 60);
+    m_resultTable->setColumnWidth(1, 80);
+    m_resultTable->setColumnWidth(2, 60);
 
-    // 表格其他设置
+    m_resultTable->setShowGrid(false);
     m_resultTable->setAlternatingRowColors(true);
     m_resultTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_resultTable->verticalHeader()->setVisible(false);
-    m_resultTable->setStyleSheet(
-        "QTableWidget {"
-        "border: 1px solid #bdc3c7;"
-        "gridline-color: #ecf0f1;"
-        "background-color: #ffffff;"
-        "}"
-        "QTableWidget::item {"
-        "padding: 8px;"
-        "border-bottom: 1px solid #ecf0f1;"
-        "}"
-        "QHeaderView::section {"
-        "background-color: #34495e;"
-        "color: white;"
-        "padding: 8px;"
-        "border: none;"
-        "font-weight: bold;"
-        "}"
-    );
 
-    m_resultGroupLayout->addWidget(m_resultTable);
-    m_resultLayout->addWidget(m_resultGroup);
+    m_mainLayout->addWidget(m_resultTable, 1);
 
-    // 组装主布局
-    m_mainSplitter->addWidget(m_inputWidget);
-    m_mainSplitter->addWidget(m_resultWidget);
-    m_mainSplitter->setSizes({350, 600});
-
-    m_mainLayout->addWidget(m_mainSplitter);
-
-    // 连接信号
+    // --- Signals ---
     connect(m_calculateBtn, &QPushButton::clicked, this, &BloodTypeCalculator_Widget::onCalculateClicked);
     connect(m_clearBtn, &QPushButton::clicked, this, &BloodTypeCalculator_Widget::onClearClicked);
     connect(m_copyResultBtn, &QPushButton::clicked, this, &BloodTypeCalculator_Widget::onCopyResultClicked);
