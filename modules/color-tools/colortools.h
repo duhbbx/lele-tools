@@ -275,7 +275,7 @@ private:
     QSlider *alphaSlider;
     
     // 颜色输入
-    QGroupBox *colorInputGroup;
+    QLabel *colorInputGroup;
     QLineEdit *hexEdit;
     QLineEdit *rgbEdit;
     QLineEdit *hslEdit;
@@ -290,20 +290,20 @@ private:
     QSpinBox *valueSpin;
     
     // 颜色预览
-    QGroupBox *previewGroup;
+    QLabel *previewGroup;
     ColorPreview *currentColorPreview;
     ColorPreview *previousColorPreview;
     QLabel *colorInfoLabel;
     
     // 调色板
-    QGroupBox *paletteGroup;
+    QLabel *paletteGroup;
     ColorPalette *historyPalette;
     ColorPalette *favoritesPalette;
     ColorPalette *presetPalette;
     QComboBox *presetCombo;
     
     // 颜色分析
-    QGroupBox *analysisGroup;
+    QLabel *analysisGroup;
     QTextEdit *analysisText;
     ColorPreview *contrastPreview1;
     ColorPreview *contrastPreview2;
