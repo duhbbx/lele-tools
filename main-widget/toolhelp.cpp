@@ -512,6 +512,18 @@ void ToolHelp::init() {
         "Windows / macOS / Linux"
     };
 
+    s_helpData["Tiny Image Compress"] = {
+        "图片压缩（TinyPNG 风格）",
+        "批量压缩 PNG/JPEG/WebP 图片，类似 TinyPNG 的效果。",
+        "1. 添加图片或拖拽文件/目录\n2. 设置压缩质量（推荐 60-80）\n3. 点击\"开始压缩\"\n4. 确认效果后点\"替换原图\"或\"一键替换所有原图\"",
+        "PNG: 使用 Qt QImage::Format_Indexed8 量化为 256 色调色板（类似 pngquant/TinyPNG 的核心算法）+ zlib 9级压缩。\n"
+        "JPEG: 使用 QImageWriter 的 quality 参数控制 DCT 压缩率。\n"
+        "WebP: 使用 Qt 内置 WebP 编码器的有损压缩。\n"
+        "压缩结果先保存在内存中，用户确认后才替换原图。",
+        "替换原图操作不可撤销，建议先备份。\nPNG 量化为 256 色会有轻微色彩损失，适合图标和插图，照片建议用 JPEG。",
+        "Windows / macOS / Linux"
+    };
+
     s_helpData["Image Collection"] = {
         "图片收藏",
         "管理和收藏图片，方便分类浏览和查找。",

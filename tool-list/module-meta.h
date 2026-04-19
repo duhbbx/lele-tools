@@ -75,6 +75,7 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "File Search", "FileSearch"},
 {"xxx", "Character Counter", "CharacterCounter"},
 {"xxx", "Images to PDF", "ImagesToPdf"},
+{"xxx", "Tiny Image Compress", "TinyImageCompress"},
 {"xxx", "Image Collection", "ImageCollection"},
 };
 
