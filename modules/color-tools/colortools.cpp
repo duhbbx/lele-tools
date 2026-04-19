@@ -9,7 +9,7 @@ ColorWheel::ColorWheel(QWidget *parent)
     , m_wheelWidth(20)
     , m_mousePressed(false)
 {
-    setFixedSize(200, 200);
+    setFixedSize(300, 300);
     setMouseTracking(true);
     updatePixmap();
     m_currentPoint = colorToPoint(m_currentColor);
