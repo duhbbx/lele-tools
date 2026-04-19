@@ -5,7 +5,6 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
-#include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QTableWidget>
@@ -14,7 +13,6 @@
 #include <QTextEdit>
 #include <QPushButton>
 #include <QTimer>
-#include <QScrollArea>
 #include <QFrame>
 #include <QSplitter>
 #include <QTabWidget>
@@ -196,12 +194,9 @@ private:
     
     // 系统信息标签页
     QWidget *m_systemTab;
-    QScrollArea *m_systemScrollArea;
-    QWidget *m_systemContent;
     QVBoxLayout *m_systemLayout;
-    
+
     // 网络信息区域
-    QGroupBox *m_networkGroup;
     QGridLayout *m_networkLayout;
     QLineEdit *m_primaryIPEdit;
     QLineEdit *m_gatewayEdit;
@@ -209,7 +204,6 @@ private:
     QLineEdit *m_hostnameEdit;
     
     // 硬件信息区域
-    QGroupBox *m_hardwareGroup;
     QGridLayout *m_hardwareLayout;
     QLineEdit *m_osEdit;
     QTextEdit *m_cpuEdit;
@@ -226,7 +220,6 @@ private:
     QTableWidget *m_diskTable;
     
     // 控制区域
-    QGroupBox *m_controlGroup;
     QPushButton *m_refreshBtn;
     QPushButton *m_exportBtn;
     QLabel *m_lastUpdateLabel;

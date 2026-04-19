@@ -397,6 +397,63 @@ QList<DiskInfo> SystemInfoWorker::getWindowsDiskInfo()
         info.resolution = QString("%1x%2").arg(primary.width()).arg(primary.height());
     }
 
+    // 默认网关（通过 netstat -rn 获取）
+    {
+        QProcess proc;
+#ifdef Q_OS_MAC
+        proc.start("route", QStringList() << "-n" << "get" << "default");
+#else
+        proc.start("ip", QStringList() << "route" << "show" << "default");
+#endif
+        if (proc.waitForFinished(3000)) {
+            QString out = proc.readAllStandardOutput();
+            for (const QString& line : out.split('\n')) {
+#ifdef Q_OS_MAC
+                if (line.trimmed().startsWith("gateway:")) {
+                    info.defaultGateway = line.section(':', 1).trimmed();
+                    break;
+                }
+#else
+                if (line.startsWith("default")) {
+                    info.defaultGateway = line.split(QRegularExpression("\\s+")).value(2);
+                    break;
+                }
+#endif
+            }
+        }
+    }
+
+    // DNS 服务器（读 /etc/resolv.conf 或 scutil）
+    {
+#ifdef Q_OS_MAC
+        QProcess proc;
+        proc.start("scutil", QStringList() << "--dns");
+        if (proc.waitForFinished(3000)) {
+            QString out = proc.readAllStandardOutput();
+            for (const QString& line : out.split('\n')) {
+                if (line.trimmed().startsWith("nameserver[")) {
+                    QString dns = line.section(':', 1).trimmed();
+                    if (!dns.isEmpty() && !info.dnsServers.contains(dns))
+                        info.dnsServers.append(dns);
+                }
+            }
+        }
+#else
+        QFile resolv("/etc/resolv.conf");
+        if (resolv.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&resolv);
+            while (!in.atEnd()) {
+                QString line = in.readLine().trimmed();
+                if (line.startsWith("nameserver")) {
+                    QString dns = line.section(QRegularExpression("\\s+"), 1).trimmed();
+                    if (!dns.isEmpty())
+                        info.dnsServers.append(dns);
+                }
+            }
+        }
+#endif
+    }
+
     return info;
 }
 
@@ -474,163 +531,165 @@ SystemInfoTool::~SystemInfoTool()
 void SystemInfoTool::setupUI()
 {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
-    m_mainLayout->setSpacing(10);
-    
+    m_mainLayout->setContentsMargins(8, 6, 8, 6);
+    m_mainLayout->setSpacing(4);
+
+    setStyleSheet(R"(
+        QPushButton { padding:4px 10px; border:none; border-radius:4px; font-size:9pt; color:#495057; background:transparent; }
+        QPushButton:hover { background-color:#e9ecef; }
+        QPushButton:pressed { background-color:#dee2e6; }
+        QLineEdit[readOnly="true"] { background-color:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; padding:3px 6px; font-size:9pt; color:#495057; }
+        QTextEdit[readOnly="true"] { background-color:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; padding:3px 6px; font-size:9pt; color:#495057; }
+        QTableWidget { border:1px solid #dee2e6; border-radius:4px; font-size:9pt; gridline-color:#f1f3f5; }
+        QHeaderView::section { background-color:#f8f9fa; border:none; border-bottom:1px solid #dee2e6; padding:4px 8px; font-size:9pt; color:#495057; }
+        QLabel { font-size:9pt; color:#495057; }
+        QProgressBar { border:1px solid #dee2e6; border-radius:4px; text-align:center; font-size:8pt; }
+        QProgressBar::chunk { background-color:#228be6; border-radius:3px; }
+    )");
+
     // 创建标签页
     m_tabWidget = new QTabWidget();
-    
+
+    setupControlArea();
     setupSystemInfoArea();
     setupDiskInfoArea();
-    setupControlArea();
-    
+
     m_mainLayout->addWidget(m_tabWidget);
-    m_mainLayout->addWidget(m_controlGroup);
 }
 
 void SystemInfoTool::setupSystemInfoArea()
 {
     m_systemTab = new QWidget();
-    m_systemScrollArea = new QScrollArea();
-    m_systemContent = new QWidget();
-    m_systemLayout = new QVBoxLayout(m_systemContent);
-    
+    m_systemLayout = new QVBoxLayout(m_systemTab);
+
     setupNetworkInfoArea();
     setupHardwareInfoArea();
-    
-    m_systemScrollArea->setWidget(m_systemContent);
-    m_systemScrollArea->setWidgetResizable(true);
-    
-    QVBoxLayout *systemTabLayout = new QVBoxLayout(m_systemTab);
-    systemTabLayout->addWidget(m_systemScrollArea);
-    
-    m_tabWidget->addTab(m_systemTab, tr("🖥️ 系统信息"));
+
+    m_systemLayout->addStretch();
+
+    m_tabWidget->addTab(m_systemTab, tr("系统信息"));
 }
 
 void SystemInfoTool::setupNetworkInfoArea()
 {
-    m_networkGroup = new QGroupBox("🌐 网络信息", m_systemContent);
-    m_networkLayout = new QGridLayout(m_networkGroup);
+    QLabel *header = new QLabel(tr("网络信息"));
+    header->setStyleSheet("font-weight:bold; font-size:10pt; color:#212529;");
+    m_systemLayout->addWidget(header);
+
+    m_networkLayout = new QGridLayout();
     m_networkLayout->setSpacing(8);
-    
-    // 添加网络信息输入框（只读，可选中复制）
+
     int row = 0;
-    
+
     m_networkLayout->addWidget(new QLabel(tr("主机名:")), row, 0);
     m_hostnameEdit = new QLineEdit("获取中...");
     m_hostnameEdit->setReadOnly(true);
     m_hostnameEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_hostnameEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_hostnameEdit, row++, 1);
-    
+
     m_networkLayout->addWidget(new QLabel(tr("主IP地址:")), row, 0);
     m_primaryIPEdit = new QLineEdit("获取中...");
     m_primaryIPEdit->setReadOnly(true);
     m_primaryIPEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_primaryIPEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_primaryIPEdit, row++, 1);
-    
+
     m_networkLayout->addWidget(new QLabel(tr("默认网关:")), row, 0);
     m_gatewayEdit = new QLineEdit("获取中...");
     m_gatewayEdit->setReadOnly(true);
     m_gatewayEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_gatewayEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_gatewayEdit, row++, 1);
-    
+
     m_networkLayout->addWidget(new QLabel(tr("DNS服务器:")), row, 0);
     m_dnsEdit = new QTextEdit();
     m_dnsEdit->setReadOnly(true);
     m_dnsEdit->setMaximumHeight(60);
     m_dnsEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_dnsEdit->setStyleSheet("QTextEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_networkLayout->addWidget(m_dnsEdit, row++, 1);
-    
-    m_systemLayout->addWidget(m_networkGroup);
+
+    m_systemLayout->addLayout(m_networkLayout);
 }
 
 void SystemInfoTool::setupHardwareInfoArea()
 {
-    m_hardwareGroup = new QGroupBox("💻 硬件信息", m_systemContent);
-    m_hardwareLayout = new QGridLayout(m_hardwareGroup);
+    QLabel *header = new QLabel(tr("硬件信息"));
+    header->setStyleSheet("font-weight:bold; font-size:10pt; color:#212529;");
+    m_systemLayout->addWidget(header);
+
+    m_hardwareLayout = new QGridLayout();
     m_hardwareLayout->setSpacing(8);
-    
+
     int row = 0;
-    
+
     // 操作系统
     m_hardwareLayout->addWidget(new QLabel(tr("操作系统:")), row, 0);
     m_osEdit = new QLineEdit("获取中...");
     m_osEdit->setReadOnly(true);
     m_osEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_osEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_osEdit, row++, 1, 1, 2);
-    
+
     // CPU信息
     m_hardwareLayout->addWidget(new QLabel(tr("处理器:")), row, 0);
     m_cpuEdit = new QTextEdit();
     m_cpuEdit->setReadOnly(true);
     m_cpuEdit->setMaximumHeight(60);
     m_cpuEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_cpuEdit->setStyleSheet("QTextEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_cpuEdit, row++, 1, 1, 2);
-    
+
     m_hardwareLayout->addWidget(new QLabel(tr("CPU核心:")), row, 0);
     m_coresEdit = new QLineEdit("获取中...");
     m_coresEdit->setReadOnly(true);
     m_coresEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_coresEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_coresEdit, row++, 1);
-    
+
     m_hardwareLayout->addWidget(new QLabel(tr("CPU频率:")), row, 0);
     m_frequencyEdit = new QLineEdit("获取中...");
     m_frequencyEdit->setReadOnly(true);
     m_frequencyEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_frequencyEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_frequencyEdit, row++, 1);
-    
+
     // 内存信息
     m_hardwareLayout->addWidget(new QLabel(tr("系统内存:")), row, 0);
     m_memoryEdit = new QLineEdit("获取中...");
     m_memoryEdit->setReadOnly(true);
     m_memoryEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_memoryEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_memoryEdit, row, 1);
-    
+
     m_memoryProgress = new QProgressBar();
     m_memoryProgress->setRange(0, 100);
     m_hardwareLayout->addWidget(m_memoryProgress, row++, 2);
-    
+
     // 交换内存
     m_hardwareLayout->addWidget(new QLabel(tr("虚拟内存:")), row, 0);
     m_swapEdit = new QLineEdit("获取中...");
     m_swapEdit->setReadOnly(true);
     m_swapEdit->setContextMenuPolicy(Qt::DefaultContextMenu);
-    m_swapEdit->setStyleSheet("QLineEdit[readOnly=\"true\"] { background-color: #f8f9fa; color: #007bff; font-weight: bold; }");
     m_hardwareLayout->addWidget(m_swapEdit, row, 1);
-    
+
     m_swapProgress = new QProgressBar();
     m_swapProgress->setRange(0, 100);
     m_hardwareLayout->addWidget(m_swapProgress, row++, 2);
-    
-    m_systemLayout->addWidget(m_hardwareGroup);
+
+    m_systemLayout->addLayout(m_hardwareLayout);
 }
 
 void SystemInfoTool::setupDiskInfoArea()
 {
     m_diskTab = new QWidget();
     m_diskLayout = new QVBoxLayout(m_diskTab);
-    
+
     // 磁盘信息表格
     m_diskTable = new QTableWidget();
     m_diskTable->setColumnCount(7);
     QStringList headers;
     headers << "设备" << "挂载点" << "文件系统" << "总容量" << "已用" << "可用" << "使用率";
     m_diskTable->setHorizontalHeaderLabels(headers);
-    
+
     m_diskTable->setAlternatingRowColors(true);
+    m_diskTable->setShowGrid(false);
     m_diskTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_diskTable->horizontalHeader()->setStretchLastSection(false);
+    m_diskTable->horizontalHeader()->setStretchLastSection(true);
     m_diskTable->verticalHeader()->setVisible(false);
-    
+
     // 设置列宽
     m_diskTable->setColumnWidth(0, 80);   // 设备
     m_diskTable->setColumnWidth(1, 100);  // 挂载点
@@ -638,30 +697,31 @@ void SystemInfoTool::setupDiskInfoArea()
     m_diskTable->setColumnWidth(3, 100);  // 总容量
     m_diskTable->setColumnWidth(4, 100);  // 已用
     m_diskTable->setColumnWidth(5, 100);  // 可用
-    m_diskTable->setColumnWidth(6, 120);  // 使用率
-    
+
     m_diskLayout->addWidget(m_diskTable);
-    
-    m_tabWidget->addTab(m_diskTab, tr("💾 磁盘信息"));
+
+    m_tabWidget->addTab(m_diskTab, tr("磁盘信息"));
 }
 
 void SystemInfoTool::setupControlArea()
 {
-    m_controlGroup = new QGroupBox("🔧 控制操作");
-    QHBoxLayout *layout = new QHBoxLayout(m_controlGroup);
-    
+    QHBoxLayout *toolbarLayout = new QHBoxLayout();
+    toolbarLayout->setContentsMargins(0, 0, 0, 0);
+
     m_refreshBtn = new QPushButton(tr("刷新信息"));
     m_refreshBtn->setObjectName("refreshBtn");
     m_exportBtn = new QPushButton(tr("导出报告"));
-    
+
     m_lastUpdateLabel = new QLabel(tr("最后更新: 从未"));
     m_lastUpdateLabel->setStyleSheet("color: #6c757d; font-style: italic;");
-    
-    layout->addWidget(m_refreshBtn);
-    layout->addWidget(m_exportBtn);
-    layout->addStretch();
-    layout->addWidget(m_lastUpdateLabel);
-    
+
+    toolbarLayout->addWidget(m_refreshBtn);
+    toolbarLayout->addWidget(m_exportBtn);
+    toolbarLayout->addStretch();
+    toolbarLayout->addWidget(m_lastUpdateLabel);
+
+    m_mainLayout->addLayout(toolbarLayout);
+
     connect(m_refreshBtn, &QPushButton::clicked, this, &SystemInfoTool::onRefreshClicked);
     connect(m_exportBtn, &QPushButton::clicked, this, &SystemInfoTool::onExportClicked);
 }
