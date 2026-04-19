@@ -4,33 +4,17 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGridLayout>
-#include <QSplitter>
 #include <QLabel>
 #include <QPushButton>
 #include <QLineEdit>
-#include <QSpinBox>
-#include <QComboBox>
 #include <QProgressBar>
-#include <QGroupBox>
-#include <QScrollArea>
 #include <QCheckBox>
-#include <QFileDialog>
-#include <QPixmap>
-#include <QImage>
 #include <QListWidget>
-#include <QListWidgetItem>
-#include <QTextEdit>
-#include <QTabWidget>
+#include <QPixmap>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 
 #include "../../common/dynamicobjectbase.h"
-
-struct FaviconSize {
-    int width;
-    int height;
-    QString description;
-    bool isSelected;
-};
 
 class FaviconProduction : public QWidget, public DynamicObjectBase
 {
@@ -40,80 +24,50 @@ public:
     explicit FaviconProduction();
     ~FaviconProduction();
 
-public slots:
+protected:
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+
+private slots:
     void onSelectImage();
-    void onGenerateFavicons();
+    void onClear();
+    void onGenerate();
+    void onOpenOutputDir();
     void onSelectOutputDir();
-    void onClearAll();
-    void onPreviewSize();
-    void onSizeSelectionChanged();
-    void onGenerateHtml();
 
 private:
     void setupUI();
-    void setupInputArea();
-    void setupSizeSelection();
-    void setupPreviewArea();
-    void setupOutputArea();
     void loadImage(const QString& filePath);
-    void initializeSizes();
-    void generateFavicon(const FaviconSize& size, const QString& outputDir);
-    void updatePreview();
-    void updateStatus(const QString& message, bool isError = false);
-    QString generateHtmlCode();
-    
-    // UI组件
-    QVBoxLayout* mainLayout;
-    QSplitter* mainSplitter;
-    
-    // 输入区域
-    QGroupBox* inputGroup;
-    QVBoxLayout* inputLayout;
-    QHBoxLayout* inputButtonLayout;
-    QPushButton* selectImageBtn;
-    QPushButton* clearBtn;
-    QLabel* imagePathLabel;
-    QLabel* imageSizeLabel;
-    QLabel* imagePreviewLabel;
-    
-    // 尺寸选择区域
-    QGroupBox* sizeGroup;
-    QVBoxLayout* sizeLayout;
-    QListWidget* sizeListWidget;
-    QHBoxLayout* sizeButtonLayout;
-    QPushButton* selectAllBtn;
-    QPushButton* deselectAllBtn;
-    QPushButton* previewBtn;
-    
-    // 预览区域
-    QGroupBox* previewGroup;
-    QScrollArea* previewScrollArea;
-    QWidget* previewWidget;
-    QGridLayout* previewGridLayout;
-    
-    // 输出区域
-    QGroupBox* outputGroup;
-    QVBoxLayout* outputLayout;
-    QHBoxLayout* outputPathLayout;
-    QLineEdit* outputPathEdit;
-    QPushButton* selectOutputBtn;
-    QHBoxLayout* outputButtonLayout;
-    QPushButton* generateBtn;
-    QPushButton* generateHtmlBtn;
-    QProgressBar* progressBar;
-    QLabel* statusLabel;
-    
-    // HTML代码区域
-    QTabWidget* codeTabWidget;
-    QTextEdit* htmlCodeEdit;
-    QTextEdit* manifestCodeEdit;
-    
-    // 数据
-    QString currentImagePath;
-    QPixmap originalPixmap;
-    QList<FaviconSize> faviconSizes;
-    QString outputDirectory;
-    bool isGenerating;
+    QPixmap generateIcon(const QPixmap& source, int targetSize);
+    void addResultItem(const QString& filePath, int size);
+
+    // Toolbar
+    QPushButton* m_selectBtn;
+    QPushButton* m_clearBtn;
+    QPushButton* m_generateBtn;
+    QPushButton* m_openDirBtn;
+
+    // Source preview
+    QLabel* m_previewLabel;
+    QLabel* m_fileNameLabel;
+    QLabel* m_fileSizeLabel;
+
+    // Settings
+    QLineEdit* m_outputPathEdit;
+    QPushButton* m_selectOutputBtn;
+    QCheckBox* m_webCheck;
+    QCheckBox* m_androidCheck;
+    QCheckBox* m_iosCheck;
+    QProgressBar* m_progressBar;
+    QLabel* m_statusLabel;
+
+    // Result grid
+    QListWidget* m_resultList;
+
+    // Data
+    QPixmap m_sourcePixmap;
+    QString m_sourcePath;
+    QString m_outputDir;
 };
 
 #endif // FAVICONPRODUCTION_H
