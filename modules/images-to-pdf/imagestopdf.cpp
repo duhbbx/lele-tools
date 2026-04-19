@@ -12,6 +12,8 @@
 #include <QUrl>
 #include <QFileInfo>
 #include <QApplication>
+#include <QDateTime>
+#include <QTransform>
 #include <QStyledItemDelegate>
 
 REGISTER_DYNAMICOBJECT(ImagesToPdf);
@@ -139,6 +141,8 @@ void ImagesToPdf::setupUI()
     m_clearBtn = new QPushButton(tr("清空"));
     m_upBtn = new QPushButton(tr("上移"));
     m_downBtn = new QPushButton(tr("下移"));
+    m_rotateLeftBtn = new QPushButton(tr("左旋"));
+    m_rotateRightBtn = new QPushButton(tr("右旋"));
     m_exportBtn = new QPushButton(tr("导出 PDF"));
     m_exportBtn->setStyleSheet(
         "QPushButton { color: #228be6; font-weight: bold; }"
@@ -150,6 +154,8 @@ void ImagesToPdf::setupUI()
     toolbar->addWidget(m_clearBtn);
     toolbar->addWidget(m_upBtn);
     toolbar->addWidget(m_downBtn);
+    toolbar->addWidget(m_rotateLeftBtn);
+    toolbar->addWidget(m_rotateRightBtn);
     toolbar->addStretch();
     toolbar->addWidget(m_exportBtn);
 
@@ -181,6 +187,8 @@ void ImagesToPdf::setupUI()
     connect(m_clearBtn, &QPushButton::clicked, this, &ImagesToPdf::onClearAll);
     connect(m_upBtn, &QPushButton::clicked, this, &ImagesToPdf::onMoveUp);
     connect(m_downBtn, &QPushButton::clicked, this, &ImagesToPdf::onMoveDown);
+    connect(m_rotateLeftBtn, &QPushButton::clicked, this, &ImagesToPdf::onRotateLeft);
+    connect(m_rotateRightBtn, &QPushButton::clicked, this, &ImagesToPdf::onRotateRight);
     connect(m_exportBtn, &QPushButton::clicked, this, &ImagesToPdf::onExportPdf);
     connect(m_listWidget->model(), &QAbstractItemModel::rowsMoved, this, [this]{ updateStatus(); });
 
@@ -282,6 +290,59 @@ void ImagesToPdf::onMoveDown()
     updateStatus();
 }
 
+void ImagesToPdf::onRotateLeft()
+{
+    auto* item = m_listWidget->currentItem();
+    if (!item) return;
+    int rotation = (item->data(Qt::UserRole + 2).toInt() - 90) % 360;
+    item->setData(Qt::UserRole + 2, rotation);
+
+    // 更新缩略图
+    QString filePath = item->data(Qt::UserRole).toString();
+    qreal dpr = qApp->devicePixelRatio();
+    int renderSize = static_cast<int>(56 * dpr);
+    QImageReader reader(filePath);
+    reader.setAutoTransform(true);
+    QSize origSize = reader.size();
+    if (origSize.isValid())
+        reader.setScaledSize(origSize.scaled(renderSize, renderSize, Qt::KeepAspectRatio));
+    QImage img = reader.read();
+    if (rotation != 0) {
+        QTransform t;
+        t.rotate(rotation);
+        img = img.transformed(t, Qt::SmoothTransformation);
+    }
+    QPixmap thumb = QPixmap::fromImage(img);
+    thumb.setDevicePixelRatio(dpr);
+    item->setData(Qt::DecorationRole, thumb);
+}
+
+void ImagesToPdf::onRotateRight()
+{
+    auto* item = m_listWidget->currentItem();
+    if (!item) return;
+    int rotation = (item->data(Qt::UserRole + 2).toInt() + 90) % 360;
+    item->setData(Qt::UserRole + 2, rotation);
+
+    QString filePath = item->data(Qt::UserRole).toString();
+    qreal dpr = qApp->devicePixelRatio();
+    int renderSize = static_cast<int>(56 * dpr);
+    QImageReader reader(filePath);
+    reader.setAutoTransform(true);
+    QSize origSize = reader.size();
+    if (origSize.isValid())
+        reader.setScaledSize(origSize.scaled(renderSize, renderSize, Qt::KeepAspectRatio));
+    QImage img = reader.read();
+    if (rotation != 0) {
+        QTransform t;
+        t.rotate(rotation);
+        img = img.transformed(t, Qt::SmoothTransformation);
+    }
+    QPixmap thumb = QPixmap::fromImage(img);
+    thumb.setDevicePixelRatio(dpr);
+    item->setData(Qt::DecorationRole, thumb);
+}
+
 void ImagesToPdf::onExportPdf()
 {
     if (m_listWidget->count() == 0) {
@@ -289,8 +350,10 @@ void ImagesToPdf::onExportPdf()
         return;
     }
 
+    QString defaultName = QString("images_%1.pdf")
+        .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
     QString savePath = QFileDialog::getSaveFileName(
-        this, tr("保存 PDF"), QString(), tr("PDF 文件 (*.pdf)"));
+        this, tr("保存 PDF"), defaultName, tr("PDF 文件 (*.pdf)"));
     if (savePath.isEmpty()) return;
 
     QPdfWriter writer(savePath);
@@ -305,8 +368,17 @@ void ImagesToPdf::onExportPdf()
             writer.newPage();
 
         QString filePath = m_listWidget->item(i)->data(Qt::UserRole).toString();
+        int rotation = m_listWidget->item(i)->data(Qt::UserRole + 2).toInt();
+
         QImage image(filePath);
         if (image.isNull()) continue;
+
+        // 应用旋转
+        if (rotation != 0) {
+            QTransform transform;
+            transform.rotate(rotation);
+            image = image.transformed(transform, Qt::SmoothTransformation);
+        }
 
         // 计算缩放，让图片适应页面（保持比例）
         QRect pageRect = painter.viewport();

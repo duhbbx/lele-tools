@@ -28,6 +28,8 @@ private slots:
     void onClearAll();
     void onMoveUp();
     void onMoveDown();
+    void onRotateLeft();
+    void onRotateRight();
     void onExportPdf();
 
 private:
@@ -41,6 +43,8 @@ private:
     QPushButton* m_clearBtn = nullptr;
     QPushButton* m_upBtn = nullptr;
     QPushButton* m_downBtn = nullptr;
+    QPushButton* m_rotateLeftBtn = nullptr;
+    QPushButton* m_rotateRightBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
     QLabel* m_statusLabel = nullptr;
 };
