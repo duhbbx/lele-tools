@@ -74,6 +74,7 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "HTTP Client", "HttpClient"},
 {"xxx", "File Search", "FileSearch"},
 {"xxx", "Character Counter", "CharacterCounter"},
+{"xxx", "Images to PDF", "ImagesToPdf"},
 {"xxx", "Image Collection", "ImageCollection"},
 };
 
