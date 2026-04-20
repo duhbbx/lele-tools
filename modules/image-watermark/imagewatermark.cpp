@@ -163,119 +163,90 @@ QPixmap WatermarkWorker::addWatermarkToImage(const QPixmap& image, const Waterma
 
 // SingleImageWatermark 实现
 SingleImageWatermark::SingleImageWatermark(QWidget* parent)
-    : QWidget(parent) {
+    : QWidget(parent), m_currentIndex(-1) {
     setupUI();
-    updatePreview();
+    setAcceptDrops(true);
 }
 
 void SingleImageWatermark::setupUI() {
-    m_mainLayout = new QVBoxLayout(this);
+    setStyleSheet(R"(
+        QPushButton { padding:4px 10px; border:none; border-radius:4px; font-size:9pt; color:#495057; background:transparent; }
+        QPushButton:hover { background-color:#e9ecef; }
+        QPushButton:disabled { color:#adb5bd; }
+        QLabel { font-size:9pt; color:#495057; }
+    )");
+
+    m_mainLayout = new QHBoxLayout(this);
     m_mainLayout->setContentsMargins(6, 6, 6, 6);
+    m_mainLayout->setSpacing(6);
 
-    // 主分割器
-    m_mainSplitter = new QSplitter(Qt::Horizontal);
+    // === 左侧: 文件列表 + 配置 ===
+    m_leftWidget = new QWidget();
+    m_leftWidget->setFixedWidth(320);
+    m_leftLayout = new QVBoxLayout(m_leftWidget);
+    m_leftLayout->setContentsMargins(0, 0, 0, 0);
+    m_leftLayout->setSpacing(4);
 
-    // 左侧配置区域
-    m_configWidget = new QWidget();
-    m_configWidget->setFixedWidth(350);
-    m_configLayout = new QVBoxLayout(m_configWidget);
-
-    // 图片选择组
-    m_imageGroup = new QGroupBox("选择图片");
-    m_imageGroupLayout = new QVBoxLayout(m_imageGroup);
-
-    m_selectImageBtn = new QPushButton("📁 选择图片文件");
-    m_selectImageBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #3498db;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #2980b9;"
-        "}"
+    // 文件列表
+    m_imageListWidget = new QListWidget();
+    m_imageListWidget->setMaximumHeight(120);
+    m_imageListWidget->setStyleSheet(
+        "QListWidget { border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa; font-size:9pt; }"
+        "QListWidget::item { padding:2px 4px; }"
+        "QListWidget::item:selected { background:#d0ebff; color:#1971c2; }"
     );
 
-    m_imageInfoLabel = new QLabel("未选择文件");
-    m_imageInfoLabel->setStyleSheet(
-        "QLabel {"
-        "color: #7f8c8d;"
-        "font-style: italic;"
-        "padding: 8px;"
-        "background-color: #ecf0f1;"
-        "border-radius: 4px;"
-        "}"
-    );
+    m_imageButtonLayout = new QHBoxLayout();
+    m_selectImagesBtn = new QPushButton("Select Images");
+    m_removeSelectedBtn = new QPushButton("Remove");
+    m_imageButtonLayout->addWidget(m_selectImagesBtn);
+    m_imageButtonLayout->addWidget(m_removeSelectedBtn);
 
-    m_imageGroupLayout->addWidget(m_selectImageBtn);
-    m_imageGroupLayout->addWidget(m_imageInfoLabel);
+    m_leftLayout->addWidget(m_imageListWidget);
+    m_leftLayout->addLayout(m_imageButtonLayout);
 
-    // 水印配置组
-    m_watermarkGroup = new QGroupBox("水印设置");
-    m_watermarkLayout = new QFormLayout(m_watermarkGroup);
+    // 水印配置 (flat, no group box)
+    m_watermarkLayout = new QFormLayout();
+    m_watermarkLayout->setContentsMargins(0, 6, 0, 0);
+    m_watermarkLayout->setSpacing(4);
 
-    // 水印文字
     m_watermarkText = new QLineEdit(m_config.text);
-    m_watermarkText->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
+    m_watermarkText->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
 
-    // 颜色选择
     m_colorBtn = new QPushButton();
-    m_colorBtn->setFixedSize(60, 30);
-    m_colorBtn->setStyleSheet(QString("background-color: %1; border: 1px solid #bdc3c7; border-radius: 4px;").arg(m_config.color.name()));
+    m_colorBtn->setFixedSize(50, 22);
+    m_colorBtn->setStyleSheet(QString("background-color:%1; border:1px solid #dee2e6; border-radius:4px;").arg(m_config.color.name()));
 
-    // 透明度
     m_opacitySlider = new QSlider(Qt::Horizontal);
     m_opacitySlider->setRange(1, 100);
     m_opacitySlider->setValue(m_config.opacity);
     m_opacityLabel = new QLabel(QString("%1%").arg(m_config.opacity));
 
-    // 间隔
     m_spacingSlider = new QSlider(Qt::Horizontal);
-    m_spacingSlider->setRange(10, 200);
+    m_spacingSlider->setRange(10, 400);
     m_spacingSlider->setValue(m_config.spacing);
     m_spacingLabel = new QLabel(QString("%1px").arg(m_config.spacing));
 
-    // 字号
     m_fontSizeSpinBox = new QSpinBox();
     m_fontSizeSpinBox->setRange(8, 72);
     m_fontSizeSpinBox->setValue(m_config.font.pointSize());
-    m_fontSizeSpinBox->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
+    m_fontSizeSpinBox->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
 
-    // 字体
-    m_fontBtn = new QPushButton("选择字体");
-    m_fontBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #95a5a6;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 4px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #7f8c8d;"
-        "}"
-    );
+    m_fontBtn = new QPushButton("Font...");
 
-    // 位置
     m_positionCombo = new QComboBox();
-    m_positionCombo->addItem("居中", static_cast<int>(Qt::AlignCenter));
-    m_positionCombo->addItem("左上", static_cast<int>(Qt::AlignTop | Qt::AlignLeft));
-    m_positionCombo->addItem("右上", static_cast<int>(Qt::AlignTop | Qt::AlignRight));
-    m_positionCombo->addItem("左下", static_cast<int>(Qt::AlignBottom | Qt::AlignLeft));
-    m_positionCombo->addItem("右下", static_cast<int>(Qt::AlignBottom | Qt::AlignRight));
-    m_positionCombo->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
+    m_positionCombo->addItem("Center", static_cast<int>(Qt::AlignCenter));
+    m_positionCombo->addItem("Top-Left", static_cast<int>(Qt::AlignTop | Qt::AlignLeft));
+    m_positionCombo->addItem("Top-Right", static_cast<int>(Qt::AlignTop | Qt::AlignRight));
+    m_positionCombo->addItem("Bottom-Left", static_cast<int>(Qt::AlignBottom | Qt::AlignLeft));
+    m_positionCombo->addItem("Bottom-Right", static_cast<int>(Qt::AlignBottom | Qt::AlignRight));
+    m_positionCombo->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
 
-    // 旋转角度
     m_rotationSlider = new QSlider(Qt::Horizontal);
     m_rotationSlider->setRange(-90, 90);
     m_rotationSlider->setValue(m_config.rotation);
-    m_rotationLabel = new QLabel(QString("%1°").arg(m_config.rotation));
+    m_rotationLabel = new QLabel(QString("%1").arg(m_config.rotation));
 
-    // 添加到表单布局
     auto addFormRow = [this](const QString& label, QWidget* widget, QWidget* extraWidget = nullptr) {
         if (extraWidget) {
             auto* hLayout = new QHBoxLayout();
@@ -289,111 +260,77 @@ void SingleImageWatermark::setupUI() {
         }
     };
 
-    addFormRow("水印文字:", m_watermarkText);
-    addFormRow("文字颜色:", m_colorBtn);
-    addFormRow("透明度:", m_opacitySlider, m_opacityLabel);
-    addFormRow("间隔:", m_spacingSlider, m_spacingLabel);
-    addFormRow("字号:", m_fontSizeSpinBox);
-    addFormRow("字体:", m_fontBtn);
-    addFormRow("位置:", m_positionCombo);
-    addFormRow("旋转:", m_rotationSlider, m_rotationLabel);
+    addFormRow("Text:", m_watermarkText);
+    addFormRow("Color:", m_colorBtn);
+    addFormRow("Opacity:", m_opacitySlider, m_opacityLabel);
+    addFormRow("Spacing:", m_spacingSlider, m_spacingLabel);
+    addFormRow("Size:", m_fontSizeSpinBox);
+    addFormRow("Font:", m_fontBtn);
+    addFormRow("Position:", m_positionCombo);
+    addFormRow("Rotation:", m_rotationSlider, m_rotationLabel);
+
+    m_leftLayout->addLayout(m_watermarkLayout);
 
     // 操作按钮
     m_buttonLayout = new QHBoxLayout();
-    m_saveBtn = new QPushButton("💾 保存图片");
-    m_copyBtn = new QPushButton("📋 复制图片");
-
-    m_saveBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #27ae60;"
-        "color: white;"
-        "border: none;"
-        "padding: 6px 14px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #219a52;"
-        "}"
-        "QPushButton:disabled {"
-        "background-color: #bdc3c7;"
-        "}"
-    );
-
-    m_copyBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e74c3c;"
-        "color: white;"
-        "border: none;"
-        "padding: 6px 14px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #c0392b;"
-        "}"
-        "QPushButton:disabled {"
-        "background-color: #bdc3c7;"
-        "}"
-    );
+    m_saveBtn = new QPushButton("Save");
+    m_saveAllBtn = new QPushButton("Save All");
+    m_copyBtn = new QPushButton("Copy");
 
     m_saveBtn->setEnabled(false);
+    m_saveAllBtn->setEnabled(false);
     m_copyBtn->setEnabled(false);
 
     m_buttonLayout->addWidget(m_saveBtn);
+    m_buttonLayout->addWidget(m_saveAllBtn);
     m_buttonLayout->addWidget(m_copyBtn);
 
-    // 组装配置区域
-    m_configLayout->addWidget(m_imageGroup);
-    m_configLayout->addWidget(m_watermarkGroup);
-    m_configLayout->addLayout(m_buttonLayout);
-    m_configLayout->addStretch();
+    m_leftLayout->addLayout(m_buttonLayout);
+    m_leftLayout->addStretch();
 
-    // 右侧预览区域
+    // === 右侧预览区域 ===
     m_previewWidget = new QWidget();
     m_previewLayout = new QVBoxLayout(m_previewWidget);
-
-    m_previewLabel = new QLabel("预览图片（点击图片下载）");
-    m_previewLabel->setStyleSheet("font-weight: bold; color: #2c3e50; margin-bottom: 10px; font-size: 14px;");
+    m_previewLayout->setContentsMargins(0, 0, 0, 0);
 
     m_previewScrollArea = new QScrollArea();
     m_previewScrollArea->setWidgetResizable(true);
     m_previewScrollArea->setStyleSheet(
-        "QScrollArea {"
-        "border: 2px dashed #bdc3c7;"
-        "border-radius: 8px;"
-        "background-color: #f8f9fa;"
-        "}"
+        "QScrollArea { border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa; }"
     );
 
     m_previewImageLabel = new QLabel();
     m_previewImageLabel->setAlignment(Qt::AlignCenter);
-    m_previewImageLabel->setText("请选择图片文件");
-    m_previewImageLabel->setStyleSheet(
-        "QLabel {"
-        "color: #7f8c8d;"
-        "font-size: 16px;"
-        "font-style: italic;"
-        "min-height: 200px;"
-        "}"
-    );
-    m_previewImageLabel->setCursor(Qt::PointingHandCursor);
+    m_previewImageLabel->setText("Drop or select images");
+    m_previewImageLabel->setStyleSheet("QLabel { color:#adb5bd; font-size:9pt; min-height:200px; }");
+    m_previewImageLabel->setContextMenuPolicy(Qt::CustomContextMenu);
 
     m_previewScrollArea->setWidget(m_previewImageLabel);
-
-    m_previewLayout->addWidget(m_previewLabel);
     m_previewLayout->addWidget(m_previewScrollArea);
 
     // 组装主布局
-    m_mainSplitter->addWidget(m_configWidget);
-    m_mainSplitter->addWidget(m_previewWidget);
-    m_mainSplitter->setSizes({350, 600});
-
-    m_mainLayout->addWidget(m_mainSplitter);
+    m_mainLayout->addWidget(m_leftWidget);
+    m_mainLayout->addWidget(m_previewWidget, 1);
 
     // 连接信号
-    connect(m_selectImageBtn, &QPushButton::clicked, this, &SingleImageWatermark::onSelectImageClicked);
+    connect(m_selectImagesBtn, &QPushButton::clicked, this, &SingleImageWatermark::onSelectImagesClicked);
+    connect(m_removeSelectedBtn, &QPushButton::clicked, this, [this]() {
+        auto items = m_imageListWidget->selectedItems();
+        for (auto* item : items) {
+            int row = m_imageListWidget->row(item);
+            m_imagePaths.removeAt(row);
+            delete m_imageListWidget->takeItem(row);
+        }
+        if (m_imagePaths.isEmpty()) {
+            resetUI();
+        } else {
+            if (m_currentIndex >= m_imagePaths.size())
+                m_currentIndex = m_imagePaths.size() - 1;
+            m_imageListWidget->setCurrentRow(m_currentIndex);
+        }
+    });
     connect(m_saveBtn, &QPushButton::clicked, this, &SingleImageWatermark::onSaveImageClicked);
+    connect(m_saveAllBtn, &QPushButton::clicked, this, &SingleImageWatermark::onSaveAllClicked);
     connect(m_copyBtn, &QPushButton::clicked, this, &SingleImageWatermark::onCopyImageClicked);
     connect(m_colorBtn, &QPushButton::clicked, this, &SingleImageWatermark::onColorButtonClicked);
     connect(m_fontBtn, &QPushButton::clicked, this, &SingleImageWatermark::onFontButtonClicked);
@@ -405,73 +342,116 @@ void SingleImageWatermark::setupUI() {
     connect(m_positionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SingleImageWatermark::onPositionChanged);
     connect(m_rotationSlider, &QSlider::valueChanged, this, &SingleImageWatermark::onWatermarkConfigChanged);
 
-    // Note: QLabel::mousePressEvent is not a signal, it's a virtual function
-    // For click handling, we'll install an event filter
-    m_previewImageLabel->installEventFilter(this);
+    connect(m_imageListWidget, &QListWidget::currentRowChanged, this, &SingleImageWatermark::onImageListSelectionChanged);
+    connect(m_previewImageLabel, &QWidget::customContextMenuRequested, this, &SingleImageWatermark::onPreviewContextMenu);
 }
 
-void SingleImageWatermark::onSelectImageClicked() {
-    QString fileName = QFileDialog::getOpenFileName(
-        this,
-        "选择图片文件",
-        "",
-        "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.tiff);;所有文件 (*.*)"
-    );
-
-    if (!fileName.isEmpty()) {
-        m_originalImagePath = fileName;
-        m_originalPixmap = QPixmap(fileName);
-
-        if (!m_originalPixmap.isNull()) {
-            QFileInfo fileInfo(fileName);
-            m_imageInfoLabel->setText(QString("文件: %1\n尺寸: %2×%3")
-                .arg(fileInfo.fileName())
-                .arg(m_originalPixmap.width())
-                .arg(m_originalPixmap.height()));
-
-            m_saveBtn->setEnabled(true);
-            m_copyBtn->setEnabled(true);
-
-            updatePreview();
-        } else {
-            QMessageBox::warning(this, "错误", "无法加载图片文件");
-            resetUI();
+void SingleImageWatermark::addImageFiles(const QStringList& files) {
+    for (const QString& f : files) {
+        if (m_imagePaths.contains(f)) continue;
+        QPixmap test(f);
+        if (test.isNull()) continue;
+        m_imagePaths.append(f);
+        m_imageListWidget->addItem(QFileInfo(f).fileName());
+    }
+    if (!m_imagePaths.isEmpty()) {
+        m_saveAllBtn->setEnabled(true);
+        if (m_currentIndex < 0) {
+            m_imageListWidget->setCurrentRow(0);
         }
     }
 }
 
-void SingleImageWatermark::onSaveImageClicked() {
-    if (m_watermarkedPixmap.isNull()) {
+void SingleImageWatermark::onSelectImagesClicked() {
+    QStringList fileNames = QFileDialog::getOpenFileNames(
+        this,
+        "Select Images",
+        "",
+        "Images (*.png *.jpg *.jpeg *.bmp *.gif *.tiff);;All Files (*.*)"
+    );
+    if (!fileNames.isEmpty()) {
+        addImageFiles(fileNames);
+    }
+}
+
+void SingleImageWatermark::onImageListSelectionChanged() {
+    int row = m_imageListWidget->currentRow();
+    if (row < 0 || row >= m_imagePaths.size()) {
+        m_originalPixmap = QPixmap();
+        m_watermarkedPixmap = QPixmap();
+        m_saveBtn->setEnabled(false);
+        m_copyBtn->setEnabled(false);
+        m_previewImageLabel->clear();
+        m_previewImageLabel->setText("Drop or select images");
+        m_currentIndex = -1;
         return;
     }
+    m_currentIndex = row;
+    m_originalPixmap = QPixmap(m_imagePaths[row]);
+    m_saveBtn->setEnabled(!m_originalPixmap.isNull());
+    m_copyBtn->setEnabled(!m_originalPixmap.isNull());
+    updatePreview();
+}
+
+void SingleImageWatermark::onSaveImageClicked() {
+    if (m_watermarkedPixmap.isNull()) return;
 
     QString fileName = QFileDialog::getSaveFileName(
         this,
-        "保存水印图片",
+        "Save Watermarked Image",
         "",
-        "PNG图片 (*.png);;JPEG图片 (*.jpg);;BMP图片 (*.bmp);;所有文件 (*.*)"
+        "PNG (*.png);;JPEG (*.jpg);;BMP (*.bmp);;All Files (*.*)"
     );
 
     if (!fileName.isEmpty()) {
         if (m_watermarkedPixmap.save(fileName)) {
-            QMessageBox::information(this, "成功", "图片保存成功！");
+            QMessageBox::information(this, "Done", "Image saved.");
         } else {
-            QMessageBox::warning(this, "错误", "图片保存失败！");
+            QMessageBox::warning(this, "Error", "Failed to save image.");
         }
     }
 }
 
-void SingleImageWatermark::onCopyImageClicked() {
-    if (m_watermarkedPixmap.isNull()) {
-        return;
-    }
+void SingleImageWatermark::onSaveAllClicked() {
+    if (m_imagePaths.isEmpty()) return;
 
+    QString dir = QFileDialog::getExistingDirectory(this, "Select Output Directory");
+    if (dir.isEmpty()) return;
+
+    int success = 0;
+    int fail = 0;
+    for (const QString& path : m_imagePaths) {
+        QPixmap pix(path);
+        if (pix.isNull()) { fail++; continue; }
+        QPixmap wm = addWatermark(pix, m_config);
+        QFileInfo fi(path);
+        QString outPath = dir + "/" + fi.baseName() + "_watermarked." + fi.suffix();
+        if (wm.save(outPath)) {
+            success++;
+        } else {
+            fail++;
+        }
+    }
+    QMessageBox::information(this, "Done",
+        QString("Saved %1 images. %2 failed.").arg(success).arg(fail));
+}
+
+void SingleImageWatermark::onCopyImageClicked() {
+    if (m_watermarkedPixmap.isNull()) return;
     QApplication::clipboard()->setPixmap(m_watermarkedPixmap);
-    QMessageBox::information(this, "成功", "图片已复制到剪贴板！");
+}
+
+void SingleImageWatermark::onPreviewContextMenu(const QPoint& pos) {
+    if (m_watermarkedPixmap.isNull()) return;
+    QMenu menu(this);
+    QAction* copyAction = menu.addAction("Copy Image");
+    QAction* selected = menu.exec(m_previewImageLabel->mapToGlobal(pos));
+    if (selected == copyAction) {
+        QApplication::clipboard()->setPixmap(m_watermarkedPixmap);
+    }
 }
 
 void SingleImageWatermark::onWatermarkConfigChanged() {
-    // 更新配置
     m_config.text = m_watermarkText->text();
     m_config.opacity = m_opacitySlider->value();
     m_config.spacing = m_spacingSlider->value();
@@ -481,26 +461,25 @@ void SingleImageWatermark::onWatermarkConfigChanged() {
     font.setPointSize(m_fontSizeSpinBox->value());
     m_config.font = font;
 
-    // 更新标签
     m_opacityLabel->setText(QString("%1%").arg(m_config.opacity));
     m_spacingLabel->setText(QString("%1px").arg(m_config.spacing));
-    m_rotationLabel->setText(QString("%1°").arg(m_config.rotation));
+    m_rotationLabel->setText(QString("%1").arg(m_config.rotation));
 
     updatePreview();
 }
 
 void SingleImageWatermark::onColorButtonClicked() {
-    QColor color = QColorDialog::getColor(m_config.color, this, "选择水印颜色");
+    QColor color = QColorDialog::getColor(m_config.color, this, "Select Watermark Color");
     if (color.isValid()) {
         m_config.color = color;
-        m_colorBtn->setStyleSheet(QString("background-color: %1; border: 1px solid #bdc3c7; border-radius: 4px;").arg(color.name()));
+        m_colorBtn->setStyleSheet(QString("background-color:%1; border:1px solid #dee2e6; border-radius:4px;").arg(color.name()));
         updatePreview();
     }
 }
 
 void SingleImageWatermark::onFontButtonClicked() {
     bool ok;
-    QFont font = QFontDialog::getFont(&ok, m_config.font, this, "选择字体");
+    QFont font = QFontDialog::getFont(&ok, m_config.font, this, "Select Font");
     if (ok) {
         m_config.font = font;
         m_fontSizeSpinBox->setValue(font.pointSize());
@@ -514,27 +493,31 @@ void SingleImageWatermark::onPositionChanged() {
     updatePreview();
 }
 
-bool SingleImageWatermark::eventFilter(QObject* obj, QEvent* event) {
-    if (obj == m_previewImageLabel && event->type() == QEvent::MouseButtonPress) {
-        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-        if (mouseEvent->button() == Qt::LeftButton && !m_watermarkedPixmap.isNull()) {
-            onSaveImageClicked();
-            return true;
+void SingleImageWatermark::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
+}
+
+void SingleImageWatermark::dropEvent(QDropEvent* event) {
+    QStringList files;
+    for (const QUrl& url : event->mimeData()->urls()) {
+        if (url.isLocalFile()) {
+            files.append(url.toLocalFile());
         }
     }
-    return QWidget::eventFilter(obj, event);
+    if (!files.isEmpty()) {
+        addImageFiles(files);
+    }
 }
 
 void SingleImageWatermark::updatePreview() {
-    if (m_originalPixmap.isNull()) {
-        return;
-    }
+    if (m_originalPixmap.isNull()) return;
 
     m_watermarkedPixmap = addWatermark(m_originalPixmap, m_config);
 
-    // 缩放预览图片
     QPixmap scaledPixmap = m_watermarkedPixmap.scaled(
-        m_previewScrollArea->size() * 0.8,
+        m_previewScrollArea->size() * 0.9,
         Qt::KeepAspectRatio,
         Qt::SmoothTransformation
     );
@@ -634,15 +617,17 @@ QPixmap SingleImageWatermark::addWatermark(const QPixmap& image, const Watermark
 }
 
 void SingleImageWatermark::resetUI() {
-    m_originalImagePath.clear();
+    m_imagePaths.clear();
+    m_imageListWidget->clear();
+    m_currentIndex = -1;
     m_originalPixmap = QPixmap();
     m_watermarkedPixmap = QPixmap();
 
-    m_imageInfoLabel->setText("未选择文件");
     m_previewImageLabel->clear();
-    m_previewImageLabel->setText("请选择图片文件");
+    m_previewImageLabel->setText("Drop or select images");
 
     m_saveBtn->setEnabled(false);
+    m_saveAllBtn->setEnabled(false);
     m_copyBtn->setEnabled(false);
 }
 
@@ -663,124 +648,92 @@ BatchImageWatermark::~BatchImageWatermark() {
 }
 
 void BatchImageWatermark::setupUI() {
-    m_mainLayout = new QVBoxLayout(this);
+    setStyleSheet(R"(
+        QPushButton { padding:4px 10px; border:none; border-radius:4px; font-size:9pt; color:#495057; background:transparent; }
+        QPushButton:hover { background-color:#e9ecef; }
+        QPushButton:disabled { color:#adb5bd; }
+        QLabel { font-size:9pt; color:#495057; }
+    )");
+
+    m_mainLayout = new QHBoxLayout(this);
     m_mainLayout->setContentsMargins(6, 6, 6, 6);
+    m_mainLayout->setSpacing(6);
 
-    // 主分割器
-    m_mainSplitter = new QSplitter(Qt::Horizontal);
-
-    // 左侧配置区域
+    // === 左侧配置区域 ===
     m_configWidget = new QWidget();
-    m_configWidget->setFixedWidth(380);
+    m_configWidget->setFixedWidth(350);
     m_configLayout = new QVBoxLayout(m_configWidget);
+    m_configLayout->setContentsMargins(0, 0, 0, 0);
+    m_configLayout->setSpacing(4);
 
-    // 文件选择组
-    m_filesGroup = new QGroupBox("选择图片文件");
-    m_filesGroupLayout = new QVBoxLayout(m_filesGroup);
-
+    // 文件列表
     m_filesList = new QListWidget();
     m_filesList->setDragDropMode(QAbstractItemView::DropOnly);
     m_filesList->setAcceptDrops(true);
+    m_filesList->setMaximumHeight(140);
     m_filesList->setStyleSheet(
-        "QListWidget {"
-        "border: 2px dashed #bdc3c7;"
-        "border-radius: 6px;"
-        "background-color: #f8f9fa;"
-        "min-height: 60px;"
-        "}"
-        "QListWidget::item {"
-        "padding: 4px;"
-        "border-bottom: 1px solid #ecf0f1;"
-        "}"
+        "QListWidget { border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa; font-size:9pt; }"
+        "QListWidget::item { padding:2px 4px; }"
+        "QListWidget::item:selected { background:#d0ebff; color:#1971c2; }"
     );
 
     m_filesButtonLayout = new QHBoxLayout();
-    m_addImagesBtn = new QPushButton("📁 添加图片");
-    m_removeSelectedBtn = new QPushButton("❌ 移除选中");
-    m_clearAllBtn = new QPushButton("🗑️ 清空全部");
-
-    QString buttonStyle =
-        "QPushButton {"
-        "background-color: #3498db;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 4px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #2980b9;"
-        "}";
-
-    m_addImagesBtn->setStyleSheet(buttonStyle);
-    m_removeSelectedBtn->setStyleSheet(buttonStyle.replace("#3498db", "#e74c3c").replace("#2980b9", "#c0392b"));
-    m_clearAllBtn->setStyleSheet(buttonStyle.replace("#3498db", "#95a5a6").replace("#2980b9", "#7f8c8d"));
+    m_addImagesBtn = new QPushButton("Add Images");
+    m_removeSelectedBtn = new QPushButton("Remove");
+    m_clearAllBtn = new QPushButton("Clear All");
 
     m_filesButtonLayout->addWidget(m_addImagesBtn);
     m_filesButtonLayout->addWidget(m_removeSelectedBtn);
     m_filesButtonLayout->addWidget(m_clearAllBtn);
 
-    m_filesGroupLayout->addWidget(m_filesList);
-    m_filesGroupLayout->addLayout(m_filesButtonLayout);
+    m_configLayout->addWidget(m_filesList);
+    m_configLayout->addLayout(m_filesButtonLayout);
 
-    // 输出目录组
-    m_outputGroup = new QGroupBox("输出目录");
-    m_outputGroupLayout = new QVBoxLayout(m_outputGroup);
+    // 输出目录
     m_outputDirLayout = new QHBoxLayout();
-
     m_outputDirEdit = new QLineEdit();
-    m_outputDirEdit->setPlaceholderText("选择输出目录...");
-    m_outputDirEdit->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
-
-    m_selectOutputDirBtn = new QPushButton("📁 选择");
-    m_selectOutputDirBtn->setStyleSheet(buttonStyle);
+    m_outputDirEdit->setPlaceholderText("Output directory...");
+    m_outputDirEdit->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
+    m_selectOutputDirBtn = new QPushButton("Browse");
 
     m_outputDirLayout->addWidget(m_outputDirEdit);
     m_outputDirLayout->addWidget(m_selectOutputDirBtn);
-    m_outputGroupLayout->addLayout(m_outputDirLayout);
+    m_configLayout->addLayout(m_outputDirLayout);
 
-    // 水印配置组
-    m_watermarkGroup = new QGroupBox("水印设置");
-    m_watermarkLayout = new QFormLayout(m_watermarkGroup);
+    // 水印配置 (flat)
+    m_watermarkLayout = new QFormLayout();
+    m_watermarkLayout->setContentsMargins(0, 6, 0, 0);
+    m_watermarkLayout->setSpacing(4);
 
-    // 水印文字
     m_watermarkText = new QLineEdit(m_config.text);
-    m_watermarkText->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
+    m_watermarkText->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
 
-    // 颜色选择
     m_colorBtn = new QPushButton();
-    m_colorBtn->setFixedSize(60, 30);
-    m_colorBtn->setStyleSheet(QString("background-color: %1; border: 1px solid #bdc3c7; border-radius: 4px;").arg(m_config.color.name()));
+    m_colorBtn->setFixedSize(50, 22);
+    m_colorBtn->setStyleSheet(QString("background-color:%1; border:1px solid #dee2e6; border-radius:4px;").arg(m_config.color.name()));
 
-    // 透明度
     m_opacitySlider = new QSlider(Qt::Horizontal);
     m_opacitySlider->setRange(1, 100);
     m_opacitySlider->setValue(m_config.opacity);
     m_opacityLabel = new QLabel(QString("%1%").arg(m_config.opacity));
 
-    // 间隔
     m_spacingSlider = new QSlider(Qt::Horizontal);
-    m_spacingSlider->setRange(10, 200);
+    m_spacingSlider->setRange(10, 400);
     m_spacingSlider->setValue(m_config.spacing);
     m_spacingLabel = new QLabel(QString("%1px").arg(m_config.spacing));
 
-    // 字号
     m_fontSizeSpinBox = new QSpinBox();
     m_fontSizeSpinBox->setRange(8, 72);
     m_fontSizeSpinBox->setValue(m_config.font.pointSize());
-    m_fontSizeSpinBox->setStyleSheet("padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px;");
+    m_fontSizeSpinBox->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
 
-    // 字体
-    m_fontBtn = new QPushButton("选择字体");
-    m_fontBtn->setStyleSheet(buttonStyle.replace("#3498db", "#95a5a6").replace("#2980b9", "#7f8c8d"));
+    m_fontBtn = new QPushButton("Font...");
 
-    // 旋转角度
     m_rotationSlider = new QSlider(Qt::Horizontal);
     m_rotationSlider->setRange(-90, 90);
     m_rotationSlider->setValue(m_config.rotation);
-    m_rotationLabel = new QLabel(QString("%1°").arg(m_config.rotation));
+    m_rotationLabel = new QLabel(QString("%1").arg(m_config.rotation));
 
-    // 添加到表单布局
     auto addFormRow = [this](const QString& label, QWidget* widget, QWidget* extraWidget = nullptr) {
         if (extraWidget) {
             auto* hLayout = new QHBoxLayout();
@@ -794,129 +747,59 @@ void BatchImageWatermark::setupUI() {
         }
     };
 
-    addFormRow("水印文字:", m_watermarkText);
-    addFormRow("文字颜色:", m_colorBtn);
-    addFormRow("透明度:", m_opacitySlider, m_opacityLabel);
-    addFormRow("间隔:", m_spacingSlider, m_spacingLabel);
-    addFormRow("字号:", m_fontSizeSpinBox);
-    addFormRow("字体:", m_fontBtn);
-    addFormRow("旋转:", m_rotationSlider, m_rotationLabel);
+    addFormRow("Text:", m_watermarkText);
+    addFormRow("Color:", m_colorBtn);
+    addFormRow("Opacity:", m_opacitySlider, m_opacityLabel);
+    addFormRow("Spacing:", m_spacingSlider, m_spacingLabel);
+    addFormRow("Size:", m_fontSizeSpinBox);
+    addFormRow("Font:", m_fontBtn);
+    addFormRow("Rotation:", m_rotationSlider, m_rotationLabel);
 
-    // 组装配置区域
-    m_configLayout->addWidget(m_filesGroup);
-    m_configLayout->addWidget(m_outputGroup);
-    m_configLayout->addWidget(m_watermarkGroup);
+    m_configLayout->addLayout(m_watermarkLayout);
     m_configLayout->addStretch();
 
-    // 右侧状态区域
+    // === 右侧状态区域 ===
     m_statusWidget = new QWidget();
     m_statusLayout = new QVBoxLayout(m_statusWidget);
+    m_statusLayout->setContentsMargins(0, 0, 0, 0);
+    m_statusLayout->setSpacing(4);
 
-    // 控制组
-    m_controlGroup = new QGroupBox("批量处理控制");
-    m_controlGroupLayout = new QVBoxLayout(m_controlGroup);
+    // 控制按钮
     m_controlButtonLayout = new QHBoxLayout();
-
-    m_startBtn = new QPushButton("🚀 开始处理");
-    m_stopBtn = new QPushButton("⏹️ 停止处理");
-
-    m_startBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #27ae60;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #219a52;"
-        "}"
-        "QPushButton:disabled {"
-        "background-color: #bdc3c7;"
-        "}"
-    );
-
-    m_stopBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e74c3c;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #c0392b;"
-        "}"
-        "QPushButton:disabled {"
-        "background-color: #bdc3c7;"
-        "}"
-    );
-
+    m_startBtn = new QPushButton("Start");
+    m_stopBtn = new QPushButton("Stop");
     m_stopBtn->setEnabled(false);
 
     m_controlButtonLayout->addWidget(m_startBtn);
     m_controlButtonLayout->addWidget(m_stopBtn);
-    m_controlGroupLayout->addLayout(m_controlButtonLayout);
+    m_statusLayout->addLayout(m_controlButtonLayout);
 
-    // 进度组
-    m_progressGroup = new QGroupBox("处理进度");
-    m_progressGroupLayout = new QVBoxLayout(m_progressGroup);
-
+    // 进度
     m_progressBar = new QProgressBar();
     m_progressBar->setStyleSheet(
-        "QProgressBar {"
-        "border: 2px solid #bdc3c7;"
-        "border-radius: 5px;"
-        "text-align: center;"
-        "}"
-        "QProgressBar::chunk {"
-        "background-color: #3498db;"
-        "border-radius: 3px;"
-        "}"
+        "QProgressBar { border:1px solid #dee2e6; border-radius:4px; text-align:center; font-size:9pt; }"
+        "QProgressBar::chunk { background-color:#339af0; border-radius:3px; }"
     );
 
-    m_statusLabel = new QLabel("准备就绪");
-    m_statusLabel->setStyleSheet("color: #7f8c8d; font-style: italic;");
-
+    m_statusLabel = new QLabel("Ready");
     m_currentFileLabel = new QLabel("");
-    m_currentFileLabel->setStyleSheet("color: #2c3e50; font-weight: bold;");
 
-    m_progressGroupLayout->addWidget(m_progressBar);
-    m_progressGroupLayout->addWidget(m_statusLabel);
-    m_progressGroupLayout->addWidget(m_currentFileLabel);
+    m_statusLayout->addWidget(m_progressBar);
+    m_statusLayout->addWidget(m_statusLabel);
+    m_statusLayout->addWidget(m_currentFileLabel);
 
-    // 结果组
-    m_resultsGroup = new QGroupBox("处理结果");
-    m_resultsGroupLayout = new QVBoxLayout(m_resultsGroup);
-
+    // 结果
     m_resultsText = new QTextEdit();
     m_resultsText->setReadOnly(true);
     m_resultsText->setStyleSheet(
-        "QTextEdit {"
-        "border: 1px solid #bdc3c7;"
-        "border-radius: 4px;"
-        "background-color: #f8f9fa;"
-        "font-family: Consolas, Monaco, monospace;"
-        "}"
+        "QTextEdit { border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa; font-family:Consolas,Monaco,monospace; font-size:9pt; }"
     );
 
-    m_resultsGroupLayout->addWidget(m_resultsText);
-
-    // 组装状态区域
-    m_statusLayout->addWidget(m_controlGroup);
-    m_statusLayout->addWidget(m_progressGroup);
-    m_statusLayout->addWidget(m_resultsGroup);
+    m_statusLayout->addWidget(m_resultsText, 1);
 
     // 组装主布局
-    m_mainSplitter->addWidget(m_configWidget);
-    m_mainSplitter->addWidget(m_statusWidget);
-    m_mainSplitter->setSizes({380, 500});
-
-    m_mainLayout->addWidget(m_mainSplitter);
+    m_mainLayout->addWidget(m_configWidget);
+    m_mainLayout->addWidget(m_statusWidget, 1);
 
     // 连接信号
     connect(m_addImagesBtn, &QPushButton::clicked, this, &BatchImageWatermark::onAddImagesClicked);
@@ -944,9 +827,9 @@ void BatchImageWatermark::setupUI() {
 void BatchImageWatermark::onAddImagesClicked() {
     QStringList fileNames = QFileDialog::getOpenFileNames(
         this,
-        "选择图片文件",
+        "Select Images",
         "",
-        "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.tiff);;所有文件 (*.*)"
+        "Images (*.png *.jpg *.jpeg *.bmp *.gif *.tiff);;All Files (*.*)"
     );
 
     for (const QString& fileName : fileNames) {
@@ -988,7 +871,7 @@ void BatchImageWatermark::onClearAllClicked() {
 void BatchImageWatermark::onSelectOutputDirClicked() {
     QString dirName = QFileDialog::getExistingDirectory(
         this,
-        "选择输出目录",
+        "Select Output Directory",
         m_outputDirEdit->text()
     );
 
@@ -999,13 +882,13 @@ void BatchImageWatermark::onSelectOutputDirClicked() {
 
 void BatchImageWatermark::onStartProcessingClicked() {
     if (m_filesList->count() == 0) {
-        QMessageBox::warning(this, "提示", "请先添加要处理的图片文件");
+        QMessageBox::warning(this, "Notice", "Please add images first.");
         return;
     }
 
     QString outputDir = m_outputDirEdit->text().trimmed();
     if (outputDir.isEmpty()) {
-        QMessageBox::warning(this, "提示", "请选择输出目录");
+        QMessageBox::warning(this, "Notice", "Please select an output directory.");
         return;
     }
 
@@ -1017,7 +900,6 @@ void BatchImageWatermark::onStopProcessingClicked() {
 }
 
 void BatchImageWatermark::onWatermarkConfigChanged() {
-    // 更新配置
     m_config.text = m_watermarkText->text();
     m_config.opacity = m_opacitySlider->value();
     m_config.spacing = m_spacingSlider->value();
@@ -1027,23 +909,22 @@ void BatchImageWatermark::onWatermarkConfigChanged() {
     font.setPointSize(m_fontSizeSpinBox->value());
     m_config.font = font;
 
-    // 更新标签
     m_opacityLabel->setText(QString("%1%").arg(m_config.opacity));
     m_spacingLabel->setText(QString("%1px").arg(m_config.spacing));
-    m_rotationLabel->setText(QString("%1°").arg(m_config.rotation));
+    m_rotationLabel->setText(QString("%1").arg(m_config.rotation));
 }
 
 void BatchImageWatermark::onColorButtonClicked() {
-    QColor color = QColorDialog::getColor(m_config.color, this, "选择水印颜色");
+    QColor color = QColorDialog::getColor(m_config.color, this, "Select Watermark Color");
     if (color.isValid()) {
         m_config.color = color;
-        m_colorBtn->setStyleSheet(QString("background-color: %1; border: 1px solid #bdc3c7; border-radius: 4px;").arg(color.name()));
+        m_colorBtn->setStyleSheet(QString("background-color:%1; border:1px solid #dee2e6; border-radius:4px;").arg(color.name()));
     }
 }
 
 void BatchImageWatermark::onFontButtonClicked() {
     bool ok;
-    QFont font = QFontDialog::getFont(&ok, m_config.font, this, "选择字体");
+    QFont font = QFontDialog::getFont(&ok, m_config.font, this, "Select Font");
     if (ok) {
         m_config.font = font;
         m_fontSizeSpinBox->setValue(font.pointSize());
@@ -1053,16 +934,16 @@ void BatchImageWatermark::onFontButtonClicked() {
 void BatchImageWatermark::onProgressUpdated(int current, int total, const QString& currentFile) {
     m_progressBar->setMaximum(total);
     m_progressBar->setValue(current);
-    m_statusLabel->setText(QString("正在处理 %1/%2").arg(current).arg(total));
-    m_currentFileLabel->setText(QString("当前文件: %1").arg(currentFile));
+    m_statusLabel->setText(QString("Processing %1/%2").arg(current).arg(total));
+    m_currentFileLabel->setText(currentFile);
 }
 
 void BatchImageWatermark::onImageProcessed(const QString& inputFile, const QString& outputFile, bool success, const QString& error) {
     QString message;
     if (success) {
-        message = QString("✅ %1 -> %2").arg(QFileInfo(inputFile).fileName(), QFileInfo(outputFile).fileName());
+        message = QString("%1 -> %2").arg(QFileInfo(inputFile).fileName(), QFileInfo(outputFile).fileName());
     } else {
-        message = QString("❌ %1: %2").arg(QFileInfo(inputFile).fileName(), error);
+        message = QString("FAIL %1: %2").arg(QFileInfo(inputFile).fileName(), error);
     }
 
     m_resultsText->append(message);
@@ -1073,10 +954,10 @@ void BatchImageWatermark::onProcessingFinished() {
     m_isProcessing = false;
     m_startBtn->setEnabled(true);
     m_stopBtn->setEnabled(false);
-    m_statusLabel->setText("处理完成");
+    m_statusLabel->setText("Done");
     m_currentFileLabel->setText("");
 
-    QMessageBox::information(this, "完成", "批量水印处理已完成！");
+    QMessageBox::information(this, "Done", "Batch watermark processing complete.");
 }
 
 void BatchImageWatermark::updateUI() {
@@ -1119,11 +1000,10 @@ void BatchImageWatermark::startProcessing() {
 
 void BatchImageWatermark::stopProcessing() {
     if (m_worker) {
-        // 这里应该设置停止标志，但由于简化实现，我们只是等待当前任务完成
         m_isProcessing = false;
         m_startBtn->setEnabled(true);
         m_stopBtn->setEnabled(false);
-        m_statusLabel->setText("已停止");
+        m_statusLabel->setText("Stopped");
     }
 }
 
@@ -1136,39 +1016,19 @@ void ImageWatermark::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    // 创建标签页控件
     m_tabWidget = new QTabWidget();
     m_tabWidget->setStyleSheet(
-        "QTabWidget::pane {"
-        "border: 1px solid #bdc3c7;"
-        "background-color: white;"
-        "}"
-        "QTabBar::tab {"
-        "background-color: #ecf0f1;"
-        "color: #2c3e50;"
-        "padding: 8px 16px;"
-        "margin-right: 2px;"
-        "border-top-left-radius: 6px;"
-        "border-top-right-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QTabBar::tab:selected {"
-        "background-color: white;"
-        "border-bottom: 2px solid #3498db;"
-        "}"
-        "QTabBar::tab:hover {"
-        "background-color: #d5dbdb;"
-        "}"
+        "QTabWidget::pane { border:1px solid #dee2e6; background-color:white; }"
+        "QTabBar::tab { background:#f8f9fa; color:#495057; padding:6px 14px; margin-right:2px; border-top-left-radius:4px; border-top-right-radius:4px; font-size:9pt; }"
+        "QTabBar::tab:selected { background:white; border-bottom:2px solid #339af0; }"
+        "QTabBar::tab:hover { background:#e9ecef; }"
     );
 
-    // 创建单个水印标签页
     m_singleWatermark = new SingleImageWatermark();
-    m_tabWidget->addTab(m_singleWatermark, "🖼️ 单个图片");
+    m_tabWidget->addTab(m_singleWatermark, "Single Image");
 
-    // 创建批量水印标签页
     m_batchWatermark = new BatchImageWatermark();
-    m_tabWidget->addTab(m_batchWatermark, "📚 批量处理");
+    m_tabWidget->addTab(m_batchWatermark, "Batch Process");
 
     m_mainLayout->addWidget(m_tabWidget);
 }
-

@@ -42,6 +42,7 @@
 #include <QThread>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QMenu>
 
 #include "../../common/dynamicobjectbase.h"
 
@@ -103,37 +104,40 @@ public:
     explicit SingleImageWatermark(QWidget* parent = nullptr);
 
 private slots:
-    void onSelectImageClicked();
+    void onSelectImagesClicked();
     void onSaveImageClicked();
+    void onSaveAllClicked();
     void onCopyImageClicked();
     void onWatermarkConfigChanged();
     void onColorButtonClicked();
     void onFontButtonClicked();
     void onPositionChanged();
+    void onImageListSelectionChanged();
+    void onPreviewContextMenu(const QPoint& pos);
 
 protected:
-    bool eventFilter(QObject* obj, QEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 private:
     void setupUI();
     void updatePreview();
     QPixmap addWatermark(const QPixmap& image, const WatermarkConfig& config);
     void resetUI();
+    void addImageFiles(const QStringList& files);
 
     // UI组件
-    QVBoxLayout* m_mainLayout;
-    QSplitter* m_mainSplitter;
+    QHBoxLayout* m_mainLayout;
 
-    // 左侧配置区域
-    QWidget* m_configWidget;
-    QVBoxLayout* m_configLayout;
+    // 左侧: 文件列表 + 配置
+    QWidget* m_leftWidget;
+    QVBoxLayout* m_leftLayout;
 
-    QGroupBox* m_imageGroup;
-    QVBoxLayout* m_imageGroupLayout;
-    QPushButton* m_selectImageBtn;
-    QLabel* m_imageInfoLabel;
+    QListWidget* m_imageListWidget;
+    QHBoxLayout* m_imageButtonLayout;
+    QPushButton* m_selectImagesBtn;
+    QPushButton* m_removeSelectedBtn;
 
-    QGroupBox* m_watermarkGroup;
     QFormLayout* m_watermarkLayout;
     QLineEdit* m_watermarkText;
     QPushButton* m_colorBtn;
@@ -149,20 +153,21 @@ private:
 
     QHBoxLayout* m_buttonLayout;
     QPushButton* m_saveBtn;
+    QPushButton* m_saveAllBtn;
     QPushButton* m_copyBtn;
 
     // 右侧预览区域
     QWidget* m_previewWidget;
     QVBoxLayout* m_previewLayout;
-    QLabel* m_previewLabel;
     QScrollArea* m_previewScrollArea;
     QLabel* m_previewImageLabel;
 
     // 数据
-    QString m_originalImagePath;
+    QStringList m_imagePaths;
     QPixmap m_originalPixmap;
     QPixmap m_watermarkedPixmap;
     WatermarkConfig m_config;
+    int m_currentIndex;
 };
 
 // 批量图片水印组件
@@ -195,28 +200,22 @@ private:
     void stopProcessing();
 
     // UI组件
-    QVBoxLayout* m_mainLayout;
-    QSplitter* m_mainSplitter;
+    QHBoxLayout* m_mainLayout;
 
     // 左侧配置区域
     QWidget* m_configWidget;
     QVBoxLayout* m_configLayout;
 
-    QGroupBox* m_filesGroup;
-    QVBoxLayout* m_filesGroupLayout;
     QListWidget* m_filesList;
     QHBoxLayout* m_filesButtonLayout;
     QPushButton* m_addImagesBtn;
     QPushButton* m_removeSelectedBtn;
     QPushButton* m_clearAllBtn;
 
-    QGroupBox* m_outputGroup;
-    QVBoxLayout* m_outputGroupLayout;
     QHBoxLayout* m_outputDirLayout;
     QLineEdit* m_outputDirEdit;
     QPushButton* m_selectOutputDirBtn;
 
-    QGroupBox* m_watermarkGroup;
     QFormLayout* m_watermarkLayout;
     QLineEdit* m_watermarkText;
     QPushButton* m_colorBtn;
@@ -233,20 +232,14 @@ private:
     QWidget* m_statusWidget;
     QVBoxLayout* m_statusLayout;
 
-    QGroupBox* m_controlGroup;
-    QVBoxLayout* m_controlGroupLayout;
     QHBoxLayout* m_controlButtonLayout;
     QPushButton* m_startBtn;
     QPushButton* m_stopBtn;
 
-    QGroupBox* m_progressGroup;
-    QVBoxLayout* m_progressGroupLayout;
     QProgressBar* m_progressBar;
     QLabel* m_statusLabel;
     QLabel* m_currentFileLabel;
 
-    QGroupBox* m_resultsGroup;
-    QVBoxLayout* m_resultsGroupLayout;
     QTextEdit* m_resultsText;
 
     // 处理相关
