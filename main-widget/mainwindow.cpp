@@ -532,7 +532,7 @@ void MainWindow::setupWindowControls() {
 void MainWindow::createStatusBar() {
     statusBar = new QWidget();
     statusBar->setFixedHeight(28);
-    statusBar->setStyleSheet("background-color: #f0f0f0; border-top: 1px solid #ddd;");
+    statusBar->setStyleSheet("background-color: #f8f9fa; border:none;");
 
     auto* statusLayout = new QHBoxLayout(statusBar);
     statusLayout->setContentsMargins(10, 3, 10, 3);
@@ -575,13 +575,14 @@ void MainWindow::createStatusBar() {
     timeLabel = new QLabel();
     timeLabel->setStyleSheet(
         "QLabel {"
-        "    color: #6c757d;"
-        "    font-size: 16px;"
+        "    color: #868e96;"
+        "    font-size: 9pt;"
         "    padding: 2px 8px;"
-        "    border-radius: 0px;"
+        "    border: none;"
         "}"
         "QLabel:hover {"
         "    background-color: #e9ecef;"
+        "    border-radius: 4px;"
         "}"
     );
     timeLabel->setToolTip("点击复制时间");

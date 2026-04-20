@@ -60,9 +60,9 @@ struct WatermarkConfig {
     WatermarkConfig() {
         text = "xxx专用";
         color = QColor(128, 128, 128);
-        font = QFont("Microsoft YaHei", 16);
+        font = QFont("Microsoft YaHei", 40);
         opacity = 30;
-        spacing = 50;
+        spacing = 200;
         position = Qt::AlignCenter;
         tiled = true;
         rotation = -30;
