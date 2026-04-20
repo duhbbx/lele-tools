@@ -145,6 +145,7 @@ private:
     QLabel* m_opacityLabel;
     QSlider* m_spacingSlider;
     QLabel* m_spacingLabel;
+    QSlider* m_fontSizeSlider;
     QSpinBox* m_fontSizeSpinBox;
     QPushButton* m_fontBtn;
     QComboBox* m_positionCombo;
@@ -223,6 +224,7 @@ private:
     QLabel* m_opacityLabel;
     QSlider* m_spacingSlider;
     QLabel* m_spacingLabel;
+    QSlider* m_fontSizeSlider;
     QSpinBox* m_fontSizeSpinBox;
     QPushButton* m_fontBtn;
     QSlider* m_rotationSlider;

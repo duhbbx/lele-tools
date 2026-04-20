@@ -227,10 +227,15 @@ void SingleImageWatermark::setupUI() {
     m_spacingSlider->setValue(m_config.spacing);
     m_spacingLabel = new QLabel(QString("%1px").arg(m_config.spacing));
 
+    m_fontSizeSlider = new QSlider(Qt::Horizontal);
+    m_fontSizeSlider->setRange(8, 120);
+    m_fontSizeSlider->setValue(m_config.font.pointSize());
     m_fontSizeSpinBox = new QSpinBox();
-    m_fontSizeSpinBox->setRange(8, 72);
+    m_fontSizeSpinBox->setRange(8, 120);
     m_fontSizeSpinBox->setValue(m_config.font.pointSize());
-    m_fontSizeSpinBox->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
+    m_fontSizeSpinBox->setSuffix("pt");
+    connect(m_fontSizeSlider, &QSlider::valueChanged, m_fontSizeSpinBox, &QSpinBox::setValue);
+    connect(m_fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), m_fontSizeSlider, &QSlider::setValue);
 
     m_fontBtn = new QPushButton("Font...");
 
@@ -264,7 +269,15 @@ void SingleImageWatermark::setupUI() {
     addFormRow("Color:", m_colorBtn);
     addFormRow("Opacity:", m_opacitySlider, m_opacityLabel);
     addFormRow("Spacing:", m_spacingSlider, m_spacingLabel);
-    addFormRow("Size:", m_fontSizeSpinBox);
+    {
+        auto* sizeRow = new QHBoxLayout();
+        sizeRow->addWidget(m_fontSizeSlider, 1);
+        sizeRow->addWidget(m_fontSizeSpinBox);
+        auto* sizeWidget = new QWidget();
+        sizeWidget->setLayout(sizeRow);
+        sizeRow->setContentsMargins(0,0,0,0);
+        addFormRow("Size:", sizeWidget);
+    }
     addFormRow("Font:", m_fontBtn);
     addFormRow("Position:", m_positionCombo);
     addFormRow("Rotation:", m_rotationSlider, m_rotationLabel);
@@ -722,10 +735,15 @@ void BatchImageWatermark::setupUI() {
     m_spacingSlider->setValue(m_config.spacing);
     m_spacingLabel = new QLabel(QString("%1px").arg(m_config.spacing));
 
+    m_fontSizeSlider = new QSlider(Qt::Horizontal);
+    m_fontSizeSlider->setRange(8, 120);
+    m_fontSizeSlider->setValue(m_config.font.pointSize());
     m_fontSizeSpinBox = new QSpinBox();
-    m_fontSizeSpinBox->setRange(8, 72);
+    m_fontSizeSpinBox->setRange(8, 120);
     m_fontSizeSpinBox->setValue(m_config.font.pointSize());
-    m_fontSizeSpinBox->setStyleSheet("padding:4px; border:1px solid #dee2e6; border-radius:4px; font-size:9pt;");
+    m_fontSizeSpinBox->setSuffix("pt");
+    connect(m_fontSizeSlider, &QSlider::valueChanged, m_fontSizeSpinBox, &QSpinBox::setValue);
+    connect(m_fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), m_fontSizeSlider, &QSlider::setValue);
 
     m_fontBtn = new QPushButton("Font...");
 
@@ -751,7 +769,15 @@ void BatchImageWatermark::setupUI() {
     addFormRow("Color:", m_colorBtn);
     addFormRow("Opacity:", m_opacitySlider, m_opacityLabel);
     addFormRow("Spacing:", m_spacingSlider, m_spacingLabel);
-    addFormRow("Size:", m_fontSizeSpinBox);
+    {
+        auto* sizeRow = new QHBoxLayout();
+        sizeRow->addWidget(m_fontSizeSlider, 1);
+        sizeRow->addWidget(m_fontSizeSpinBox);
+        auto* sizeWidget = new QWidget();
+        sizeWidget->setLayout(sizeRow);
+        sizeRow->setContentsMargins(0,0,0,0);
+        addFormRow("Size:", sizeWidget);
+    }
     addFormRow("Font:", m_fontBtn);
     addFormRow("Rotation:", m_rotationSlider, m_rotationLabel);
 
