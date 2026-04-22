@@ -30,6 +30,7 @@ signals:
     void connectionRequested(const QString& connectionName);
     void disconnectionRequested(const QString& connectionName);
     void designTableRequested(const QString& connectionName, const QString& database, const QString& tableName);
+    void createDatabaseRequested(const QString& connectionName);
 
 private slots:
     void onNodeDoubleClicked(const QModelIndex& index);
@@ -81,4 +82,5 @@ private:
     QAction* m_deleteKeyAction;
     QAction* m_deleteAction;
     QAction* m_designTableAction;
+    QAction* m_createDatabaseAction;
 };

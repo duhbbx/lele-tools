@@ -49,10 +49,12 @@ void DatabaseTreeView::setupContextMenu() {
     m_deleteAction = new QAction("🗑️ 删除连接", this);
     m_newQueryAction = new QAction("📝 新建查询", this);
     m_designTableAction = new QAction("🔧 设计表", this);
+    m_createDatabaseAction = new QAction("➕ 新建数据库", this);
 
     m_contextMenu->addAction(m_connectAction);
     m_contextMenu->addAction(m_disconnectAction);
     m_contextMenu->addSeparator();
+    m_contextMenu->addAction(m_createDatabaseAction);
     m_contextMenu->addAction(m_refreshAction);
     m_contextMenu->addAction(m_refreshDatabaseAction);
     m_contextMenu->addAction(m_flushDatabaseAction);
@@ -190,15 +192,25 @@ void DatabaseTreeView::showNodeContextMenu(const QModelIndex& index, const QPoin
     // 设计表：仅对 Table 和 View 节点显示
     m_designTableAction->setVisible(node->type == NodeType::Table || node->type == NodeType::View);
 
+    // 新建数据库：仅对 Connection 节点显示（已连接）
+    m_createDatabaseAction->setVisible(node->type == NodeType::Connection && node->isLoaded);
+
     // 连接信号槽
     QObject::disconnect(m_refreshDatabaseAction, nullptr, nullptr, nullptr);
     QObject::disconnect(m_flushDatabaseAction, nullptr, nullptr, nullptr);
     QObject::disconnect(m_deleteKeyAction, nullptr, nullptr, nullptr);
     QObject::disconnect(m_designTableAction, nullptr, nullptr, nullptr);
+    QObject::disconnect(m_createDatabaseAction, nullptr, nullptr, nullptr);
 
     if (node->type == NodeType::Table || node->type == NodeType::View) {
         QObject::connect(m_designTableAction, &QAction::triggered, [this, node]() {
             emit designTableRequested(node->connectionId, node->database, node->name);
+        });
+    }
+
+    if (node->type == NodeType::Connection) {
+        QObject::connect(m_createDatabaseAction, &QAction::triggered, [this, node]() {
+            emit createDatabaseRequested(node->connectionId);
         });
     }
 

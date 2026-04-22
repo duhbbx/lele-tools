@@ -272,6 +272,7 @@ void DatabaseTool::setupUI() {
     // 连接 TreeView 右键菜单中的「新建查询」action
     QObject::connect(m_treeView->m_newQueryAction, &QAction::triggered, this, &DatabaseTool::onNewQuery);
     QObject::connect(m_treeView, &DatabaseTreeView::designTableRequested, this, &DatabaseTool::onDesignTable);
+    QObject::connect(m_treeView, &DatabaseTreeView::createDatabaseRequested, this, &DatabaseTool::onCreateDatabase);
 
     // 右侧查询标签页
     m_tabWidget = new QTabWidget();
@@ -621,6 +622,17 @@ void DatabaseTool::onDesignTable(const QString& connectionName, const QString& d
     connect(designer, &TableDesigner::tableSaved, this, [this, connectionName]() {
         m_treeView->refreshConnection(connectionName);
     });
+}
+
+void DatabaseTool::onCreateDatabase(const QString& connectionName) {
+    Connx::Connection* connection = m_connections.value(connectionName, nullptr);
+    if (!connection) return;
+
+    CreateDatabaseDialog dialog(connection, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        m_statusLabel->setText(tr("数据库 %1 创建成功").arg(dialog.databaseName()));
+        m_treeView->refreshConnection(connectionName);
+    }
 }
 
 void DatabaseTool::onConnectionStateChanged(const QString& name, Connx::ConnectionState state) {
