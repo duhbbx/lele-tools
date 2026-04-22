@@ -32,9 +32,17 @@ protected:
             case NodeType::EventFolder:
                 return expandEvents();
             case NodeType::Table:
-                return expandTableColumns();
+                return expandTableFolders();
             case NodeType::View:
-                return expandViewColumns();
+                return expandTableFolders();
+            case NodeType::ColumnFolder:
+                return expandTableColumns();
+            case NodeType::IndexFolder:
+                return expandTableIndexes();
+            case NodeType::ForeignKeyFolder:
+                return expandTableForeignKeys();
+            case NodeType::CheckFolder:
+                return expandTableChecks();
             default:
                 return ExpandResult(QString("不支持的MySQL节点类型: %1").arg(static_cast<int>(nodeType)));
         }
@@ -308,11 +316,49 @@ private:
         return ExpandResult(true, events);
     }
 
-    // 展开表列
-    ExpandResult expandTableColumns() {
+    // 展开表 → 显示子目录（字段/索引/外键/检查/触发器）
+    ExpandResult expandTableFolders() {
         QString dbName = nodeChain().databaseName();
         Node target = nodeChain().targetNode();
         QString tableName = target.name;
+        QString tableId = dbName + "." + tableName;
+
+        QList<Node> folders;
+
+        Node colFolder(tableId + "_columns", NodeType::ColumnFolder, "字段");
+        colFolder.database = dbName;
+        colFolder.metadata["tableName"] = tableName;
+        folders.append(colFolder);
+
+        Node idxFolder(tableId + "_indexes", NodeType::IndexFolder, "索引");
+        idxFolder.database = dbName;
+        idxFolder.metadata["tableName"] = tableName;
+        folders.append(idxFolder);
+
+        Node fkFolder(tableId + "_fkeys", NodeType::ForeignKeyFolder, "外键");
+        fkFolder.database = dbName;
+        fkFolder.metadata["tableName"] = tableName;
+        folders.append(fkFolder);
+
+        Node chkFolder(tableId + "_checks", NodeType::CheckFolder, "检查");
+        chkFolder.database = dbName;
+        chkFolder.metadata["tableName"] = tableName;
+        folders.append(chkFolder);
+
+        Node trgFolder(tableId + "_triggers", NodeType::TriggerFolder, "触发器");
+        trgFolder.database = dbName;
+        trgFolder.metadata["tableName"] = tableName;
+        folders.append(trgFolder);
+
+        return ExpandResult(true, folders);
+    }
+
+    // 展开字段目录
+    ExpandResult expandTableColumns() {
+        QString dbName = nodeChain().databaseName();
+        Node target = nodeChain().targetNode();
+        QString tableName = target.metadata.value("tableName").toString();
+        if (tableName.isEmpty()) tableName = target.name; // 兼容旧逻辑
 
         QString sql = QString("SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, "
                              "COLUMN_COMMENT, COLUMN_KEY FROM information_schema.COLUMNS "
@@ -359,10 +405,106 @@ private:
         return ExpandResult(true, columns);
     }
 
-    // 展开视图列
-    ExpandResult expandViewColumns() {
-        // 视图列的查询与表列相同
-        return expandTableColumns();
+    // 展开索引目录
+    ExpandResult expandTableIndexes() {
+        QString dbName = nodeChain().databaseName();
+        Node target = nodeChain().targetNode();
+        QString tableName = target.metadata.value("tableName").toString();
+
+        QString sql = QString("SELECT INDEX_NAME, COLUMN_NAME, NON_UNIQUE, INDEX_TYPE "
+                             "FROM information_schema.STATISTICS "
+                             "WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND BINARY TABLE_NAME = BINARY '%2' "
+                             "ORDER BY INDEX_NAME, SEQ_IN_INDEX").arg(dbName, tableName);
+
+        Connx::QueryResult result = executeQuery(sql);
+        if (!result.success) return ExpandResult("获取索引失败: " + result.errorMessage);
+
+        // 按索引名分组
+        QMap<QString, QStringList> indexColumns;
+        QMap<QString, QString> indexTypes;
+        QMap<QString, bool> indexUnique;
+        for (const QVariantList& row : result.rows) {
+            if (row.size() >= 4 && !row[0].isNull()) {
+                QString idxName = row[0].toString();
+                indexColumns[idxName].append(row[1].toString());
+                indexUnique[idxName] = (row[2].toInt() == 0);
+                indexTypes[idxName] = row[3].toString();
+            }
+        }
+
+        QList<Node> nodes;
+        for (auto it = indexColumns.begin(); it != indexColumns.end(); ++it) {
+            QString idxName = it.key();
+            QString cols = it.value().join(", ");
+            bool unique = indexUnique.value(idxName);
+            QString type = indexTypes.value(idxName);
+            QString suffix = QString("  (%1)  %2%3").arg(cols, unique ? "UNIQUE " : "", type);
+
+            Node n(dbName + "." + tableName + ".idx." + idxName, NodeType::Index, idxName + suffix);
+            n.database = dbName;
+            nodes.append(n);
+        }
+        return ExpandResult(true, nodes);
+    }
+
+    // 展开外键目录
+    ExpandResult expandTableForeignKeys() {
+        QString dbName = nodeChain().databaseName();
+        Node target = nodeChain().targetNode();
+        QString tableName = target.metadata.value("tableName").toString();
+
+        QString sql = QString("SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME "
+                             "FROM information_schema.KEY_COLUMN_USAGE "
+                             "WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND BINARY TABLE_NAME = BINARY '%2' "
+                             "AND REFERENCED_TABLE_NAME IS NOT NULL "
+                             "ORDER BY CONSTRAINT_NAME").arg(dbName, tableName);
+
+        Connx::QueryResult result = executeQuery(sql);
+        if (!result.success) return ExpandResult("获取外键失败: " + result.errorMessage);
+
+        QList<Node> nodes;
+        for (const QVariantList& row : result.rows) {
+            if (row.size() >= 4 && !row[0].isNull()) {
+                QString fkName = row[0].toString();
+                QString col = row[1].toString();
+                QString refTable = row[2].toString();
+                QString refCol = row[3].toString();
+                QString suffix = QString("  %1 → %2.%3").arg(col, refTable, refCol);
+
+                Node n(dbName + "." + tableName + ".fk." + fkName, NodeType::ForeignKey, fkName + suffix);
+                n.database = dbName;
+                nodes.append(n);
+            }
+        }
+        return ExpandResult(true, nodes);
+    }
+
+    // 展开检查约束目录
+    ExpandResult expandTableChecks() {
+        QString dbName = nodeChain().databaseName();
+        Node target = nodeChain().targetNode();
+        QString tableName = target.metadata.value("tableName").toString();
+
+        QString sql = QString("SELECT CONSTRAINT_NAME, CHECK_CLAUSE "
+                             "FROM information_schema.CHECK_CONSTRAINTS "
+                             "WHERE BINARY CONSTRAINT_SCHEMA = BINARY '%1' "
+                             "ORDER BY CONSTRAINT_NAME").arg(dbName);
+
+        Connx::QueryResult result = executeQuery(sql);
+        if (!result.success) return ExpandResult(true, QList<Node>()); // 旧版 MySQL 可能不支持
+
+        QList<Node> nodes;
+        for (const QVariantList& row : result.rows) {
+            if (row.size() >= 2 && !row[0].isNull()) {
+                QString chkName = row[0].toString();
+                QString clause = row[1].toString();
+
+                Node n(dbName + "." + tableName + ".chk." + chkName, NodeType::Check, chkName + "  " + clause);
+                n.database = dbName;
+                nodes.append(n);
+            }
+        }
+        return ExpandResult(true, nodes);
     }
 };
 

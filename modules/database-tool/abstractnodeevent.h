@@ -25,6 +25,9 @@ enum class NodeType {
     TriggerFolder,
     EventFolder,
     IndexFolder,
+    ColumnFolder,
+    ForeignKeyFolder,
+    CheckFolder,
     SequenceFolder,
     UserFolder,
 
@@ -36,6 +39,8 @@ enum class NodeType {
     Trigger,
     Event,
     Index,
+    ForeignKey,
+    Check,
     Sequence,
     User,
     Column,

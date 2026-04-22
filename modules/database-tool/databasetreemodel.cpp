@@ -226,17 +226,20 @@ QVariant DatabaseTreeModel::data(const QModelIndex& index, const int role) const
 
     switch (role) {
     case Qt::DisplayRole:
-        qDebug() << "data(): returning display text:" << node->displayName;
         return node->displayName;
 
-    case Qt::SizeHintRole: {
-        QSize size(200, 25); // 明确设置项目尺寸：宽200px，高25px
-        qDebug() << "data(): returning size hint:" << size;
-        return size;
-    }
+    case Qt::ForegroundRole:
+        if (node->type == NodeType::Column) {
+            // 列名正常色，类型信息用浅色——通过 rich text 无法实现，
+            // 整行统一用稍浅的颜色
+            return QColor(0x6c, 0x75, 0x7d); // #6c757d
+        }
+        return QVariant();
+
+    case Qt::SizeHintRole:
+        return QSize(200, 24);
 
     default:
-        qDebug() << "data(): using default for role:" << role;
         break;
     }
 
@@ -537,6 +540,9 @@ bool DatabaseTreeModel::nodeCanExpand(NodeType type) const {
         case NodeType::TriggerFolder:
         case NodeType::EventFolder:
         case NodeType::IndexFolder:
+        case NodeType::ColumnFolder:
+        case NodeType::ForeignKeyFolder:
+        case NodeType::CheckFolder:
         case NodeType::SequenceFolder:
         case NodeType::UserFolder:
         case NodeType::Table:
@@ -593,6 +599,9 @@ QString DatabaseTreeModel::getNodeEmoji(NodeType type) const {
         case NodeType::TriggerFolder:
         case NodeType::EventFolder:
         case NodeType::IndexFolder:
+        case NodeType::ColumnFolder:
+        case NodeType::ForeignKeyFolder:
+        case NodeType::CheckFolder:
         case NodeType::SequenceFolder:
         case NodeType::UserFolder:
             return "📁";
