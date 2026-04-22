@@ -46,16 +46,46 @@ private:
             }
         }
 
+        // 使用 INFO keyspace 一次性获取所有库的 key 数量
+        QMap<int, int> dbKeyCounts;
+        QVariant infoResult = executeRedisCommand("INFO keyspace");
+        if (!infoResult.isNull()) {
+            // INFO keyspace 返回格式: "# Keyspace\r\ndb0:keys=15,expires=2,...\r\ndb1:keys=3,...\r\n"
+            // executeRedisCommand 可能返回 QVariantList 或 QString
+            QString infoStr;
+            if (infoResult.typeId() == QMetaType::QVariantList) {
+                QVariantList list = infoResult.toList();
+                if (!list.isEmpty()) infoStr = list.first().toString();
+            } else {
+                infoStr = infoResult.toString();
+            }
+            QStringList lines = infoStr.split('\n');
+            for (const QString& line : lines) {
+                QString trimmed = line.trimmed();
+                if (trimmed.startsWith("db")) {
+                    // 解析 "db0:keys=15,expires=2,avg_ttl=0"
+                    int colonIdx = trimmed.indexOf(':');
+                    if (colonIdx > 0) {
+                        bool ok;
+                        int dbIdx = trimmed.mid(2, colonIdx - 2).toInt(&ok);
+                        if (ok) {
+                            QString params = trimmed.mid(colonIdx + 1);
+                            for (const QString& param : params.split(',')) {
+                                if (param.startsWith("keys=")) {
+                                    int keys = param.mid(5).toInt();
+                                    dbKeyCounts[dbIdx] = keys;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         QList<Node> databases;
         for (int i = 0; i < dbCount; i++) {
-            // 获取每个数据库的键数量
-            QVariant dbSizeResult = executeRedisCommand(QString("SELECT %1").arg(i));
-            QVariant keysCount = executeRedisCommand("DBSIZE");
-
-            int keyCount = 0;
-            if (!keysCount.isNull()) {
-                keyCount = keysCount.toInt();
-            }
+            int keyCount = dbKeyCounts.value(i, 0);
 
             QString dbName = QString("db%1").arg(i);
             Node dbNode(dbName, NodeType::RedisDatabase, dbName);
