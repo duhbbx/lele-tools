@@ -7,6 +7,7 @@
 #include <QTextEdit>
 #include <QLabel>
 #include <QToolBar>
+#include <QComboBox>
 #include <QAction>
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
@@ -51,6 +52,7 @@ public:
     QString getQuery() const;
     void executeQuery();
     void selectDatabase(const QString& database);
+    void loadDatabaseList();
 
 signals:
     void titleChanged(const QString& title);
@@ -60,6 +62,8 @@ private slots:
     void onExecuteClicked();
     void onClearClicked() const;
     void onFormatClicked() const;
+    void onDatabaseChanged(const QString& database);
+    void onSchemaChanged(const QString& schema);
 
 private:
     void setupUI();
@@ -67,6 +71,10 @@ private:
 
     Connx::Connection* m_connection;
     QString m_currentDatabase;
+
+    // 数据库/模式选择器
+    QComboBox* m_databaseCombo;
+    QComboBox* m_schemaCombo;
     QVBoxLayout* m_layout;
 
     // 工具栏

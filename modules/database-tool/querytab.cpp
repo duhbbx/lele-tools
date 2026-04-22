@@ -125,7 +125,40 @@ void QueryTab::setupUI() {
     QObject::connect(m_formatAction, &QAction::triggered, this, &QueryTab::onFormatClicked);
     m_toolbar->addAction(m_formatAction);
 
+    // 弹性空间把选择器推到右侧
+    QWidget* spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_toolbar->addWidget(spacer);
+
+    // 数据库选择器
+    auto* dbLabel = new QLabel(tr("库:"));
+    dbLabel->setStyleSheet("font-size:9pt; color:#495057; margin-left:4px;");
+    m_toolbar->addWidget(dbLabel);
+
+    m_databaseCombo = new QComboBox();
+    m_databaseCombo->setMinimumWidth(120);
+    m_databaseCombo->setToolTip(tr("切换数据库"));
+    m_toolbar->addWidget(m_databaseCombo);
+
+    // Schema 选择器（PG/Oracle 用，MySQL 隐藏）
+    m_schemaCombo = new QComboBox();
+    m_schemaCombo->setMinimumWidth(100);
+    m_schemaCombo->setToolTip(tr("切换 Schema"));
+    m_schemaCombo->setVisible(false); // 默认隐藏，PG/Oracle 时显示
+
+    auto* schemaLabel = new QLabel(tr("模式:"));
+    schemaLabel->setStyleSheet("font-size:9pt; color:#495057; margin-left:4px;");
+    schemaLabel->setVisible(false);
+    m_toolbar->addWidget(schemaLabel);
+    m_toolbar->addWidget(m_schemaCombo);
+
+    connect(m_databaseCombo, &QComboBox::currentTextChanged, this, &QueryTab::onDatabaseChanged);
+    connect(m_schemaCombo, &QComboBox::currentTextChanged, this, &QueryTab::onSchemaChanged);
+
     m_layout->addWidget(m_toolbar);
+
+    // 加载数据库列表
+    loadDatabaseList();
 
     // 查询编辑器
     m_queryEdit = new QTextEdit();
@@ -195,8 +228,47 @@ void QueryTab::executeQuery() {
 void QueryTab::selectDatabase(const QString& database) {
     if (database.isEmpty() || !m_connection) return;
     m_currentDatabase = database;
-    // 直接执行 USE，不显示在编辑器中
     m_connection->execute(QString("USE %1").arg(database));
+
+    // 同步下拉框选择（不触发信号）
+    m_databaseCombo->blockSignals(true);
+    int idx = m_databaseCombo->findText(database);
+    if (idx >= 0) m_databaseCombo->setCurrentIndex(idx);
+    m_databaseCombo->blockSignals(false);
+}
+
+void QueryTab::loadDatabaseList() {
+    if (!m_connection) return;
+
+    m_databaseCombo->blockSignals(true);
+    m_databaseCombo->clear();
+
+    QStringList databases = m_connection->getDatabases();
+    if (!databases.isEmpty()) {
+        m_databaseCombo->addItems(databases);
+        // 如果已有当前数据库，选中它
+        if (!m_currentDatabase.isEmpty()) {
+            int idx = m_databaseCombo->findText(m_currentDatabase);
+            if (idx >= 0) m_databaseCombo->setCurrentIndex(idx);
+        }
+    }
+
+    m_databaseCombo->blockSignals(false);
+}
+
+void QueryTab::onDatabaseChanged(const QString& database) {
+    if (database.isEmpty() || !m_connection) return;
+    m_currentDatabase = database;
+    m_connection->execute(QString("USE %1").arg(database));
+    m_statusLabel->setText(tr("已切换到: %1").arg(database));
+}
+
+void QueryTab::onSchemaChanged(const QString& schema) {
+    if (schema.isEmpty() || !m_connection) return;
+    // PostgreSQL: SET search_path TO schema
+    // Oracle: ALTER SESSION SET CURRENT_SCHEMA = schema
+    m_connection->execute(QString("SET search_path TO %1").arg(schema));
+    m_statusLabel->setText(tr("已切换到模式: %1").arg(schema));
 }
 
 void QueryTab::onExecuteClicked() {
