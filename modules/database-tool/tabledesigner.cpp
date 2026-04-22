@@ -1,5 +1,6 @@
 #include "tabledesigner.h"
 #include <QMessageBox>
+#include <QTabBar>
 #include <QSplitter>
 #include <QFormLayout>
 #include <QDebug>
@@ -50,7 +51,7 @@ void TableDesigner::setupUI()
         QTableWidget { border: none; font-size: 9pt; gridline-color: #f1f3f5; selection-background-color: #e7f5ff; selection-color: #212529; }
         QHeaderView::section { background: #f8f9fa; border: none; border-bottom: 1px solid #dee2e6; border-right: 1px solid #f1f3f5; padding: 4px 6px; font-size: 9pt; color: #495057; }
         QTabWidget::pane { border: 1px solid #dee2e6; border-top: none; }
-        QTabBar::tab { padding: 4px 12px; font-size: 9pt; border: 1px solid #dee2e6; border-bottom: none; background: #f8f9fa; margin-right: -1px; }
+        QTabBar::tab { padding: 5px 14px; font-size: 9pt; border: 1px solid #dee2e6; border-bottom: none; background: #f8f9fa; margin-right: -1px; min-width: 40px; }
         QTabBar::tab:selected { background: #fff; }
         QLabel { font-size: 9pt; color: #495057; }
         QLineEdit, QComboBox { font-size: 9pt; padding: 3px 6px; border: 1px solid #dee2e6; border-radius: 4px; }
@@ -62,6 +63,9 @@ void TableDesigner::setupUI()
     mainLayout->addWidget(m_toolbar);
 
     m_mainTabs = new QTabWidget();
+    m_mainTabs->tabBar()->setExpanding(false);
+    m_mainTabs->tabBar()->setElideMode(Qt::ElideNone);
+    m_mainTabs->setDocumentMode(true);
     setupFieldsTab();
     setupIndexesTab();
     setupForeignKeysTab();
