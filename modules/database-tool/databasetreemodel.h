@@ -134,6 +134,7 @@ public:
 
     void loadNodeChildren(const QString& connectionId, const NodeChain& nodeChain, DatabaseTreeNode* node);
     void setConnection(const QString& connectionId, Connx::Connection* connection);
+    bool hasConnection(const QString& connectionId) const { return m_connections.contains(connectionId); }
 
 signals:
     void nodeChildrenLoaded(DatabaseTreeNode* node, const QList<Node>& children);

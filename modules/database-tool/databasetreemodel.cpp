@@ -294,10 +294,10 @@ bool DatabaseTreeModel::canFetchMore(const QModelIndex& parent) const {
     if (!nodeCanExpand(node->type) || node->isLoaded || node->isLoading)
         return false;
 
-    // Connection 节点：只有对应的连接已建立时才允许 fetchMore
+    // Connection 节点：检查是否有可用的连接
     if (node->type == NodeType::Connection) {
-        Connx::Connection* conn = m_connections.value(node->connectionId);
-        if (!conn || !conn->isConnected())
+        // 如果 loader 中没有该连接，说明还没添加或已移除
+        if (!m_loader || !m_loader->hasConnection(node->connectionId))
             return false;
     }
 
@@ -485,6 +485,8 @@ void DatabaseTreeModel::onNodeLoadFailed(DatabaseTreeNode* node, const QString& 
     }
 
     node->isLoading = false;
+    node->isLoaded = true; // 标记为已加载，防止反复 fetchMore
+    node->hasChildrenCached = true;
     QModelIndex nodeIndex = getNodeIndex(node);
     emit nodeLoadFailed(nodeIndex, error);
     emit dataChanged(nodeIndex, nodeIndex);
