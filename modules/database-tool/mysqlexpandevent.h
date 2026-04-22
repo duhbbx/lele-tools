@@ -68,34 +68,60 @@ private:
         return ExpandResult(true, databases);
     }
 
-    // 展开数据库 - 获取文件夹结构
+    // 展开数据库 - 获取文件夹结构（带数量）
     ExpandResult expandDatabase() {
         QList<Node> folders;
         QString dbName = nodeChain().databaseName();
 
-        // 创建文件夹节点
+        // 查询各类对象数量
+        auto countQuery = [&](const QString& sql) -> int {
+            Connx::QueryResult r = executeQuery(sql);
+            if (r.success && !r.rows.isEmpty() && !r.rows[0].isEmpty())
+                return r.rows[0][0].toInt();
+            return 0;
+        };
+
+        int tableCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.TABLES WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND TABLE_TYPE = 'BASE TABLE'").arg(dbName));
+        int viewCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.VIEWS WHERE BINARY TABLE_SCHEMA = BINARY '%1'").arg(dbName));
+        int procCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE BINARY ROUTINE_SCHEMA = BINARY '%1' AND ROUTINE_TYPE = 'PROCEDURE'").arg(dbName));
+        int funcCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE BINARY ROUTINE_SCHEMA = BINARY '%1' AND ROUTINE_TYPE = 'FUNCTION'").arg(dbName));
+        int triggerCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE BINARY TRIGGER_SCHEMA = BINARY '%1'").arg(dbName));
+        int eventCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.EVENTS WHERE BINARY EVENT_SCHEMA = BINARY '%1'").arg(dbName));
+
         Node tableFolder(dbName + "_tables", NodeType::TableFolder, "表");
         tableFolder.database = dbName;
+        tableFolder.metadata["childCount"] = tableCount;
         folders.append(tableFolder);
 
         Node viewFolder(dbName + "_views", NodeType::ViewFolder, "视图");
         viewFolder.database = dbName;
+        viewFolder.metadata["childCount"] = viewCount;
         folders.append(viewFolder);
 
         Node procFolder(dbName + "_procedures", NodeType::ProcedureFolder, "存储过程");
         procFolder.database = dbName;
+        procFolder.metadata["childCount"] = procCount;
         folders.append(procFolder);
 
         Node funcFolder(dbName + "_functions", NodeType::FunctionFolder, "函数");
         funcFolder.database = dbName;
+        funcFolder.metadata["childCount"] = funcCount;
         folders.append(funcFolder);
 
         Node triggerFolder(dbName + "_triggers", NodeType::TriggerFolder, "触发器");
         triggerFolder.database = dbName;
+        triggerFolder.metadata["childCount"] = triggerCount;
         folders.append(triggerFolder);
 
         Node eventFolder(dbName + "_events", NodeType::EventFolder, "事件");
         eventFolder.database = dbName;
+        eventFolder.metadata["childCount"] = eventCount;
         folders.append(eventFolder);
 
         return ExpandResult(true, folders);

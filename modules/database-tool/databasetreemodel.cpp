@@ -503,7 +503,18 @@ void DatabaseTreeModel::updateNodeData(DatabaseTreeNode* node, const Node& nodeD
 
     // 生成带emoji的显示名称
     QString emoji = getNodeEmoji(node->type);
-    node->displayName = emoji.isEmpty() ? node->name : (emoji + " " + node->name);
+    QString suffix;
+
+    // 显示数量后缀
+    if (node->metadata.contains("keyCount")) {
+        int count = node->metadata["keyCount"].toInt();
+        suffix = QString(" (%1)").arg(count);
+    } else if (node->metadata.contains("childCount")) {
+        int count = node->metadata["childCount"].toInt();
+        suffix = QString(" (%1)").arg(count);
+    }
+
+    node->displayName = (emoji.isEmpty() ? node->name : (emoji + " " + node->name)) + suffix;
 
     // 设置连接ID
     if (node->type == NodeType::Connection) {
@@ -651,6 +662,14 @@ void DatabaseTreeModel::processLoadedChildren(DatabaseTreeNode* parent, const QL
     parent->hasChildrenCached = true;
 
     endInsertNodes();
+
+    // 更新父节点的数量显示
+    parent->metadata["childCount"] = children.size();
+    QString emoji = getNodeEmoji(parent->type);
+    QString suffix = QString(" (%1)").arg(children.size());
+    parent->displayName = (emoji.isEmpty() ? parent->name : (emoji + " " + parent->name)) + suffix;
+    QModelIndex parentIndex = getNodeIndex(parent);
+    emit dataChanged(parentIndex, parentIndex);
 
     // 缓存数据
     NodeChain parentChain = buildNodeChain(parent);
