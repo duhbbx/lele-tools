@@ -552,7 +552,7 @@ void DatabaseTool::onConnectToDatabase(const QString& connName) {
 
     bool success = connection->connectToServer();
     if (success) {
-        m_statusLabel->setText("✅ 连接成功: " + connectionName);
+        m_statusLabel->setText("连接成功: " + connectionName);
         m_treeView->refreshConnection(connectionName);
 
         // 连接成功后自动展开连接节点
@@ -573,7 +573,19 @@ void DatabaseTool::onConnectToDatabase(const QString& connName) {
             m_treeView->expand(indexes.first());
         }
     } else {
-        m_statusLabel->setText("❌ 连接失败: " + connection->getLastError());
+        m_statusLabel->setText("连接失败: " + connection->getLastError());
+
+        // 连接失败时折叠节点，防止箭头闪动
+        auto* rootNode = m_treeView->m_treeModel->getNode(QModelIndex());
+        if (rootNode) {
+            for (int i = 0; i < rootNode->children.size(); ++i) {
+                if (rootNode->children[i]->name == connectionName) {
+                    QModelIndex idx = m_treeView->m_treeModel->index(i, 0, QModelIndex());
+                    m_treeView->collapse(idx);
+                    break;
+                }
+            }
+        }
     }
 }
 
