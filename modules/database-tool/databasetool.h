@@ -54,6 +54,7 @@
 #include "connectiondialog.h"
 #include "databasetreeview.h"
 #include "querytab.h"
+#include "tabledesigner.h"
 
 // 不使用全局using namespace以避免命名冲突
 // using namespace Connx;
@@ -183,6 +184,7 @@ private slots:
     void onConnectionStateChanged(const QString& name, Connx::ConnectionState state);
     void onTableDoubleClicked(const QString& connectionName, const QString& database, const QString& table);
     void onKeyDoubleClicked(const QString& connectionName, const QString& database, const QString& key);
+    void onDesignTable(const QString& connectionName, const QString& database, const QString& tableName);
 
 private:
     void setupUI();

@@ -271,6 +271,7 @@ void DatabaseTool::setupUI() {
 
     // 连接 TreeView 右键菜单中的「新建查询」action
     QObject::connect(m_treeView->m_newQueryAction, &QAction::triggered, this, &DatabaseTool::onNewQuery);
+    QObject::connect(m_treeView, &DatabaseTreeView::designTableRequested, this, &DatabaseTool::onDesignTable);
 
     // 右侧查询标签页
     m_tabWidget = new QTabWidget();
@@ -594,6 +595,20 @@ void DatabaseTool::onKeyDoubleClicked(const QString& connectionName, const QStri
         int index = m_tabWidget->addTab(tab, QString("Key: %1").arg(key));
         m_tabWidget->setCurrentIndex(index);
     }
+}
+
+void DatabaseTool::onDesignTable(const QString& connectionName, const QString& database, const QString& tableName) {
+    Connx::Connection* connection = m_connections.value(connectionName, nullptr);
+    if (!connection) return;
+
+    auto* designer = new TableDesigner(connection, database, tableName);
+    QString tabTitle = QString("设计: %1.%2").arg(database, tableName);
+    int index = m_tabWidget->addTab(designer, tabTitle);
+    m_tabWidget->setCurrentIndex(index);
+
+    connect(designer, &TableDesigner::tableSaved, this, [this, connectionName]() {
+        m_treeView->refreshConnection(connectionName);
+    });
 }
 
 void DatabaseTool::onConnectionStateChanged(const QString& name, Connx::ConnectionState state) {
