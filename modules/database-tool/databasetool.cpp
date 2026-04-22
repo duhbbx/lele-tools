@@ -371,8 +371,7 @@ void ConnectionDialog::setupUI() {
             border-radius: 4px;
             font-size: 9pt;
             min-width: 180px;
-            min-height: 14px;
-            max-height: 22px;
+            height: 20px;
             background: #fff;
             color: #495057;
         }
@@ -522,7 +521,7 @@ void ConnectionDialog::setupRightPanel() {
     // 表单区域 - 使用网格布局代替FormLayout
     m_formWidget = new QWidget();
     m_gridLayout = new QGridLayout(m_formWidget);
-    m_gridLayout->setVerticalSpacing(8);
+    m_gridLayout->setVerticalSpacing(6);
     m_gridLayout->setHorizontalSpacing(10);
     m_gridLayout->setColumnStretch(1, 1); // 第二列（输入控件）可拉伸
 
@@ -666,7 +665,8 @@ void ConnectionDialog::updateFormForType(const QString& type) const {
     // 创建标签的辅助函数
     auto createLabel = [this](const QString& text) -> QLabel* {
         QLabel* label = new QLabel(text);
-        label->setStyleSheet("QLabel { font-weight: 500; color: #495057; }");
+        label->setStyleSheet("QLabel { font-size: 9pt; color: #495057; }");
+        label->setFixedHeight(28);
         return label;
     };
 
