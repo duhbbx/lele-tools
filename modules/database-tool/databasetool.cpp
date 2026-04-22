@@ -969,9 +969,18 @@ void DatabaseTreeView::showNodeContextMenu(const QModelIndex& index, const QPoin
     m_refreshDatabaseAction->setVisible(node->type == NodeType::Database || node->type == NodeType::RedisDatabase);
     m_flushDatabaseAction->setVisible(node->type == NodeType::Database || node->type == NodeType::RedisDatabase);
     m_deleteKeyAction->setVisible(node->type == NodeType::RedisKey);
-    m_newQueryAction->setVisible(node->type == NodeType::Connection ||
+    m_newQueryAction->setVisible(
+        node->type == NodeType::Connection ||
         node->type == NodeType::Database ||
-        node->type == NodeType::RedisDatabase);
+        node->type == NodeType::RedisDatabase ||
+        node->type == NodeType::TableFolder ||
+        node->type == NodeType::ViewFolder ||
+        node->type == NodeType::FunctionFolder ||
+        node->type == NodeType::ProcedureFolder ||
+        node->type == NodeType::TriggerFolder ||
+        node->type == NodeType::EventFolder ||
+        node->type == NodeType::Table ||
+        node->type == NodeType::View);
 
     // 连接信号槽
     QObject::disconnect(m_refreshDatabaseAction, nullptr, nullptr, nullptr);
@@ -1492,28 +1501,38 @@ void DatabaseTool::onNewConnection() {
 }
 
 void DatabaseTool::onNewQuery() {
-    // 创建新查询标签页
     QString connectionName = "默认";
+    QString databaseName;
 
-    // 如果有选中的连接，使用该连接
+    // 从当前选中节点获取连接名和数据库名
     const QModelIndex currentIdx = m_treeView->currentIndex();
     if (currentIdx.isValid()) {
-        if (const DatabaseTreeNode* current = m_treeView->m_treeModel->getNode(currentIdx); current && current->type == NodeType::Connection) {
-            connectionName = current->name;
-        } else if (current) {
-            // 找到父连接
-            while (current && current->type != NodeType::Connection) {
-                current = current->parent;
+        const DatabaseTreeNode* current = m_treeView->m_treeModel->getNode(currentIdx);
+        if (current) {
+            // 获取数据库名（当前节点或父节点的 database 属性）
+            databaseName = current->database;
+
+            // 向上查找连接节点
+            const DatabaseTreeNode* node = current;
+            while (node && node->type != NodeType::Connection) {
+                node = node->parent;
             }
-            if (current) {
-                connectionName = current->name;
+            if (node) {
+                connectionName = node->name;
             }
         }
     }
 
     QueryTab* tab = createQueryTab(connectionName);
     if (tab) {
-        int index = m_tabWidget->addTab(tab, tr("查询 %1").arg(m_tabWidget->count() + 1));
+        // 如果有数据库名，预填 USE 语句
+        if (!databaseName.isEmpty()) {
+            tab->setQuery(QString("USE %1;\n\n").arg(databaseName));
+        }
+        QString tabTitle = databaseName.isEmpty()
+            ? tr("查询 %1").arg(m_tabWidget->count() + 1)
+            : tr("查询 - %1").arg(databaseName);
+        int index = m_tabWidget->addTab(tab, tabTitle);
         m_tabWidget->setCurrentIndex(index);
     }
 }
