@@ -1372,6 +1372,9 @@ void DatabaseTool::setupUI() {
     QObject::connect(m_treeView, &DatabaseTreeView::tableDoubleClicked, this, &DatabaseTool::onTableDoubleClicked);
     QObject::connect(m_treeView, &DatabaseTreeView::keyDoubleClicked, this, &DatabaseTool::onKeyDoubleClicked);
 
+    // 连接 TreeView 右键菜单中的「新建查询」action
+    QObject::connect(m_treeView->m_newQueryAction, &QAction::triggered, this, &DatabaseTool::onNewQuery);
+
     // 右侧查询标签页
     m_tabWidget = new QTabWidget();
     m_tabWidget->setTabsClosable(true);

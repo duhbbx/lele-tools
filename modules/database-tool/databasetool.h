@@ -409,6 +409,7 @@ private:
 
 public:
     DatabaseTreeModel* m_treeModel;  // Made public for access from DatabaseTool
+    QAction* m_newQueryAction;
 
 private:
 
@@ -420,7 +421,6 @@ private:
     QAction* m_flushDatabaseAction;
     QAction* m_deleteKeyAction;
     QAction* m_deleteAction;
-    QAction* m_newQueryAction;
 };
 
 // 主数据库工具类
