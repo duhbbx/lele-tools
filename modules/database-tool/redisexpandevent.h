@@ -69,10 +69,11 @@ private:
         return ExpandResult(true, databases);
     }
 
-    // 展开Redis数据库 - 按键模式分组
+    // 展开Redis数据库 - 直接列出所有 key
     ExpandResult expandRedisDatabase() {
         Node dbNode = nodeChain().targetNode();
         int dbIndex = dbNode.metadata.value("index", 0).toInt();
+        QString dbName = dbNode.database;
 
         // 切换到指定数据库
         QVariant selectResult = executeRedisCommand(QString("SELECT %1").arg(dbIndex));
@@ -80,7 +81,7 @@ private:
             return ExpandResult("切换到数据库失败");
         }
 
-        // 获取所有键并按模式分组
+        // 获取所有键
         QVariant keysResult = executeRedisCommand("KEYS *");
         if (keysResult.isNull()) {
             return ExpandResult("获取键列表失败");
@@ -92,44 +93,15 @@ private:
             allKeys.append(key.toString());
         }
 
-        // 按照键的前缀进行分组
-        QMap<QString, QStringList> keyGroups;
-        QStringList ungroupedKeys;
+        // 按字母排序
+        allKeys.sort(Qt::CaseInsensitive);
 
+        QList<Node> nodes;
         for (const QString& key : allKeys) {
-            QString prefix = extractKeyPrefix(key);
-            if (!prefix.isEmpty()) {
-                keyGroups[prefix].append(key);
-            } else {
-                ungroupedKeys.append(key);
-            }
-        }
-
-        QList<Node> folders;
-        QString dbName = dbNode.database;
-
-        // 为每个前缀创建文件夹
-        for (auto it = keyGroups.begin(); it != keyGroups.end(); ++it) {
-            QString prefix = it.key();
-            QStringList keys = it.value();
-
-            if (keys.size() > 1) { // 只有多个键才创建文件夹
-                Node folderNode(dbName + "_" + prefix, NodeType::RedisKeyFolder, prefix + "*");
-                folderNode.database = dbName;
-                folderNode.metadata["prefix"] = prefix;
-                folderNode.metadata["keyCount"] = keys.size();
-                folders.append(folderNode);
-            } else {
-                // 单个键直接添加到未分组中
-                ungroupedKeys.append(keys);
-            }
-        }
-
-        // 添加未分组的键
-        for (const QString& key : ungroupedKeys) {
             Node keyNode(dbName + "_" + key, NodeType::RedisKey, key);
             keyNode.database = dbName;
             keyNode.fullName = key;
+            keyNode.metadata["dbIndex"] = dbIndex;
 
             // 获取键的类型
             QVariant typeResult = executeRedisCommand(QString("TYPE %1").arg(key));
@@ -137,16 +109,10 @@ private:
                 keyNode.metadata["type"] = typeResult.toString();
             }
 
-            // 获取TTL
-            QVariant ttlResult = executeRedisCommand(QString("TTL %1").arg(key));
-            if (!ttlResult.isNull()) {
-                keyNode.metadata["ttl"] = ttlResult.toInt();
-            }
-
-            folders.append(keyNode);
+            nodes.append(keyNode);
         }
 
-        return ExpandResult(true, folders);
+        return ExpandResult(true, nodes);
     }
 
     // 展开键文件夹 - 获取特定前缀的所有键
