@@ -87,9 +87,12 @@ void DatabaseTreeView::handleNodeDoubleClick(const QModelIndex& index) {
     // 智能展开/折叠逻辑
     if (node->canExpand) {
         if (node->type == NodeType::Connection) {
-            // 连接节点：双击始终触发连接（会自动刷新+展开）
-            emit connectionRequested(node->connectionId);
-            return;
+            if (!node->isLoaded && node->children.isEmpty()) {
+                // 未连接：触发连接（连接成功后自动展开）
+                emit connectionRequested(node->connectionId);
+                return;
+            }
+            // 已连接：正常切换展开/折叠
         }
 
         if (isExpanded(index)) {
