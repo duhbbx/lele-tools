@@ -92,7 +92,8 @@ void DatabaseTreeView::handleNodeDoubleClick(const QModelIndex& index) {
     if (node->canExpand) {
         if (node->type == NodeType::Connection) {
             if (!node->isLoaded && node->children.isEmpty()) {
-                // 未连接：触发连接（连接成功后自动展开）
+                // 未连接：确保折叠状态，再触发连接
+                collapse(index);
                 emit connectionRequested(node->connectionId);
                 return;
             }
@@ -124,8 +125,9 @@ void DatabaseTreeView::onNodeExpanded(const QModelIndex& index) {
 
     qDebug() << "展开节点:" << node->displayName;
 
-    // Connection 节点通过箭头展开时，如果未加载过，触发连接
+    // Connection 节点通过箭头展开时，如果未加载过，先收起再连接
     if (node->type == NodeType::Connection && !node->isLoaded && node->children.isEmpty()) {
+        collapse(index); // 先收起，防止 fetchMore 被触发
         emit connectionRequested(node->connectionId);
     }
 }

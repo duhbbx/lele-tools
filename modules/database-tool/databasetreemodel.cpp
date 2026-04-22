@@ -291,7 +291,17 @@ bool DatabaseTreeModel::canFetchMore(const QModelIndex& parent) const {
         return false;
     }
 
-    return nodeCanExpand(node->type) && !node->isLoaded && !node->isLoading;
+    if (!nodeCanExpand(node->type) || node->isLoaded || node->isLoading)
+        return false;
+
+    // Connection 节点：只有对应的连接已建立时才允许 fetchMore
+    if (node->type == NodeType::Connection) {
+        Connx::Connection* conn = m_connections.value(node->connectionId);
+        if (!conn || !conn->isConnected())
+            return false;
+    }
+
+    return true;
 }
 
 void DatabaseTreeModel::fetchMore(const QModelIndex& parent) {
