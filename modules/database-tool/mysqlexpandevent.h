@@ -314,7 +314,7 @@ private:
         Node target = nodeChain().targetNode();
         QString tableName = target.name;
 
-        QString sql = QString("SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, "
+        QString sql = QString("SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, "
                              "COLUMN_COMMENT, COLUMN_KEY FROM information_schema.COLUMNS "
                              "WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND BINARY TABLE_NAME = BINARY '%2' "
                              "ORDER BY ORDINAL_POSITION").arg(dbName, tableName);
@@ -328,17 +328,25 @@ private:
         for (const QVariantList& row : result.rows) {
             if (row.size() >= 6 && !row[0].isNull()) {
                 QString columnName = row[0].toString();
-                QString dataType = !row[1].isNull() ? row[1].toString() : QString();
+                QString columnType = !row[1].isNull() ? row[1].toString() : QString(); // varchar(255), int, decimal(10,2)
                 QString nullable = !row[2].isNull() ? row[2].toString() : QString();
                 QString defaultVal = !row[3].isNull() ? row[3].toString() : QString();
                 QString comment = !row[4].isNull() ? row[4].toString() : QString();
                 QString columnKey = !row[5].isNull() ? row[5].toString() : QString();
 
+                // 显示名称：列名  类型  [PK] [NULL]
+                QString displaySuffix;
+                if (!columnType.isEmpty()) displaySuffix += "  " + columnType;
+                if (columnKey == "PRI") displaySuffix += "  🔑PK";
+                else if (columnKey == "UNI") displaySuffix += "  🔗UNI";
+                else if (columnKey == "MUL") displaySuffix += "  🔗IDX";
+                if (nullable == "YES") displaySuffix += "  NULL";
+
                 Node columnNode(dbName + "." + tableName + "." + columnName,
-                               NodeType::Column, columnName);
+                               NodeType::Column, columnName + displaySuffix);
                 columnNode.database = dbName;
                 columnNode.fullName = dbName + "." + tableName + "." + columnName;
-                columnNode.metadata["dataType"] = dataType;
+                columnNode.metadata["columnType"] = columnType;
                 columnNode.metadata["nullable"] = nullable;
                 columnNode.metadata["default"] = defaultVal;
                 columnNode.metadata["comment"] = comment;
