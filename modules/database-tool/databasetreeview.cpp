@@ -86,18 +86,15 @@ void DatabaseTreeView::handleNodeDoubleClick(const QModelIndex& index) {
 
     // 智能展开/折叠逻辑
     if (node->canExpand) {
+        if (node->type == NodeType::Connection) {
+            // 连接节点：双击始终触发连接（会自动刷新+展开）
+            emit connectionRequested(node->connectionId);
+            return;
+        }
+
         if (isExpanded(index)) {
-            // 如果已展开，则折叠
             collapse(index);
         } else {
-            // 如果未展开，则展开
-            if (node->type == NodeType::Connection) {
-                // 连接双击时建立连接，连接成功后会自动刷新和展开
-                emit connectionRequested(node->connectionId);
-                return; // 不在这里 expand，等连接成功后再展开
-            }
-
-            // 非连接节点直接展开
             expand(index);
         }
     } else if (node->type == NodeType::Table) {
@@ -120,7 +117,10 @@ void DatabaseTreeView::onNodeExpanded(const QModelIndex& index) {
 
     qDebug() << "展开节点:" << node->displayName;
 
-    // 模型会自动处理数据加载，这里只需要记录日志或做一些UI更新
+    // Connection 节点通过箭头展开时，如果未加载过，触发连接
+    if (node->type == NodeType::Connection && !node->isLoaded && node->children.isEmpty()) {
+        emit connectionRequested(node->connectionId);
+    }
 }
 
 void DatabaseTreeView::showExpandError(const QString& title, const QString& message) {
