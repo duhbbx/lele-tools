@@ -322,8 +322,8 @@ ConnectionDialog::ConnectionDialog(const Connx::ConnectionConfig& config, QWidge
 
 void ConnectionDialog::setupUI() {
     setModal(true);
-    setMinimumSize(750, 520); // 设置最小尺寸而不是固定尺寸
-    resize(750, 520); // 设置默认尺寸
+    setMinimumSize(580, 400);
+    resize(580, 420);
     setWindowFlags(Qt::Dialog | Qt::WindowCloseButtonHint);
 
     // 主分割器布局
@@ -341,7 +341,7 @@ void ConnectionDialog::setupUI() {
     m_splitter->addWidget(m_rightPanel);
     m_splitter->setStretchFactor(0, 0); // 左侧固定
     m_splitter->setStretchFactor(1, 1); // 右侧拉伸
-    m_splitter->setSizes({ 220, 530 }); // 调整合理的初始大小
+    m_splitter->setSizes({ 160, 420 });
 
     m_mainLayout->addWidget(m_splitter);
 
@@ -366,11 +366,13 @@ void ConnectionDialog::setupUI() {
         }
         QWidget#rightPanel { background: #fff; }
         QLineEdit, QSpinBox, QComboBox {
-            padding: 6px 8px;
+            padding: 4px 8px;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             font-size: 9pt;
             min-width: 180px;
+            min-height: 14px;
+            max-height: 22px;
             background: #fff;
             color: #495057;
         }
@@ -449,8 +451,7 @@ Connx::ConnectionConfig ConnectionDialog::getConnectionConfig() const {
 void ConnectionDialog::setupLeftPanel() {
     m_leftPanel = new QWidget();
     m_leftPanel->setObjectName("leftPanel");
-    m_leftPanel->setMinimumWidth(200);
-    m_leftPanel->setMaximumWidth(220);
+    m_leftPanel->setFixedWidth(160);
     m_leftLayout = new QVBoxLayout(m_leftPanel);
     m_leftLayout->setContentsMargins(0, 20, 0, 20);
     m_leftLayout->setSpacing(8);
@@ -462,8 +463,7 @@ void ConnectionDialog::setupLeftPanel() {
 
     // 数据库类型列表
     m_typeList = new QListWidget();
-    m_typeList->setMinimumWidth(180);
-    m_typeList->setMaximumWidth(200);
+    m_typeList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     // 使用自定义委托代替纯QSS样式
     m_typeList->setItemDelegate(new ConnectionTypeDelegate(this));
@@ -516,14 +516,14 @@ void ConnectionDialog::setupRightPanel() {
     m_rightPanel = new QWidget();
     m_rightPanel->setObjectName("rightPanel");
     m_rightLayout = new QVBoxLayout(m_rightPanel);
-    m_rightLayout->setContentsMargins(30, 30, 30, 20);
-    m_rightLayout->setSpacing(20);
+    m_rightLayout->setContentsMargins(20, 16, 20, 12);
+    m_rightLayout->setSpacing(10);
 
     // 表单区域 - 使用网格布局代替FormLayout
     m_formWidget = new QWidget();
     m_gridLayout = new QGridLayout(m_formWidget);
-    m_gridLayout->setVerticalSpacing(18);
-    m_gridLayout->setHorizontalSpacing(15);
+    m_gridLayout->setVerticalSpacing(8);
+    m_gridLayout->setHorizontalSpacing(10);
     m_gridLayout->setColumnStretch(1, 1); // 第二列（输入控件）可拉伸
 
     // 创建所有表单控件
@@ -666,31 +666,31 @@ void ConnectionDialog::updateFormForType(const QString& type) const {
     // 创建标签的辅助函数
     auto createLabel = [this](const QString& text) -> QLabel* {
         QLabel* label = new QLabel(text);
-        label->setStyleSheet("QLabel { font-weight: 500; color: #2c3e50; margin-bottom: 5px; }");
+        label->setStyleSheet("QLabel { font-weight: 500; color: #495057; }");
         return label;
     };
 
     // 基本信息（所有类型都有）
-    m_gridLayout->addWidget(createLabel("连接名称:"), row, 0, Qt::AlignTop);
+    m_gridLayout->addWidget(createLabel("连接名称:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
     m_gridLayout->addWidget(m_nameEdit, row++, 1);
 
-    m_gridLayout->addWidget(createLabel("主机地址:"), row, 0, Qt::AlignTop);
+    m_gridLayout->addWidget(createLabel("主机地址:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
     m_gridLayout->addWidget(m_hostEdit, row++, 1);
 
-    m_gridLayout->addWidget(createLabel("端口:"), row, 0, Qt::AlignTop);
+    m_gridLayout->addWidget(createLabel("端口:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
     m_gridLayout->addWidget(m_portSpin, row++, 1);
 
     if (type == "Redis") {
         // Redis特有表单
         m_passwordEdit->setPlaceholderText(tr("Redis密码 (可选)"));
 
-        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_passwordEdit, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("数据库索引:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("数据库索引:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_dbIndexSpin, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_timeoutSpin, row++, 1);
 
         m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
@@ -700,37 +700,37 @@ void ConnectionDialog::updateFormForType(const QString& type) const {
         m_passwordEdit->setPlaceholderText(tr("数据库密码"));
         m_databaseEdit->setPlaceholderText(tr("数据库名称"));
 
-        m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_usernameEdit, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_passwordEdit, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("数据库:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("数据库:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_databaseEdit, row++, 1);
 
         if (type == "MySQL") {
-            m_gridLayout->addWidget(createLabel("字符集:"), row, 0, Qt::AlignTop);
+            m_gridLayout->addWidget(createLabel("字符集:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
             m_gridLayout->addWidget(m_charsetCombo, row++, 1);
         }
 
-        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_timeoutSpin, row++, 1);
 
         m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
         m_gridLayout->addWidget(m_sslCheck, row++, 1);
     } else {
         // 其他数据库类型的通用表单
-        m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("用户名:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_usernameEdit, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("密码:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_passwordEdit, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("数据库:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("数据库:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_databaseEdit, row++, 1);
 
-        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignTop);
+        m_gridLayout->addWidget(createLabel("超时:"), row, 0, Qt::AlignVCenter | Qt::AlignRight);
         m_gridLayout->addWidget(m_timeoutSpin, row++, 1);
 
         m_gridLayout->addWidget(new QLabel(""), row, 0); // 空标签占位
