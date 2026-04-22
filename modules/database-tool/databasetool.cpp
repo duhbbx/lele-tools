@@ -273,6 +273,7 @@ void DatabaseTool::setupUI() {
     QObject::connect(m_treeView->m_newQueryAction, &QAction::triggered, this, &DatabaseTool::onNewQuery);
     QObject::connect(m_treeView, &DatabaseTreeView::designTableRequested, this, &DatabaseTool::onDesignTable);
     QObject::connect(m_treeView, &DatabaseTreeView::createDatabaseRequested, this, &DatabaseTool::onCreateDatabase);
+    QObject::connect(m_treeView, &DatabaseTreeView::createTableRequested, this, &DatabaseTool::onCreateTable);
 
     // 右侧查询标签页
     m_tabWidget = new QTabWidget();
@@ -633,6 +634,20 @@ void DatabaseTool::onCreateDatabase(const QString& connectionName) {
         m_statusLabel->setText(tr("数据库 %1 创建成功").arg(dialog.databaseName()));
         m_treeView->refreshConnection(connectionName);
     }
+}
+
+void DatabaseTool::onCreateTable(const QString& connectionName, const QString& database) {
+    Connx::Connection* connection = m_connections.value(connectionName, nullptr);
+    if (!connection) return;
+
+    auto* designer = new TableDesigner(connection, database, "", this);
+    QString tabTitle = QString("新建表: %1").arg(database);
+    int index = m_tabWidget->addTab(designer, tabTitle);
+    m_tabWidget->setCurrentIndex(index);
+
+    connect(designer, &TableDesigner::tableSaved, this, [this, connectionName]() {
+        m_treeView->refreshConnection(connectionName);
+    });
 }
 
 void DatabaseTool::onConnectionStateChanged(const QString& name, Connx::ConnectionState state) {

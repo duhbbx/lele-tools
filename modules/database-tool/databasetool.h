@@ -187,6 +187,7 @@ private slots:
     void onKeyDoubleClicked(const QString& connectionName, const QString& database, const QString& key);
     void onDesignTable(const QString& connectionName, const QString& database, const QString& tableName);
     void onCreateDatabase(const QString& connectionName);
+    void onCreateTable(const QString& connectionName, const QString& database);
 
 private:
     void setupUI();
