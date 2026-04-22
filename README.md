@@ -125,3 +125,13 @@ lupdate -locations none ./ -ts translations/lele-tools_en_US.ts translations/lel
 欢迎扫码添加微信沟通需求，我们将竭诚为您服务！
 
 如果这个项目对您有帮助，欢迎打赏支持，您的支持是我持续开发的动力！
+
+---
+
+### 🔥 承接软件外包开发
+
+**微信小程序 · 安卓/iOS APP · 企业管理系统**
+
+📱 合作联系： **tuhoooo**（微信）
+
+💰 介绍项目有丰厚分佣，欢迎合作！
