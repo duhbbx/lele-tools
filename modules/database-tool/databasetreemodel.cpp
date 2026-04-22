@@ -56,48 +56,48 @@ void DatabaseTreeLoader::processLoadRequest() {
 
     m_loading = true;
 
-    // 在线程池中异步加载数据
-    QFuture<void> future = QtConcurrent::run([this, request]() {
-        try {
-            qDebug() << "[Loader] Processing node:" << request.node->name
-                     << "type:" << (int)request.node->type
-                     << "connId:" << request.connectionId
-                     << "chain:" << request.nodeChain.toString();
+    // 同步加载（主线程），确保 QTcpSocket（Redis）等可正常使用
+    try {
+        qDebug() << "[Loader] Processing node:" << request.node->name
+                 << "type:" << (int)request.node->type
+                 << "connId:" << request.connectionId
+                 << "chain:" << request.nodeChain.toString();
 
-            Connx::Connection* connection = m_connections.value(request.connectionId);
-            if (!connection) {
-                qDebug() << "[Loader] Connection not found for:" << request.connectionId;
-                emit nodeLoadFailed(request.node, "Connection not found");
-                return;
-            }
-            qDebug() << "[Loader] Using connection:" << request.connectionId << "state:" << (int)connection->getState();
-
-            // 创建展开事件
-            auto expandEvent = NodeEventFactory::createExpandEvent(connection, request.nodeChain);
-            if (!expandEvent) {
-                qDebug() << "[Loader] Failed to create expand event for chain:" << request.nodeChain.toString();
-                emit nodeLoadFailed(request.node, "Failed to create expand event");
-                return;
-            }
-
-            // 执行展开操作
-            ExpandResult result = expandEvent->execute();
-            qDebug() << "[Loader] Result: success=" << result.success
-                     << "children=" << result.childNodes.size()
-                     << "error=" << result.errorMessage;
-            if (result.success) {
-                emit nodeChildrenLoaded(request.node, result.childNodes);
-            } else {
-                emit nodeLoadFailed(request.node, result.errorMessage);
-            }
-        } catch (const std::exception& e) {
-            emit nodeLoadFailed(request.node, QString("Exception: %1").arg(e.what()));
-        } catch (...) {
-            emit nodeLoadFailed(request.node, "Unknown error occurred");
+        Connx::Connection* connection = m_connections.value(request.connectionId);
+        if (!connection) {
+            qDebug() << "[Loader] Connection not found for:" << request.connectionId;
+            emit nodeLoadFailed(request.node, "Connection not found");
+            m_loading = false;
+            if (!m_loadQueue.isEmpty()) m_loadTimer->start();
+            return;
         }
-    });
 
-    m_watcher->setFuture(future);
+        auto expandEvent = NodeEventFactory::createExpandEvent(connection, request.nodeChain);
+        if (!expandEvent) {
+            qDebug() << "[Loader] Failed to create expand event";
+            emit nodeLoadFailed(request.node, "Failed to create expand event");
+            m_loading = false;
+            if (!m_loadQueue.isEmpty()) m_loadTimer->start();
+            return;
+        }
+
+        ExpandResult result = expandEvent->execute();
+        qDebug() << "[Loader] Result: success=" << result.success
+                 << "children=" << result.childNodes.size()
+                 << "error=" << result.errorMessage;
+        if (result.success) {
+            emit nodeChildrenLoaded(request.node, result.childNodes);
+        } else {
+            emit nodeLoadFailed(request.node, result.errorMessage);
+        }
+    } catch (const std::exception& e) {
+        emit nodeLoadFailed(request.node, QString("Exception: %1").arg(e.what()));
+    } catch (...) {
+        emit nodeLoadFailed(request.node, "Unknown error occurred");
+    }
+
+    m_loading = false;
+    if (!m_loadQueue.isEmpty()) m_loadTimer->start();
 }
 
 void DatabaseTreeLoader::onLoadFinished() {
