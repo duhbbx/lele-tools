@@ -201,39 +201,33 @@ public:
         // 背景绘制
         QColor backgroundColor;
         if (option.state & QStyle::State_Selected) {
-            backgroundColor = QColor(52, 152, 219);  // #3498db
+            backgroundColor = QColor(0xe7, 0xf5, 0xff);  // 浅蓝
         } else if (option.state & QStyle::State_MouseOver) {
-            backgroundColor = QColor(52, 152, 219, 102);  // 40% opacity
+            backgroundColor = QColor(0xe9, 0xec, 0xef);
         } else {
-            backgroundColor = QColor(255, 255, 255, 26);  // 10% opacity
+            backgroundColor = Qt::transparent;
         }
 
         painter->setBrush(backgroundColor);
         painter->setPen(Qt::NoPen);
-        painter->drawRoundedRect(rect.adjusted(6, 3, -6, -3), 8, 8);
-
-        // 绘制阴影效果（选中时）
-        if (option.state & QStyle::State_Selected) {
-            painter->setBrush(QColor(0, 0, 0, 20));
-            painter->drawRoundedRect(rect.adjusted(8, 5, -4, -1), 8, 8);
-        }
+        painter->drawRoundedRect(rect.adjusted(4, 2, -4, -2), 4, 4);
 
         // 文字绘制
         QColor textColor = (option.state & QStyle::State_Selected) ?
-                          QColor(255, 255, 255) : QColor(236, 240, 241);
+                          QColor(0x22, 0x8b, 0xe6) : QColor(0x49, 0x50, 0x57);
         painter->setPen(textColor);
 
         QFont font = painter->font();
-        font.setPointSize(11);
-        font.setWeight((option.state & QStyle::State_Selected) ? QFont::Medium : QFont::Normal);
+        font.setPointSize(9);
+        font.setWeight((option.state & QStyle::State_Selected) ? QFont::Bold : QFont::Normal);
         painter->setFont(font);
 
-        QRect textRect = rect.adjusted(50, 0, -12, 0);
+        QRect textRect = rect.adjusted(36, 0, -6, 0);
         painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text);
 
         // 图标绘制
         if (!icon.isNull()) {
-            QRect iconRect(rect.left() + 18, rect.center().y() - 8, 16, 16);
+            QRect iconRect(rect.left() + 12, rect.center().y() - 7, 14, 14);
             icon.paint(painter, iconRect);
         }
     }
@@ -241,7 +235,7 @@ public:
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         Q_UNUSED(option)
         Q_UNUSED(index)
-        return QSize(180, 50);  // 固定尺寸
+        return QSize(140, 32);
     }
 };
 
