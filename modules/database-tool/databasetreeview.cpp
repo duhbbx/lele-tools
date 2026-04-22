@@ -21,7 +21,7 @@ void DatabaseTreeView::setupUI() {
     // 基本属性
     setContextMenuPolicy(Qt::CustomContextMenu);
     setRootIsDecorated(true);
-    setAlternatingRowColors(true);
+    setAlternatingRowColors(false);
     setExpandsOnDoubleClick(false); // 禁用默认双击展开，我们自己处理
 
     // 性能优化设置

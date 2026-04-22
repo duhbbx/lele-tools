@@ -54,7 +54,7 @@ void TableDesigner::setupUI()
         QTabBar::tab { padding: 5px 14px; font-size: 9pt; border: 1px solid #dee2e6; border-bottom: none; background: #f8f9fa; margin-right: -1px; min-width: 40px; }
         QTabBar::tab:selected { background: #fff; }
         QLabel { font-size: 9pt; color: #495057; }
-        QLineEdit, QComboBox { font-size: 9pt; padding: 3px 6px; border: 1px solid #dee2e6; border-radius: 4px; }
+        QLineEdit, QComboBox { font-size: 9pt; padding: 3px 6px; border: 1px solid #dee2e6; border-radius: 0px; }
         QLineEdit:focus, QComboBox:focus { border-color: #80bdff; }
         QCheckBox { font-size: 9pt; }
     )");
