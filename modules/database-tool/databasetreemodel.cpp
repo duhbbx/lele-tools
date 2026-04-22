@@ -508,9 +508,12 @@ bool DatabaseTreeModel::nodeCanExpand(NodeType type) const {
         case NodeType::ProcedureFolder:
         case NodeType::FunctionFolder:
         case NodeType::TriggerFolder:
+        case NodeType::EventFolder:
         case NodeType::IndexFolder:
         case NodeType::SequenceFolder:
         case NodeType::UserFolder:
+        case NodeType::Table:
+        case NodeType::View:
             return true;
         default:
             return false;
@@ -561,6 +564,7 @@ QString DatabaseTreeModel::getNodeEmoji(NodeType type) const {
         case NodeType::ProcedureFolder:
         case NodeType::FunctionFolder:
         case NodeType::TriggerFolder:
+        case NodeType::EventFolder:
         case NodeType::IndexFolder:
         case NodeType::SequenceFolder:
         case NodeType::UserFolder:

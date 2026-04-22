@@ -29,6 +29,8 @@ protected:
                 return expandFunctions();
             case NodeType::TriggerFolder:
                 return expandTriggers();
+            case NodeType::EventFolder:
+                return expandEvents();
             case NodeType::Table:
                 return expandTableColumns();
             case NodeType::View:
@@ -91,6 +93,10 @@ private:
         Node triggerFolder(dbName + "_triggers", NodeType::TriggerFolder, "触发器");
         triggerFolder.database = dbName;
         folders.append(triggerFolder);
+
+        Node eventFolder(dbName + "_events", NodeType::EventFolder, "事件");
+        eventFolder.database = dbName;
+        folders.append(eventFolder);
 
         return ExpandResult(true, folders);
     }
@@ -244,6 +250,36 @@ private:
         }
 
         return ExpandResult(true, triggers);
+    }
+
+    // 展开事件文件夹
+    ExpandResult expandEvents() {
+        QString dbName = nodeChain().databaseName();
+        QString sql = QString("SELECT EVENT_NAME, EVENT_TYPE, STATUS FROM information_schema.EVENTS "
+                             "WHERE BINARY EVENT_SCHEMA = BINARY '%1' ORDER BY EVENT_NAME").arg(dbName);
+
+        Connx::QueryResult result = executeQuery(sql);
+        if (!result.success) {
+            return ExpandResult("获取事件列表失败: " + result.errorMessage);
+        }
+
+        QList<Node> events;
+        for (const QVariantList& row : result.rows) {
+            if (row.size() >= 1 && !row[0].isNull()) {
+                QString eventName = row[0].toString();
+                QString eventType = row.size() > 1 && !row[1].isNull() ? row[1].toString() : QString();
+                QString status = row.size() > 2 && !row[2].isNull() ? row[2].toString() : QString();
+
+                Node eventNode(dbName + "." + eventName, NodeType::Event, eventName);
+                eventNode.database = dbName;
+                eventNode.fullName = dbName + "." + eventName;
+                eventNode.metadata["eventType"] = eventType;
+                eventNode.metadata["status"] = status;
+                events.append(eventNode);
+            }
+        }
+
+        return ExpandResult(true, events);
     }
 
     // 展开表列
