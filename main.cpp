@@ -39,6 +39,11 @@ int main(int argc, char* argv[]) {
 
     QApplication a(argc, argv);
 
+#ifdef Q_OS_MAC
+    // macOS: 所有 QTabWidget tab 靠左（macOS 默认居中）
+    a.setStyleSheet("QTabWidget::tab-bar { alignment: left; }");
+#endif
+
     // 初始化日志系统（输出到文件 + stderr）
     AppLogger::instance().init();
     qInfo() << "=== Lele Tools Starting ===";
