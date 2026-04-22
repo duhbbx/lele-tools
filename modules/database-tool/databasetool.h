@@ -435,7 +435,7 @@ private slots:
     void onNewConnection();
     void onEditConnection();
     void onDeleteConnection();
-    void onConnectToDatabase();
+    void onConnectToDatabase(const QString& connectionName = "");
     void onDisconnectFromDatabase();
     void onRefreshConnections();
     void onNewQuery();

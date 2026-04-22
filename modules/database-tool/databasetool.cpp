@@ -892,11 +892,12 @@ void DatabaseTreeView::handleNodeDoubleClick(const QModelIndex& index) {
         } else {
             // 如果未展开，则展开
             if (node->type == NodeType::Connection) {
-                // 连接双击时建立连接
+                // 连接双击时建立连接，连接成功后会自动刷新和展开
                 emit connectionRequested(node->connectionId);
+                return; // 不在这里 expand，等连接成功后再展开
             }
 
-            // 展开节点
+            // 非连接节点直接展开
             expand(index);
         }
     } else if (node->type == NodeType::Table) {
@@ -1356,7 +1357,9 @@ void DatabaseTool::setupUI() {
     m_treeView->setMinimumWidth(100);
     m_treeView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QObject::connect(m_treeView, &DatabaseTreeView::connectionRequested, this, &DatabaseTool::onConnectToDatabase);
+    QObject::connect(m_treeView, &DatabaseTreeView::connectionRequested, this, [this](const QString& name) {
+        onConnectToDatabase(name);
+    });
     QObject::connect(m_treeView, &DatabaseTreeView::tableDoubleClicked, this, &DatabaseTool::onTableDoubleClicked);
     QObject::connect(m_treeView, &DatabaseTreeView::keyDoubleClicked, this, &DatabaseTool::onKeyDoubleClicked);
 
@@ -1399,7 +1402,9 @@ void DatabaseTool::setupToolbar() {
     m_toolbar->addSeparator();
 
     m_connectAction = new QAction("🔌 连接", this);
-    QObject::connect(m_connectAction, &QAction::triggered, this, &DatabaseTool::onConnectToDatabase);
+    QObject::connect(m_connectAction, &QAction::triggered, this, [this]() {
+        onConnectToDatabase();
+    });
     m_toolbar->addAction(m_connectAction);
 
     m_disconnectAction = new QAction("🔌 断开", this);
@@ -1602,16 +1607,18 @@ void DatabaseTool::updateConnectionStatus() const {
     m_connectionCountLabel->setText(tr("连接数: %1").arg(m_connections.size()));
 }
 
-void DatabaseTool::onConnectToDatabase() {
-    QModelIndex currentIdx = m_treeView->currentIndex();
-    DatabaseTreeNode* current = currentIdx.isValid() ? m_treeView->m_treeModel->getNode(currentIdx) : nullptr;
-    if (!current)
-        return;
+void DatabaseTool::onConnectToDatabase(const QString& connName) {
+    QString connectionName = connName;
 
-    if (!current || current->type != NodeType::Connection)
-        return;
+    // 如果没有传入连接名，从当前选中节点获取
+    if (connectionName.isEmpty()) {
+        QModelIndex currentIdx = m_treeView->currentIndex();
+        DatabaseTreeNode* current = currentIdx.isValid() ? m_treeView->m_treeModel->getNode(currentIdx) : nullptr;
+        if (!current || current->type != NodeType::Connection)
+            return;
+        connectionName = current->name;
+    }
 
-    QString connectionName = current->name;
     if (!m_connections.contains(connectionName))
         return;
 
@@ -1627,6 +1634,24 @@ void DatabaseTool::onConnectToDatabase() {
     if (success) {
         m_statusLabel->setText("✅ 连接成功: " + connectionName);
         m_treeView->refreshConnection(connectionName);
+
+        // 连接成功后自动展开连接节点
+        QModelIndexList indexes = m_treeView->m_treeModel->findNodes(connectionName, NodeType::Connection);
+        if (indexes.isEmpty()) {
+            // findNodes 可能未实现，手动查找
+            auto* rootNode = m_treeView->m_treeModel->getNode(QModelIndex());
+            if (rootNode) {
+                for (int i = 0; i < rootNode->children.size(); ++i) {
+                    if (rootNode->children[i]->name == connectionName) {
+                        QModelIndex idx = m_treeView->m_treeModel->index(i, 0, QModelIndex());
+                        m_treeView->expand(idx);
+                        break;
+                    }
+                }
+            }
+        } else {
+            m_treeView->expand(indexes.first());
+        }
     } else {
         m_statusLabel->setText("❌ 连接失败: " + connection->getLastError());
     }
