@@ -101,14 +101,11 @@ void DatabaseTreeLoader::onLoadFinished() {
 DatabaseTreeModel::DatabaseTreeModel(QObject* parent)
     : QAbstractItemModel(parent)
     , m_rootNode(std::make_unique<DatabaseTreeNode>())
-    , m_loader(nullptr) // 禁用loader进行测试
-    , m_nodeCache(1000) // 缓存1000个节点的数据
-    , m_lazyLoadingEnabled(false) // 禁用懒加载
+    , m_loader(new DatabaseTreeLoader(this))
+    , m_nodeCache(1000)
+    , m_lazyLoadingEnabled(true)
     , m_loadBatchSize(100)
     , m_filterEnabled(false) {
-
-
-    qDebug() << "DatabaseTreeModel constructor: loader disabled for testing";
     setupConnections(); // 暂时禁用
     loadRootNodes();
 }
@@ -301,6 +298,10 @@ void DatabaseTreeModel::addConnection(const QString& name, Connx::Connection* co
 
     m_connections[name] = connection;
 
+    // 同步到 loader
+    if (m_loader)
+        m_loader->setConnection(name, connection);
+
     // 检查根节点
     qDebug() << "Root node before adding:" << m_rootNode.get();
     qDebug() << "Root children count before:" << (m_rootNode ? m_rootNode->children.size() : -1);
@@ -317,6 +318,8 @@ void DatabaseTreeModel::addConnection(const QString& name, Connx::Connection* co
     connNode->name = name;
     connNode->displayName = name; // 去掉emoji
     connNode->type = NodeType::Connection;
+    connNode->connectionId = name;
+    connNode->canExpand = true;
     connNode->parent = m_rootNode.get();
 
     m_rootNode->children.append(connNode);
