@@ -19,11 +19,11 @@ QString SqlFormatter::format(AstNode& node) {
 }
 
 QString SqlFormatter::formatSql(const QString& sql, SqlDialectType dialectType) {
-    auto dialect = createDialect(dialectType);
-    SqlParser parser(sql, dialect.get());
-    AstPtr ast = parser.parse();
+    auto parser = createParser(sql, dialectType);
+    AstPtr ast = parser->parse();
     if (!ast) return sql; // 解析失败返回原文
 
+    auto dialect = createDialect(dialectType);
     SqlFormatter formatter(dialect.get());
     return formatter.format(*ast);
 }

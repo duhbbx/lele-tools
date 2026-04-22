@@ -1,4 +1,8 @@
 #include "sqlparser.h"
+#include "mysqlparser.h"
+#include "pgparser.h"
+#include "oracleparser.h"
+#include "sqlserverparser.h"
 #include <QDebug>
 
 // accept 实现（放在 cpp 中避免循环依赖）
@@ -36,6 +40,14 @@ void ProgramNode::accept(SqlAstVisitor& v) { v.visit(*this); }
 // ============================================================
 // Parser 实现
 // ============================================================
+
+SqlParser::SqlParser(const QString& source, SqlDialectType dialectType)
+    : m_ownedDialect(createDialect(dialectType))
+    , m_dialect(m_ownedDialect.get())
+{
+    SqlLexer lexer(source, m_dialect);
+    m_tokens = lexer.tokenize();
+}
 
 SqlParser::SqlParser(const QString& source, SqlDialect* dialect)
     : m_dialect(dialect)
@@ -188,13 +200,8 @@ AstPtr SqlParser::parseSelectStmt() {
         stmt->orderBy = parseOrderByClause();
     }
 
-    // LIMIT
-    if (match(SqlTokenType::KW_LIMIT))
-        stmt->limit = parseExpr();
-
-    // OFFSET
-    if (match(SqlTokenType::KW_OFFSET))
-        stmt->offset = parseExpr();
+    // LIMIT / OFFSET（方言可重写）
+    parseLimitClause(*stmt);
 
     // UNION / INTERSECT / EXCEPT
     if (check(SqlTokenType::KW_UNION) || check(SqlTokenType::KW_INTERSECT) || check(SqlTokenType::KW_EXCEPT)) {
@@ -306,6 +313,15 @@ AstList SqlParser::parseOrderByClause() {
         items.append(item);
     } while (match(SqlTokenType::Comma));
     return items;
+}
+
+// ── LIMIT/OFFSET（ANSI 基础实现）──
+
+void SqlParser::parseLimitClause(SelectStmt& stmt) {
+    if (match(SqlTokenType::KW_LIMIT))
+        stmt.limit = parseExpr();
+    if (match(SqlTokenType::KW_OFFSET))
+        stmt.offset = parseExpr();
 }
 
 // ── INSERT ──
@@ -854,4 +870,21 @@ AstPtr SqlParser::parseWhereClause() {
 
 AstPtr SqlParser::parseHavingClause() {
     return parseExpr();
+}
+
+// ── 解析器工厂 ──
+
+std::unique_ptr<SqlParser> createParser(const QString& sql, SqlDialectType type) {
+    switch (type) {
+    case SqlDialectType::MySQL:
+        return std::make_unique<MySqlParser>(sql, type);
+    case SqlDialectType::PostgreSQL:
+        return std::make_unique<PgParser>(sql, type);
+    case SqlDialectType::Oracle:
+        return std::make_unique<OracleParser>(sql, type);
+    case SqlDialectType::SQLServer:
+        return std::make_unique<SqlServerParser>(sql, type);
+    default:
+        return std::make_unique<SqlParser>(sql, type);
+    }
 }

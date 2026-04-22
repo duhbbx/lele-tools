@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <QList>
+#include <memory>
 #include "sqltoken.h"
 #include "sqlast.h"
 #include "sqldialect.h"
@@ -25,12 +26,15 @@ struct ParseError {
 
 class SqlParser {
 public:
+    // 构造：传入方言类型，内部创建 dialect
+    explicit SqlParser(const QString& source, SqlDialectType dialectType);
+    // 兼容旧接口：传入外部 dialect 指针（不持有所有权）
     explicit SqlParser(const QString& source, SqlDialect* dialect = nullptr);
     virtual ~SqlParser() = default;
 
     // 解析入口
     AstPtr parse();              // 解析多条语句 → ProgramNode
-    AstPtr parseStatement();     // 解析单条语句
+    virtual AstPtr parseStatement();     // 解析单条语句
     AstPtr parseExpression();    // 解析单个表达式（用于 WHERE 条件等）
 
     // 错误信息
@@ -53,6 +57,9 @@ protected:
     virtual AstPtr parseColumnDef();
     virtual AstPtr parseTypeName();
 
+    // ── LIMIT/OFFSET 子句（方言差异大） ──
+    virtual void parseLimitClause(SelectStmt& stmt);
+
     // ── 表达式解析（优先级爬升） ──
     AstPtr parseExpr();
     AstPtr parseOrExpr();
@@ -62,7 +69,7 @@ protected:
     AstPtr parseAddExpr();
     AstPtr parseMulExpr();
     AstPtr parseUnaryExpr();
-    AstPtr parsePrimaryExpr();
+    virtual AstPtr parsePrimaryExpr();
     AstPtr parseFunctionCall(const QString& name);
 
     // ── 子句解析 ──
@@ -94,6 +101,10 @@ protected:
 
     QList<SqlToken> m_tokens;
     int m_current = 0;
+    std::unique_ptr<SqlDialect> m_ownedDialect; // 内部持有的方言
     SqlDialect* m_dialect;
     QList<ParseError> m_errors;
 };
+
+// ── 解析器工厂 ──
+std::unique_ptr<SqlParser> createParser(const QString& sql, SqlDialectType type);

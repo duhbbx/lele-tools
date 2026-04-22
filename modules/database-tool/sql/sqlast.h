@@ -262,6 +262,8 @@ public:
     AstList columns;        // 列名列表
     AstList valueRows;      // VALUES (...), (...) 每行一个 ExprList
     AstPtr selectQuery;     // INSERT ... SELECT ...
+    AstPtr onConflict;      // ON DUPLICATE KEY UPDATE (MySQL) / ON CONFLICT (PG)
+    AstList returning;      // RETURNING 列表 (PG)
 
     InsertStmt() : AstNode(AstNodeType::InsertStmt) {}
     void accept(SqlAstVisitor& v) override;
