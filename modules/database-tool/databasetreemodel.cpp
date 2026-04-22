@@ -42,6 +42,7 @@ void DatabaseTreeLoader::loadNodeChildren(const QString& connectionId, const Nod
 
 void DatabaseTreeLoader::setConnection(const QString& connectionId, Connx::Connection* connection) {
     m_connections[connectionId] = connection;
+    qDebug() << "[Loader] setConnection:" << connectionId << "ptr:" << connection << "connected:" << (connection ? connection->isConnected() : false);
 }
 
 void DatabaseTreeLoader::processLoadRequest() {
@@ -58,21 +59,32 @@ void DatabaseTreeLoader::processLoadRequest() {
     // 在线程池中异步加载数据
     QFuture<void> future = QtConcurrent::run([this, request]() {
         try {
+            qDebug() << "[Loader] Processing node:" << request.node->name
+                     << "type:" << (int)request.node->type
+                     << "connId:" << request.connectionId
+                     << "chain:" << request.nodeChain.toString();
+
             Connx::Connection* connection = m_connections.value(request.connectionId);
-            if (!connection || !connection->isConnected()) {
-                emit nodeLoadFailed(request.node, "Connection not available");
+            if (!connection) {
+                qDebug() << "[Loader] Connection not found for:" << request.connectionId;
+                emit nodeLoadFailed(request.node, "Connection not found");
                 return;
             }
+            qDebug() << "[Loader] Using connection:" << request.connectionId << "state:" << (int)connection->getState();
 
             // 创建展开事件
             auto expandEvent = NodeEventFactory::createExpandEvent(connection, request.nodeChain);
             if (!expandEvent) {
+                qDebug() << "[Loader] Failed to create expand event for chain:" << request.nodeChain.toString();
                 emit nodeLoadFailed(request.node, "Failed to create expand event");
                 return;
             }
 
             // 执行展开操作
             ExpandResult result = expandEvent->execute();
+            qDebug() << "[Loader] Result: success=" << result.success
+                     << "children=" << result.childNodes.size()
+                     << "error=" << result.errorMessage;
             if (result.success) {
                 emit nodeChildrenLoaded(request.node, result.childNodes);
             } else {
@@ -267,19 +279,15 @@ bool DatabaseTreeModel::hasChildren(const QModelIndex& parent) const {
 }
 
 bool DatabaseTreeModel::canFetchMore(const QModelIndex& parent) const {
-    if (!m_lazyLoadingEnabled) {
+    if (!m_lazyLoadingEnabled || !parent.isValid()) {
         return false;
     }
 
     DatabaseTreeNode* node = getNode(parent);
-    if (!node) {
+    if (!node || node->connectionId.isEmpty()) {
         return false;
     }
 
-    // 可以获取更多数据的条件：
-    // 1. 节点类型支持展开
-    // 2. 尚未加载
-    // 3. 不在加载中
     return nodeCanExpand(node->type) && !node->isLoaded && !node->isLoading;
 }
 
@@ -288,6 +296,9 @@ void DatabaseTreeModel::fetchMore(const QModelIndex& parent) {
     if (!node || node->isLoading || node->isLoaded) {
         return;
     }
+
+    qDebug() << "[fetchMore] node:" << node->name << "type:" << (int)node->type
+             << "connId:" << node->connectionId << "valid:" << parent.isValid();
 
     emit nodeLoadStarted(parent);
     loadNodeChildren(node);
@@ -466,8 +477,8 @@ void DatabaseTreeModel::onNodeLoadFailed(DatabaseTreeNode* node, const QString& 
 
 DatabaseTreeNode* DatabaseTreeModel::createNode(const Node& nodeData, DatabaseTreeNode* parent) {
     auto node = new DatabaseTreeNode();
+    node->parent = parent; // 先设 parent，updateNodeData 中会从 parent 继承 connectionId
     updateNodeData(node, nodeData);
-    node->parent = parent;
     node->canExpand = nodeCanExpand(node->type);
 
     if (parent) {
