@@ -425,9 +425,9 @@ void DatabaseTool::onNewQuery() {
 
     QueryTab* tab = createQueryTab(connectionName);
     if (tab) {
-        // 如果有数据库名，预填 USE 语句
+        // 如果有数据库名，直接 USE 切换（不显示在编辑器中）
         if (!databaseName.isEmpty()) {
-            tab->setQuery(QString("USE %1;\n\n").arg(databaseName));
+            tab->selectDatabase(databaseName);
         }
         QString tabTitle = databaseName.isEmpty()
             ? tr("查询 %1").arg(m_tabWidget->count() + 1)
@@ -577,9 +577,9 @@ void DatabaseTool::onConnectToDatabase(const QString& connName) {
 }
 
 void DatabaseTool::onTableDoubleClicked(const QString& connectionName, const QString& database, const QString& table) {
-    // 创建查询标签页并设置默认查询
     QueryTab* tab = createQueryTab(connectionName);
     if (tab) {
+        tab->selectDatabase(database);
         tab->setQuery(QString("SELECT * FROM %1 LIMIT 100").arg(table));
         int index = m_tabWidget->addTab(tab, QString("%1.%2").arg(database, table));
         m_tabWidget->setCurrentIndex(index);

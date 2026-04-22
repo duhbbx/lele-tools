@@ -192,6 +192,13 @@ void QueryTab::executeQuery() {
     onExecuteClicked();
 }
 
+void QueryTab::selectDatabase(const QString& database) {
+    if (database.isEmpty() || !m_connection) return;
+    m_currentDatabase = database;
+    // 直接执行 USE，不显示在编辑器中
+    m_connection->execute(QString("USE %1").arg(database));
+}
+
 void QueryTab::onExecuteClicked() {
     if (!m_connection || !m_connection->isConnected()) {
         QMessageBox::warning(this, tr("执行错误"), tr("数据库连接无效"));

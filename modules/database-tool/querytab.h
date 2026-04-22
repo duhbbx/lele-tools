@@ -50,6 +50,7 @@ public:
     void setQuery(const QString& query);
     QString getQuery() const;
     void executeQuery();
+    void selectDatabase(const QString& database);
 
 signals:
     void titleChanged(const QString& title);
@@ -65,6 +66,7 @@ private:
     void updateResults(const Connx::QueryResult& result) const;
 
     Connx::Connection* m_connection;
+    QString m_currentDatabase;
     QVBoxLayout* m_layout;
 
     // 工具栏
