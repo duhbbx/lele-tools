@@ -444,6 +444,8 @@ NodeChain DatabaseTreeModel::buildNodeChain(DatabaseTreeNode* node) const {
         n.name = current->name;
         n.type = current->type;
         n.database = current->database;
+        n.schema = current->schema;
+        n.metadata = current->metadata;
         nodes.prepend(n);
         current = current->parent;
     }
