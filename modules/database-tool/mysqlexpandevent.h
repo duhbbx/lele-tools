@@ -316,38 +316,75 @@ private:
         return ExpandResult(true, events);
     }
 
-    // 展开表 → 显示子目录（字段/索引/外键/检查/触发器）
+    // 展开表 → 显示子目录（字段/索引/外键/检查/触发器），带数量
     ExpandResult expandTableFolders() {
         QString dbName = nodeChain().databaseName();
         Node target = nodeChain().targetNode();
         QString tableName = target.name;
         QString tableId = dbName + "." + tableName;
 
+        auto countQuery = [&](const QString& sql) -> int {
+            Connx::QueryResult r = executeQuery(sql);
+            if (r.success && !r.rows.isEmpty() && !r.rows[0].isEmpty())
+                return r.rows[0][0].toInt();
+            return 0;
+        };
+
+        int colCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS "
+            "WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND BINARY TABLE_NAME = BINARY '%2'").arg(dbName, tableName));
+
+        int idxCount = countQuery(QString(
+            "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS "
+            "WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND BINARY TABLE_NAME = BINARY '%2'").arg(dbName, tableName));
+
+        int fkCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE "
+            "WHERE BINARY TABLE_SCHEMA = BINARY '%1' AND BINARY TABLE_NAME = BINARY '%2' "
+            "AND REFERENCED_TABLE_NAME IS NOT NULL").arg(dbName, tableName));
+
+        int chkCount = 0;
+        // CHECK_CONSTRAINTS 仅 MySQL 8.0.16+，查询失败返回 0
+        Connx::QueryResult chkResult = executeQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.CHECK_CONSTRAINTS "
+            "WHERE BINARY CONSTRAINT_SCHEMA = BINARY '%1'").arg(dbName));
+        if (chkResult.success && !chkResult.rows.isEmpty() && !chkResult.rows[0].isEmpty())
+            chkCount = chkResult.rows[0][0].toInt();
+
+        int trgCount = countQuery(QString(
+            "SELECT COUNT(*) FROM information_schema.TRIGGERS "
+            "WHERE BINARY EVENT_OBJECT_SCHEMA = BINARY '%1' AND BINARY EVENT_OBJECT_TABLE = BINARY '%2'").arg(dbName, tableName));
+
         QList<Node> folders;
 
         Node colFolder(tableId + "_columns", NodeType::ColumnFolder, "字段");
         colFolder.database = dbName;
         colFolder.metadata["tableName"] = tableName;
+        colFolder.metadata["childCount"] = colCount;
         folders.append(colFolder);
 
         Node idxFolder(tableId + "_indexes", NodeType::IndexFolder, "索引");
         idxFolder.database = dbName;
         idxFolder.metadata["tableName"] = tableName;
+        idxFolder.metadata["childCount"] = idxCount;
         folders.append(idxFolder);
 
         Node fkFolder(tableId + "_fkeys", NodeType::ForeignKeyFolder, "外键");
         fkFolder.database = dbName;
         fkFolder.metadata["tableName"] = tableName;
+        fkFolder.metadata["childCount"] = fkCount;
         folders.append(fkFolder);
 
         Node chkFolder(tableId + "_checks", NodeType::CheckFolder, "检查");
         chkFolder.database = dbName;
         chkFolder.metadata["tableName"] = tableName;
+        chkFolder.metadata["childCount"] = chkCount;
         folders.append(chkFolder);
 
         Node trgFolder(tableId + "_triggers", NodeType::TriggerFolder, "触发器");
         trgFolder.database = dbName;
         trgFolder.metadata["tableName"] = tableName;
+        trgFolder.metadata["childCount"] = trgCount;
         folders.append(trgFolder);
 
         return ExpandResult(true, folders);
