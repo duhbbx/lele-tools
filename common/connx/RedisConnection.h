@@ -1,11 +1,8 @@
 #pragma once
 
 #include "Connection.h"
-
-#ifdef WITH_REDIS_PLUS_PLUS
+#include <QTcpSocket>
 #include <QMutex>
-#include <memory>
-#include <sw/redis++/redis++.h>
 
 namespace Connx {
 
@@ -27,12 +24,11 @@ struct RedisKeyInfo {
     qint64 ttl;
     qint64 size;
     QString encoding;
-    
+
     RedisKeyInfo() : type(RedisDataType::Unknown), ttl(-1), size(0) {}
 };
 
-
-// Redis连接实现
+// Redis连接实现 - 使用QTcpSocket直接实现RESP协议，无外部依赖
 class RedisConnection : public Connection {
     Q_OBJECT
 
@@ -45,21 +41,21 @@ public:
     void disconnectFromServer() override;
     bool isConnected() const override;
     bool ping() override;
-    
+
     // 查询操作
     QueryResult execute(const QString& command, const QVariantList& params = QVariantList()) override;
     QueryResult query(const QString& sql, const QVariantList& params = QVariantList()) override;
-    
+
     // 事务操作
     bool beginTransaction() override;
     bool commitTransaction() override;
     bool rollbackTransaction() override;
-    
+
     // 元数据操作
     QStringList getDatabases() override;
     QStringList getTables(const QString& database = "") override;
     QStringList getColumns(const QString& table, const QString& database = "") override;
-    
+
     // 工具方法
     QString escapeString(const QString& str) override;
     QString getServerInfo() override;
@@ -76,7 +72,7 @@ public:
     QVariantList getListRange(const QString& key, int start = 0, int end = -1);
     QStringList getSetMembers(const QString& key);
     QVariantList getZSetRange(const QString& key, int start = 0, int end = -1, bool withScores = false);
-    
+
     // 数据库操作
     bool selectDatabase(int dbIndex);
     int getCurrentDatabase() const { return m_currentDatabase; }
@@ -87,35 +83,25 @@ protected slots:
     void keepAlive() override;
 
 private:
+    // RESP protocol helpers
+    QByteArray buildRespCommand(const QStringList& args);
+    QVariant readRespReply();
+    QByteArray readLine();
+    QByteArray readBytes(int count);
+    bool waitForData(int msecs = 5000);
 
-#ifdef WITH_REDIS_PLUS_PLUS
-    QVariant parseRedisReply(redisReply* reply);
-#endif
-    // 内部方法
-    bool authenticate();
-    QVariant executeRedisCommand(const QString& command, const QVariantList& params = QVariantList());
-    QString buildConnectionString() const;
-#ifdef WITH_REDIS_PLUS_PLUS
-    QVariant convertRedisValue(const sw::redis::OptionalString& value);
-#endif
-#ifdef WITH_REDIS_PLUS_PLUS
-    QVariantList convertRedisArray(const std::vector<std::string>& values);
-#endif
-    
-    // Redis客户端
-#ifdef WITH_REDIS_PLUS_PLUS
-    std::unique_ptr<sw::redis::Redis> m_redis;
-    std::unique_ptr<sw::redis::ConnectionOptions> m_connOpts;
-    std::unique_ptr<sw::redis::ConnectionPoolOptions> m_poolOpts;
-#endif
+    // Send command and get reply
+    QVariant sendCommand(const QStringList& args);
 
-    // 状态管理
-    QMutex m_commandMutex;
-    int m_currentDatabase;
-    bool m_authenticated;
+    // Parse a command string into argument list
+    QStringList parseCommandString(const QString& command, const QVariantList& params);
+
+    QTcpSocket* m_socket = nullptr;
+    mutable QMutex m_commandMutex;
+    int m_currentDatabase = 0;
+    bool m_authenticated = false;
     QString m_serverVersion;
-    bool m_connected;
+    bool m_connected = false;
 };
 
 } // namespace Connx
-#endif // WITH_REDIS_PLUS_PLUS

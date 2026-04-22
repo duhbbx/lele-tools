@@ -1,7 +1,5 @@
 #include "Connection.h"
-#ifdef WITH_REDIS_PLUS_PLUS
 #include "RedisConnection.h"
-#endif
 #include "MySQLConnection.h"
 #include <QDateTime>
 #include <QDebug>
@@ -72,12 +70,7 @@ void Connection::keepAlive() {
 Connection* ConnectionFactory::createConnection(ConnectionType type, const ConnectionConfig& config) {
     switch (type) {
     case ConnectionType::Redis:
-#ifdef WITH_REDIS_PLUS_PLUS
         return new RedisConnection(config);
-#else
-        qWarning() << "Redis support not compiled";
-        return nullptr;
-#endif
     case ConnectionType::MySQL:
         return new MySQLConnection(config);
     case ConnectionType::PostgreSQL:
