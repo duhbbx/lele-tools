@@ -232,15 +232,36 @@ void SSHClient::onNewConnection()
 
 void SSHClient::onEditConnection()
 {
-    // 获取当前选中的连接进行编辑
-    // 这里需要从连接管理器获取选中的连接
-    QMessageBox::information(this, tr("提示"), tr("编辑连接功能开发中..."));
+    QString selected = m_connectionManager->selectedConnection();
+    if (selected.isEmpty()) {
+        QMessageBox::warning(this, tr("提示"), tr("请先选择一个连接"));
+        return;
+    }
+
+    SSHConnectionInfo info = m_connectionManager->getConnectionInfo(selected);
+    SSHConnectionDialog dialog(info, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        SSHConnectionInfo newInfo = dialog.getConnectionInfo();
+        m_connectionManager->editConnection(selected, newInfo);
+    }
 }
 
 void SSHClient::onDeleteConnection()
 {
-    // 删除选中的连接
-    QMessageBox::information(this, tr("提示"), tr("删除连接功能开发中..."));
+    QString selected = m_connectionManager->selectedConnection();
+    if (selected.isEmpty()) {
+        QMessageBox::warning(this, tr("提示"), tr("请先选择一个连接"));
+        return;
+    }
+
+    if (QMessageBox::question(this, tr("确认"),
+        tr("确定删除连接 \"%1\" 吗？").arg(selected)) != QMessageBox::Yes)
+        return;
+
+    if (m_isConnected && m_currentConnection == selected)
+        onDisconnect();
+
+    m_connectionManager->removeConnection(selected);
 }
 
 void SSHClient::onDisconnect()
@@ -1267,6 +1288,10 @@ void SSHConnection::connectToHost()
     ssh_options_set(m_session, SSH_OPTIONS_HOST, m_info.hostname.toUtf8().constData());
     ssh_options_set(m_session, SSH_OPTIONS_PORT, &m_info.port);
     ssh_options_set(m_session, SSH_OPTIONS_USER, m_info.username.toUtf8().constData());
+
+    // 设置超时（秒）
+    long timeout = 10;
+    ssh_options_set(m_session, SSH_OPTIONS_TIMEOUT, &timeout);
 
     // 连接
     int rc = ssh_connect(m_session);

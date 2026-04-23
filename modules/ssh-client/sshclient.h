@@ -139,6 +139,7 @@ public:
     void removeConnection(const QString& name);
     SSHConnectionInfo getConnectionInfo(const QString& name) const;
     QStringList getConnectionNames() const;
+    QString selectedConnection() const { return m_selectedConnection; }
 
 signals:
     void connectionRequested(const QString& name);
