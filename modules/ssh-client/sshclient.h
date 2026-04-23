@@ -41,6 +41,7 @@
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QStyle>
+#include <QRegularExpression>
 
 #ifdef WITH_LIBSSH
 #include <libssh/libssh.h>
@@ -54,6 +55,7 @@ class SSHConnection;
 class SSHTerminal;
 class SFTPBrowser;
 class ConnectionManager;
+class TerminalTextEdit;
 
 /**
  * @brief SSH客户端主界面
@@ -190,6 +192,8 @@ public slots:
     void connectToHost();
     void disconnect();
     void executeCommand(const QString& command);
+    void requestPtyShell();
+    void writeToChannel(const QByteArray& data);
 
 signals:
     void connected();
@@ -197,6 +201,7 @@ signals:
     void error(const QString& message);
     void commandOutput(const QString& output);
     void authenticationRequired(const QString& prompt);
+    void dataReceived(const QByteArray& data);
 
 private:
     void cleanup();
@@ -213,45 +218,49 @@ private:
 
     bool m_connected;
     QMutex m_mutex;
+    QThread* m_readThread = nullptr;
+    bool m_shellActive = false;
+};
+
+/**
+ * @brief Terminal text edit with key capture for PTY interaction
+ */
+class TerminalTextEdit : public QTextEdit {
+    Q_OBJECT
+public:
+    explicit TerminalTextEdit(QWidget* parent = nullptr) : QTextEdit(parent) {}
+
+signals:
+    void keyPressed(const QByteArray& data);
+
+protected:
+    void keyPressEvent(QKeyEvent* event) override;
 };
 
 /**
  * @brief SSH终端组件
- * 提供交互式SSH终端功能
+ * 提供交互式SSH终端功能（PTY模式）
  */
 class SSHTerminal : public QWidget {
     Q_OBJECT
 
 public:
     explicit SSHTerminal(QWidget* parent = nullptr);
-    ~SSHTerminal();
+    ~SSHTerminal() override;
 
     void setConnection(SSHConnection* connection);
     void clear();
 
-protected:
-    void keyPressEvent(QKeyEvent* event) override;
-
 private slots:
-    void onReturnPressed();
-    void onCommandOutput(const QString& output);
+    void onDataReceived(const QByteArray& data);
     void onConnectionError(const QString& error);
 
 private:
     void setupUI();
-    void appendOutput(const QString& text, const QColor& color = Qt::white);
-    void processCommand(const QString& command);
 
-private:
     QVBoxLayout* m_layout;
-    QTextEdit* m_output;
-    QLineEdit* m_input;
-
-    SSHConnection* m_connection;
-    QString m_currentPath;
-    QString m_prompt;
-    QStringList m_commandHistory;
-    int m_historyIndex;
+    TerminalTextEdit* m_terminal;
+    SSHConnection* m_connection = nullptr;
 };
 
 /**

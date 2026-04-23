@@ -1,4 +1,5 @@
 #include "sshclient.h"
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QDir>
 #include <QSplitter>
@@ -553,12 +554,53 @@ void ConnectionManager::contextMenuEvent(QContextMenuEvent* event)
     menu.exec(event->globalPos());
 }
 
+// ========== TerminalTextEdit Implementation ==========
+
+void TerminalTextEdit::keyPressEvent(QKeyEvent* event)
+{
+    QByteArray data;
+
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        data = "\r";
+    } else if (event->key() == Qt::Key_Backspace) {
+        data = "\x7f";  // DEL
+    } else if (event->key() == Qt::Key_Tab) {
+        data = "\t";
+    } else if (event->key() == Qt::Key_Up) {
+        data = "\x1b[A";
+    } else if (event->key() == Qt::Key_Down) {
+        data = "\x1b[B";
+    } else if (event->key() == Qt::Key_Right) {
+        data = "\x1b[C";
+    } else if (event->key() == Qt::Key_Left) {
+        data = "\x1b[D";
+    } else if (event->key() == Qt::Key_Home) {
+        data = "\x1b[H";
+    } else if (event->key() == Qt::Key_End) {
+        data = "\x1b[F";
+    } else if (event->modifiers() & Qt::ControlModifier) {
+        int key = event->key();
+        if (key >= Qt::Key_A && key <= Qt::Key_Z) {
+            char c = key - Qt::Key_A + 1;
+            data = QByteArray(1, c);
+        }
+    } else {
+        QString text = event->text();
+        if (!text.isEmpty()) {
+            data = text.toUtf8();
+        }
+    }
+
+    if (!data.isEmpty()) {
+        emit keyPressed(data);
+    }
+    // Don't call base class - we handle all input ourselves
+}
+
 // ========== SSHTerminal Implementation ==========
 
 SSHTerminal::SSHTerminal(QWidget* parent)
     : QWidget(parent)
-    , m_connection(nullptr)
-    , m_historyIndex(-1)
 {
     setupUI();
 }
@@ -571,163 +613,97 @@ void SSHTerminal::setupUI()
 {
     m_layout = new QVBoxLayout(this);
 
-    // 输出区域
-    m_output = new QTextEdit(this);
-    m_output->setReadOnly(true);
-    m_output->setFont(QFont("Consolas", 9));
-    m_output->setStyleSheet(
+    m_terminal = new TerminalTextEdit(this);
+    m_terminal->setFont(QFont("Menlo", 10));
+    m_terminal->setStyleSheet(
         "QTextEdit {"
         "  background-color: #1e1e1e;"
         "  color: #ffffff;"
         "  border: 1px solid #555555;"
         "}"
     );
-    m_layout->addWidget(m_output);
+    m_layout->addWidget(m_terminal);
 
-    // 输入区域
-    m_input = new QLineEdit(this);
-    m_input->setFont(QFont("Consolas", 9));
-    m_input->setStyleSheet(
-        "QLineEdit {"
-        "  background-color: #2d2d2d;"
-        "  color: #ffffff;"
-        "  border: 1px solid #555555;"
-        "  padding: 2px;"
-        "}"
-    );
-    m_input->setPlaceholderText(tr("请先建立SSH连接..."));
-    m_input->setEnabled(false);
-    m_layout->addWidget(m_input);
-
-    connect(m_input, &QLineEdit::returnPressed, this, &SSHTerminal::onReturnPressed);
-
-    // 初始化显示
-    appendOutput(tr("SSH终端 - 请从左侧连接列表选择并连接到SSH服务器"), Qt::yellow);
+    // Show initial message
+    QTextCursor cursor = m_terminal->textCursor();
+    QTextCharFormat fmt;
+    fmt.setForeground(Qt::yellow);
+    cursor.setCharFormat(fmt);
+    cursor.insertText(tr("SSH终端 - 请从左侧连接列表选择并连接到SSH服务器\n"));
+    m_terminal->setTextCursor(cursor);
 }
 
 void SSHTerminal::setConnection(SSHConnection* connection)
 {
     m_connection = connection;
     if (m_connection) {
-        m_input->setEnabled(true);
-        m_input->setPlaceholderText(tr("输入命令..."));
-        m_input->setFocus();
-
-        connect(m_connection, &SSHConnection::commandOutput,
-                this, &SSHTerminal::onCommandOutput);
+        connect(m_connection, &SSHConnection::dataReceived,
+                this, &SSHTerminal::onDataReceived);
         connect(m_connection, &SSHConnection::error,
                 this, &SSHTerminal::onConnectionError);
+        connect(m_terminal, &TerminalTextEdit::keyPressed, this, [this](const QByteArray& data) {
+            if (m_connection) {
+                m_connection->writeToChannel(data);
+            }
+        });
 
-        appendOutput(tr("SSH连接已建立，可以输入命令"), Qt::green);
-        m_prompt = "$ ";
-        appendOutput(m_prompt, Qt::cyan);
-    } else {
-        m_input->setEnabled(false);
-        m_input->setPlaceholderText(tr("请先建立SSH连接..."));
+        m_terminal->clear();
+        QTextCursor cursor = m_terminal->textCursor();
+        QTextCharFormat fmt;
+        fmt.setForeground(Qt::green);
+        cursor.setCharFormat(fmt);
+        cursor.insertText(tr("SSH连接已建立\n"));
+        m_terminal->setTextCursor(cursor);
+        m_terminal->setFocus();
+
+        m_connection->requestPtyShell();
     }
 }
 
 void SSHTerminal::clear()
 {
-    m_output->clear();
-    m_input->clear();
-    m_commandHistory.clear();
-    m_historyIndex = -1;
+    m_terminal->clear();
 
     if (!m_connection) {
-        appendOutput(tr("SSH终端 - 请从左侧连接列表选择并连接到SSH服务器"), Qt::yellow);
-        m_input->setEnabled(false);
+        QTextCursor cursor = m_terminal->textCursor();
+        QTextCharFormat fmt;
+        fmt.setForeground(Qt::yellow);
+        cursor.setCharFormat(fmt);
+        cursor.insertText(tr("SSH终端 - 请从左侧连接列表选择并连接到SSH服务器\n"));
+        m_terminal->setTextCursor(cursor);
     }
 }
 
-void SSHTerminal::onReturnPressed()
+void SSHTerminal::onDataReceived(const QByteArray& data)
 {
-    QString command = m_input->text().trimmed();
-    if (command.isEmpty()) {
-        return;
-    }
+    QString text = QString::fromUtf8(data);
 
-    // 添加到历史记录
-    m_commandHistory.append(command);
-    m_historyIndex = m_commandHistory.size();
+    // Strip ANSI escape sequences for basic display
+    static QRegularExpression ansiRegex(QStringLiteral("\\x1b\\[[0-9;]*[a-zA-Z]"));
+    text.remove(ansiRegex);
+    static QRegularExpression ansiRegex2(QStringLiteral("\\x1b\\][^\\x07]*\\x07"));
+    text.remove(ansiRegex2);
 
-    // 显示命令
-    appendOutput(m_prompt + command, Qt::white);
-
-    // 执行命令
-    processCommand(command);
-
-    m_input->clear();
-}
-
-void SSHTerminal::onCommandOutput(const QString& output)
-{
-    appendOutput(output, Qt::lightGray);
-    appendOutput(m_prompt, Qt::cyan);
+    QTextCursor cursor = m_terminal->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    QTextCharFormat fmt;
+    fmt.setForeground(Qt::white);
+    cursor.setCharFormat(fmt);
+    cursor.insertText(text);
+    m_terminal->setTextCursor(cursor);
+    m_terminal->ensureCursorVisible();
 }
 
 void SSHTerminal::onConnectionError(const QString& error)
 {
-    appendOutput(tr("错误: %1").arg(error), Qt::red);
-    appendOutput(m_prompt, Qt::cyan);
-}
-
-void SSHTerminal::appendOutput(const QString& text, const QColor& color)
-{
-    QTextCursor cursor = m_output->textCursor();
+    QTextCursor cursor = m_terminal->textCursor();
     cursor.movePosition(QTextCursor::End);
-
-    QTextCharFormat format;
-    format.setForeground(color);
-    cursor.setCharFormat(format);
-
-    cursor.insertText(text + "\n");
-
-    // 滚动到底部
-    QScrollBar* scrollBar = m_output->verticalScrollBar();
-    scrollBar->setValue(scrollBar->maximum());
-}
-
-void SSHTerminal::processCommand(const QString& command)
-{
-    if (m_connection) {
-        // 发送命令到SSH连接
-        m_connection->executeCommand(command);
-    } else {
-        // 模拟一些基本命令
-        if (command == "help") {
-            appendOutput(tr("可用命令: help, clear, echo"), Qt::yellow);
-        } else if (command == "clear") {
-            m_output->clear();
-        } else if (command.startsWith("echo ")) {
-            appendOutput(command.mid(5), Qt::white);
-        } else {
-            appendOutput(tr("未连接SSH - 命令无法执行: %1").arg(command), Qt::red);
-        }
-        appendOutput(m_prompt, Qt::cyan);
-    }
-}
-
-void SSHTerminal::keyPressEvent(QKeyEvent* event)
-{
-    if (event->key() == Qt::Key_Up) {
-        // 历史记录向上
-        if (m_historyIndex > 0) {
-            m_historyIndex--;
-            m_input->setText(m_commandHistory[m_historyIndex]);
-        }
-    } else if (event->key() == Qt::Key_Down) {
-        // 历史记录向下
-        if (m_historyIndex < m_commandHistory.size() - 1) {
-            m_historyIndex++;
-            m_input->setText(m_commandHistory[m_historyIndex]);
-        } else {
-            m_historyIndex = m_commandHistory.size();
-            m_input->clear();
-        }
-    } else {
-        QWidget::keyPressEvent(event);
-    }
+    QTextCharFormat fmt;
+    fmt.setForeground(Qt::red);
+    cursor.setCharFormat(fmt);
+    cursor.insertText(tr("错误: %1\n").arg(error));
+    m_terminal->setTextCursor(cursor);
+    m_terminal->ensureCursorVisible();
 }
 
 // ========== SFTPBrowser Implementation ==========
@@ -1405,8 +1381,63 @@ void SSHConnection::executeCommand(const QString& command)
 #endif
 }
 
+void SSHConnection::requestPtyShell()
+{
+#ifdef WITH_LIBSSH
+    if (!m_session || !m_channel) return;
+
+    int rc = ssh_channel_request_pty(m_channel);
+    if (rc != SSH_OK) {
+        emit error(tr("Failed to request PTY"));
+        return;
+    }
+
+    rc = ssh_channel_request_shell(m_channel);
+    if (rc != SSH_OK) {
+        emit error(tr("Failed to request shell"));
+        return;
+    }
+
+    m_shellActive = true;
+
+    m_readThread = QThread::create([this]() {
+        char buffer[4096];
+        while (m_shellActive && m_channel && ssh_channel_is_open(m_channel)) {
+            int nbytes = ssh_channel_read_timeout(m_channel, buffer, sizeof(buffer), 0, 100);
+            if (nbytes > 0) {
+                emit dataReceived(QByteArray(buffer, nbytes));
+            } else if (nbytes == SSH_ERROR) {
+                break;
+            }
+            nbytes = ssh_channel_read_timeout(m_channel, buffer, sizeof(buffer), 1, 10);
+            if (nbytes > 0) {
+                emit dataReceived(QByteArray(buffer, nbytes));
+            }
+        }
+    });
+    m_readThread->start();
+#endif
+}
+
+void SSHConnection::writeToChannel(const QByteArray& data)
+{
+#ifdef WITH_LIBSSH
+    if (m_channel && ssh_channel_is_open(m_channel)) {
+        ssh_channel_write(m_channel, data.constData(), data.size());
+    }
+#endif
+}
+
 void SSHConnection::cleanup()
 {
+    m_shellActive = false;
+    if (m_readThread) {
+        m_readThread->quit();
+        m_readThread->wait(2000);
+        delete m_readThread;
+        m_readThread = nullptr;
+    }
+
 #ifdef WITH_LIBSSH
     if (m_sftpSession) {
         sftp_free(m_sftpSession);
