@@ -3,6 +3,9 @@
 #include <QFontDatabase>
 #include <QApplication>
 #include <QClipboard>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QContextMenuEvent>
 
 TerminalWidget::TerminalWidget(QWidget* parent)
     : QWidget(parent)
@@ -113,6 +116,12 @@ void TerminalWidget::paintEvent(QPaintEvent* /*event*/)
                 bp.fillRect(cellRect, bg);
             }
 
+            // Draw selection highlight
+            if (isCellSelected(r, c)) {
+                bp.fillRect(cellRect, QColor(0x26, 0x4f, 0x78)); // VS Code 蓝色选区
+                fg = QColor(0xff, 0xff, 0xff);
+            }
+
             // Draw cursor
             bool isCursor = (r == m_emu->cursorRow() && c == m_emu->cursorCol());
             if (isCursor && m_cursorVisible && hasFocus()) {
@@ -164,15 +173,31 @@ void TerminalWidget::keyPressEvent(QKeyEvent* event)
 {
     QByteArray data;
 
-    // Handle Ctrl+Shift+C / Ctrl+Shift+V for copy/paste
-    if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
-        if (event->key() == Qt::Key_V) {
-            QString text = QApplication::clipboard()->text();
-            if (!text.isEmpty()) {
-                emit keyPressed(text.toUtf8());
-            }
-            return;
+    // 复制粘贴：macOS 用 Cmd+C/V，Linux/Win 用 Ctrl+Shift+C/V
+#ifdef Q_OS_MAC
+    bool copyKey = (event->modifiers() == Qt::MetaModifier && event->key() == Qt::Key_C);
+    bool pasteKey = (event->modifiers() == Qt::MetaModifier && event->key() == Qt::Key_V);
+#else
+    bool copyKey = (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier) && event->key() == Qt::Key_C);
+    bool pasteKey = (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier) && event->key() == Qt::Key_V);
+#endif
+
+    if (copyKey) {
+        QString text = selectedText();
+        if (!text.isEmpty()) {
+            QApplication::clipboard()->setText(text);
+            clearSelection();
+            update();
         }
+        return;
+    }
+
+    if (pasteKey) {
+        QString text = QApplication::clipboard()->text();
+        if (!text.isEmpty()) {
+            emit keyPressed(text.toUtf8());
+        }
+        return;
     }
 
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
@@ -284,4 +309,128 @@ QVariant TerminalWidget::inputMethodQuery(Qt::InputMethodQuery query) const
     default:
         return QWidget::inputMethodQuery(query);
     }
+}
+
+// ── 鼠标选择 ──
+
+QPoint TerminalWidget::pixelToCell(const QPoint& pos) const
+{
+    int col = qBound(0, (int)(pos.x() / m_cellWidth), m_emu ? m_emu->cols() - 1 : 0);
+    int row = qBound(0, (int)(pos.y() / m_cellHeight), m_emu ? m_emu->rows() - 1 : 0);
+    return QPoint(col, row); // x=col, y=row
+}
+
+void TerminalWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_selecting = true;
+        m_selStart = pixelToCell(event->pos());
+        m_selEnd = m_selStart;
+        update();
+    }
+    setFocus();
+}
+
+void TerminalWidget::mouseMoveEvent(QMouseEvent* event)
+{
+    if (m_selecting) {
+        m_selEnd = pixelToCell(event->pos());
+        update();
+    }
+}
+
+void TerminalWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_selecting = false;
+    }
+}
+
+void TerminalWidget::contextMenuEvent(QContextMenuEvent* event)
+{
+    QMenu menu(this);
+
+    QAction* copyAction = menu.addAction(tr("复制"));
+    copyAction->setEnabled(hasSelection());
+    QAction* pasteAction = menu.addAction(tr("粘贴"));
+    menu.addSeparator();
+    QAction* selectAllAction = menu.addAction(tr("全选"));
+    QAction* clearAction = menu.addAction(tr("清屏"));
+
+    QAction* selected = menu.exec(event->globalPos());
+    if (selected == copyAction) {
+        QString text = selectedText();
+        if (!text.isEmpty())
+            QApplication::clipboard()->setText(text);
+        clearSelection();
+        update();
+    } else if (selected == pasteAction) {
+        QString text = QApplication::clipboard()->text();
+        if (!text.isEmpty())
+            emit keyPressed(text.toUtf8());
+    } else if (selected == selectAllAction) {
+        if (m_emu) {
+            m_selStart = QPoint(0, 0);
+            m_selEnd = QPoint(m_emu->cols() - 1, m_emu->rows() - 1);
+            update();
+        }
+    } else if (selected == clearAction) {
+        if (m_emu) { m_emu->reset(); update(); }
+    }
+}
+
+bool TerminalWidget::hasSelection() const
+{
+    return m_selStart != m_selEnd;
+}
+
+void TerminalWidget::clearSelection()
+{
+    m_selStart = m_selEnd = QPoint();
+}
+
+bool TerminalWidget::isCellSelected(int row, int col) const
+{
+    if (!hasSelection()) return false;
+
+    // 归一化选区（确保 start <= end）
+    int sr = m_selStart.y(), sc = m_selStart.x();
+    int er = m_selEnd.y(), ec = m_selEnd.x();
+    if (sr > er || (sr == er && sc > ec)) {
+        qSwap(sr, er); qSwap(sc, ec);
+    }
+
+    if (row < sr || row > er) return false;
+    if (row == sr && row == er) return col >= sc && col <= ec;
+    if (row == sr) return col >= sc;
+    if (row == er) return col <= ec;
+    return true; // 中间行全选
+}
+
+QString TerminalWidget::selectedText() const
+{
+    if (!hasSelection() || !m_emu) return QString();
+
+    int sr = m_selStart.y(), sc = m_selStart.x();
+    int er = m_selEnd.y(), ec = m_selEnd.x();
+    if (sr > er || (sr == er && sc > ec)) {
+        qSwap(sr, er); qSwap(sc, ec);
+    }
+
+    QString text;
+    for (int r = sr; r <= er; ++r) {
+        int cStart = (r == sr) ? sc : 0;
+        int cEnd = (r == er) ? ec : m_emu->cols() - 1;
+        QString line;
+        for (int c = cStart; c <= cEnd; ++c) {
+            const TermCell& cell = m_emu->cell(r, c);
+            if (!cell.wideTrail)
+                line += cell.ch;
+        }
+        // 去掉行尾空格
+        while (line.endsWith(' ')) line.chop(1);
+        text += line;
+        if (r < er) text += '\n';
+    }
+    return text;
 }
