@@ -84,8 +84,10 @@ void SSHClient::setupUI()
 
     mainLayout->addWidget(m_mainSplitter);
 
-    // 状态栏
+    // 状态栏（用 QLabel 替代 QStatusBar，更紧凑）
     m_statusBar = new QStatusBar(this);
+    m_statusBar->setFixedHeight(22);
+    m_statusBar->setStyleSheet("QStatusBar { border-top: 1px solid #e9ecef; font-size: 8pt; color: #868e96; }");
     mainLayout->addWidget(m_statusBar);
 
     // 连接信号
@@ -172,11 +174,27 @@ void SSHClient::onConnectionRequested(const QString& name)
     m_statusBar->showMessage(tr("正在连接到 %1...").arg(info.hostname));
     m_currentConnection = name;
 
-    // 这里应该创建SSH连接
-    // 为了演示，我们模拟连接成功
-    QTimer::singleShot(1000, [this, name]() {
+    // 创建真正的 SSH 连接
+    auto* connection = new SSHConnection(info, this);
+
+    connect(connection, &SSHConnection::connected, this, [this, name, connection]() {
         onConnectionEstablished(name);
+        // 把连接传给终端和 SFTP
+        m_terminal->setConnection(connection);
+        m_sftpBrowser->setConnection(connection);
     });
+
+    connect(connection, &SSHConnection::error, this, [this, name](const QString& err) {
+        onConnectionError(name, err);
+    });
+
+    connect(connection, &SSHConnection::disconnected, this, [this, name]() {
+        onConnectionClosed(name);
+        m_terminal->setConnection(nullptr);
+        m_sftpBrowser->setConnection(nullptr);
+    });
+
+    connection->connectToHost();
 }
 
 void SSHClient::onConnectionEstablished(const QString& name)
@@ -186,13 +204,6 @@ void SSHClient::onConnectionEstablished(const QString& name)
 
     SSHConnectionInfo info = m_connectionManager->getConnectionInfo(name);
     m_statusBar->showMessage(tr("已连接到 %1@%2").arg(info.username, info.hostname));
-
-    // 启用相关功能
-    m_terminal->clear();
-    m_sftpBrowser->refresh();
-
-    QMessageBox::information(this, tr("连接成功"),
-        tr("已成功连接到 %1").arg(info.hostname));
 }
 
 void SSHClient::onConnectionClosed(const QString& name)
