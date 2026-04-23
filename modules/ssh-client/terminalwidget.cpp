@@ -15,7 +15,7 @@ TerminalWidget::TerminalWidget(QWidget* parent)
     setAttribute(Qt::WA_OpaquePaintEvent);
 
     // Choose a monospace font
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     m_font = QFont("Menlo", 12);
 #elif defined(Q_OS_WIN)
     m_font = QFont("Consolas", 10);
@@ -174,7 +174,7 @@ void TerminalWidget::keyPressEvent(QKeyEvent* event)
     QByteArray data;
 
     // 复制粘贴：macOS 用 Cmd+C/V，Linux/Win 用 Ctrl+Shift+C/V
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     bool isCmdOnly = event->modifiers().testFlag(Qt::MetaModifier) && !event->modifiers().testFlag(Qt::ControlModifier);
     bool copyKey = (isCmdOnly && event->key() == Qt::Key_C);
     bool pasteKey = (isCmdOnly && event->key() == Qt::Key_V);
@@ -213,7 +213,7 @@ void TerminalWidget::keyPressEvent(QKeyEvent* event)
     }
 
     // macOS: Cmd+其他键不发送到终端
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     if (event->modifiers().testFlag(Qt::MetaModifier))
         return;
 #endif
