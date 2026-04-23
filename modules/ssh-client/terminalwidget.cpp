@@ -175,11 +175,14 @@ void TerminalWidget::keyPressEvent(QKeyEvent* event)
 
     // 复制粘贴：macOS 用 Cmd+C/V，Linux/Win 用 Ctrl+Shift+C/V
 #ifdef Q_OS_MAC
-    bool copyKey = (event->modifiers() == Qt::MetaModifier && event->key() == Qt::Key_C);
-    bool pasteKey = (event->modifiers() == Qt::MetaModifier && event->key() == Qt::Key_V);
+    bool isCmdOnly = event->modifiers().testFlag(Qt::MetaModifier) && !event->modifiers().testFlag(Qt::ControlModifier);
+    bool copyKey = (isCmdOnly && event->key() == Qt::Key_C);
+    bool pasteKey = (isCmdOnly && event->key() == Qt::Key_V);
+    bool selectAllKey = (isCmdOnly && event->key() == Qt::Key_A);
 #else
     bool copyKey = (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier) && event->key() == Qt::Key_C);
     bool pasteKey = (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier) && event->key() == Qt::Key_V);
+    bool selectAllKey = false;
 #endif
 
     if (copyKey) {
@@ -199,6 +202,21 @@ void TerminalWidget::keyPressEvent(QKeyEvent* event)
         }
         return;
     }
+
+    if (selectAllKey) {
+        if (m_emu) {
+            m_selStart = QPoint(0, 0);
+            m_selEnd = QPoint(m_emu->cols() - 1, m_emu->rows() - 1);
+            update();
+        }
+        return;
+    }
+
+    // macOS: Cmd+其他键不发送到终端
+#ifdef Q_OS_MAC
+    if (event->modifiers().testFlag(Qt::MetaModifier))
+        return;
+#endif
 
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         data = "\r";
