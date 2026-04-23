@@ -1,4 +1,6 @@
 #include "sshclient.h"
+#include "terminalemulator.h"
+#include "terminalwidget.h"
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QDir>
@@ -612,49 +614,43 @@ SSHTerminal::~SSHTerminal()
 void SSHTerminal::setupUI()
 {
     m_layout = new QVBoxLayout(this);
+    m_layout->setContentsMargins(0, 0, 0, 0);
 
-    m_terminal = new TerminalTextEdit(this);
-    m_terminal->setFont(QFont("Menlo", 10));
-    m_terminal->setStyleSheet(
-        "QTextEdit {"
-        "  background-color: #1e1e1e;"
-        "  color: #ffffff;"
-        "  border: 1px solid #555555;"
-        "}"
-    );
-    m_layout->addWidget(m_terminal);
+    m_emulator = new TerminalEmulator(80, 24, this);
+    m_termWidget = new TerminalWidget(this);
+    m_termWidget->setEmulator(m_emulator);
+    m_layout->addWidget(m_termWidget);
 
-    // Show initial message
-    QTextCursor cursor = m_terminal->textCursor();
-    QTextCharFormat fmt;
-    fmt.setForeground(Qt::yellow);
-    cursor.setCharFormat(fmt);
-    cursor.insertText(tr("SSH终端 - 请从左侧连接列表选择并连接到SSH服务器\n"));
-    m_terminal->setTextCursor(cursor);
+    // Wire keyboard input from widget
+    connect(m_termWidget, &TerminalWidget::keyPressed, this, [this](const QByteArray& data) {
+        if (m_connection)
+            m_connection->writeToChannel(data);
+    });
+
+    // Wire terminal size changes
+    connect(m_termWidget, &TerminalWidget::sizeChanged, this, [this](int cols, int rows) {
+        m_emulator->resize(cols, rows);
+        if (m_connection)
+            m_connection->resizePty(cols, rows);
+    });
+
+    // Repaint when emulator screen changes
+    connect(m_emulator, &TerminalEmulator::screenChanged,
+            m_termWidget, QOverload<>::of(&QWidget::update));
 }
 
 void SSHTerminal::setConnection(SSHConnection* connection)
 {
     m_connection = connection;
     if (m_connection) {
+        // Feed SSH data into the VT100 emulator
         connect(m_connection, &SSHConnection::dataReceived,
-                this, &SSHTerminal::onDataReceived);
+                m_emulator, &TerminalEmulator::processData);
         connect(m_connection, &SSHConnection::error,
                 this, &SSHTerminal::onConnectionError);
-        connect(m_terminal, &TerminalTextEdit::keyPressed, this, [this](const QByteArray& data) {
-            if (m_connection) {
-                m_connection->writeToChannel(data);
-            }
-        });
 
-        m_terminal->clear();
-        QTextCursor cursor = m_terminal->textCursor();
-        QTextCharFormat fmt;
-        fmt.setForeground(Qt::green);
-        cursor.setCharFormat(fmt);
-        cursor.insertText(tr("SSH连接已建立\n"));
-        m_terminal->setTextCursor(cursor);
-        m_terminal->setFocus();
+        m_emulator->reset();
+        m_termWidget->setFocus();
 
         m_connection->requestPtyShell();
     }
@@ -662,48 +658,14 @@ void SSHTerminal::setConnection(SSHConnection* connection)
 
 void SSHTerminal::clear()
 {
-    m_terminal->clear();
-
-    if (!m_connection) {
-        QTextCursor cursor = m_terminal->textCursor();
-        QTextCharFormat fmt;
-        fmt.setForeground(Qt::yellow);
-        cursor.setCharFormat(fmt);
-        cursor.insertText(tr("SSH终端 - 请从左侧连接列表选择并连接到SSH服务器\n"));
-        m_terminal->setTextCursor(cursor);
-    }
-}
-
-void SSHTerminal::onDataReceived(const QByteArray& data)
-{
-    QString text = QString::fromUtf8(data);
-
-    // Strip ANSI escape sequences for basic display
-    static QRegularExpression ansiRegex(QStringLiteral("\\x1b\\[[0-9;]*[a-zA-Z]"));
-    text.remove(ansiRegex);
-    static QRegularExpression ansiRegex2(QStringLiteral("\\x1b\\][^\\x07]*\\x07"));
-    text.remove(ansiRegex2);
-
-    QTextCursor cursor = m_terminal->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    QTextCharFormat fmt;
-    fmt.setForeground(Qt::white);
-    cursor.setCharFormat(fmt);
-    cursor.insertText(text);
-    m_terminal->setTextCursor(cursor);
-    m_terminal->ensureCursorVisible();
+    m_emulator->reset();
 }
 
 void SSHTerminal::onConnectionError(const QString& error)
 {
-    QTextCursor cursor = m_terminal->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    QTextCharFormat fmt;
-    fmt.setForeground(Qt::red);
-    cursor.setCharFormat(fmt);
-    cursor.insertText(tr("错误: %1\n").arg(error));
-    m_terminal->setTextCursor(cursor);
-    m_terminal->ensureCursorVisible();
+    Q_UNUSED(error)
+    // Errors could be displayed in a status bar or overlay;
+    // for now the emulator grid is the only display.
 }
 
 // ========== SFTPBrowser Implementation ==========
@@ -1381,12 +1343,23 @@ void SSHConnection::executeCommand(const QString& command)
 #endif
 }
 
+void SSHConnection::resizePty(int cols, int rows)
+{
+#ifdef WITH_LIBSSH
+    if (m_channel && ssh_channel_is_open(m_channel))
+        ssh_channel_change_pty_size(m_channel, cols, rows);
+#else
+    Q_UNUSED(cols)
+    Q_UNUSED(rows)
+#endif
+}
+
 void SSHConnection::requestPtyShell()
 {
 #ifdef WITH_LIBSSH
     if (!m_session || !m_channel) return;
 
-    int rc = ssh_channel_request_pty(m_channel);
+    int rc = ssh_channel_request_pty_size(m_channel, "xterm-256color", 80, 24);
     if (rc != SSH_OK) {
         emit error(tr("Failed to request PTY"));
         return;

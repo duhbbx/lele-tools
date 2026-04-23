@@ -56,6 +56,8 @@ class SSHTerminal;
 class SFTPBrowser;
 class ConnectionManager;
 class TerminalTextEdit;
+class TerminalEmulator;
+class TerminalWidget;
 
 /**
  * @brief SSH客户端主界面
@@ -194,6 +196,7 @@ public slots:
     void executeCommand(const QString& command);
     void requestPtyShell();
     void writeToChannel(const QByteArray& data);
+    void resizePty(int cols, int rows);
 
 signals:
     void connected();
@@ -240,6 +243,7 @@ protected:
 /**
  * @brief SSH终端组件
  * 提供交互式SSH终端功能（PTY模式）
+ * 使用VT100终端仿真器 + QPainter渲染
  */
 class SSHTerminal : public QWidget {
     Q_OBJECT
@@ -252,14 +256,14 @@ public:
     void clear();
 
 private slots:
-    void onDataReceived(const QByteArray& data);
     void onConnectionError(const QString& error);
 
 private:
     void setupUI();
 
     QVBoxLayout* m_layout;
-    TerminalTextEdit* m_terminal;
+    TerminalEmulator* m_emulator;
+    TerminalWidget* m_termWidget;
     SSHConnection* m_connection = nullptr;
 };
 
