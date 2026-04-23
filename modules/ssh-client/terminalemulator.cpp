@@ -104,8 +104,52 @@ void TerminalEmulator::processNormalChar(char c)
 {
     unsigned char uc = static_cast<unsigned char>(c);
 
+    // UTF-8 多字节序列处理
+    if (m_utf8Remaining > 0) {
+        // 正在收集 UTF-8 续字节
+        if ((uc & 0xC0) == 0x80) {
+            m_utf8Buffer.append(c);
+            m_utf8Remaining--;
+            if (m_utf8Remaining == 0) {
+                // UTF-8 序列完成，解码并输出
+                QString decoded = QString::fromUtf8(m_utf8Buffer);
+                for (const QChar& ch : decoded) {
+                    // 检查是否是宽字符（CJK等）
+                    bool isWide = (ch.unicode() >= 0x1100 &&
+                        (ch.unicode() <= 0x115F || ch.unicode() == 0x2329 || ch.unicode() == 0x232A ||
+                         (ch.unicode() >= 0x2E80 && ch.unicode() <= 0x303E) ||
+                         (ch.unicode() >= 0x3040 && ch.unicode() <= 0x33BF) ||
+                         (ch.unicode() >= 0x3400 && ch.unicode() <= 0x4DBF) ||
+                         (ch.unicode() >= 0x4E00 && ch.unicode() <= 0xA4CF) ||
+                         (ch.unicode() >= 0xA960 && ch.unicode() <= 0xA97C) ||
+                         (ch.unicode() >= 0xAC00 && ch.unicode() <= 0xD7A3) ||
+                         (ch.unicode() >= 0xF900 && ch.unicode() <= 0xFAFF) ||
+                         (ch.unicode() >= 0xFE10 && ch.unicode() <= 0xFE6B) ||
+                         (ch.unicode() >= 0xFF01 && ch.unicode() <= 0xFF60) ||
+                         (ch.unicode() >= 0xFFE0 && ch.unicode() <= 0xFFE6)));
+                    if (isWide) {
+                        putWideChar(ch);
+                    } else {
+                        putChar(ch);
+                    }
+                }
+                m_utf8Buffer.clear();
+            }
+            return;
+        } else {
+            // 无效的续字节，丢弃缓冲，按普通字符处理
+            m_utf8Buffer.clear();
+            m_utf8Remaining = 0;
+        }
+    }
+
+    // UTF-8 起始字节检测
+    if ((uc & 0xE0) == 0xC0) { m_utf8Buffer.clear(); m_utf8Buffer.append(c); m_utf8Remaining = 1; return; }
+    if ((uc & 0xF0) == 0xE0) { m_utf8Buffer.clear(); m_utf8Buffer.append(c); m_utf8Remaining = 2; return; }
+    if ((uc & 0xF8) == 0xF0) { m_utf8Buffer.clear(); m_utf8Buffer.append(c); m_utf8Remaining = 3; return; }
+
     if (uc >= 0x20 && uc != 0x7f) {
-        // Printable character (including UTF-8 lead/continuation bytes)
+        // ASCII 可打印字符
         putChar(QChar::fromLatin1(c));
     } else {
         switch (c) {
@@ -125,6 +169,7 @@ void TerminalEmulator::processNormalChar(char c)
             tab();
             break;
         case '\b':
+        case '\x7f': // DEL 也当 backspace 处理
             backspace();
             break;
         case '\x07': // BEL
@@ -549,7 +594,33 @@ void TerminalEmulator::putChar(QChar ch)
     }
     m_grid[m_cursorRow][m_cursorCol] = m_currentAttr;
     m_grid[m_cursorRow][m_cursorCol].ch = ch;
+    m_grid[m_cursorRow][m_cursorCol].wide = false;
+    m_grid[m_cursorRow][m_cursorCol].wideTrail = false;
     m_cursorCol++;
+}
+
+void TerminalEmulator::putWideChar(QChar ch)
+{
+    if (m_cursorCol + 1 >= m_cols) {
+        // 宽字符需要 2 列，如果不够就换行
+        carriageReturn();
+        newline();
+    }
+    // 第一个单元格：存字符
+    m_grid[m_cursorRow][m_cursorCol] = m_currentAttr;
+    m_grid[m_cursorRow][m_cursorCol].ch = ch;
+    m_grid[m_cursorRow][m_cursorCol].wide = true;
+    m_grid[m_cursorRow][m_cursorCol].wideTrail = false;
+    m_cursorCol++;
+
+    // 第二个单元格：占位
+    if (m_cursorCol < m_cols) {
+        m_grid[m_cursorRow][m_cursorCol] = m_currentAttr;
+        m_grid[m_cursorRow][m_cursorCol].ch = ' ';
+        m_grid[m_cursorRow][m_cursorCol].wide = false;
+        m_grid[m_cursorRow][m_cursorCol].wideTrail = true;
+        m_cursorCol++;
+    }
 }
 
 void TerminalEmulator::newline()

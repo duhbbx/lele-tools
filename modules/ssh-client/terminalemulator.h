@@ -8,6 +8,8 @@ struct TermCell {
     QChar ch = ' ';
     QColor fg = QColor(0xd4, 0xd4, 0xd4); // light gray
     QColor bg = QColor(0x1e, 0x1e, 0x1e); // dark
+    bool wide = false;      // 宽字符（中文等占 2 列）
+    bool wideTrail = false; // 宽字符的第二个单元格
     bool bold = false;
     bool underline = false;
     bool inverse = false;
@@ -53,6 +55,7 @@ private:
 
     // Grid operations
     void putChar(QChar ch);
+    void putWideChar(QChar ch);
     void newline();
     void carriageReturn();
     void backspace();
@@ -97,5 +100,9 @@ private:
 
     // Flags
     bool m_alternateScreen = false;
+
+    // UTF-8 解码
+    QByteArray m_utf8Buffer;
+    int m_utf8Remaining = 0;
     QVector<QVector<TermCell>> m_savedGrid; // for alternate screen
 };

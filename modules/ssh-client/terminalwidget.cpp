@@ -92,9 +92,14 @@ void TerminalWidget::paintEvent(QPaintEvent* /*event*/)
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
             const TermCell& cell = m_emu->cell(r, c);
+
+            // 跳过宽字符的尾部单元格（已在前一列绘制）
+            if (cell.wideTrail) continue;
+
             qreal x = c * m_cellWidth;
             qreal y = r * m_cellHeight;
-            QRectF cellRect(x, y, m_cellWidth, m_cellHeight);
+            int cellSpan = cell.wide ? 2 : 1; // 宽字符占 2 列
+            QRectF cellRect(x, y, m_cellWidth * cellSpan, m_cellHeight);
 
             QColor fg = cell.fg;
             QColor bg = cell.bg;
@@ -112,7 +117,7 @@ void TerminalWidget::paintEvent(QPaintEvent* /*event*/)
             bool isCursor = (r == m_emu->cursorRow() && c == m_emu->cursorCol());
             if (isCursor && m_cursorVisible && hasFocus()) {
                 bp.fillRect(cellRect, QColor(0xd4, 0xd4, 0xd4));
-                fg = QColor(0x1e, 0x1e, 0x1e); // dark text on cursor
+                fg = QColor(0x1e, 0x1e, 0x1e);
             }
 
             // Draw character
@@ -131,7 +136,7 @@ void TerminalWidget::paintEvent(QPaintEvent* /*event*/)
             if (cell.underline) {
                 bp.setPen(fg);
                 qreal uy = y + m_cellHeight - 1;
-                bp.drawLine(QPointF(x, uy), QPointF(x + m_cellWidth, uy));
+                bp.drawLine(QPointF(x, uy), QPointF(x + m_cellWidth * cellSpan, uy));
             }
         }
     }
@@ -173,7 +178,7 @@ void TerminalWidget::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         data = "\r";
     } else if (event->key() == Qt::Key_Backspace) {
-        data = "\x7f"; // DEL
+        data = "\x08"; // BS (more compatible than DEL 0x7f)
     } else if (event->key() == Qt::Key_Delete) {
         data = "\x1b[3~";
     } else if (event->key() == Qt::Key_Tab) {
