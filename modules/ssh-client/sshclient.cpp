@@ -172,29 +172,27 @@ void SSHClient::onConnectionRequested(const QString& name)
     }
 
     m_statusBar->showMessage(tr("正在连接到 %1...").arg(info.hostname));
+    QApplication::processEvents(); // 让状态栏消息立刻显示
     m_currentConnection = name;
 
-    // 创建真正的 SSH 连接
+    // 创建 SSH 连接（同步阻塞，但设了 10 秒超时）
     auto* connection = new SSHConnection(info, this);
+    connection->connectToHost();
 
-    connect(connection, &SSHConnection::connected, this, [this, name, connection]() {
+    if (connection->isConnected()) {
         onConnectionEstablished(name);
-        // 把连接传给终端和 SFTP
         m_terminal->setConnection(connection);
         m_sftpBrowser->setConnection(connection);
-    });
 
-    connect(connection, &SSHConnection::error, this, [this, name](const QString& err) {
-        onConnectionError(name, err);
-    });
-
-    connect(connection, &SSHConnection::disconnected, this, [this, name]() {
-        onConnectionClosed(name);
-        m_terminal->setConnection(nullptr);
-        m_sftpBrowser->setConnection(nullptr);
-    });
-
-    connection->connectToHost();
+        connect(connection, &SSHConnection::disconnected, this, [this, name]() {
+            onConnectionClosed(name);
+            m_terminal->setConnection(nullptr);
+            m_sftpBrowser->setConnection(nullptr);
+        });
+    } else {
+        onConnectionError(name, connection->getLastError());
+        connection->deleteLater();
+    }
 }
 
 void SSHClient::onConnectionEstablished(const QString& name)
@@ -1230,16 +1228,31 @@ void SSHConnectionDialog::onTestConnection()
 
     m_testButton->setEnabled(false);
     m_testProgress->setVisible(true);
-    m_testProgress->setRange(0, 0); // 无限进度条
+    m_testProgress->setRange(0, 0);
     m_testResultLabel->setText(tr("正在测试连接..."));
+    m_testResultLabel->setStyleSheet("color: #495057;");
 
-    // 模拟测试连接
-    QTimer::singleShot(2000, [this]() {
+    // 真正测试连接
+    auto* testConn = new SSHConnection(info, this);
+
+    connect(testConn, &SSHConnection::connected, this, [this, testConn]() {
         m_testButton->setEnabled(true);
         m_testProgress->setVisible(false);
         m_testResultLabel->setText(tr("连接测试成功"));
         m_testResultLabel->setStyleSheet("color: green;");
+        testConn->disconnect();
+        testConn->deleteLater();
     });
+
+    connect(testConn, &SSHConnection::error, this, [this, testConn](const QString& err) {
+        m_testButton->setEnabled(true);
+        m_testProgress->setVisible(false);
+        m_testResultLabel->setText(tr("连接失败: %1").arg(err));
+        m_testResultLabel->setStyleSheet("color: red;");
+        testConn->deleteLater();
+    });
+
+    testConn->connectToHost();
 }
 
 // ========== SSHConnection Implementation ==========
