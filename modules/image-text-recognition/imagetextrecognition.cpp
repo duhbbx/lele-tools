@@ -440,16 +440,18 @@ bool ImageTextRecognition::checkPaddleOcr()
     QString cmd = m_paddleOcrPath.isEmpty() ? "paddleocr" : m_paddleOcrPath;
     QProcess p;
     p.start(cmd, QStringList() << "--help");
+    if (!p.waitForStarted(3000)) return false; // 命令不存在
     p.waitForFinished(5000);
-    return p.exitCode() == 0 || p.exitStatus() == QProcess::NormalExit;
+    return p.exitStatus() == QProcess::NormalExit && p.error() == QProcess::UnknownError;
 }
 
 bool ImageTextRecognition::checkTesseract()
 {
     QProcess p;
     p.start("tesseract", QStringList() << "--version");
+    if (!p.waitForStarted(3000)) return false; // 命令不存在
     p.waitForFinished(5000);
-    return p.exitCode() == 0;
+    return p.exitStatus() == QProcess::NormalExit && p.exitCode() == 0;
 }
 
 void ImageTextRecognition::showInstallDialog()
