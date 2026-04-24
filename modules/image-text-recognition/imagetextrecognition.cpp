@@ -97,7 +97,8 @@ void ImageTextRecognition::setupUI()
     m_resultsLayout = new QVBoxLayout(m_resultsWidget);
     m_resultsLayout->setContentsMargins(0, 0, 0, 0);
     m_resultsLayout->setSpacing(0);
-    m_resultsLayout->addStretch();
+    m_resultsLayout->setAlignment(Qt::AlignTop);
+    // 不加 stretch，避免底部大量空白
     m_scrollArea->setWidget(m_resultsWidget);
     mainLayout->addWidget(m_scrollArea, 1);
 
@@ -338,7 +339,7 @@ void ImageTextRecognition::rebuildResultsView()
         }
     }
 
-    m_resultsLayout->addStretch();
+    // 不加 stretch，避免底部大量空白
 
     // Update status
     int recognized = 0;
@@ -374,13 +375,27 @@ QString ImageTextRecognition::recognizeImage(const QString& imagePath)
 
 QString ImageTextRecognition::recognizeWithTesseract(const QString& imagePath)
 {
-    QProcess process;
     QString lang = m_langCombo->currentText();
+
+    // 尝试用选定语言识别
+    QProcess process;
     process.start("tesseract", QStringList() << imagePath << "stdout" << "-l" << lang);
     process.waitForFinished(30000);
 
     if (process.exitCode() != 0) {
         QString err = QString::fromUtf8(process.readAllStandardError());
+
+        // 如果是语言包缺失，自动降级到 eng
+        if (err.contains("Failed loading language") && lang != "eng") {
+            QProcess fallback;
+            fallback.start("tesseract", QStringList() << imagePath << "stdout" << "-l" << "eng");
+            fallback.waitForFinished(30000);
+            if (fallback.exitCode() == 0) {
+                QString result = QString::fromUtf8(fallback.readAllStandardOutput()).trimmed();
+                return result + tr("\n\n[注意: 语言包 %1 未安装，已降级为英文识别。\n安装中文支持: brew install tesseract-lang]").arg(lang);
+            }
+        }
+
         return tr("[Tesseract 识别失败] %1").arg(err.trimmed());
     }
     return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
