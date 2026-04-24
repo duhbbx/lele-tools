@@ -171,10 +171,7 @@ void ImageTextRecognition::onRecognizeAll()
         return;
     }
 
-    if (!checkTesseract()) {
-        return;
-    }
-
+    // 不在这里检查引擎，让 recognizeImage 自己选择可用引擎
     for (int i = 0; i < m_items.size(); ++i) {
         if (!m_items[i].recognized) {
             m_items[i].resultText = recognizeImage(m_items[i].imagePath);
@@ -353,12 +350,16 @@ QString ImageTextRecognition::recognizeImage(const QString& imagePath)
     OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
 
     if (engine == Auto) {
-        // 优先 PaddleOCR，降级到 Tesseract
-        if (checkPaddleOcr())
-            return recognizeWithPaddle(imagePath);
+        // 优先 PaddleOCR，识别失败或不可用则降级到 Tesseract
+        if (checkPaddleOcr()) {
+            QString result = recognizeWithPaddle(imagePath);
+            if (!result.startsWith(tr("[PaddleOCR 识别失败]")))
+                return result;
+            // PaddleOCR 识别失败，降级
+        }
         if (checkTesseract())
             return recognizeWithTesseract(imagePath);
-        return tr("[识别失败] 未找到 PaddleOCR 或 Tesseract");
+        return tr("[识别失败] 未找到可用的 OCR 引擎。\n请安装 Tesseract: brew install tesseract tesseract-lang\n或 PaddleOCR: pip install paddleocr paddlepaddle");
     } else if (engine == PaddleOCR) {
         if (!checkPaddleOcr()) return tr("[识别失败] PaddleOCR 不可用");
         return recognizeWithPaddle(imagePath);
