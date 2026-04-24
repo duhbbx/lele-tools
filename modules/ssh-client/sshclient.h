@@ -115,6 +115,7 @@ private:
     };
     QList<ConnectionSession> m_sessions;
 
+    void createConnectionTab(const QString& name, SSHConnection* connection);
     void duplicateTab(int index);
 };
 

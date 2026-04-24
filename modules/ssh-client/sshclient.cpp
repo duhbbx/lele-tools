@@ -172,19 +172,33 @@ void SSHClient::onConnectionRequested(const QString& name)
     }
 
     m_statusBar->showMessage(tr("正在连接到 %1...").arg(info.hostname));
-    QApplication::processEvents();
 
-    // 每个 tab 创建独立的 SSH 连接
+    // 在后台线程连接，避免阻塞 UI
     auto* connection = new SSHConnection(info, this);
-    connection->connectToHost();
+    auto* thread = QThread::create([connection]() {
+        connection->connectToHost();
+    });
 
-    if (!connection->isConnected()) {
-        m_statusBar->showMessage(tr("连接失败: %1").arg(connection->getLastError()));
-        QMessageBox::critical(this, tr("连接失败"), connection->getLastError());
-        connection->deleteLater();
-        return;
-    }
+    connect(thread, &QThread::finished, this, [this, name, info, connection, thread]() {
+        thread->deleteLater();
 
+        if (!connection->isConnected()) {
+            m_statusBar->showMessage(tr("连接失败: %1").arg(connection->getLastError()));
+            QMessageBox::critical(this, tr("连接失败"), connection->getLastError());
+            connection->deleteLater();
+            return;
+        }
+
+        // 连接成功，在主线程创建 UI
+        createConnectionTab(name, connection);
+    });
+
+    thread->start();
+}
+
+void SSHClient::createConnectionTab(const QString& name, SSHConnection* connection)
+{
+    SSHConnectionInfo info = connection->connectionInfo();
     // 创建 tab 页：内含子 tab（终端 + SFTP）
     auto* tabContainer = new QWidget();
     auto* tabLayout = new QVBoxLayout(tabContainer);
