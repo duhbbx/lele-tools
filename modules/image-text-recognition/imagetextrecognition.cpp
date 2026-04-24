@@ -173,9 +173,11 @@ void ImageTextRecognition::onRecognizeAll()
 {
     if (m_items.isEmpty()) return;
 
-    // 预检测引擎
-    bool hasPaddle = checkPaddleOcr();
-    bool hasTess = checkTesseract();
+    // 预检测引擎（结果缓存，避免重复检测）
+    m_statusLabel->setText(tr("正在检测 OCR 引擎..."));
+    QApplication::processEvents();
+    bool hasTess = checkTesseract(); // Tesseract 检测很快
+    bool hasPaddle = checkPaddleOcr(); // PaddleOCR 可能慢一点
     if (!hasPaddle && !hasTess) {
         showInstallDialog();
         return;
@@ -199,73 +201,25 @@ void ImageTextRecognition::onRecognizeAll()
         return;
     }
 
-    // 在后台线程逐个识别
-    auto* thread = QThread::create([this, pendingPaths, hasPaddle, hasTess]() -> QStringList {
-        QStringList results;
-        for (const QString& path : pendingPaths) {
-            QString result;
-            OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
-
-            if (engine == Auto) {
-                if (hasPaddle) {
-                    result = recognizeWithPaddle(path);
-                    if (result.startsWith(tr("[PaddleOCR 识别失败]")) && hasTess)
-                        result = recognizeWithTesseract(path);
-                } else if (hasTess) {
-                    result = recognizeWithTesseract(path);
-                }
-            } else if (engine == PaddleOCR && hasPaddle) {
-                result = recognizeWithPaddle(path);
-            } else if (hasTess) {
-                result = recognizeWithTesseract(path);
-            }
-
-            if (result.isEmpty()) result = tr("[未识别到文字]");
-            results.append(result);
-        }
-        return results;
-    });
-
-    connect(thread, &QThread::finished, this, [this, thread, pendingIndexes]() {
-        // 这里无法直接拿返回值，改用另一种方式
-        thread->deleteLater();
-    });
-
-    // 用 QtConcurrent 更方便拿返回值
-    // 简化方案：用 QTimer 单步异步
-    delete thread; // 不用上面的了
-
-    // 简化：用定时器逐个识别，每个完成后更新 UI
-    auto* timer = new QTimer(this);
-    auto* idx = new int(0);
-    auto* indexes = new QList<int>(pendingIndexes);
-
-    connect(timer, &QTimer::timeout, this, [this, timer, idx, indexes, hasPaddle, hasTess]() {
-        if (*idx >= indexes->size()) {
-            timer->stop();
-            timer->deleteLater();
-            delete idx;
-            delete indexes;
-            m_recognizeBtn->setEnabled(true);
-            rebuildResultsView();
-            return;
-        }
-
-        int itemIdx = indexes->at(*idx);
-        m_statusLabel->setText(tr("正在识别第 %1/%2 张...").arg(*idx + 1).arg(indexes->size()));
+    // 逐个同步识别，用 processEvents 保持 UI 响应
+    for (int i = 0; i < pendingIndexes.size(); ++i) {
+        int itemIdx = pendingIndexes[i];
+        m_statusLabel->setText(tr("正在识别第 %1/%2 张...").arg(i + 1).arg(pendingIndexes.size()));
         QApplication::processEvents();
 
         QString path = m_items[itemIdx].imagePath;
+        qDebug() << "[OCR] Recognizing:" << path << "exists:" << QFile::exists(path);
+
         QString result;
         OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
 
         if (engine == Auto) {
-            if (hasPaddle) {
-                result = recognizeWithPaddle(path);
-                if (result.startsWith("[PaddleOCR") && hasTess)
-                    result = recognizeWithTesseract(path);
-            } else {
+            // 优先 Tesseract（更快），PaddleOCR 作为备选
+            if (hasTess) {
                 result = recognizeWithTesseract(path);
+            }
+            if ((result.isEmpty() || result.startsWith("[Tesseract")) && hasPaddle) {
+                result = recognizeWithPaddle(path);
             }
         } else if (engine == PaddleOCR) {
             result = recognizeWithPaddle(path);
@@ -273,27 +227,14 @@ void ImageTextRecognition::onRecognizeAll()
             result = recognizeWithTesseract(path);
         }
 
+        qDebug() << "[OCR] Result length:" << result.length() << "preview:" << result.left(100);
         m_items[itemIdx].resultText = result.isEmpty() ? tr("[未识别到文字]") : result;
         m_items[itemIdx].recognized = true;
+        QApplication::processEvents();
+    }
 
-        int recognized = 0;
-        for (const auto& item : m_items) if (item.recognized) recognized++;
-        m_statusLabel->setText(tr("共 %1 张图片，已识别 %2 张").arg(m_items.size()).arg(recognized));
-
-        (*idx)++;
-
-        // 如果是最后一个，立刻触发（不等下次 timer）
-        if (*idx >= indexes->size()) {
-            rebuildResultsView();
-            m_recognizeBtn->setEnabled(true);
-            timer->stop();
-            timer->deleteLater();
-            delete idx;
-            delete indexes;
-        }
-    });
-
-    timer->start(10); // 10ms 后开始第一个，给 UI 刷新的机会
+    rebuildResultsView();
+    m_recognizeBtn->setEnabled(true);
 }
 
 void ImageTextRecognition::onCopyAll()
@@ -596,10 +537,13 @@ bool ImageTextRecognition::checkPaddleOcr()
 {
     QString cmd = m_paddleOcrPath.isEmpty() ? "paddleocr" : m_paddleOcrPath;
     QProcess p;
-    p.start(cmd, QStringList() << "--help");
-    if (!p.waitForStarted(3000)) return false; // 命令不存在
-    p.waitForFinished(5000);
-    return p.exitStatus() == QProcess::NormalExit && p.error() == QProcess::UnknownError;
+    p.start(cmd, QStringList() << "-v");
+    if (!p.waitForStarted(2000)) return false;
+    if (!p.waitForFinished(5000)) {
+        p.kill();
+        return false;
+    }
+    return p.exitStatus() == QProcess::NormalExit;
 }
 
 bool ImageTextRecognition::checkTesseract()
@@ -793,14 +737,68 @@ void ImageTextRecognition::onConfigEngine()
     statusLayout->addWidget(detectLabel, 1);
     layout->addLayout(statusLayout);
 
-    connect(detectBtn, &QPushButton::clicked, &dialog, [this, detectLabel, pathEdit]() {
+    // 改为 QTextEdit 显示详细信息
+    auto* detectResult = new QTextEdit();
+    detectResult->setReadOnly(true);
+    detectResult->setMaximumHeight(100);
+    detectResult->setStyleSheet("font-size:8pt; font-family:Menlo,Consolas,monospace; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px;");
+    layout->addWidget(detectResult);
+    detectLabel->hide(); // 隐藏旧的
+
+    connect(detectBtn, &QPushButton::clicked, &dialog, [this, detectResult, pathEdit]() {
         m_paddleOcrPath = pathEdit->text().trimmed();
-        QString status;
-        if (checkPaddleOcr()) status += "PaddleOCR: 可用  ";
-        else status += "PaddleOCR: 不可用  ";
-        if (checkTesseract()) status += "Tesseract: 可用";
-        else status += "Tesseract: 不可用";
-        detectLabel->setText(status);
+        QString info;
+
+        // 检测 Tesseract
+        {
+            QProcess p;
+            p.start("tesseract", QStringList() << "--version");
+            if (p.waitForStarted(3000) && p.waitForFinished(5000) && p.exitCode() == 0) {
+                QString ver = QString::fromUtf8(p.readAllStandardOutput()).trimmed().split('\n').first();
+                // 获取路径
+                QProcess which;
+                which.start("which", QStringList() << "tesseract");
+                which.waitForFinished(3000);
+                QString path = QString::fromUtf8(which.readAllStandardOutput()).trimmed();
+                // 获取语言包
+                QProcess langs;
+                langs.start("tesseract", QStringList() << "--list-langs");
+                langs.waitForFinished(3000);
+                QString langList = QString::fromUtf8(langs.readAllStandardOutput()).trimmed();
+
+                info += "Tesseract: 可用\n";
+                info += "  版本: " + ver + "\n";
+                info += "  路径: " + path + "\n";
+                info += "  语言: " + langList.replace('\n', ", ") + "\n";
+            } else {
+                info += "Tesseract: 不可用\n";
+            }
+        }
+
+        info += "\n";
+
+        // 检测 PaddleOCR
+        {
+            QString cmd = m_paddleOcrPath.isEmpty() ? "paddleocr" : m_paddleOcrPath;
+            QProcess p;
+            p.start(cmd, QStringList() << "-v");
+            if (p.waitForStarted(3000) && p.waitForFinished(5000)) {
+                QString ver = QString::fromUtf8(p.readAllStandardOutput()).trimmed();
+                if (ver.isEmpty()) ver = QString::fromUtf8(p.readAllStandardError()).trimmed();
+                QProcess which;
+                which.start("which", QStringList() << cmd);
+                which.waitForFinished(3000);
+                QString path = QString::fromUtf8(which.readAllStandardOutput()).trimmed();
+
+                info += "PaddleOCR: 可用\n";
+                info += "  版本: " + ver.split('\n').first() + "\n";
+                info += "  路径: " + (path.isEmpty() ? cmd : path) + "\n";
+            } else {
+                info += "PaddleOCR: 不可用\n";
+            }
+        }
+
+        detectResult->setPlainText(info);
     });
 
     // 按钮
