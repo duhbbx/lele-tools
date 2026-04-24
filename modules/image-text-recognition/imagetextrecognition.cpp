@@ -214,17 +214,13 @@ void ImageTextRecognition::onRecognizeAll()
         OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
 
         if (engine == Auto) {
-            // 优先 Tesseract（更快更稳定）
-            if (hasTess) {
-                result = recognizeWithTesseract(path);
-                // Tesseract 执行成功就用（即使结果为空也表示图片没文字）
-                if (!result.startsWith("[Tesseract")) {
-                    // 成功，不再尝试 PaddleOCR
-                }
-            }
-            // 只有 Tesseract 不可用或执行失败才试 PaddleOCR
-            if (result.startsWith("[Tesseract") && hasPaddle) {
+            // 优先 PaddleOCR（精度更高，尤其中文）
+            if (hasPaddle) {
                 result = recognizeWithPaddle(path);
+            }
+            // PaddleOCR 失败或不可用则降级 Tesseract
+            if ((result.isEmpty() || result.startsWith("[PaddleOCR")) && hasTess) {
+                result = recognizeWithTesseract(path);
             }
         } else if (engine == PaddleOCR) {
             result = recognizeWithPaddle(path);
@@ -498,41 +494,47 @@ QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
     }
 
     // 解析输出——提取文字部分
-    QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+    // PaddleOCR v3 新版输出格式包含 'rec_texts': ['文字1', '文字2', ...]
     QStringList textLines;
 
-    for (const QString& line : lines) {
-        QString trimmed = line.trimmed();
-        if (trimmed.isEmpty()) continue;
-
-        // 新版输出格式: {'text': '文字', 'score': 0.98, ...}
-        // 旧版输出格式: ('文字', 0.98) 或 [('文字', 0.98)]
-        QRegularExpression textRegex(R"('text'\s*:\s*'([^']*)')");
-        QRegularExpressionMatch match = textRegex.match(trimmed);
-        if (match.hasMatch()) {
-            textLines.append(match.captured(1));
-            continue;
-        }
-
-        // 旧版格式
-        int start = trimmed.indexOf('\'');
-        int end = trimmed.indexOf('\'', start + 1);
-        if (start >= 0 && end > start) {
-            QString text = trimmed.mid(start + 1, end - start - 1);
-            if (!text.isEmpty() && text != "text") {
+    // 方法1: 提取 rec_texts 数组
+    QRegularExpression recTextsRegex(R"('rec_texts'\s*:\s*\[([^\]]*)\])");
+    QRegularExpressionMatch recMatch = recTextsRegex.match(output);
+    if (recMatch.hasMatch()) {
+        QString textsStr = recMatch.captured(1);
+        // 提取每个 '文字'
+        QRegularExpression itemRegex(R"('([^']*)')");
+        auto it = itemRegex.globalMatch(textsStr);
+        while (it.hasNext()) {
+            auto m = it.next();
+            QString text = m.captured(1);
+            if (!text.isEmpty())
                 textLines.append(text);
-            }
-            continue;
         }
+    }
 
-        // 跳过日志行
-        if (trimmed.startsWith('[') || trimmed.startsWith('{') || trimmed.startsWith('(')
-            || trimmed.contains("ppocr") || trimmed.contains("WARNING")
-            || trimmed.contains("INFO") || trimmed.contains("DEBUG"))
-            continue;
+    // 方法2: 提取 'text': '文字' 格式（旧版）
+    if (textLines.isEmpty()) {
+        QRegularExpression textRegex(R"('text'\s*:\s*'([^']*)')");
+        auto it = textRegex.globalMatch(output);
+        while (it.hasNext()) {
+            textLines.append(it.next().captured(1));
+        }
+    }
 
-        // 其他普通文本行
-        textLines.append(trimmed);
+    // 方法3: 旧版格式 ('文字', 0.98)
+    if (textLines.isEmpty()) {
+        QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+        for (const QString& line : lines) {
+            QString trimmed = line.trimmed();
+            int start = trimmed.indexOf('\'');
+            int end = trimmed.indexOf('\'', start + 1);
+            if (start >= 0 && end > start) {
+                QString text = trimmed.mid(start + 1, end - start - 1);
+                if (!text.isEmpty() && text != "text" && text != "rec_texts")
+                    textLines.append(text);
+            }
+        }
     }
 
     if (textLines.isEmpty()) {
