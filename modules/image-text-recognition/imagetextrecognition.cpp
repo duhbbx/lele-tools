@@ -214,11 +214,16 @@ void ImageTextRecognition::onRecognizeAll()
         OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
 
         if (engine == Auto) {
-            // 优先 Tesseract（更快），PaddleOCR 作为备选
+            // 优先 Tesseract（更快更稳定）
             if (hasTess) {
                 result = recognizeWithTesseract(path);
+                // Tesseract 执行成功就用（即使结果为空也表示图片没文字）
+                if (!result.startsWith("[Tesseract")) {
+                    // 成功，不再尝试 PaddleOCR
+                }
             }
-            if ((result.isEmpty() || result.startsWith("[Tesseract")) && hasPaddle) {
+            // 只有 Tesseract 不可用或执行失败才试 PaddleOCR
+            if (result.startsWith("[Tesseract") && hasPaddle) {
                 result = recognizeWithPaddle(path);
             }
         } else if (engine == PaddleOCR) {
@@ -442,7 +447,11 @@ QString ImageTextRecognition::recognizeWithTesseract(const QString& imagePath)
 
         return tr("[Tesseract 识别失败] %1").arg(err.trimmed());
     }
-    return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+    QString result = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+    if (result.isEmpty()) {
+        result = tr("[图片中未检测到文字]\n提示：安装中文语言包可提高识别率\nbrew install tesseract-lang");
+    }
+    return result;
 }
 
 QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
@@ -527,7 +536,9 @@ QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
     }
 
     if (textLines.isEmpty()) {
-        return tr("[PaddleOCR 识别完成但未提取到文字]\n\n原始输出:\n%1").arg(output.left(500));
+        QString errOutput = QString::fromUtf8(process.readAllStandardError());
+        QString detail = output.isEmpty() ? errOutput : output;
+        return tr("[PaddleOCR 识别完成但未提取到文字]\n\n原始输出:\n%1").arg(detail.left(500));
     }
 
     return textLines.join('\n');
