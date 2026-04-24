@@ -431,26 +431,32 @@ ConnectionManager::~ConnectionManager()
 void ConnectionManager::setupUI()
 {
     m_layout = new QVBoxLayout(this);
-
-    // 标题
-    QLabel* titleLabel = new QLabel(tr("SSH连接"), this);
-    titleLabel->setStyleSheet("font-weight: bold; font-size: 12pt; margin: 5px;");
-    m_layout->addWidget(titleLabel);
+    m_layout->setContentsMargins(4, 4, 4, 4);
+    m_layout->setSpacing(4);
 
     // 连接列表
     m_connectionsTree = new QTreeWidget(this);
     m_connectionsTree->setHeaderLabels({tr("名称"), tr("主机")});
+    m_connectionsTree->setHeaderHidden(true);
     m_connectionsTree->setRootIsDecorated(false);
     m_connectionsTree->setAlternatingRowColors(false);
+    m_connectionsTree->setStyleSheet(
+        "QTreeWidget { border:none; font-size:9pt; background:transparent; }"
+    );
     m_layout->addWidget(m_connectionsTree);
 
     // 按钮组
     QHBoxLayout* buttonLayout = new QHBoxLayout;
 
+    QString cmBtnStyle = "QPushButton { padding:3px 8px; border:none; border-radius:4px; font-size:9pt; color:#495057; background:transparent; } QPushButton:hover { background:#e9ecef; }";
     m_newButton = new QPushButton(tr("新建"), this);
+    m_newButton->setStyleSheet(cmBtnStyle);
     m_editButton = new QPushButton(tr("编辑"), this);
+    m_editButton->setStyleSheet(cmBtnStyle);
     m_deleteButton = new QPushButton(tr("删除"), this);
+    m_deleteButton->setStyleSheet(cmBtnStyle);
     m_connectButton = new QPushButton(tr("连接"), this);
+    m_connectButton->setStyleSheet(cmBtnStyle);
 
     m_editButton->setEnabled(false);
     m_deleteButton->setEnabled(false);
@@ -582,6 +588,8 @@ void ConnectionManager::loadConnections()
         info.privateKeyPath = settings.value("privateKeyPath").toString();
         info.usePrivateKey = settings.value("usePrivateKey", false).toBool();
         info.description = settings.value("description").toString();
+        info.keepAlive = settings.value("keepAlive", true).toBool();
+        info.keepAliveInterval = settings.value("keepAliveInterval", 30).toInt();
 
         if (info.isValid()) {
             m_connections[name] = info;
@@ -613,6 +621,8 @@ void ConnectionManager::saveConnections()
         settings.setValue("privateKeyPath", info.privateKeyPath);
         settings.setValue("usePrivateKey", info.usePrivateKey);
         settings.setValue("description", info.description);
+        settings.setValue("keepAlive", info.keepAlive);
+        settings.setValue("keepAliveInterval", info.keepAliveInterval);
 
         settings.endGroup();
     }
@@ -632,6 +642,20 @@ void ConnectionManager::contextMenuEvent(QContextMenuEvent* event)
             if (!m_selectedConnection.isEmpty()) {
                 emit connectionRequested(m_selectedConnection);
             }
+        });
+        menu.addAction(tr("测试连接"), [this]() {
+            if (m_selectedConnection.isEmpty()) return;
+            SSHConnectionInfo info = m_connections.value(m_selectedConnection);
+            if (!info.isValid()) return;
+            auto* testConn = new SSHConnection(info, this);
+            testConn->connectToHost();
+            if (testConn->isConnected()) {
+                QMessageBox::information(this, tr("测试连接"), tr("连接成功"));
+                testConn->disconnect();
+            } else {
+                QMessageBox::warning(this, tr("测试连接"), tr("连接失败: %1").arg(testConn->getLastError()));
+            }
+            testConn->deleteLater();
         });
         menu.addSeparator();
         menu.addAction(tr("编辑"), this, &ConnectionManager::editConnectionRequested);
@@ -777,6 +801,8 @@ SFTPBrowser::~SFTPBrowser()
 void SFTPBrowser::setupUI()
 {
     m_layout = new QHBoxLayout(this);
+    m_layout->setContentsMargins(2, 2, 2, 2);
+    m_layout->setSpacing(2);
 
     // 主分割器
     m_splitter = new QSplitter(Qt::Horizontal, this);
@@ -784,9 +810,10 @@ void SFTPBrowser::setupUI()
     // 远程文件区域
     m_remoteWidget = new QWidget;
     m_remoteLayout = new QVBoxLayout(m_remoteWidget);
+    m_remoteLayout->setContentsMargins(2, 2, 2, 2);
+    m_remoteLayout->setSpacing(2);
 
     m_remotePathLabel = new QLabel(tr("远程目录: 未连接"), m_remoteWidget);
-    m_remotePathLabel->setStyleSheet("font-weight: bold; background-color: #f0f0f0; padding: 2px;");
     m_remoteLayout->addWidget(m_remotePathLabel);
 
     m_remoteTree = new QTreeWidget(m_remoteWidget);
@@ -801,9 +828,10 @@ void SFTPBrowser::setupUI()
     // 本地文件区域
     m_localWidget = new QWidget;
     m_localLayout = new QVBoxLayout(m_localWidget);
+    m_localLayout->setContentsMargins(2, 2, 2, 2);
+    m_localLayout->setSpacing(2);
 
     m_localPathLabel = new QLabel(tr("本地目录: %1").arg(m_localPath), m_localWidget);
-    m_localPathLabel->setStyleSheet("font-weight: bold; background-color: #f0f0f0; padding: 2px;");
     m_localLayout->addWidget(m_localPathLabel);
 
     m_localTree = new QTreeWidget(m_localWidget);
@@ -813,7 +841,9 @@ void SFTPBrowser::setupUI()
     // 操作按钮区域
     m_buttonWidget = new QWidget;
     m_buttonLayout = new QVBoxLayout(m_buttonWidget);
-    m_buttonWidget->setMaximumWidth(120);
+    m_buttonLayout->setContentsMargins(2, 2, 2, 2);
+    m_buttonLayout->setSpacing(2);
+    m_buttonWidget->setMaximumWidth(100);
 
     m_uploadButton = new QPushButton(tr("上传 →"), m_buttonWidget);
     m_downloadButton = new QPushButton(tr("← 下载"), m_buttonWidget);
@@ -852,6 +882,16 @@ void SFTPBrowser::setupUI()
     m_splitter->setStretchFactor(2, 1);
 
     m_layout->addWidget(m_splitter);
+
+    // Apply flat modern styles
+    setStyleSheet(
+        "SFTPBrowser QPushButton { padding:3px 8px; border:none; border-radius:4px; font-size:9pt; color:#495057; background:transparent; }"
+        "SFTPBrowser QPushButton:hover { background:#e9ecef; }"
+        "SFTPBrowser QTreeWidget { border:1px solid #dee2e6; border-radius:4px; font-size:9pt; }"
+        "SFTPBrowser QHeaderView::section { background:#f8f9fa; border:none; border-bottom:1px solid #dee2e6; padding:3px 6px; font-size:9pt; }"
+        "SFTPBrowser QLabel { font-size:9pt; color:#495057; }"
+        "SFTPBrowser QProgressBar { border:1px solid #dee2e6; border-radius:4px; height:6px; }"
+    );
 
     // 连接信号
     connect(m_remoteTree, &QTreeWidget::itemDoubleClicked,
@@ -1230,6 +1270,22 @@ void SSHConnectionDialog::setupUI()
     m_descriptionEdit->setMaximumHeight(60);
     m_formLayout->addRow(tr("描述:"), m_descriptionEdit);
 
+    // 保活设置
+    m_keepAliveCheckBox = new QCheckBox(tr("启用保活"));
+    m_keepAliveCheckBox->setChecked(true);
+    m_formLayout->addRow("", m_keepAliveCheckBox);
+
+    QHBoxLayout* keepAliveLayout = new QHBoxLayout;
+    m_keepAliveIntervalSpinBox = new QSpinBox;
+    m_keepAliveIntervalSpinBox->setRange(5, 600);
+    m_keepAliveIntervalSpinBox->setValue(30);
+    m_keepAliveIntervalSpinBox->setSuffix(tr(" 秒"));
+    keepAliveLayout->addWidget(m_keepAliveIntervalSpinBox);
+    keepAliveLayout->addStretch();
+    m_formLayout->addRow(tr("保活间隔:"), keepAliveLayout);
+
+    connect(m_keepAliveCheckBox, &QCheckBox::toggled, m_keepAliveIntervalSpinBox, &QSpinBox::setEnabled);
+
     mainLayout->addWidget(formWidget);
 
     // 测试连接
@@ -1275,6 +1331,8 @@ SSHConnectionInfo SSHConnectionDialog::getConnectionInfo() const
     info.privateKeyPath = m_privateKeyEdit->text().trimmed();
     info.usePrivateKey = m_usePrivateKeyCheckBox->isChecked();
     info.description = m_descriptionEdit->toPlainText().trimmed();
+    info.keepAlive = m_keepAliveCheckBox->isChecked();
+    info.keepAliveInterval = m_keepAliveIntervalSpinBox->value();
 
     return info;
 }
@@ -1289,6 +1347,8 @@ void SSHConnectionDialog::setConnectionInfo(const SSHConnectionInfo& info)
     m_privateKeyEdit->setText(info.privateKeyPath);
     m_usePrivateKeyCheckBox->setChecked(info.usePrivateKey);
     m_descriptionEdit->setPlainText(info.description);
+    m_keepAliveCheckBox->setChecked(info.keepAlive);
+    m_keepAliveIntervalSpinBox->setValue(info.keepAliveInterval);
 
     onAuthMethodChanged();
 }
@@ -1455,6 +1515,18 @@ void SSHConnection::connectToHost()
     }
 
     m_connected = true;
+
+    // Start keep-alive timer if enabled
+    if (m_info.keepAlive && m_info.keepAliveInterval > 0) {
+        m_keepAliveTimer = new QTimer(this);
+        connect(m_keepAliveTimer, &QTimer::timeout, this, [this]() {
+            if (m_session && m_connected) {
+                ssh_send_ignore(m_session, "keepalive");
+            }
+        });
+        m_keepAliveTimer->start(m_info.keepAliveInterval * 1000);
+    }
+
     emit connected();
 
 #else
@@ -1600,6 +1672,10 @@ QList<SFTPFileInfo> SSHConnection::listDirectory(const QString& path)
         files.append(info);
         sftp_attributes_free(attrs);
     }
+    // Check if loop ended due to error (not EOF)
+    if (!sftp_dir_eof(dir)) {
+        qWarning() << "SFTP readdir error on path:" << path;
+    }
     sftp_closedir(dir);
 #else
     Q_UNUSED(path)
@@ -1708,6 +1784,12 @@ QString SSHConnection::sftpError() const
 
 void SSHConnection::cleanup()
 {
+    if (m_keepAliveTimer) {
+        m_keepAliveTimer->stop();
+        delete m_keepAliveTimer;
+        m_keepAliveTimer = nullptr;
+    }
+
     m_shellActive = false;
     if (m_readThread) {
         m_readThread->quit();

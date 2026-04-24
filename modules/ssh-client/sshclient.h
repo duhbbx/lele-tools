@@ -130,6 +130,8 @@ struct SSHConnectionInfo {
     QString privateKeyPath;
     bool usePrivateKey;
     QString description;
+    bool keepAlive = true;
+    int keepAliveInterval = 30; // seconds
 
     SSHConnectionInfo() : port(22), usePrivateKey(false) {}
 
@@ -257,6 +259,7 @@ private:
     QMutex m_mutex;
     QThread* m_readThread = nullptr;
     bool m_shellActive = false;
+    QTimer* m_keepAliveTimer = nullptr;
 };
 
 /**
@@ -397,6 +400,8 @@ private:
     QPushButton* m_browseKeyButton;
     QCheckBox* m_usePrivateKeyCheckBox;
     QTextEdit* m_descriptionEdit;
+    QCheckBox* m_keepAliveCheckBox;
+    QSpinBox* m_keepAliveIntervalSpinBox;
     QPushButton* m_testButton;
     QProgressBar* m_testProgress;
     QLabel* m_testResultLabel;
