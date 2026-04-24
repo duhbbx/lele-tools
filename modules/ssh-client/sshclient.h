@@ -91,19 +91,24 @@ private:
     void loadSettings();
     void saveSettings();
 
+    void closeConnectionTab(int index);
+
 private:
     QSplitter* m_mainSplitter;
     ConnectionManager* m_connectionManager;
-    QTabWidget* m_rightTabs;
-    SSHTerminal* m_terminal;
-    SFTPBrowser* m_sftpBrowser;
+    QTabWidget* m_connectionTabs; // 每个连接一个 tab
 
     QMenuBar* m_menuBar;
     QStatusBar* m_statusBar;
 
-    // 当前连接状态
-    QString m_currentConnection;
-    bool m_isConnected;
+    // 连接管理：name → { connection, terminal, sftp }
+    struct ConnectionSession {
+        SSHConnection* connection = nullptr;
+        SSHTerminal* terminal = nullptr;
+        SFTPBrowser* sftp = nullptr;
+        QWidget* tabWidget = nullptr; // tab 页内的容器
+    };
+    QMap<QString, ConnectionSession> m_sessions;
 };
 
 /**

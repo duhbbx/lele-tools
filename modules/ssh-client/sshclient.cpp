@@ -18,12 +18,9 @@ SSHClient::SSHClient(QWidget* parent)
     , DynamicObjectBase()
     , m_mainSplitter(nullptr)
     , m_connectionManager(nullptr)
-    , m_rightTabs(nullptr)
-    , m_terminal(nullptr)
-    , m_sftpBrowser(nullptr)
+    , m_connectionTabs(nullptr)
     , m_menuBar(nullptr)
     , m_statusBar(nullptr)
-    , m_isConnected(false)
 {
     setupUI();
     loadSettings();
@@ -66,22 +63,18 @@ void SSHClient::setupUI()
     // 左侧：连接管理器
     m_connectionManager = new ConnectionManager(this);
     m_connectionManager->setMaximumWidth(300);
-    m_connectionManager->setMinimumWidth(250);
+    m_connectionManager->setMinimumWidth(200);
 
-    // 右侧：标签页容器
-    m_rightTabs = new QTabWidget(this);
-
-    // SSH终端标签页
-    m_terminal = new SSHTerminal(this);
-    m_rightTabs->addTab(m_terminal, tr("SSH终端"));
-
-    // SFTP浏览器标签页
-    m_sftpBrowser = new SFTPBrowser(this);
-    m_rightTabs->addTab(m_sftpBrowser, tr("SFTP文件管理"));
+    // 右侧：连接标签页（每个连接一个 tab）
+    m_connectionTabs = new QTabWidget(this);
+    m_connectionTabs->setTabsClosable(true);
+    m_connectionTabs->setMovable(true);
+    m_connectionTabs->setDocumentMode(true);
+    connect(m_connectionTabs, &QTabWidget::tabCloseRequested, this, &SSHClient::closeConnectionTab);
 
     // 添加到分割器
     m_mainSplitter->addWidget(m_connectionManager);
-    m_mainSplitter->addWidget(m_rightTabs);
+    m_mainSplitter->addWidget(m_connectionTabs);
     m_mainSplitter->setStretchFactor(0, 0);
     m_mainSplitter->setStretchFactor(1, 1);
 
@@ -158,14 +151,14 @@ void SSHClient::setupMenuBar()
 
 void SSHClient::onConnectionRequested(const QString& name)
 {
-    if (m_isConnected) {
-        int result = QMessageBox::question(this, tr("确认"),
-            tr("当前已有连接，是否断开并建立新连接？"),
-            QMessageBox::Yes | QMessageBox::No);
-        if (result != QMessageBox::Yes) {
-            return;
+    // 如果已有这个连接的 tab，直接切换过去
+    if (m_sessions.contains(name)) {
+        for (int i = 0; i < m_connectionTabs->count(); ++i) {
+            if (m_connectionTabs->widget(i) == m_sessions[name].tabWidget) {
+                m_connectionTabs->setCurrentIndex(i);
+                return;
+            }
         }
-        onDisconnect();
     }
 
     SSHConnectionInfo info = m_connectionManager->getConnectionInfo(name);
@@ -175,44 +168,89 @@ void SSHClient::onConnectionRequested(const QString& name)
     }
 
     m_statusBar->showMessage(tr("正在连接到 %1...").arg(info.hostname));
-    QApplication::processEvents(); // 让状态栏消息立刻显示
-    m_currentConnection = name;
+    QApplication::processEvents();
 
-    // 创建 SSH 连接（同步阻塞，但设了 10 秒超时）
+    // 创建连接
     auto* connection = new SSHConnection(info, this);
     connection->connectToHost();
 
-    if (connection->isConnected()) {
-        onConnectionEstablished(name);
-        m_terminal->setConnection(connection);
-        m_sftpBrowser->setConnection(connection);
-
-        connect(connection, &SSHConnection::disconnected, this, [this, name]() {
-            onConnectionClosed(name);
-            m_terminal->setConnection(nullptr);
-            m_sftpBrowser->setConnection(nullptr);
-        });
-    } else {
-        onConnectionError(name, connection->getLastError());
+    if (!connection->isConnected()) {
+        m_statusBar->showMessage(tr("连接失败: %1").arg(connection->getLastError()));
+        QMessageBox::critical(this, tr("连接失败"), connection->getLastError());
         connection->deleteLater();
+        return;
     }
+
+    // 创建 tab 页：内含子 tab（终端 + SFTP）
+    auto* tabContainer = new QWidget();
+    auto* tabLayout = new QVBoxLayout(tabContainer);
+    tabLayout->setContentsMargins(0, 0, 0, 0);
+    tabLayout->setSpacing(0);
+
+    auto* subTabs = new QTabWidget();
+    subTabs->setDocumentMode(true);
+    subTabs->tabBar()->setExpanding(false);
+
+    auto* terminal = new SSHTerminal(tabContainer);
+    auto* sftp = new SFTPBrowser(tabContainer);
+
+    subTabs->addTab(terminal, tr("终端"));
+    subTabs->addTab(sftp, tr("SFTP"));
+
+    tabLayout->addWidget(subTabs);
+
+    // 设置连接
+    terminal->setConnection(connection);
+    sftp->setConnection(connection);
+
+    // 保存 session
+    ConnectionSession session;
+    session.connection = connection;
+    session.terminal = terminal;
+    session.sftp = sftp;
+    session.tabWidget = tabContainer;
+    m_sessions[name] = session;
+
+    // 添加 tab
+    QString tabTitle = QString("%1@%2").arg(info.username, info.hostname);
+    int index = m_connectionTabs->addTab(tabContainer, tabTitle);
+    m_connectionTabs->setCurrentIndex(index);
+
+    m_statusBar->showMessage(tr("已连接到 %1").arg(tabTitle));
+
+    // 断开时自动清理
+    connect(connection, &SSHConnection::disconnected, this, [this, name]() {
+        onConnectionClosed(name);
+    });
 }
 
 void SSHClient::onConnectionEstablished(const QString& name)
 {
-    m_isConnected = true;
-    m_currentConnection = name;
-
-    SSHConnectionInfo info = m_connectionManager->getConnectionInfo(name);
-    m_statusBar->showMessage(tr("已连接到 %1@%2").arg(info.username, info.hostname));
+    Q_UNUSED(name)
 }
 
 void SSHClient::onConnectionClosed(const QString& name)
 {
-    Q_UNUSED(name)
-    m_isConnected = false;
-    m_currentConnection.clear();
-    m_statusBar->showMessage(tr("连接已断开"));
+    if (!m_sessions.contains(name)) return;
+
+    auto& session = m_sessions[name];
+
+    // 移除 tab
+    for (int i = 0; i < m_connectionTabs->count(); ++i) {
+        if (m_connectionTabs->widget(i) == session.tabWidget) {
+            m_connectionTabs->removeTab(i);
+            break;
+        }
+    }
+
+    // 清理
+    if (session.terminal) session.terminal->setConnection(nullptr);
+    if (session.sftp) session.sftp->setConnection(nullptr);
+    if (session.tabWidget) session.tabWidget->deleteLater();
+    if (session.connection) session.connection->deleteLater();
+    m_sessions.remove(name);
+
+    m_statusBar->showMessage(tr("连接已断开: %1").arg(name));
 }
 
 void SSHClient::onConnectionError(const QString& name, const QString& error)
@@ -259,7 +297,7 @@ void SSHClient::onDeleteConnection()
         tr("确定删除连接 \"%1\" 吗？").arg(selected)) != QMessageBox::Yes)
         return;
 
-    if (m_isConnected && m_currentConnection == selected)
+    if (m_sessions.contains(selected))
         onDisconnect();
 
     m_connectionManager->removeConnection(selected);
@@ -267,19 +305,37 @@ void SSHClient::onDeleteConnection()
 
 void SSHClient::onDisconnect()
 {
-    if (m_isConnected) {
-        m_isConnected = false;
-        m_currentConnection.clear();
-        m_statusBar->showMessage(tr("已断开连接"));
+    // 断开当前 tab 对应的连接
+    QWidget* current = m_connectionTabs->currentWidget();
+    if (!current) return;
 
-        // 清理终端和SFTP浏览器
-        m_terminal->clear();
+    for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
+        if (it->tabWidget == current) {
+            if (it->connection) it->connection->disconnect();
+            // onConnectionClosed 会被 disconnect 信号触发
+            return;
+        }
     }
+}
+
+void SSHClient::closeConnectionTab(int index)
+{
+    QWidget* tabWidget = m_connectionTabs->widget(index);
+    if (!tabWidget) return;
+
+    for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
+        if (it->tabWidget == tabWidget) {
+            if (it->connection) it->connection->disconnect();
+            return;
+        }
+    }
+    // 如果没有对应 session（不应该发生），直接移除
+    m_connectionTabs->removeTab(index);
 }
 
 void SSHClient::closeEvent(QCloseEvent* event)
 {
-    if (m_isConnected) {
+    if (!m_sessions.isEmpty()) {
         int result = QMessageBox::question(this, tr("确认退出"),
             tr("当前有活动连接，确定要退出吗？"),
             QMessageBox::Yes | QMessageBox::No);
@@ -287,7 +343,12 @@ void SSHClient::closeEvent(QCloseEvent* event)
             event->ignore();
             return;
         }
-        onDisconnect();
+        // 断开所有连接
+        QStringList names = m_sessions.keys();
+        for (const QString& name : names) {
+            if (m_sessions[name].connection)
+                m_sessions[name].connection->disconnect();
+        }
     }
 
     saveSettings();
