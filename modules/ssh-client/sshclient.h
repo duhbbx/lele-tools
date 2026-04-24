@@ -343,14 +343,14 @@ private:
     // 远程文件区域
     QWidget* m_remoteWidget;
     QVBoxLayout* m_remoteLayout;
-    QLabel* m_remotePathLabel;
+    QLineEdit* m_remotePathEdit;
     QTreeWidget* m_remoteTree;
     QPushButton* m_refreshButton;
 
     // 本地文件区域
     QWidget* m_localWidget;
     QVBoxLayout* m_localLayout;
-    QLabel* m_localPathLabel;
+    QLineEdit* m_localPathEdit;
     QTreeWidget* m_localTree;
 
     // 操作按钮

@@ -64,6 +64,8 @@ void SSHClient::setupUI()
     m_connectionManager = new ConnectionManager(this);
     m_connectionManager->setMaximumWidth(300);
     m_connectionManager->setMinimumWidth(200);
+    m_connectionManager->setStyleSheet("ConnectionManager { background-color: #f8f9fa; border-right: 1px solid #e9ecef; }");
+    m_connectionManager->setObjectName("sshConnectionManager");
 
     // 右侧：连接标签页（每个连接一个 tab）
     m_connectionTabs = new QTabWidget(this);
@@ -813,8 +815,14 @@ void SFTPBrowser::setupUI()
     m_remoteLayout->setContentsMargins(2, 2, 2, 2);
     m_remoteLayout->setSpacing(2);
 
-    m_remotePathLabel = new QLabel(tr("远程目录: 未连接"), m_remoteWidget);
-    m_remoteLayout->addWidget(m_remotePathLabel);
+    m_remotePathEdit = new QLineEdit(m_remoteWidget);
+    m_remotePathEdit->setPlaceholderText(tr("远程目录路径..."));
+    m_remotePathEdit->setStyleSheet("font-size:9pt; padding:2px 6px; border:1px solid #dee2e6; border-radius:4px;");
+    connect(m_remotePathEdit, &QLineEdit::returnPressed, this, [this]() {
+        m_remotePath = m_remotePathEdit->text().trimmed();
+        if (!m_remotePath.isEmpty()) updateRemoteFiles(m_remotePath);
+    });
+    m_remoteLayout->addWidget(m_remotePathEdit);
 
     m_remoteTree = new QTreeWidget(m_remoteWidget);
     m_remoteTree->setHeaderLabels({tr("名称"), tr("大小"), tr("修改时间"), tr("权限")});
@@ -831,8 +839,16 @@ void SFTPBrowser::setupUI()
     m_localLayout->setContentsMargins(2, 2, 2, 2);
     m_localLayout->setSpacing(2);
 
-    m_localPathLabel = new QLabel(tr("本地目录: %1").arg(m_localPath), m_localWidget);
-    m_localLayout->addWidget(m_localPathLabel);
+    m_localPathEdit = new QLineEdit(m_localPath, m_localWidget);
+    m_localPathEdit->setStyleSheet("font-size:9pt; padding:2px 6px; border:1px solid #dee2e6; border-radius:4px;");
+    connect(m_localPathEdit, &QLineEdit::returnPressed, this, [this]() {
+        QString path = m_localPathEdit->text().trimmed();
+        if (QDir(path).exists()) {
+            m_localPath = path;
+            updateLocalFiles(m_localPath);
+        }
+    });
+    m_localLayout->addWidget(m_localPathEdit);
 
     m_localTree = new QTreeWidget(m_localWidget);
     m_localTree->setHeaderLabels({tr("名称"), tr("大小"), tr("修改时间")});
@@ -931,7 +947,7 @@ void SFTPBrowser::setConnection(SSHConnection* connection)
         m_createDirButton->setEnabled(false);
 
         m_remoteTree->clear();
-        m_remotePathLabel->setText(tr("远程目录: 未连接"));
+        m_remotePathEdit->clear();
     }
 }
 
@@ -946,7 +962,7 @@ void SFTPBrowser::refresh()
 void SFTPBrowser::updateRemoteFiles(const QString& path)
 {
     m_remotePath = path;
-    m_remotePathLabel->setText(tr("远程目录: %1").arg(m_remotePath));
+    m_remotePathEdit->setText(m_remotePath);
 
     m_remoteTree->clear();
 
@@ -1002,7 +1018,7 @@ void SFTPBrowser::updateRemoteFiles(const QString& path)
 void SFTPBrowser::updateLocalFiles(const QString& path)
 {
     m_localPath = path;
-    m_localPathLabel->setText(tr("本地目录: %1").arg(m_localPath));
+    m_localPathEdit->setText(m_localPath);
 
     m_localTree->clear();
 
@@ -1689,23 +1705,32 @@ bool SSHConnection::downloadFile(const QString& remotePath, const QString& local
     if (!initSftp()) return false;
 
     sftp_file file = sftp_open(m_sftpSession, remotePath.toUtf8().constData(), O_RDONLY, 0);
-    if (!file) return false;
+    if (!file) {
+        m_lastError = QString::fromUtf8(ssh_get_error(m_session));
+        return false;
+    }
 
     QFile localFile(localPath);
     if (!localFile.open(QIODevice::WriteOnly)) {
+        m_lastError = tr("无法创建本地文件: %1").arg(localPath);
         sftp_close(file);
         return false;
     }
 
     char buffer[65536];
     int nbytes;
+    bool success = true;
     while ((nbytes = sftp_read(file, buffer, sizeof(buffer))) > 0) {
         localFile.write(buffer, nbytes);
+    }
+    if (nbytes < 0) {
+        m_lastError = QString::fromUtf8(ssh_get_error(m_session));
+        success = false;
     }
 
     localFile.close();
     sftp_close(file);
-    return nbytes >= 0;
+    return success;
 #else
     Q_UNUSED(remotePath)
     Q_UNUSED(localPath)
@@ -1724,6 +1749,7 @@ bool SSHConnection::uploadFile(const QString& localPath, const QString& remotePa
     sftp_file file = sftp_open(m_sftpSession, remotePath.toUtf8().constData(),
                                O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (!file) {
+        m_lastError = QString::fromUtf8(ssh_get_error(m_session));
         localFile.close();
         return false;
     }
@@ -1773,10 +1799,9 @@ bool SSHConnection::createRemoteDirectory(const QString& path)
 QString SSHConnection::sftpError() const
 {
 #ifdef WITH_LIBSSH
-    if (m_sftpSession) {
-        return QString("SFTP error code: %1").arg(sftp_get_error(m_sftpSession));
-    }
-    return tr("SFTP session not initialized");
+    if (!m_lastError.isEmpty()) return m_lastError;
+    if (m_session) return QString::fromUtf8(ssh_get_error(m_session));
+    return tr("连接无效");
 #else
     return tr("LibSSH not compiled");
 #endif
