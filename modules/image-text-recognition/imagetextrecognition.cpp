@@ -17,6 +17,8 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QRegularExpression>
+#include <QTimer>
+#include <QThread>
 #include <QUuid>
 #include <QScreen>
 
@@ -171,27 +173,127 @@ void ImageTextRecognition::onRecognizeAll()
 {
     if (m_items.isEmpty()) return;
 
-    // 预检测引擎，没有则提示安装
-    if (!checkPaddleOcr() && !checkTesseract()) {
+    // 预检测引擎
+    bool hasPaddle = checkPaddleOcr();
+    bool hasTess = checkTesseract();
+    if (!hasPaddle && !hasTess) {
         showInstallDialog();
         return;
     }
 
+    m_recognizeBtn->setEnabled(false);
+    m_statusLabel->setText(tr("正在识别..."));
+
+    // 收集待识别的索引和路径
+    QList<int> pendingIndexes;
+    QStringList pendingPaths;
     for (int i = 0; i < m_items.size(); ++i) {
         if (!m_items[i].recognized) {
-            m_items[i].resultText = recognizeImage(m_items[i].imagePath);
-            m_items[i].recognized = true;
-
-            int recognized = 0;
-            for (const auto& item : m_items) {
-                if (item.recognized) recognized++;
-            }
-            m_statusLabel->setText(tr("共 %1 张图片，已识别 %2 张").arg(m_items.size()).arg(recognized));
-            QApplication::processEvents();
+            pendingIndexes.append(i);
+            pendingPaths.append(m_items[i].imagePath);
         }
     }
 
-    rebuildResultsView();
+    if (pendingIndexes.isEmpty()) {
+        m_recognizeBtn->setEnabled(true);
+        return;
+    }
+
+    // 在后台线程逐个识别
+    auto* thread = QThread::create([this, pendingPaths, hasPaddle, hasTess]() -> QStringList {
+        QStringList results;
+        for (const QString& path : pendingPaths) {
+            QString result;
+            OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
+
+            if (engine == Auto) {
+                if (hasPaddle) {
+                    result = recognizeWithPaddle(path);
+                    if (result.startsWith(tr("[PaddleOCR 识别失败]")) && hasTess)
+                        result = recognizeWithTesseract(path);
+                } else if (hasTess) {
+                    result = recognizeWithTesseract(path);
+                }
+            } else if (engine == PaddleOCR && hasPaddle) {
+                result = recognizeWithPaddle(path);
+            } else if (hasTess) {
+                result = recognizeWithTesseract(path);
+            }
+
+            if (result.isEmpty()) result = tr("[未识别到文字]");
+            results.append(result);
+        }
+        return results;
+    });
+
+    connect(thread, &QThread::finished, this, [this, thread, pendingIndexes]() {
+        // 这里无法直接拿返回值，改用另一种方式
+        thread->deleteLater();
+    });
+
+    // 用 QtConcurrent 更方便拿返回值
+    // 简化方案：用 QTimer 单步异步
+    delete thread; // 不用上面的了
+
+    // 简化：用定时器逐个识别，每个完成后更新 UI
+    auto* timer = new QTimer(this);
+    auto* idx = new int(0);
+    auto* indexes = new QList<int>(pendingIndexes);
+
+    connect(timer, &QTimer::timeout, this, [this, timer, idx, indexes, hasPaddle, hasTess]() {
+        if (*idx >= indexes->size()) {
+            timer->stop();
+            timer->deleteLater();
+            delete idx;
+            delete indexes;
+            m_recognizeBtn->setEnabled(true);
+            rebuildResultsView();
+            return;
+        }
+
+        int itemIdx = indexes->at(*idx);
+        m_statusLabel->setText(tr("正在识别第 %1/%2 张...").arg(*idx + 1).arg(indexes->size()));
+        QApplication::processEvents();
+
+        QString path = m_items[itemIdx].imagePath;
+        QString result;
+        OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
+
+        if (engine == Auto) {
+            if (hasPaddle) {
+                result = recognizeWithPaddle(path);
+                if (result.startsWith("[PaddleOCR") && hasTess)
+                    result = recognizeWithTesseract(path);
+            } else {
+                result = recognizeWithTesseract(path);
+            }
+        } else if (engine == PaddleOCR) {
+            result = recognizeWithPaddle(path);
+        } else {
+            result = recognizeWithTesseract(path);
+        }
+
+        m_items[itemIdx].resultText = result.isEmpty() ? tr("[未识别到文字]") : result;
+        m_items[itemIdx].recognized = true;
+
+        int recognized = 0;
+        for (const auto& item : m_items) if (item.recognized) recognized++;
+        m_statusLabel->setText(tr("共 %1 张图片，已识别 %2 张").arg(m_items.size()).arg(recognized));
+
+        (*idx)++;
+
+        // 如果是最后一个，立刻触发（不等下次 timer）
+        if (*idx >= indexes->size()) {
+            rebuildResultsView();
+            m_recognizeBtn->setEnabled(true);
+            timer->stop();
+            timer->deleteLater();
+            delete idx;
+            delete indexes;
+        }
+    });
+
+    timer->start(10); // 10ms 后开始第一个，给 UI 刷新的机会
 }
 
 void ImageTextRecognition::onCopyAll()
