@@ -465,11 +465,16 @@ QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
     }
     process.waitForFinished(120000); // 首次可能需要下载模型
 
-    QString output = QString::fromUtf8(process.readAllStandardOutput());
-    QString err = QString::fromUtf8(process.readAllStandardError());
+    // 合并 stdout + stderr（PaddleOCR 混合输出）
+    QString output = QString::fromUtf8(process.readAllStandardOutput())
+                   + QString::fromUtf8(process.readAllStandardError());
+
+    // Strip ANSI 颜色码
+    static QRegularExpression ansiRegex("\x1b\\[[0-9;]*m");
+    output.remove(ansiRegex);
 
     // 如果新版语法失败，尝试旧版
-    if (process.exitCode() != 0 && (err.contains("invalid choice") || output.isEmpty())) {
+    if (process.exitCode() != 0 && (output.contains("invalid choice") || output.trimmed().isEmpty())) {
         QProcess oldProcess;
         QString lang = "ch";
         QString langSel = m_langCombo->currentText();
@@ -488,9 +493,11 @@ QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
             QString oldErr = QString::fromUtf8(oldProcess.readAllStandardError());
             return tr("[PaddleOCR 识别失败] %1").arg(oldErr.trimmed().left(200));
         }
-        output = QString::fromUtf8(oldProcess.readAllStandardOutput());
-    } else if (process.exitCode() != 0) {
-        return tr("[PaddleOCR 识别失败] %1").arg(err.trimmed().left(200));
+        output = QString::fromUtf8(oldProcess.readAllStandardOutput())
+               + QString::fromUtf8(oldProcess.readAllStandardError());
+        output.remove(ansiRegex);
+    } else if (process.exitCode() != 0 && output.trimmed().isEmpty()) {
+        return tr("[PaddleOCR 识别失败] %1").arg(output.trimmed().left(200));
     }
 
     // 解析输出——提取文字部分
@@ -538,8 +545,7 @@ QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
     }
 
     if (textLines.isEmpty()) {
-        QString errOutput = QString::fromUtf8(process.readAllStandardError());
-        QString detail = output.isEmpty() ? errOutput : output;
+        QString detail = output;
         return tr("[PaddleOCR 识别完成但未提取到文字]\n\n原始输出:\n%1").arg(detail.left(500));
     }
 
