@@ -72,6 +72,18 @@ void SSHClient::setupUI()
     m_connectionTabs->setDocumentMode(true);
     connect(m_connectionTabs, &QTabWidget::tabCloseRequested, this, &SSHClient::closeConnectionTab);
 
+    // Tab bar context menu for duplicate
+    m_connectionTabs->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_connectionTabs->tabBar(), &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        int tabIndex = m_connectionTabs->tabBar()->tabAt(pos);
+        if (tabIndex < 0) return;
+        QMenu menu;
+        menu.addAction(tr("复制标签页"), [this, tabIndex]() {
+            duplicateTab(tabIndex);
+        });
+        menu.exec(m_connectionTabs->tabBar()->mapToGlobal(pos));
+    });
+
     // 添加到分割器
     m_mainSplitter->addWidget(m_connectionManager);
     m_mainSplitter->addWidget(m_connectionTabs);
@@ -151,16 +163,6 @@ void SSHClient::setupMenuBar()
 
 void SSHClient::onConnectionRequested(const QString& name)
 {
-    // 如果已有这个连接的 tab，直接切换过去
-    if (m_sessions.contains(name)) {
-        for (int i = 0; i < m_connectionTabs->count(); ++i) {
-            if (m_connectionTabs->widget(i) == m_sessions[name].tabWidget) {
-                m_connectionTabs->setCurrentIndex(i);
-                return;
-            }
-        }
-    }
-
     SSHConnectionInfo info = m_connectionManager->getConnectionInfo(name);
     if (!info.isValid()) {
         QMessageBox::warning(this, tr("错误"), tr("连接信息无效"));
@@ -170,7 +172,7 @@ void SSHClient::onConnectionRequested(const QString& name)
     m_statusBar->showMessage(tr("正在连接到 %1...").arg(info.hostname));
     QApplication::processEvents();
 
-    // 创建连接
+    // 每个 tab 创建独立的 SSH 连接
     auto* connection = new SSHConnection(info, this);
     connection->connectToHost();
 
@@ -205,11 +207,12 @@ void SSHClient::onConnectionRequested(const QString& name)
 
     // 保存 session
     ConnectionSession session;
+    session.name = name;
     session.connection = connection;
     session.terminal = terminal;
     session.sftp = sftp;
     session.tabWidget = tabContainer;
-    m_sessions[name] = session;
+    m_sessions.append(session);
 
     // 添加 tab
     QString tabTitle = QString("%1@%2").arg(info.username, info.hostname);
@@ -219,8 +222,29 @@ void SSHClient::onConnectionRequested(const QString& name)
     m_statusBar->showMessage(tr("已连接到 %1").arg(tabTitle));
 
     // 断开时自动清理
-    connect(connection, &SSHConnection::disconnected, this, [this, name]() {
-        onConnectionClosed(name);
+    QWidget* tabPtr = tabContainer;
+    connect(connection, &SSHConnection::disconnected, this, [this, tabPtr]() {
+        // Find and remove by tabWidget pointer
+        for (int i = 0; i < m_sessions.size(); ++i) {
+            if (m_sessions[i].tabWidget == tabPtr) {
+                // Remove the tab
+                for (int t = 0; t < m_connectionTabs->count(); ++t) {
+                    if (m_connectionTabs->widget(t) == tabPtr) {
+                        m_connectionTabs->removeTab(t);
+                        break;
+                    }
+                }
+                auto& s = m_sessions[i];
+                if (s.terminal) s.terminal->setConnection(nullptr);
+                if (s.sftp) s.sftp->setConnection(nullptr);
+                if (s.tabWidget) s.tabWidget->deleteLater();
+                if (s.connection) s.connection->deleteLater();
+                QString sname = s.name;
+                m_sessions.removeAt(i);
+                m_statusBar->showMessage(tr("连接已断开: %1").arg(sname));
+                break;
+            }
+        }
     });
 }
 
@@ -231,26 +255,8 @@ void SSHClient::onConnectionEstablished(const QString& name)
 
 void SSHClient::onConnectionClosed(const QString& name)
 {
-    if (!m_sessions.contains(name)) return;
-
-    auto& session = m_sessions[name];
-
-    // 移除 tab
-    for (int i = 0; i < m_connectionTabs->count(); ++i) {
-        if (m_connectionTabs->widget(i) == session.tabWidget) {
-            m_connectionTabs->removeTab(i);
-            break;
-        }
-    }
-
-    // 清理
-    if (session.terminal) session.terminal->setConnection(nullptr);
-    if (session.sftp) session.sftp->setConnection(nullptr);
-    if (session.tabWidget) session.tabWidget->deleteLater();
-    if (session.connection) session.connection->deleteLater();
-    m_sessions.remove(name);
-
-    m_statusBar->showMessage(tr("连接已断开: %1").arg(name));
+    Q_UNUSED(name)
+    // Cleanup is now handled by the disconnected signal lambda in onConnectionRequested
 }
 
 void SSHClient::onConnectionError(const QString& name, const QString& error)
@@ -297,8 +303,12 @@ void SSHClient::onDeleteConnection()
         tr("确定删除连接 \"%1\" 吗？").arg(selected)) != QMessageBox::Yes)
         return;
 
-    if (m_sessions.contains(selected))
-        onDisconnect();
+    // Disconnect all tabs for this connection name
+    for (int i = m_sessions.size() - 1; i >= 0; --i) {
+        if (m_sessions[i].name == selected && m_sessions[i].connection) {
+            m_sessions[i].connection->disconnect();
+        }
+    }
 
     m_connectionManager->removeConnection(selected);
 }
@@ -309,10 +319,9 @@ void SSHClient::onDisconnect()
     QWidget* current = m_connectionTabs->currentWidget();
     if (!current) return;
 
-    for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
-        if (it->tabWidget == current) {
-            if (it->connection) it->connection->disconnect();
-            // onConnectionClosed 会被 disconnect 信号触发
+    for (int i = 0; i < m_sessions.size(); ++i) {
+        if (m_sessions[i].tabWidget == current) {
+            if (m_sessions[i].connection) m_sessions[i].connection->disconnect();
             return;
         }
     }
@@ -323,14 +332,33 @@ void SSHClient::closeConnectionTab(int index)
     QWidget* tabWidget = m_connectionTabs->widget(index);
     if (!tabWidget) return;
 
-    for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
-        if (it->tabWidget == tabWidget) {
-            if (it->connection) it->connection->disconnect();
+    for (int i = 0; i < m_sessions.size(); ++i) {
+        if (m_sessions[i].tabWidget == tabWidget) {
+            if (m_sessions[i].connection) m_sessions[i].connection->disconnect();
             return;
         }
     }
     // 如果没有对应 session（不应该发生），直接移除
     m_connectionTabs->removeTab(index);
+}
+
+void SSHClient::duplicateTab(int index)
+{
+    QWidget* tabWidget = m_connectionTabs->widget(index);
+    if (!tabWidget) return;
+
+    // Find the session for this tab
+    QString connName;
+    for (int i = 0; i < m_sessions.size(); ++i) {
+        if (m_sessions[i].tabWidget == tabWidget) {
+            connName = m_sessions[i].name;
+            break;
+        }
+    }
+
+    if (!connName.isEmpty()) {
+        onConnectionRequested(connName);
+    }
 }
 
 void SSHClient::closeEvent(QCloseEvent* event)
@@ -344,10 +372,9 @@ void SSHClient::closeEvent(QCloseEvent* event)
             return;
         }
         // 断开所有连接
-        QStringList names = m_sessions.keys();
-        for (const QString& name : names) {
-            if (m_sessions[name].connection)
-                m_sessions[name].connection->disconnect();
+        for (int i = m_sessions.size() - 1; i >= 0; --i) {
+            if (m_sessions[i].connection)
+                m_sessions[i].connection->disconnect();
         }
     }
 
@@ -414,7 +441,7 @@ void ConnectionManager::setupUI()
     m_connectionsTree = new QTreeWidget(this);
     m_connectionsTree->setHeaderLabels({tr("名称"), tr("主机")});
     m_connectionsTree->setRootIsDecorated(false);
-    m_connectionsTree->setAlternatingRowColors(true);
+    m_connectionsTree->setAlternatingRowColors(false);
     m_layout->addWidget(m_connectionsTree);
 
     // 按钮组
@@ -892,26 +919,41 @@ void SFTPBrowser::updateRemoteFiles(const QString& path)
         m_remoteTree->addTopLevelItem(parentItem);
     }
 
-    // 这里应该通过SFTP获取远程文件列表
-    // 为了演示，添加一些示例文件
-    QStringList demoFiles = {"home", "etc", "var", "tmp", "file1.txt", "file2.log"};
-    for (const QString& fileName : demoFiles) {
-        QTreeWidgetItem* item = new QTreeWidgetItem;
-        item->setText(0, fileName);
+    if (!m_connection) return;
 
-        if (fileName.contains('.')) {
-            // 文件
-            item->setText(1, "1024 B");
-            item->setText(2, "2024-01-01 10:00:00");
-            item->setText(3, "-rw-r--r--");
-            item->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
-        } else {
-            // 目录
+    QList<SFTPFileInfo> files = m_connection->listDirectory(m_remotePath);
+    if (files.isEmpty() && m_remotePath != "/") {
+        // Might be a permission error or empty dir; show nothing extra
+    }
+
+    // Sort: directories first, then files, alphabetically
+    std::sort(files.begin(), files.end(), [](const SFTPFileInfo& a, const SFTPFileInfo& b) {
+        if (a.isDir != b.isDir) return a.isDir > b.isDir;
+        return a.name.toLower() < b.name.toLower();
+    });
+
+    for (const SFTPFileInfo& fi : files) {
+        QTreeWidgetItem* item = new QTreeWidgetItem;
+        item->setText(0, fi.name);
+
+        if (fi.isDir) {
             item->setText(1, tr("<目录>"));
-            item->setText(2, "2024-01-01 10:00:00");
-            item->setText(3, "drwxr-xr-x");
             item->setIcon(0, style()->standardIcon(QStyle::SP_DirIcon));
+        } else {
+            // Human-readable size
+            if (fi.size < 1024)
+                item->setText(1, QString::number(fi.size) + " B");
+            else if (fi.size < 1024 * 1024)
+                item->setText(1, QString::number(fi.size / 1024.0, 'f', 1) + " KB");
+            else if (fi.size < 1024LL * 1024 * 1024)
+                item->setText(1, QString::number(fi.size / (1024.0 * 1024.0), 'f', 1) + " MB");
+            else
+                item->setText(1, QString::number(fi.size / (1024.0 * 1024.0 * 1024.0), 'f', 2) + " GB");
+            item->setIcon(0, style()->standardIcon(QStyle::SP_FileIcon));
         }
+
+        item->setText(2, fi.modified.toString("yyyy-MM-dd hh:mm:ss"));
+        item->setText(3, fi.permissions);
 
         m_remoteTree->addTopLevelItem(item);
     }
@@ -969,12 +1011,18 @@ void SFTPBrowser::onRemoteItemDoubleClicked(QTreeWidgetItem* item, int column)
     QString fileName = item->text(0);
     if (fileName == "..") {
         // 返回上级目录
-        QDir dir(m_remotePath);
-        dir.cdUp();
-        updateRemoteFiles(dir.absolutePath());
+        QString parent = m_remotePath;
+        if (parent.endsWith('/') && parent.length() > 1)
+            parent.chop(1);
+        int lastSlash = parent.lastIndexOf('/');
+        if (lastSlash >= 0)
+            parent = parent.left(lastSlash);
+        if (parent.isEmpty())
+            parent = "/";
+        updateRemoteFiles(parent);
     } else if (item->text(1) == tr("<目录>")) {
         // 进入子目录
-        QString newPath = m_remotePath + "/" + fileName;
+        QString newPath = m_remotePath + (m_remotePath.endsWith('/') ? "" : "/") + fileName;
         updateRemoteFiles(newPath);
     }
 }
@@ -999,6 +1047,8 @@ void SFTPBrowser::onLocalItemDoubleClicked(QTreeWidgetItem* item, int column)
 
 void SFTPBrowser::onUploadClicked()
 {
+    if (!m_connection) return;
+
     QTreeWidgetItem* localItem = m_localTree->currentItem();
     if (!localItem || localItem->text(0) == ".." || localItem->text(1) == tr("<目录>")) {
         QMessageBox::information(this, tr("提示"), tr("请选择要上传的文件"));
@@ -1006,29 +1056,63 @@ void SFTPBrowser::onUploadClicked()
     }
 
     QString localFile = QDir(m_localPath).absoluteFilePath(localItem->text(0));
-    QString remoteFile = m_remotePath + "/" + localItem->text(0);
+    QString remoteFile = m_remotePath + (m_remotePath.endsWith('/') ? "" : "/") + localItem->text(0);
 
-    QMessageBox::information(this, tr("上传"),
-        tr("模拟上传文件:\n从: %1\n到: %2").arg(localFile, remoteFile));
+    m_progressBar->setVisible(true);
+    m_progressBar->setRange(0, 0); // indeterminate
+    QApplication::processEvents();
+
+    bool ok = m_connection->uploadFile(localFile, remoteFile);
+
+    m_progressBar->setVisible(false);
+
+    if (ok) {
+        QMessageBox::information(this, tr("上传"), tr("文件上传成功"));
+        refresh();
+    } else {
+        QMessageBox::critical(this, tr("上传失败"),
+            tr("上传文件失败: %1").arg(m_connection->sftpError()));
+    }
 }
 
 void SFTPBrowser::onDownloadClicked()
 {
+    if (!m_connection) return;
+
     QTreeWidgetItem* remoteItem = m_remoteTree->currentItem();
     if (!remoteItem || remoteItem->text(0) == ".." || remoteItem->text(1) == tr("<目录>")) {
         QMessageBox::information(this, tr("提示"), tr("请选择要下载的文件"));
         return;
     }
 
-    QString remoteFile = m_remotePath + "/" + remoteItem->text(0);
+    QString remoteFile = m_remotePath + (m_remotePath.endsWith('/') ? "" : "/") + remoteItem->text(0);
     QString localFile = QDir(m_localPath).absoluteFilePath(remoteItem->text(0));
 
-    QMessageBox::information(this, tr("下载"),
-        tr("模拟下载文件:\n从: %1\n到: %2").arg(remoteFile, localFile));
+    // Let user choose save location
+    QString savePath = QFileDialog::getSaveFileName(this, tr("保存文件"), localFile);
+    if (savePath.isEmpty()) return;
+
+    m_progressBar->setVisible(true);
+    m_progressBar->setRange(0, 0);
+    QApplication::processEvents();
+
+    bool ok = m_connection->downloadFile(remoteFile, savePath);
+
+    m_progressBar->setVisible(false);
+
+    if (ok) {
+        QMessageBox::information(this, tr("下载"), tr("文件下载成功"));
+        updateLocalFiles(m_localPath);
+    } else {
+        QMessageBox::critical(this, tr("下载失败"),
+            tr("下载文件失败: %1").arg(m_connection->sftpError()));
+    }
 }
 
 void SFTPBrowser::onDeleteClicked()
 {
+    if (!m_connection) return;
+
     QTreeWidgetItem* remoteItem = m_remoteTree->currentItem();
     if (!remoteItem || remoteItem->text(0) == "..") {
         QMessageBox::information(this, tr("提示"), tr("请选择要删除的文件或目录"));
@@ -1040,23 +1124,34 @@ void SFTPBrowser::onDeleteClicked()
         QMessageBox::Yes | QMessageBox::No);
 
     if (result == QMessageBox::Yes) {
-        QMessageBox::information(this, tr("删除"), tr("模拟删除操作"));
-        // 这里应该执行实际的删除操作
-        refresh();
+        QString remotePath = m_remotePath + (m_remotePath.endsWith('/') ? "" : "/") + remoteItem->text(0);
+        bool ok = m_connection->deleteRemoteFile(remotePath);
+        if (ok) {
+            refresh();
+        } else {
+            QMessageBox::critical(this, tr("删除失败"),
+                tr("删除失败: %1").arg(m_connection->sftpError()));
+        }
     }
 }
 
 void SFTPBrowser::onCreateDirectoryClicked()
 {
+    if (!m_connection) return;
+
     bool ok;
     QString dirName = QInputDialog::getText(this, tr("新建目录"),
         tr("目录名称:"), QLineEdit::Normal, "", &ok);
 
     if (ok && !dirName.isEmpty()) {
-        QMessageBox::information(this, tr("新建目录"),
-            tr("模拟创建目录: %1").arg(dirName));
-        // 这里应该执行实际的创建目录操作
-        refresh();
+        QString remotePath = m_remotePath + (m_remotePath.endsWith('/') ? "" : "/") + dirName;
+        bool success = m_connection->createRemoteDirectory(remotePath);
+        if (success) {
+            refresh();
+        } else {
+            QMessageBox::critical(this, tr("创建目录失败"),
+                tr("创建目录失败: %1").arg(m_connection->sftpError()));
+        }
     }
 }
 
@@ -1459,6 +1554,155 @@ void SSHConnection::writeToChannel(const QByteArray& data)
     if (m_channel && ssh_channel_is_open(m_channel)) {
         ssh_channel_write(m_channel, data.constData(), data.size());
     }
+#endif
+}
+
+bool SSHConnection::initSftp()
+{
+#ifdef WITH_LIBSSH
+    if (m_sftpSession) return true;
+    m_sftpSession = sftp_new(m_session);
+    if (!m_sftpSession) return false;
+    if (sftp_init(m_sftpSession) != SSH_OK) {
+        sftp_free(m_sftpSession);
+        m_sftpSession = nullptr;
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+QList<SFTPFileInfo> SSHConnection::listDirectory(const QString& path)
+{
+    QList<SFTPFileInfo> files;
+#ifdef WITH_LIBSSH
+    if (!initSftp()) return files;
+
+    sftp_dir dir = sftp_opendir(m_sftpSession, path.toUtf8().constData());
+    if (!dir) return files;
+
+    sftp_attributes attrs;
+    while ((attrs = sftp_readdir(m_sftpSession, dir)) != nullptr) {
+        QString name = QString::fromUtf8(attrs->name);
+        if (name == "." || name == "..") {
+            sftp_attributes_free(attrs);
+            continue;
+        }
+        SFTPFileInfo info;
+        info.name = name;
+        info.path = path + (path.endsWith('/') ? "" : "/") + name;
+        info.size = attrs->size;
+        info.isDir = (attrs->type == SSH_FILEXFER_TYPE_DIRECTORY);
+        info.permissions = QString::number(attrs->permissions & 0777, 8);
+        info.modified = QDateTime::fromSecsSinceEpoch(attrs->mtime);
+        files.append(info);
+        sftp_attributes_free(attrs);
+    }
+    sftp_closedir(dir);
+#else
+    Q_UNUSED(path)
+#endif
+    return files;
+}
+
+bool SSHConnection::downloadFile(const QString& remotePath, const QString& localPath)
+{
+#ifdef WITH_LIBSSH
+    if (!initSftp()) return false;
+
+    sftp_file file = sftp_open(m_sftpSession, remotePath.toUtf8().constData(), O_RDONLY, 0);
+    if (!file) return false;
+
+    QFile localFile(localPath);
+    if (!localFile.open(QIODevice::WriteOnly)) {
+        sftp_close(file);
+        return false;
+    }
+
+    char buffer[65536];
+    int nbytes;
+    while ((nbytes = sftp_read(file, buffer, sizeof(buffer))) > 0) {
+        localFile.write(buffer, nbytes);
+    }
+
+    localFile.close();
+    sftp_close(file);
+    return nbytes >= 0;
+#else
+    Q_UNUSED(remotePath)
+    Q_UNUSED(localPath)
+    return false;
+#endif
+}
+
+bool SSHConnection::uploadFile(const QString& localPath, const QString& remotePath)
+{
+#ifdef WITH_LIBSSH
+    if (!initSftp()) return false;
+
+    QFile localFile(localPath);
+    if (!localFile.open(QIODevice::ReadOnly)) return false;
+
+    sftp_file file = sftp_open(m_sftpSession, remotePath.toUtf8().constData(),
+                               O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (!file) {
+        localFile.close();
+        return false;
+    }
+
+    char buffer[65536];
+    qint64 nbytes;
+    while ((nbytes = localFile.read(buffer, sizeof(buffer))) > 0) {
+        if (sftp_write(file, buffer, nbytes) != nbytes) {
+            sftp_close(file);
+            localFile.close();
+            return false;
+        }
+    }
+
+    sftp_close(file);
+    localFile.close();
+    return true;
+#else
+    Q_UNUSED(localPath)
+    Q_UNUSED(remotePath)
+    return false;
+#endif
+}
+
+bool SSHConnection::deleteRemoteFile(const QString& path)
+{
+#ifdef WITH_LIBSSH
+    if (!initSftp()) return false;
+    return sftp_unlink(m_sftpSession, path.toUtf8().constData()) == SSH_OK;
+#else
+    Q_UNUSED(path)
+    return false;
+#endif
+}
+
+bool SSHConnection::createRemoteDirectory(const QString& path)
+{
+#ifdef WITH_LIBSSH
+    if (!initSftp()) return false;
+    return sftp_mkdir(m_sftpSession, path.toUtf8().constData(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == SSH_OK;
+#else
+    Q_UNUSED(path)
+    return false;
+#endif
+}
+
+QString SSHConnection::sftpError() const
+{
+#ifdef WITH_LIBSSH
+    if (m_sftpSession) {
+        return QString("SFTP error code: %1").arg(sftp_get_error(m_sftpSession));
+    }
+    return tr("SFTP session not initialized");
+#else
+    return tr("LibSSH not compiled");
 #endif
 }
 

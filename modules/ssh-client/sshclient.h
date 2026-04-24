@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QTabWidget>
+#include <QTabBar>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QListWidget>
@@ -42,6 +43,9 @@
 #include <QStatusBar>
 #include <QStyle>
 #include <QRegularExpression>
+
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #ifdef WITH_LIBSSH
 #include <libssh/libssh.h>
@@ -101,14 +105,17 @@ private:
     QMenuBar* m_menuBar;
     QStatusBar* m_statusBar;
 
-    // 连接管理：name → { connection, terminal, sftp }
+    // 连接管理：每个 tab 一个 session，同一连接名可有多个 tab
     struct ConnectionSession {
+        QString name;           // connection config name
         SSHConnection* connection = nullptr;
         SSHTerminal* terminal = nullptr;
         SFTPBrowser* sftp = nullptr;
         QWidget* tabWidget = nullptr; // tab 页内的容器
     };
-    QMap<QString, ConnectionSession> m_sessions;
+    QList<ConnectionSession> m_sessions;
+
+    void duplicateTab(int index);
 };
 
 /**
@@ -182,6 +189,18 @@ private:
 };
 
 /**
+ * @brief SFTP文件信息结构
+ */
+struct SFTPFileInfo {
+    QString name;
+    QString path;
+    qint64 size;
+    bool isDir;
+    QString permissions;
+    QDateTime modified;
+};
+
+/**
  * @brief SSH连接对象
  * 管理单个SSH连接的生命周期
  */
@@ -194,6 +213,16 @@ public:
 
     bool isConnected() const;
     QString getLastError() const;
+    SSHConnectionInfo connectionInfo() const { return m_info; }
+
+    // SFTP operations
+    bool initSftp();
+    QList<SFTPFileInfo> listDirectory(const QString& path);
+    bool downloadFile(const QString& remotePath, const QString& localPath);
+    bool uploadFile(const QString& localPath, const QString& remotePath);
+    bool deleteRemoteFile(const QString& path);
+    bool createRemoteDirectory(const QString& path);
+    QString sftpError() const;
 
 public slots:
     void connectToHost();
