@@ -43,7 +43,16 @@ private:
     void addImageFromPixmap(const QPixmap& pixmap);
     void rebuildResultsView();
     QString recognizeImage(const QString& imagePath);
+
+    // OCR 引擎
+    enum OcrEngine { Auto, PaddleOCR, Tesseract };
+    bool checkPaddleOcr();
     bool checkTesseract();
+    QString recognizeWithPaddle(const QString& imagePath);
+    QString recognizeWithTesseract(const QString& imagePath);
+    void onConfigEngine();
+    void saveEngineSettings();
+    void loadEngineSettings();
 
     // UI
     QPushButton* m_addBtn;
@@ -52,11 +61,17 @@ private:
     QPushButton* m_recognizeBtn;
     QPushButton* m_copyAllBtn;
     QPushButton* m_copyNoSepBtn;
+    QPushButton* m_configBtn;
     QComboBox* m_langCombo;
+    QComboBox* m_engineCombo;
     QScrollArea* m_scrollArea;
     QWidget* m_resultsWidget;
     QVBoxLayout* m_resultsLayout;
     QLabel* m_statusLabel;
 
     QList<OcrItem> m_items;
+
+    // 引擎配置
+    QString m_paddleOcrPath; // paddleocr 可执行文件路径
+    OcrEngine m_currentEngine = Auto;
 };

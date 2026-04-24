@@ -13,6 +13,9 @@
 #include <QDesktopServices>
 #include <QFrame>
 #include <QTemporaryDir>
+#include <QSettings>
+#include <QDialog>
+#include <QLineEdit>
 #include <QUuid>
 #include <QScreen>
 
@@ -74,6 +77,17 @@ void ImageTextRecognition::setupUI()
     toolbar->addWidget(langLabel);
     toolbar->addWidget(m_langCombo);
 
+    auto* engineLabel = new QLabel(tr("引擎:"));
+    m_engineCombo = new QComboBox();
+    m_engineCombo->addItems({"自动", "PaddleOCR", "Tesseract"});
+    m_engineCombo->setCurrentIndex(0);
+
+    m_configBtn = new QPushButton(tr("设置"));
+
+    toolbar->addWidget(engineLabel);
+    toolbar->addWidget(m_engineCombo);
+    toolbar->addWidget(m_configBtn);
+
     mainLayout->addLayout(toolbar);
 
     // Scroll area
@@ -99,6 +113,9 @@ void ImageTextRecognition::setupUI()
     connect(m_recognizeBtn, &QPushButton::clicked, this, &ImageTextRecognition::onRecognizeAll);
     connect(m_copyAllBtn, &QPushButton::clicked, this, &ImageTextRecognition::onCopyAll);
     connect(m_copyNoSepBtn, &QPushButton::clicked, this, &ImageTextRecognition::onCopyAllNoSeparator);
+    connect(m_configBtn, &QPushButton::clicked, this, &ImageTextRecognition::onConfigEngine);
+
+    loadEngineSettings();
 }
 
 void ImageTextRecognition::onAddImages()
@@ -333,6 +350,26 @@ void ImageTextRecognition::rebuildResultsView()
 
 QString ImageTextRecognition::recognizeImage(const QString& imagePath)
 {
+    OcrEngine engine = static_cast<OcrEngine>(m_engineCombo->currentIndex());
+
+    if (engine == Auto) {
+        // 优先 PaddleOCR，降级到 Tesseract
+        if (checkPaddleOcr())
+            return recognizeWithPaddle(imagePath);
+        if (checkTesseract())
+            return recognizeWithTesseract(imagePath);
+        return tr("[识别失败] 未找到 PaddleOCR 或 Tesseract");
+    } else if (engine == PaddleOCR) {
+        if (!checkPaddleOcr()) return tr("[识别失败] PaddleOCR 不可用");
+        return recognizeWithPaddle(imagePath);
+    } else {
+        if (!checkTesseract()) return tr("[识别失败] Tesseract 不可用");
+        return recognizeWithTesseract(imagePath);
+    }
+}
+
+QString ImageTextRecognition::recognizeWithTesseract(const QString& imagePath)
+{
     QProcess process;
     QString lang = m_langCombo->currentText();
     process.start("tesseract", QStringList() << imagePath << "stdout" << "-l" << lang);
@@ -340,10 +377,67 @@ QString ImageTextRecognition::recognizeImage(const QString& imagePath)
 
     if (process.exitCode() != 0) {
         QString err = QString::fromUtf8(process.readAllStandardError());
-        return tr("[识别失败] %1").arg(err.trimmed());
+        return tr("[Tesseract 识别失败] %1").arg(err.trimmed());
+    }
+    return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+}
+
+QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
+{
+    QString cmd = m_paddleOcrPath.isEmpty() ? "paddleocr" : m_paddleOcrPath;
+
+    // PaddleOCR CLI: paddleocr --image_dir image.png --lang ch --use_angle_cls true
+    QString lang = "ch"; // 默认中文
+    QString langSel = m_langCombo->currentText();
+    if (langSel.startsWith("eng")) lang = "en";
+    else if (langSel.startsWith("jpn")) lang = "japan";
+    else if (langSel.startsWith("kor")) lang = "korean";
+    else if (langSel.contains("chi_tra")) lang = "chinese_cht";
+
+    QProcess process;
+    process.start(cmd, QStringList()
+        << "--image_dir" << imagePath
+        << "--lang" << lang
+        << "--use_angle_cls" << "true"
+        << "--show_log" << "false");
+    process.waitForFinished(60000); // PaddleOCR 可能较慢
+
+    if (process.exitCode() != 0) {
+        QString err = QString::fromUtf8(process.readAllStandardError());
+        return tr("[PaddleOCR 识别失败] %1").arg(err.trimmed());
     }
 
-    return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+    // 解析输出：PaddleOCR 输出格式为每行一个识别结果
+    // [文字, 置信度] 或纯文本
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+    QStringList textLines;
+
+    for (const QString& line : lines) {
+        QString trimmed = line.trimmed();
+        // 跳过日志行（以数字开头的时间戳等）
+        if (trimmed.isEmpty()) continue;
+        // PaddleOCR 输出格式: ('文字', 0.98) 或类似
+        // 提取引号中的文字
+        int start = trimmed.indexOf('\'');
+        int end = trimmed.lastIndexOf('\'');
+        if (start >= 0 && end > start) {
+            textLines.append(trimmed.mid(start + 1, end - start - 1));
+        } else if (!trimmed.startsWith('[') && !trimmed.startsWith('(') && !trimmed.contains("ppocr")) {
+            textLines.append(trimmed);
+        }
+    }
+
+    return textLines.join('\n');
+}
+
+bool ImageTextRecognition::checkPaddleOcr()
+{
+    QString cmd = m_paddleOcrPath.isEmpty() ? "paddleocr" : m_paddleOcrPath;
+    QProcess p;
+    p.start(cmd, QStringList() << "--help");
+    p.waitForFinished(5000);
+    return p.exitCode() == 0 || p.exitStatus() == QProcess::NormalExit;
 }
 
 bool ImageTextRecognition::checkTesseract()
@@ -351,15 +445,100 @@ bool ImageTextRecognition::checkTesseract()
     QProcess p;
     p.start("tesseract", QStringList() << "--version");
     p.waitForFinished(5000);
-    if (p.exitCode() != 0) {
-        QMessageBox::warning(this, tr("Tesseract 未安装"),
-            tr("请先安装 Tesseract OCR:\n\n"
-               "macOS: brew install tesseract tesseract-lang\n"
-               "Ubuntu: sudo apt install tesseract-ocr tesseract-ocr-chi-sim\n"
-               "Windows: 从 GitHub 下载安装"));
-        return false;
+    return p.exitCode() == 0;
+}
+
+void ImageTextRecognition::onConfigEngine()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("OCR 引擎设置"));
+    dialog.setMinimumWidth(500);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(10);
+    layout->setContentsMargins(16, 12, 16, 12);
+
+    // 说明
+    auto* infoLabel = new QLabel(tr(
+        "<b>OCR 引擎说明</b><br><br>"
+        "<b>Tesseract</b>（默认）：<br>"
+        "macOS: <code>brew install tesseract tesseract-lang</code><br>"
+        "Ubuntu: <code>sudo apt install tesseract-ocr tesseract-ocr-chi-sim</code><br>"
+        "Windows: 从 <a href='https://github.com/UB-Mannheim/tesseract/wiki'>GitHub</a> 下载<br><br>"
+        "<b>PaddleOCR</b>（更高精度，推荐中文）：<br>"
+        "<code>pip install paddleocr paddlepaddle</code><br>"
+        "首次运行会自动下载模型（约 100MB）<br>"
+        "官网: <a href='https://github.com/PaddlePaddle/PaddleOCR'>github.com/PaddlePaddle/PaddleOCR</a>"
+    ));
+    infoLabel->setWordWrap(true);
+    infoLabel->setOpenExternalLinks(true);
+    infoLabel->setStyleSheet("font-size:9pt; color:#495057;");
+    infoLabel->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
+    layout->addWidget(infoLabel);
+
+    // PaddleOCR 路径
+    auto* pathLayout = new QHBoxLayout();
+    auto* pathLabel = new QLabel(tr("PaddleOCR 路径:"));
+    auto* pathEdit = new QLineEdit(m_paddleOcrPath);
+    pathEdit->setPlaceholderText(tr("留空使用系统 PATH 中的 paddleocr"));
+    auto* browseBtn = new QPushButton(tr("浏览"));
+    pathLayout->addWidget(pathLabel);
+    pathLayout->addWidget(pathEdit, 1);
+    pathLayout->addWidget(browseBtn);
+    layout->addLayout(pathLayout);
+
+    connect(browseBtn, &QPushButton::clicked, &dialog, [&pathEdit, &dialog]() {
+        QString path = QFileDialog::getOpenFileName(&dialog, "选择 paddleocr", "", "All (*)");
+        if (!path.isEmpty()) pathEdit->setText(path);
+    });
+
+    // 检测状态
+    auto* statusLayout = new QHBoxLayout();
+    auto* detectBtn = new QPushButton(tr("检测引擎"));
+    auto* detectLabel = new QLabel();
+    detectLabel->setStyleSheet("font-size:9pt;");
+    statusLayout->addWidget(detectBtn);
+    statusLayout->addWidget(detectLabel, 1);
+    layout->addLayout(statusLayout);
+
+    connect(detectBtn, &QPushButton::clicked, &dialog, [this, detectLabel, pathEdit]() {
+        m_paddleOcrPath = pathEdit->text().trimmed();
+        QString status;
+        if (checkPaddleOcr()) status += "PaddleOCR: 可用  ";
+        else status += "PaddleOCR: 不可用  ";
+        if (checkTesseract()) status += "Tesseract: 可用";
+        else status += "Tesseract: 不可用";
+        detectLabel->setText(status);
+    });
+
+    // 按钮
+    auto* btnLayout = new QHBoxLayout();
+    btnLayout->addStretch();
+    auto* okBtn = new QPushButton(tr("确定"));
+    auto* cancelBtn = new QPushButton(tr("取消"));
+    btnLayout->addWidget(cancelBtn);
+    btnLayout->addWidget(okBtn);
+    layout->addLayout(btnLayout);
+
+    connect(okBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        m_paddleOcrPath = pathEdit->text().trimmed();
+        saveEngineSettings();
     }
-    return true;
+}
+
+void ImageTextRecognition::saveEngineSettings()
+{
+    QSettings settings;
+    settings.setValue("ocr/paddleOcrPath", m_paddleOcrPath);
+}
+
+void ImageTextRecognition::loadEngineSettings()
+{
+    QSettings settings;
+    m_paddleOcrPath = settings.value("ocr/paddleOcrPath", "").toString();
 }
 
 void ImageTextRecognition::dragEnterEvent(QDragEnterEvent* event)
