@@ -11,12 +11,9 @@
 #include <QSpinBox>
 #include <QPushButton>
 #include <QPlainTextEdit>
-#include <QGroupBox>
 #include <QSlider>
 #include <QProgressBar>
 #include <QComboBox>
-#include <QSplitter>
-#include <QScrollArea>
 #include <QListWidget>
 #include <QClipboard>
 #include <QApplication>
@@ -50,18 +47,17 @@ private:
     void setupPasswordSettings();
     void setupPasswordDisplay();
     void setupToolbar();
-    
+
     QString generatePassword(int length);
     QString getCharacterSet();
     int calculatePasswordStrength(const QString& password);
     QString getStrengthText(int strength);
     QColor getStrengthColor(int strength);
     void updateStatus(const QString& message, bool isError = false);
-    
+
     // UI组件
     QVBoxLayout* mainLayout;
-    QSplitter* mainSplitter;
-    
+
     // 工具栏
     QWidget* toolbarWidget;
     QHBoxLayout* toolbarLayout;
@@ -69,51 +65,45 @@ private:
     QPushButton* copyBtn;
     QPushButton* clearBtn;
     QLabel* statusLabel;
-    
+
     // 左侧设置面板
     QWidget* settingsWidget;
     QVBoxLayout* settingsLayout;
-    QScrollArea* settingsScrollArea;
-    
+
     // 字符集选项
-    QGroupBox* charsetGroup;
     QCheckBox* includeDigits;
     QCheckBox* includeLowercase;
     QCheckBox* includeUppercase;
     QCheckBox* includeSpecialChars;
     QCheckBox* includeCustomChars;
     QLineEdit* customCharsEdit;
-    
+
     // 密码设置
-    QGroupBox* passwordGroup;
     QLabel* lengthLabel;
     QSlider* lengthSlider;
     QSpinBox* lengthSpinBox;
     QLabel* countLabel;
     QSpinBox* countSpinBox;
-    
+
     // 高级选项
-    QGroupBox* advancedGroup;
     QCheckBox* avoidAmbiguous;
     QCheckBox* requireAllTypes;
     QCheckBox* noRepeatingChars;
-    
+
     // 密码强度显示
-    QGroupBox* strengthGroup;
     QProgressBar* strengthBar;
     QLabel* strengthLabel;
     QLabel* strengthDescription;
-    
+
     // 右侧密码显示
     QWidget* displayWidget;
     QVBoxLayout* displayLayout;
-    QLabel* displayLabel;
     QListWidget* passwordList;
-    
+
     // 预览区域
-    QGroupBox* previewGroup;
+    QLabel* previewLabel;
     QPlainTextEdit* previewEdit;
-    
+
     // 状态
     QStringList generatedPasswords;
     QString currentCharset;
