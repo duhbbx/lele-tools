@@ -51,6 +51,7 @@ private:
     QString recognizeWithPaddle(const QString& imagePath);
     QString recognizeWithTesseract(const QString& imagePath);
     void onConfigEngine();
+    void showInstallDialog();
     void saveEngineSettings();
     void loadEngineSettings();
 

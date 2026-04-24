@@ -167,11 +167,14 @@ void ImageTextRecognition::onClearAll()
 
 void ImageTextRecognition::onRecognizeAll()
 {
-    if (m_items.isEmpty()) {
+    if (m_items.isEmpty()) return;
+
+    // 预检测引擎，没有则提示安装
+    if (!checkPaddleOcr() && !checkTesseract()) {
+        showInstallDialog();
         return;
     }
 
-    // 不在这里检查引擎，让 recognizeImage 自己选择可用引擎
     for (int i = 0; i < m_items.size(); ++i) {
         if (!m_items[i].recognized) {
             m_items[i].resultText = recognizeImage(m_items[i].imagePath);
@@ -447,6 +450,135 @@ bool ImageTextRecognition::checkTesseract()
     p.start("tesseract", QStringList() << "--version");
     p.waitForFinished(5000);
     return p.exitCode() == 0;
+}
+
+void ImageTextRecognition::showInstallDialog()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("安装 OCR 引擎"));
+    dialog.setMinimumWidth(520);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(10);
+    layout->setContentsMargins(16, 12, 16, 12);
+
+    auto* infoLabel = new QLabel(tr(
+        "未检测到可用的 OCR 引擎，请选择安装："));
+    infoLabel->setStyleSheet("font-size:10pt; font-weight:bold; color:#212529;");
+    layout->addWidget(infoLabel);
+
+    // Tesseract
+    auto* tessFrame = new QWidget();
+    auto* tessLayout = new QVBoxLayout(tessFrame);
+    tessLayout->setContentsMargins(8, 8, 8, 8);
+    tessFrame->setStyleSheet("background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px;");
+
+    auto* tessTitle = new QLabel(tr("Tesseract OCR（推荐，轻量）"));
+    tessTitle->setStyleSheet("font-weight:bold; font-size:9pt;");
+    tessLayout->addWidget(tessTitle);
+
+    auto* tessDesc = new QLabel(tr("Google 开源 OCR 引擎，支持 100+ 语言"));
+    tessDesc->setStyleSheet("color:#868e96; font-size:8pt;");
+    tessLayout->addWidget(tessDesc);
+
+#ifdef Q_OS_MACOS
+    QString tessCmd = "brew install tesseract tesseract-lang";
+#elif defined(Q_OS_LINUX)
+    QString tessCmd = "sudo apt install -y tesseract-ocr tesseract-ocr-chi-sim tesseract-ocr-eng";
+#else
+    QString tessCmd = "";
+#endif
+
+    auto* tessBtn = new QPushButton(tr("一键安装 Tesseract"));
+    tessBtn->setStyleSheet(
+        "QPushButton { padding:6px 16px; background:#228be6; color:white; border:none; border-radius:4px; font-size:9pt; }"
+        "QPushButton:hover { background:#1c7ed6; }");
+    tessLayout->addWidget(tessBtn);
+
+#ifdef Q_OS_WIN
+    tessBtn->setText(tr("打开下载页面"));
+    connect(tessBtn, &QPushButton::clicked, &dialog, [&dialog]() {
+        QDesktopServices::openUrl(QUrl("https://github.com/UB-Mannheim/tesseract/wiki"));
+        dialog.accept();
+    });
+#else
+    QString tessCmdCopy = tessCmd;
+    connect(tessBtn, &QPushButton::clicked, &dialog, [this, tessCmdCopy, &dialog]() {
+        m_statusLabel->setText(tr("正在安装 Tesseract..."));
+        dialog.accept();
+        QProcess* proc = new QProcess(this);
+        QString cmdForError = tessCmdCopy;
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc, cmdForError](int exitCode, QProcess::ExitStatus) {
+            if (exitCode == 0) {
+                m_statusLabel->setText(tr("Tesseract 安装成功！"));
+                QMessageBox::information(this, tr("安装完成"), tr("Tesseract OCR 安装成功，可以开始识别了。"));
+            } else {
+                QString err = QString::fromUtf8(proc->readAllStandardError());
+                m_statusLabel->setText(tr("安装失败"));
+                QMessageBox::critical(this, tr("安装失败"), tr("Tesseract 安装失败:\n%1\n\n请手动执行:\n%2").arg(err.trimmed(), cmdForError));
+            }
+            proc->deleteLater();
+        });
+#ifdef Q_OS_MACOS
+        proc->start("brew", QStringList() << "install" << "tesseract" << "tesseract-lang");
+#else
+        proc->start("bash", QStringList() << "-c" << tessCmd);
+#endif
+    });
+#endif
+
+    layout->addWidget(tessFrame);
+
+    // PaddleOCR
+    auto* paddleFrame = new QWidget();
+    auto* paddleLayout = new QVBoxLayout(paddleFrame);
+    paddleLayout->setContentsMargins(8, 8, 8, 8);
+    paddleFrame->setStyleSheet("background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px;");
+
+    auto* paddleTitle = new QLabel(tr("PaddleOCR（高精度，中文推荐）"));
+    paddleTitle->setStyleSheet("font-weight:bold; font-size:9pt;");
+    paddleLayout->addWidget(paddleTitle);
+
+    auto* paddleDesc = new QLabel(tr("百度开源 OCR，精度更高，首次运行需下载模型（~100MB）"));
+    paddleDesc->setStyleSheet("color:#868e96; font-size:8pt;");
+    paddleLayout->addWidget(paddleDesc);
+
+    auto* paddleBtn = new QPushButton(tr("一键安装 PaddleOCR"));
+    paddleBtn->setStyleSheet(
+        "QPushButton { padding:6px 16px; background:#40c057; color:white; border:none; border-radius:4px; font-size:9pt; }"
+        "QPushButton:hover { background:#37b24d; }");
+    paddleLayout->addWidget(paddleBtn);
+
+    connect(paddleBtn, &QPushButton::clicked, &dialog, [this, &dialog]() {
+        m_statusLabel->setText(tr("正在安装 PaddleOCR（可能需要几分钟）..."));
+        dialog.accept();
+        QProcess* proc = new QProcess(this);
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int exitCode, QProcess::ExitStatus) {
+            if (exitCode == 0) {
+                m_statusLabel->setText(tr("PaddleOCR 安装成功！"));
+                QMessageBox::information(this, tr("安装完成"), tr("PaddleOCR 安装成功，可以开始识别了。\n首次识别会自动下载模型。"));
+            } else {
+                QString err = QString::fromUtf8(proc->readAllStandardError());
+                m_statusLabel->setText(tr("安装失败"));
+                QMessageBox::critical(this, tr("安装失败"),
+                    tr("PaddleOCR 安装失败:\n%1\n\n请手动执行:\npip install paddleocr paddlepaddle").arg(err.trimmed()));
+            }
+            proc->deleteLater();
+        });
+        proc->start("pip3", QStringList() << "install" << "paddleocr" << "paddlepaddle");
+    });
+
+    layout->addWidget(paddleFrame);
+
+    // 取消
+    auto* cancelBtn = new QPushButton(tr("稍后安装"));
+    cancelBtn->setStyleSheet("font-size:9pt;");
+    layout->addWidget(cancelBtn);
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    dialog.exec();
 }
 
 void ImageTextRecognition::onConfigEngine()
