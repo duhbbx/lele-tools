@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QDialog>
 #include <QLineEdit>
+#include <QRegularExpression>
 #include <QUuid>
 #include <QScreen>
 
@@ -405,46 +406,85 @@ QString ImageTextRecognition::recognizeWithPaddle(const QString& imagePath)
 {
     QString cmd = m_paddleOcrPath.isEmpty() ? "paddleocr" : m_paddleOcrPath;
 
-    // PaddleOCR CLI: paddleocr --image_dir image.png --lang ch --use_angle_cls true
-    QString lang = "ch"; // 默认中文
-    QString langSel = m_langCombo->currentText();
-    if (langSel.startsWith("eng")) lang = "en";
-    else if (langSel.startsWith("jpn")) lang = "japan";
-    else if (langSel.startsWith("kor")) lang = "korean";
-    else if (langSel.contains("chi_tra")) lang = "chinese_cht";
-
+    // 新版 PaddleOCR CLI: paddleocr ocr -i image.png
+    // 旧版: paddleocr --image_dir image.png --lang ch
     QProcess process;
-    process.start(cmd, QStringList()
-        << "--image_dir" << imagePath
-        << "--lang" << lang
-        << "--use_angle_cls" << "true"
-        << "--show_log" << "false");
-    process.waitForFinished(60000); // PaddleOCR 可能较慢
 
-    if (process.exitCode() != 0) {
-        QString err = QString::fromUtf8(process.readAllStandardError());
-        return tr("[PaddleOCR 识别失败] %1").arg(err.trimmed());
+    // 先尝试新版语法
+    process.start(cmd, QStringList() << "ocr" << "-i" << imagePath);
+    if (!process.waitForStarted(3000)) {
+        return tr("[PaddleOCR 识别失败] 无法启动 paddleocr");
+    }
+    process.waitForFinished(120000); // 首次可能需要下载模型
+
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    QString err = QString::fromUtf8(process.readAllStandardError());
+
+    // 如果新版语法失败，尝试旧版
+    if (process.exitCode() != 0 && (err.contains("invalid choice") || output.isEmpty())) {
+        QProcess oldProcess;
+        QString lang = "ch";
+        QString langSel = m_langCombo->currentText();
+        if (langSel.startsWith("eng")) lang = "en";
+        else if (langSel.startsWith("jpn")) lang = "japan";
+        else if (langSel.startsWith("kor")) lang = "korean";
+
+        oldProcess.start(cmd, QStringList()
+            << "--image_dir" << imagePath
+            << "--lang" << lang
+            << "--use_angle_cls" << "true"
+            << "--show_log" << "false");
+        oldProcess.waitForFinished(120000);
+
+        if (oldProcess.exitCode() != 0) {
+            QString oldErr = QString::fromUtf8(oldProcess.readAllStandardError());
+            return tr("[PaddleOCR 识别失败] %1").arg(oldErr.trimmed().left(200));
+        }
+        output = QString::fromUtf8(oldProcess.readAllStandardOutput());
+    } else if (process.exitCode() != 0) {
+        return tr("[PaddleOCR 识别失败] %1").arg(err.trimmed().left(200));
     }
 
-    // 解析输出：PaddleOCR 输出格式为每行一个识别结果
-    // [文字, 置信度] 或纯文本
-    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    // 解析输出——提取文字部分
     QStringList lines = output.split('\n', Qt::SkipEmptyParts);
     QStringList textLines;
 
     for (const QString& line : lines) {
         QString trimmed = line.trimmed();
-        // 跳过日志行（以数字开头的时间戳等）
         if (trimmed.isEmpty()) continue;
-        // PaddleOCR 输出格式: ('文字', 0.98) 或类似
-        // 提取引号中的文字
-        int start = trimmed.indexOf('\'');
-        int end = trimmed.lastIndexOf('\'');
-        if (start >= 0 && end > start) {
-            textLines.append(trimmed.mid(start + 1, end - start - 1));
-        } else if (!trimmed.startsWith('[') && !trimmed.startsWith('(') && !trimmed.contains("ppocr")) {
-            textLines.append(trimmed);
+
+        // 新版输出格式: {'text': '文字', 'score': 0.98, ...}
+        // 旧版输出格式: ('文字', 0.98) 或 [('文字', 0.98)]
+        QRegularExpression textRegex(R"('text'\s*:\s*'([^']*)')");
+        QRegularExpressionMatch match = textRegex.match(trimmed);
+        if (match.hasMatch()) {
+            textLines.append(match.captured(1));
+            continue;
         }
+
+        // 旧版格式
+        int start = trimmed.indexOf('\'');
+        int end = trimmed.indexOf('\'', start + 1);
+        if (start >= 0 && end > start) {
+            QString text = trimmed.mid(start + 1, end - start - 1);
+            if (!text.isEmpty() && text != "text") {
+                textLines.append(text);
+            }
+            continue;
+        }
+
+        // 跳过日志行
+        if (trimmed.startsWith('[') || trimmed.startsWith('{') || trimmed.startsWith('(')
+            || trimmed.contains("ppocr") || trimmed.contains("WARNING")
+            || trimmed.contains("INFO") || trimmed.contains("DEBUG"))
+            continue;
+
+        // 其他普通文本行
+        textLines.append(trimmed);
+    }
+
+    if (textLines.isEmpty()) {
+        return tr("[PaddleOCR 识别完成但未提取到文字]\n\n原始输出:\n%1").arg(output.left(500));
     }
 
     return textLines.join('\n');
