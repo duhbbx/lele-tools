@@ -29,6 +29,13 @@
 #include <QPainter>
 #include <QApplication>
 
+#include <QSplitter>
+#include <QTextEdit>
+#include <QTableWidget>
+#include <QProcess>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "../../common/dynamicobjectbase.h"
 #include "../../common/sqlite/SqliteManager.h"
 
@@ -41,6 +48,8 @@ struct ImageInfo {
     int height = 0;
     QStringList tags;
     QString notes;
+    QString ocrText;                          // OCR 识别结果
+    QList<QPair<QString,QString>> extras;     // 自定义 key-value 扩展信息
     bool isDeleted = false;
     QDateTime createdAt;
     QDateTime deletedAt;
@@ -112,6 +121,16 @@ private:
     QString formatFileSize(qint64 bytes) const;
     ImageInfo imageInfoFromRecord(const QVariantMap& record) const;
 
+    // 详情面板
+    void showDetail(const ImageInfo& info);
+    void saveExtras(int imageId);
+    void onAddExtraRow();
+    void onRemoveExtraRow();
+    void onItemSelectionChanged();
+    void autoOcrImage(int imageId, const QString& storedName);
+    QString extrasToJson(const QList<QPair<QString,QString>>& extras) const;
+    QList<QPair<QString,QString>> extrasFromJson(const QString& json) const;
+
     // Predefined tags
     static const QStringList predefinedTags;
 
@@ -128,6 +147,19 @@ private:
     QTableWidget* m_tableWidget = nullptr;
     QStackedWidget* m_viewStack = nullptr;
     QLabel* m_statusLabel = nullptr;
+    QSplitter* m_mainSplitter = nullptr;
+
+    // 右侧详情面板
+    QWidget* m_detailPanel = nullptr;
+    QLabel* m_detailPreview = nullptr;
+    QLabel* m_detailFileName = nullptr;
+    QLabel* m_detailFileInfo = nullptr;
+    QTableWidget* m_extrasTable = nullptr;
+    QPushButton* m_addExtraBtn = nullptr;
+    QPushButton* m_removeExtraBtn = nullptr;
+    QPushButton* m_saveExtraBtn = nullptr;
+    QTextEdit* m_ocrResultEdit = nullptr;
+    int m_currentDetailId = 0;
 
     // State
     bool m_showingRecycleBin = false;

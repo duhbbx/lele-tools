@@ -133,6 +133,7 @@ QString GlobalStyles::getInputStyle() {
         }
 
         QComboBox {
+            combobox-popup: 0;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 4px 28px 4px 8px;
@@ -152,6 +153,7 @@ QString GlobalStyles::getInputStyle() {
             subcontrol-position: center right;
             width: 20px;
             border: none;
+            background: transparent;
         }
         QComboBox::down-arrow {
             image: none;
@@ -162,18 +164,23 @@ QString GlobalStyles::getInputStyle() {
         }
         QComboBox QAbstractItemView {
             border: 1px solid #dee2e6;
-            border-radius: 4px;
+            border-radius: 6px;
             background: #fff;
             font-size: 9pt;
             color: #495057;
-            padding: 2px;
+            padding: 4px;
             outline: none;
-            selection-background-color: #e9ecef;
-            selection-color: #212529;
+            selection-background-color: #e7f5ff;
+            selection-color: #1c7ed6;
         }
         QComboBox QAbstractItemView::item {
-            padding: 4px 8px;
-            min-height: 24px;
+            padding: 5px 10px;
+            min-height: 20px;
+            border-radius: 4px;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            background-color: #e7f5ff;
+            color: #1c7ed6;
         }
         QComboBox QAbstractItemView::item:hover {
             background-color: #f1f3f5;
@@ -344,6 +351,41 @@ QTableCornerButton::section {
 }
         QLabel {
             font-size: 10pt;
+        }
+
+        /* 右键菜单 / 弹出菜单统一样式 */
+        QMenu {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 6px;
+            font-size: 9pt;
+            color: #333333;
+        }
+        QMenu::item {
+            padding: 6px 28px 6px 12px;
+            border-radius: 5px;
+            margin: 1px 0;
+        }
+        QMenu::item:selected {
+            background-color: #e7f5ff;
+            color: #1c7ed6;
+        }
+        QMenu::item:disabled {
+            color: #adb5bd;
+        }
+        QMenu::separator {
+            height: 1px;
+            background-color: #e9ecef;
+            margin: 4px 8px;
+        }
+        QMenu::icon {
+            padding-left: 8px;
+        }
+        QMenu::indicator {
+            width: 14px;
+            height: 14px;
+            margin-left: 6px;
         }
     )") + getCheckBoxStyle() + getButtonStyle() + getInputStyle() + getScrollBarStyle();
 }

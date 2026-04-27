@@ -172,11 +172,17 @@ void ImageCollection::initDatabase()
         "  height INTEGER,"
         "  tags TEXT DEFAULT '',"
         "  notes TEXT DEFAULT '',"
+        "  extras TEXT DEFAULT '',"
+        "  ocr_text TEXT DEFAULT '',"
         "  is_deleted INTEGER DEFAULT 0,"
         "  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,"
         "  deleted_at DATETIME"
         ");");
     m_db->execute(sql);
+
+    // 兼容旧表：添加缺失列
+    m_db->execute("ALTER TABLE image_collection ADD COLUMN extras TEXT DEFAULT ''");
+    m_db->execute("ALTER TABLE image_collection ADD COLUMN ocr_text TEXT DEFAULT ''");
 }
 
 // ---- UI ----
@@ -270,12 +276,159 @@ void ImageCollection::setupUI()
 
     m_viewStack->addWidget(m_tableWidget); // index 1
 
-    m_mainLayout->addWidget(m_viewStack, 1);
+    // 主分割器（左：图片列表，右：详情面板）
+    m_mainSplitter = new QSplitter(Qt::Horizontal);
+    m_mainSplitter->addWidget(m_viewStack);
+
+    // 主分割器右侧 — 详情面板
+    m_detailPanel = new QWidget;
+    auto* detailLayout = new QVBoxLayout(m_detailPanel);
+    detailLayout->setContentsMargins(0, 0, 0, 0);
+    detailLayout->setSpacing(0);
+
+    // 预览图
+    m_detailPreview = new QLabel;
+    m_detailPreview->setFixedHeight(160);
+    m_detailPreview->setAlignment(Qt::AlignCenter);
+    m_detailPreview->setStyleSheet("background: #f1f3f5; border-bottom: 1px solid #e9ecef;");
+    detailLayout->addWidget(m_detailPreview);
+
+    // 文件信息区域（带内边距）
+    auto* infoArea = new QWidget;
+    auto* infoLayout = new QVBoxLayout(infoArea);
+    infoLayout->setContentsMargins(10, 8, 10, 0);
+    infoLayout->setSpacing(4);
+
+    m_detailFileName = new QLabel;
+    m_detailFileName->setStyleSheet("font-weight: 600; font-size: 12px; color: #212529;");
+    m_detailFileName->setWordWrap(true);
+    infoLayout->addWidget(m_detailFileName);
+
+    m_detailFileInfo = new QLabel;
+    m_detailFileInfo->setStyleSheet("color: #868e96; font-size: 11px;");
+    m_detailFileInfo->setWordWrap(true);
+    infoLayout->addWidget(m_detailFileInfo);
+    detailLayout->addWidget(infoArea);
+
+    // 分隔线
+    auto* sep1 = new QFrame; sep1->setFrameShape(QFrame::HLine); sep1->setStyleSheet("color: #e9ecef;"); sep1->setFixedHeight(1);
+    detailLayout->addWidget(sep1);
+
+    // 扩展信息区域
+    auto* extraArea = new QWidget;
+    auto* extraLayout = new QVBoxLayout(extraArea);
+    extraLayout->setContentsMargins(10, 6, 10, 0);
+    extraLayout->setSpacing(4);
+
+    // 标题行 + 操作按钮
+    auto* extraHeader = new QHBoxLayout;
+    auto* extraLabel = new QLabel(tr("扩展信息"));
+    extraLabel->setStyleSheet("color: #495057; font-size: 11px; font-weight: 600;");
+    extraHeader->addWidget(extraLabel);
+    extraHeader->addStretch();
+
+    m_addExtraBtn = new QPushButton(tr("添加"));
+    m_addExtraBtn->setFixedHeight(22);
+    m_addExtraBtn->setStyleSheet(
+        "QPushButton { color: #228be6; font-size: 11px; padding: 0 8px; border: 1px solid #dee2e6; border-radius: 4px; background: white; }"
+        "QPushButton:hover { background: #e7f5ff; border-color: #228be6; }");
+
+    m_removeExtraBtn = new QPushButton(tr("删除"));
+    m_removeExtraBtn->setFixedHeight(22);
+    m_removeExtraBtn->setStyleSheet(
+        "QPushButton { color: #868e96; font-size: 11px; padding: 0 8px; border: 1px solid #dee2e6; border-radius: 4px; background: white; }"
+        "QPushButton:hover { background: #fff5f5; border-color: #e03131; color: #e03131; }");
+
+    m_saveExtraBtn = new QPushButton(tr("保存"));
+    m_saveExtraBtn->setFixedHeight(22);
+    m_saveExtraBtn->setStyleSheet(
+        "QPushButton { color: white; font-size: 11px; padding: 0 10px; border: none; border-radius: 4px; background: #228be6; }"
+        "QPushButton:hover { background: #1c7ed6; }");
+
+    extraHeader->addWidget(m_addExtraBtn);
+    extraHeader->addWidget(m_removeExtraBtn);
+    extraHeader->addWidget(m_saveExtraBtn);
+    extraLayout->addLayout(extraHeader);
+
+    m_extrasTable = new QTableWidget(0, 2);
+    m_extrasTable->setHorizontalHeaderLabels({tr("键"), tr("值")});
+    m_extrasTable->horizontalHeader()->setStretchLastSection(true);
+    m_extrasTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
+    m_extrasTable->setColumnWidth(0, 80);
+    m_extrasTable->verticalHeader()->setVisible(false);
+    m_extrasTable->verticalHeader()->setDefaultSectionSize(26);
+    m_extrasTable->setMaximumHeight(150);
+    m_extrasTable->setAlternatingRowColors(true);
+    m_extrasTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_extrasTable->setStyleSheet(
+        "QTableWidget { border: 1px solid #dee2e6; border-radius: 4px; font-size: 11px; background: white; gridline-color: #f1f3f5; }"
+        "QTableWidget::item { padding: 2px 6px; }"
+        "QHeaderView::section { background: #f8f9fa; border: none; border-bottom: 1px solid #dee2e6; border-right: 1px solid #f1f3f5;"
+        "  padding: 4px 6px; font-size: 10px; color: #868e96; font-weight: 500; }");
+    extraLayout->addWidget(m_extrasTable);
+    detailLayout->addWidget(extraArea);
+
+    // 分隔线
+    auto* sep2 = new QFrame; sep2->setFrameShape(QFrame::HLine); sep2->setStyleSheet("color: #e9ecef;"); sep2->setFixedHeight(1);
+    detailLayout->addWidget(sep2);
+
+    // OCR 区域
+    auto* ocrArea = new QWidget;
+    auto* ocrLayout = new QVBoxLayout(ocrArea);
+    ocrLayout->setContentsMargins(10, 6, 10, 8);
+    ocrLayout->setSpacing(4);
+
+    auto* ocrHeader = new QHBoxLayout;
+    auto* ocrLabel = new QLabel(tr("OCR 识别结果"));
+    ocrLabel->setStyleSheet("color: #495057; font-size: 11px; font-weight: 600;");
+    ocrHeader->addWidget(ocrLabel);
+    ocrHeader->addStretch();
+
+    auto* reOcrBtn = new QPushButton(tr("重新识别"));
+    reOcrBtn->setFixedHeight(22);
+    reOcrBtn->setStyleSheet(
+        "QPushButton { color: #495057; font-size: 11px; padding: 0 8px; border: 1px solid #dee2e6; border-radius: 4px; background: white; }"
+        "QPushButton:hover { background: #f1f3f5; }");
+    connect(reOcrBtn, &QPushButton::clicked, this, [this]() {
+        if (m_currentDetailId <= 0) return;
+        // 找到当前图片的 storedName
+        for (int i = 0; i < m_listWidget->count(); ++i) {
+            ImageInfo info = m_listWidget->item(i)->data(Qt::UserRole).value<ImageInfo>();
+            if (info.id == m_currentDetailId) {
+                m_ocrResultEdit->setPlainText(tr("正在识别..."));
+                autoOcrImage(info.id, info.storedName);
+                break;
+            }
+        }
+    });
+    ocrHeader->addWidget(reOcrBtn);
+    ocrLayout->addLayout(ocrHeader);
+
+    m_ocrResultEdit = new QTextEdit;
+    m_ocrResultEdit->setReadOnly(true);
+    m_ocrResultEdit->setPlaceholderText(tr("点击「重新识别」或添加新图片自动识别"));
+    m_ocrResultEdit->setStyleSheet(
+        "QTextEdit { border: 1px solid #dee2e6; border-radius: 4px; font-size: 11px; padding: 6px; background: #fafafa; }");
+    ocrLayout->addWidget(m_ocrResultEdit, 1);
+    detailLayout->addWidget(ocrArea, 1);
+
+    m_detailPanel->setMinimumWidth(250);
+    m_detailPanel->setMaximumWidth(420);
+    m_detailPanel->setStyleSheet("QWidget { background: white; }");
+    m_mainSplitter->addWidget(m_detailPanel);
+    m_mainSplitter->setSizes({600, 300});
+    m_mainSplitter->setChildrenCollapsible(false);
+
+    m_mainLayout->addWidget(m_mainSplitter, 1);
 
     // Status bar
     m_statusLabel = new QLabel;
     m_statusLabel->setStyleSheet("font-size:9pt; color:#6c757d; padding:2px 0;");
     m_mainLayout->addWidget(m_statusLabel);
+
+    // 初始状态
+    m_detailFileName->setText(tr("点击图片查看详情"));
+    m_detailFileInfo->clear();
 
     // Styles
     setStyleSheet(QStringLiteral(
@@ -299,6 +452,17 @@ void ImageCollection::setupUI()
     connect(m_listWidget, &QListWidget::itemDoubleClicked, this, &ImageCollection::onItemDoubleClicked);
     connect(m_listWidget, &QListWidget::customContextMenuRequested, this, &ImageCollection::onItemContextMenu);
     connect(m_viewToggleBtn, &QPushButton::clicked, this, &ImageCollection::onToggleView);
+
+    // 详情面板信号
+    connect(m_listWidget, &QListWidget::currentItemChanged, this, [this](QListWidgetItem* current) {
+        if (current) {
+            ImageInfo info = current->data(Qt::UserRole).value<ImageInfo>();
+            showDetail(info);
+        }
+    });
+    connect(m_addExtraBtn, &QPushButton::clicked, this, &ImageCollection::onAddExtraRow);
+    connect(m_removeExtraBtn, &QPushButton::clicked, this, &ImageCollection::onRemoveExtraRow);
+    connect(m_saveExtraBtn, &QPushButton::clicked, this, [this]() { saveExtras(m_currentDetailId); });
 }
 
 // ---- Storage helpers ----
@@ -332,6 +496,8 @@ ImageInfo ImageCollection::imageInfoFromRecord(const QVariantMap& record) const
     if (!tagsStr.isEmpty())
         info.tags = tagsStr.split(',', Qt::SkipEmptyParts);
     info.notes = record.value("notes").toString();
+    info.ocrText = record.value("ocr_text").toString();
+    info.extras = extrasFromJson(record.value("extras").toString());
     info.isDeleted = record.value("is_deleted").toInt() != 0;
     info.createdAt = QDateTime::fromString(record.value("created_at").toString(), Qt::ISODate);
     if (!record.value("deleted_at").isNull())
@@ -473,6 +639,14 @@ void ImageCollection::importImage(const QString& filePath)
              << "stored as" << storedName
              << "size:" << fi.size()
              << "dimensions:" << imgSize;
+
+    // 获取插入后的 ID 并自动 OCR
+    auto res = m_db->select("SELECT id FROM image_collection WHERE stored_name = :sn",
+                            {{"sn", storedName}});
+    if (res.success && !res.data.isEmpty()) {
+        int newId = res.data.first().toMap().value("id").toInt();
+        autoOcrImage(newId, storedName);
+    }
 }
 
 // ---- View toggle ----
@@ -795,4 +969,193 @@ void ImageCollection::dropEvent(QDropEvent* event)
     }
     loadImages();
     event->acceptProposedAction();
+}
+
+// ── 详情面板 ──
+
+void ImageCollection::showDetail(const ImageInfo& info)
+{
+    m_currentDetailId = info.id;
+
+    // 预览图
+    QPixmap pix = getThumbnail(info.storedName, 280, 170);
+    m_detailPreview->setPixmap(pix.scaled(m_detailPreview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+    // 基本信息
+    m_detailFileName->setText(info.fileName);
+    m_detailFileInfo->setText(
+        tr("%1 x %2 | %3 | %4")
+            .arg(info.width).arg(info.height)
+            .arg(formatFileSize(info.fileSize))
+            .arg(info.createdAt.toString("yyyy-MM-dd HH:mm")));
+
+    // 填充 extras 表格
+    m_extrasTable->setRowCount(0);
+    for (const auto& kv : info.extras) {
+        int row = m_extrasTable->rowCount();
+        m_extrasTable->insertRow(row);
+        m_extrasTable->setItem(row, 0, new QTableWidgetItem(kv.first));
+        m_extrasTable->setItem(row, 1, new QTableWidgetItem(kv.second));
+    }
+
+    // OCR 结果
+    m_ocrResultEdit->setPlainText(info.ocrText.isEmpty() ? tr("(未识别)") : info.ocrText);
+}
+
+void ImageCollection::onAddExtraRow()
+{
+    int row = m_extrasTable->rowCount();
+    m_extrasTable->insertRow(row);
+    m_extrasTable->setItem(row, 0, new QTableWidgetItem(""));
+    m_extrasTable->setItem(row, 1, new QTableWidgetItem(""));
+    m_extrasTable->editItem(m_extrasTable->item(row, 0));
+}
+
+void ImageCollection::onRemoveExtraRow()
+{
+    auto selected = m_extrasTable->selectedItems();
+    if (!selected.isEmpty()) {
+        m_extrasTable->removeRow(selected.first()->row());
+    }
+}
+
+void ImageCollection::saveExtras(int imageId)
+{
+    if (imageId <= 0) return;
+
+    QList<QPair<QString,QString>> extras;
+    for (int i = 0; i < m_extrasTable->rowCount(); ++i) {
+        QString key = m_extrasTable->item(i, 0) ? m_extrasTable->item(i, 0)->text().trimmed() : "";
+        QString val = m_extrasTable->item(i, 1) ? m_extrasTable->item(i, 1)->text().trimmed() : "";
+        if (!key.isEmpty())
+            extras.append({key, val});
+    }
+
+    m_db->execute("UPDATE image_collection SET extras = :extras WHERE id = :id",
+                  {{"extras", extrasToJson(extras)}, {"id", imageId}});
+
+    // 更新列表中的数据
+    for (int i = 0; i < m_listWidget->count(); ++i) {
+        ImageInfo info = m_listWidget->item(i)->data(Qt::UserRole).value<ImageInfo>();
+        if (info.id == imageId) {
+            info.extras = extras;
+            m_listWidget->item(i)->setData(Qt::UserRole, QVariant::fromValue(info));
+            break;
+        }
+    }
+}
+
+QString ImageCollection::extrasToJson(const QList<QPair<QString,QString>>& extras) const
+{
+    QJsonArray arr;
+    for (const auto& kv : extras) {
+        QJsonObject obj;
+        obj["k"] = kv.first;
+        obj["v"] = kv.second;
+        arr.append(obj);
+    }
+    return QJsonDocument(arr).toJson(QJsonDocument::Compact);
+}
+
+QList<QPair<QString,QString>> ImageCollection::extrasFromJson(const QString& json) const
+{
+    QList<QPair<QString,QString>> result;
+    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+    if (!doc.isArray()) return result;
+    for (const auto& val : doc.array()) {
+        QJsonObject obj = val.toObject();
+        result.append({obj["k"].toString(), obj["v"].toString()});
+    }
+    return result;
+}
+
+void ImageCollection::onItemSelectionChanged()
+{
+    auto* item = m_listWidget->currentItem();
+    if (item) {
+        ImageInfo info = item->data(Qt::UserRole).value<ImageInfo>();
+        showDetail(info);
+    }
+}
+
+void ImageCollection::autoOcrImage(int imageId, const QString& storedName)
+{
+    QString imgPath = storagePath() + storedName;
+    if (!QFile::exists(imgPath)) return;
+
+    // 使用 PaddleOCR CLI 异步识别（轻量模式）
+    auto* proc = new QProcess(this);
+
+    // 补充 PATH（macOS .app 环境）
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString path = env.value("PATH");
+    QStringList extraPaths = {
+        "/opt/homebrew/bin", "/opt/homebrew/Caskroom/miniconda/base/bin",
+        "/usr/local/bin", QDir::homePath() + "/miniconda3/bin",
+        QDir::homePath() + "/anaconda3/bin", QDir::homePath() + "/.local/bin"
+    };
+    for (const auto& p : extraPaths)
+        if (QDir(p).exists() && !path.contains(p)) path = p + ":" + path;
+    env.insert("PATH", path);
+    proc->setProcessEnvironment(env);
+
+    // 输出到临时目录
+    QString outDir = QDir::tempPath() + "/lele_ic_ocr_" + QUuid::createUuid().toString(QUuid::Id128);
+    QDir().mkpath(outDir);
+
+    proc->setProgram("paddleocr");
+    proc->setArguments({"ocr", "-i", imgPath, "--save_path", outDir,
+        "--use_doc_orientation_classify", "False",
+        "--use_doc_unwarping", "False",
+        "--use_textline_orientation", "False",
+        "--text_detection_model_name", "PP-OCRv5_mobile_det",
+        "--text_recognition_model_name", "PP-OCRv5_mobile_rec"});
+
+    connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+        this, [this, proc, imageId, outDir](int, QProcess::ExitStatus) {
+
+        // 解析 JSON 结果
+        QDir dir(outDir);
+        QStringList jsonFiles = dir.entryList({"*_res.json"}, QDir::Files);
+        QString ocrText;
+        if (!jsonFiles.isEmpty()) {
+            QFile f(dir.filePath(jsonFiles.first()));
+            if (f.open(QIODevice::ReadOnly)) {
+                QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+                f.close();
+                if (doc.isObject()) {
+                    QJsonArray texts = doc.object()["rec_texts"].toArray();
+                    QStringList lines;
+                    for (const auto& t : texts) {
+                        QString s = t.toString().trimmed();
+                        if (!s.isEmpty()) lines.append(s);
+                    }
+                    ocrText = lines.join('\n');
+                }
+            }
+        }
+        QDir(outDir).removeRecursively();
+
+        if (!ocrText.isEmpty()) {
+            m_db->execute("UPDATE image_collection SET ocr_text = :text WHERE id = :id",
+                          {{"text", ocrText}, {"id", imageId}});
+
+            // 更新列表中的数据
+            for (int i = 0; i < m_listWidget->count(); ++i) {
+                ImageInfo info = m_listWidget->item(i)->data(Qt::UserRole).value<ImageInfo>();
+                if (info.id == imageId) {
+                    info.ocrText = ocrText;
+                    m_listWidget->item(i)->setData(Qt::UserRole, QVariant::fromValue(info));
+                    // 如果当前正在显示这张的详情，更新 OCR 区域
+                    if (m_currentDetailId == imageId)
+                        m_ocrResultEdit->setPlainText(ocrText);
+                    break;
+                }
+            }
+        }
+
+        proc->deleteLater();
+    });
+
+    proc->start();
 }

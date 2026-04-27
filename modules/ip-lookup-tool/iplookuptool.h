@@ -203,6 +203,19 @@ private:
     QList<QPair<QString, IpLookupResult>> m_results;
 };
 
+// ip2region 离线查询封装
+class Ip2RegionLookup {
+public:
+    static Ip2RegionLookup& instance();
+    bool isAvailable() const { return m_loaded; }
+    IpLookupResult lookup(const QString& ip);
+private:
+    Ip2RegionLookup();
+    ~Ip2RegionLookup();
+    bool m_loaded = false;
+    void* m_content = nullptr; // xdb_content_t*
+};
+
 // IP查询工具主类
 class IpLookupTool final : public QWidget, public DynamicObjectBase {
     Q_OBJECT

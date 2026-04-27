@@ -2,9 +2,97 @@
 #include <QHostInfo>
 #include <QNetworkInterface>
 #include <QNetworkRequest>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
+
+extern "C" {
+#include "../../common/thirdparty/ip2region/xdb_api.h"
+}
 
 // 动态对象创建宏
 REGISTER_DYNAMICOBJECT(IpLookupTool);
+
+// ── ip2region 离线查询 ──
+
+Ip2RegionLookup& Ip2RegionLookup::instance() {
+    static Ip2RegionLookup inst;
+    return inst;
+}
+
+Ip2RegionLookup::Ip2RegionLookup() {
+    // 查找 xdb 数据库文件
+    QStringList candidates = {
+        QCoreApplication::applicationDirPath() + "/ip2region.xdb",
+        QCoreApplication::applicationDirPath() + "/../Resources/ip2region.xdb",
+    };
+    // 开发模式
+    QString srcPath = QString(__FILE__);
+    QString srcDir = QFileInfo(srcPath).absolutePath();
+    candidates.prepend(srcDir + "/../../common/thirdparty/ip2region/ip2region.xdb");
+
+    for (const auto& p : candidates) {
+        if (QFile::exists(p)) {
+            xdb_content_t* content = xdb_load_content_from_file(p.toUtf8().constData());
+            if (content) {
+                m_content = content;
+                m_loaded = true;
+            }
+            break;
+        }
+    }
+}
+
+Ip2RegionLookup::~Ip2RegionLookup() {
+    if (m_content) {
+        xdb_free_content(m_content);
+    }
+}
+
+IpLookupResult Ip2RegionLookup::lookup(const QString& ip) {
+    IpLookupResult result;
+    result.ip = ip;
+
+    if (!m_loaded || !m_content) {
+        result.error = "ip2region database not loaded";
+        return result;
+    }
+
+    xdb_searcher_t searcher;
+    int err = xdb_new_with_buffer(XDB_IPv4, &searcher, static_cast<xdb_content_t*>(m_content));
+    if (err != 0) {
+        result.error = "Failed to create searcher";
+        return result;
+    }
+
+    char region_buf[256] = {0};
+    xdb_region_buffer_t region;
+    xdb_region_buffer_init(&region, region_buf, sizeof(region_buf));
+
+    err = xdb_search_by_string(&searcher, ip.toUtf8().constData(), &region);
+    xdb_close(&searcher);
+
+    if (err != 0) {
+        result.error = "IP lookup failed";
+        return result;
+    }
+
+    // 格式: "国家|省份|城市|ISP|ISO编码" 或 "国家|区域|省份|城市|ISP"
+    QString regionStr = QString::fromUtf8(region.value);
+    QStringList parts = regionStr.split('|');
+
+    // ip2region v2 格式: 国家|区域|省份|城市|ISP
+    if (parts.size() >= 5) {
+        result.country = parts[0] == "0" ? "" : parts[0];
+        result.region = parts[2] == "0" ? "" : parts[2];
+        result.city = parts[3] == "0" ? "" : parts[3];
+        result.isp = parts[4] == "0" ? "" : parts[4];
+        // parts[1] 是区域（如"华南"），放到 organization
+        result.organization = parts[1] == "0" ? "" : parts[1];
+    }
+
+    return result;
+}
 
 // SingleIpLookup 实现
 SingleIpLookup::SingleIpLookup(QWidget* parent)
@@ -16,106 +104,63 @@ SingleIpLookup::SingleIpLookup(QWidget* parent)
 
 void SingleIpLookup::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setSpacing(15);
-    m_mainLayout->setContentsMargins(20, 20, 20, 20);
+    m_mainLayout->setSpacing(8);
+    m_mainLayout->setContentsMargins(12, 8, 12, 8);
 
-    // 输入区域
+    // 输入栏（一行：输入框 + 按钮）
     m_inputLayout = new QHBoxLayout();
-
-    auto* inputLabel = new QLabel("请输入IP地址或域名:");
-    inputLabel->setStyleSheet("font-weight: bold; color: #2c3e50;");
+    m_inputLayout->setSpacing(0);
+    const int barH = 32;
 
     m_ipInput = new QLineEdit();
-    m_ipInput->setPlaceholderText("例如: 8.8.8.8 或 google.com");
+    m_ipInput->setPlaceholderText(tr("输入 IP 地址或域名，如 8.8.8.8 / google.com"));
+    m_ipInput->setFixedHeight(barH);
     m_ipInput->setStyleSheet(
-        "QLineEdit {"
-        "padding: 8px;"
-        "border: 2px solid #bdc3c7;"
-        "border-radius: 6px;"
-        "font-size: 14px;"
-        "}"
-        "QLineEdit:focus {"
-        "border-color: #3498db;"
-        "}"
-    );
+        "QLineEdit { border: 1px solid #dee2e6; border-radius: 4px 0 0 4px; padding: 0 10px; font-size: 13px; }");
 
-    m_lookupBtn = new QPushButton("🔍 查询");
+    m_lookupBtn = new QPushButton(tr("查询"));
+    m_lookupBtn->setFixedSize(60, barH);
     m_lookupBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #3498db;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #2980b9;"
-        "}"
-        "QPushButton:pressed {"
-        "background-color: #21618c;"
-        "}"
-    );
+        "QPushButton { background: #228be6; color: white; border: none; border-radius: 0;"
+        "  font-weight: 600; font-size: 12px; }"
+        "QPushButton:hover { background: #1c7ed6; }"
+        "QPushButton:disabled { background: #adb5bd; }");
 
-    m_clearBtn = new QPushButton("🗑️ 清空");
-    m_clearBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #95a5a6;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #7f8c8d;"
-        "}"
-    );
-
-    m_getMyIpBtn = new QPushButton("🌐 获取我的IP");
+    m_getMyIpBtn = new QPushButton(tr("我的IP"));
+    m_getMyIpBtn->setFixedSize(60, barH);
     m_getMyIpBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #27ae60;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #219a52;"
-        "}"
-    );
+        "QPushButton { background: #40c057; color: white; border: none; border-radius: 0 4px 4px 0;"
+        "  font-size: 12px; }"
+        "QPushButton:hover { background: #37b24d; }");
 
-    m_inputLayout->addWidget(inputLabel);
+    m_clearBtn = new QPushButton(tr("清空"));
+    m_clearBtn->setFixedHeight(barH);
+    m_clearBtn->setStyleSheet("QPushButton { color: #868e96; font-size: 12px; padding: 0 8px; }");
+
     m_inputLayout->addWidget(m_ipInput, 1);
     m_inputLayout->addWidget(m_lookupBtn);
-    m_inputLayout->addWidget(m_clearBtn);
     m_inputLayout->addWidget(m_getMyIpBtn);
+    m_inputLayout->addSpacing(8);
+    m_inputLayout->addWidget(m_clearBtn);
 
-    // 结果显示区域
-    m_resultGroup = new QGroupBox("查询结果");
-    m_resultGroup->setStyleSheet(
-        "QGroupBox {"
-        "font-weight: bold;"
-        "border: 2px solid #bdc3c7;"
-        "border-radius: 8px;"
-        "margin-top: 1ex;"
-        "padding-top: 15px;"
-        "}"
-        "QGroupBox::title {"
-        "subcontrol-origin: margin;"
-        "left: 10px;"
-        "padding: 0 8px 0 8px;"
-        "color: #2c3e50;"
-        "}"
-    );
+    // 离线数据库状态
+    auto* dbStatus = new QLabel();
+    if (Ip2RegionLookup::instance().isAvailable()) {
+        dbStatus->setText(tr("ip2region 离线库已加载"));
+        dbStatus->setStyleSheet("color: #40c057; font-size: 11px; padding: 2px 0;");
+    } else {
+        dbStatus->setText(tr("离线库未加载，使用在线查询"));
+        dbStatus->setStyleSheet("color: #868e96; font-size: 11px; padding: 2px 0;");
+    }
 
-    m_resultLayout = new QFormLayout(m_resultGroup);
-    m_resultLayout->setSpacing(8);
-    m_resultLayout->setLabelAlignment(Qt::AlignRight);
+    // 结果区域（扁平化，用 QGridLayout 确保左对齐）
+    m_resultGroup = new QGroupBox();
+    auto* grid = new QGridLayout(m_resultGroup);
+    grid->setSpacing(6);
+    grid->setContentsMargins(0, 4, 0, 0);
+    grid->setColumnMinimumWidth(0, 50);
+    m_resultLayout = nullptr; // 不再使用 QFormLayout
 
-    // 创建结果标签
     m_ipLabel = new QLabel("-");
     m_countryLabel = new QLabel("-");
     m_regionLabel = new QLabel("-");
@@ -126,61 +171,46 @@ void SingleIpLookup::setupUI() {
     m_coordinatesLabel = new QLabel("-");
     m_asnLabel = new QLabel("-");
 
-    // 设置标签样式
-    auto setLabelStyle = [](QLabel* label) {
-        label->setStyleSheet(
-            "QLabel {"
-            "padding: 4px;"
-            "background-color: #ecf0f1;"
-            "border-radius: 4px;"
-            "}"
-        );
+    auto setValStyle = [](QLabel* label) {
+        label->setStyleSheet("QLabel { padding: 4px 8px; background: #f8f9fa; border-radius: 4px; color: #212529; }");
         label->setTextInteractionFlags(Qt::TextSelectableByMouse);
     };
+    for (auto* l : {m_ipLabel, m_countryLabel, m_regionLabel, m_cityLabel,
+                    m_ispLabel, m_orgLabel, m_timezoneLabel, m_coordinatesLabel, m_asnLabel})
+        setValStyle(l);
 
-    setLabelStyle(m_ipLabel);
-    setLabelStyle(m_countryLabel);
-    setLabelStyle(m_regionLabel);
-    setLabelStyle(m_cityLabel);
-    setLabelStyle(m_ispLabel);
-    setLabelStyle(m_orgLabel);
-    setLabelStyle(m_timezoneLabel);
-    setLabelStyle(m_coordinatesLabel);
-    setLabelStyle(m_asnLabel);
+    auto makeKey = [](const QString& text) {
+        auto* l = new QLabel(text);
+        l->setStyleSheet("color: #868e96; font-size: 12px;");
+        l->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        l->setFixedWidth(50);
+        return l;
+    };
 
-    // 添加到表单布局
-    m_resultLayout->addRow("IP地址:", m_ipLabel);
-    m_resultLayout->addRow("国家:", m_countryLabel);
-    m_resultLayout->addRow("省/州:", m_regionLabel);
-    m_resultLayout->addRow("城市:", m_cityLabel);
-    m_resultLayout->addRow("ISP:", m_ispLabel);
-    m_resultLayout->addRow("组织:", m_orgLabel);
-    m_resultLayout->addRow("时区:", m_timezoneLabel);
-    m_resultLayout->addRow("坐标:", m_coordinatesLabel);
-    m_resultLayout->addRow("ASN:", m_asnLabel);
+    struct { QString name; QLabel* val; } rows[] = {
+        {tr("IP"), m_ipLabel}, {tr("国家"), m_countryLabel}, {tr("省/州"), m_regionLabel},
+        {tr("城市"), m_cityLabel}, {tr("ISP"), m_ispLabel}, {tr("组织"), m_orgLabel},
+        {tr("时区"), m_timezoneLabel}, {tr("坐标"), m_coordinatesLabel}, {tr("ASN"), m_asnLabel}
+    };
+    for (int i = 0; i < 9; ++i) {
+        grid->addWidget(makeKey(rows[i].name), i, 0);
+        grid->addWidget(rows[i].val, i, 1);
+    }
+    grid->setColumnStretch(1, 1);
 
-    // 操作按钮
+    // 复制按钮
     m_buttonLayout = new QHBoxLayout();
-    m_copyResultBtn = new QPushButton("📋 复制结果");
+    m_copyResultBtn = new QPushButton(tr("复制结果"));
     m_copyResultBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e74c3c;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #c0392b;"
-        "}"
-    );
+        "QPushButton { color: #228be6; font-size: 12px; padding: 4px 10px; }"
+        "QPushButton:hover { background: #e7f5ff; border-radius: 4px; }");
 
     m_buttonLayout->addStretch();
     m_buttonLayout->addWidget(m_copyResultBtn);
 
     // 组装布局
     m_mainLayout->addLayout(m_inputLayout);
+    m_mainLayout->addWidget(dbStatus);
     m_mainLayout->addWidget(m_resultGroup);
     m_mainLayout->addLayout(m_buttonLayout);
     m_mainLayout->addStretch();
@@ -247,42 +277,56 @@ void SingleIpLookup::onGetMyIpClicked() {
     if (m_currentReply) {
         m_currentReply->abort();
         m_currentReply->deleteLater();
+        m_currentReply = nullptr;
     }
 
+    m_lookupBtn->setEnabled(false);
+    m_getMyIpBtn->setEnabled(false);
+    m_lookupBtn->setText(tr("获取中..."));
+
     QNetworkRequest networkRequest(QUrl("https://api.ipify.org"));
-    m_currentReply = m_networkManager->get(networkRequest);
-    connect(m_currentReply, &QNetworkReply::finished, [this]() {
-        if (m_currentReply->error() == QNetworkReply::NoError) {
-            QString myIp = QString::fromUtf8(m_currentReply->readAll()).trimmed();
+    auto* reply = m_networkManager->get(networkRequest);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        m_lookupBtn->setEnabled(true);
+        m_getMyIpBtn->setEnabled(true);
+        m_lookupBtn->setText(tr("查询"));
+
+        if (reply->error() == QNetworkReply::NoError) {
+            QString myIp = QString::fromUtf8(reply->readAll()).trimmed();
             m_ipInput->setText(myIp);
             lookupIp(myIp);
         } else {
-            displayError("获取外网IP失败: " + m_currentReply->errorString());
+            displayError(tr("获取外网IP失败: ") + reply->errorString());
         }
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
     });
-
-    m_lookupBtn->setEnabled(false);
-    m_lookupBtn->setText("获取中...");
 }
 
 void SingleIpLookup::lookupIp(const QString& ip) {
+    m_currentIp = ip;
+
+    // 优先使用 ip2region 离线查询（微秒级）
+    auto& db = Ip2RegionLookup::instance();
+    if (db.isAvailable()) {
+        IpLookupResult result = db.lookup(ip);
+        if (result.error.isEmpty() && !result.country.isEmpty()) {
+            displayResult(result);
+            m_lookupBtn->setEnabled(true);
+            m_lookupBtn->setText(tr("查询"));
+            return;
+        }
+    }
+
+    // 回退到在线查询
     if (m_currentReply) {
         m_currentReply->abort();
         m_currentReply->deleteLater();
     }
 
-    m_currentIp = ip;
     m_lookupBtn->setEnabled(false);
-    m_lookupBtn->setText("查询中...");
+    m_lookupBtn->setText(tr("查询中..."));
 
-    // 使用ip-api.com进行查询
     QString url = QString("http://ip-api.com/json/%1?fields=status,message,country,regionName,city,isp,org,timezone,lat,lon,as,query").arg(ip);
-
-    // 这在 MSVC 下可能被当成函数声明（所谓 Most Vexing Parse 问题），结果 networkRequest 就不是对象了。
-    // QNetworkRequest networkRequest(QUrl(url));
-    // chatgpt 牛逼
     QNetworkRequest networkRequest { QUrl(url) };
     networkRequest.setRawHeader(QByteArray("User-Agent"), QByteArray("IP Lookup Tool 1.0"));
 
@@ -292,7 +336,7 @@ void SingleIpLookup::lookupIp(const QString& ip) {
 
 void SingleIpLookup::onNetworkReplyFinished() {
     m_lookupBtn->setEnabled(true);
-    m_lookupBtn->setText("🔍 查询");
+    m_lookupBtn->setText(tr("查询"));
 
     if (!m_currentReply)
         return;
@@ -396,145 +440,91 @@ BatchIpLookup::BatchIpLookup(QWidget* parent)
 
 void BatchIpLookup::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setSpacing(15);
-    m_mainLayout->setContentsMargins(20, 20, 20, 20);
+    m_mainLayout->setSpacing(6);
+    m_mainLayout->setContentsMargins(8, 6, 8, 6);
 
-    // 主分割器
+    // 控制栏
+    m_controlLayout = new QHBoxLayout();
+    m_controlLayout->setSpacing(4);
+
+    m_startBtn = new QPushButton(tr("开始查询"));
+    m_startBtn->setStyleSheet(
+        "QPushButton { background: #228be6; color: white; border: none; border-radius: 4px;"
+        "  padding: 5px 14px; font-weight: 600; font-size: 12px; }"
+        "QPushButton:hover { background: #1c7ed6; }"
+        "QPushButton:disabled { background: #adb5bd; }");
+
+    m_stopBtn = new QPushButton(tr("停止"));
+    m_stopBtn->setEnabled(false);
+    m_stopBtn->setStyleSheet(
+        "QPushButton { color: #e03131; font-size: 12px; padding: 5px 10px; }"
+        "QPushButton:hover { background: #fff5f5; border-radius: 4px; }"
+        "QPushButton:disabled { color: #adb5bd; }");
+
+    m_importBtn = new QPushButton(tr("导入文件"));
+    m_importBtn->setStyleSheet("QPushButton { color: #495057; font-size: 12px; padding: 5px 10px; }"
+        "QPushButton:hover { background: #f1f3f5; border-radius: 4px; }");
+
+    m_clearAllBtn = new QPushButton(tr("清空"));
+    m_clearAllBtn->setStyleSheet("QPushButton { color: #868e96; font-size: 12px; padding: 5px 8px; }"
+        "QPushButton:hover { background: #f1f3f5; border-radius: 4px; }");
+
+    m_progressBar = new QProgressBar();
+    m_progressBar->setFixedHeight(6);
+    m_progressBar->setTextVisible(false);
+    m_progressBar->setStyleSheet(
+        "QProgressBar { border: none; border-radius: 3px; background: #e9ecef; }"
+        "QProgressBar::chunk { background: #228be6; border-radius: 3px; }");
+
+    m_statusLabel = new QLabel(tr("就绪"));
+    m_statusLabel->setStyleSheet("color: #868e96; font-size: 11px;");
+
+    m_controlLayout->addWidget(m_startBtn);
+    m_controlLayout->addWidget(m_stopBtn);
+    m_controlLayout->addWidget(m_importBtn);
+    m_controlLayout->addWidget(m_clearAllBtn);
+    m_controlLayout->addWidget(m_progressBar, 1);
+    m_controlLayout->addWidget(m_statusLabel);
+
+    m_mainLayout->addLayout(m_controlLayout);
+
+    // 主分割器（左：输入，右：结果）
     m_mainSplitter = new QSplitter(Qt::Horizontal);
 
     // 输入区域
     m_inputWidget = new QWidget();
     m_inputLayout = new QVBoxLayout(m_inputWidget);
+    m_inputLayout->setContentsMargins(0, 0, 0, 0);
+    m_inputLayout->setSpacing(2);
 
-    m_inputLabel = new QLabel("请输入IP地址列表（每行一个）:");
-    m_inputLabel->setStyleSheet("font-weight: bold; color: #2c3e50; margin-bottom: 5px;");
+    m_inputLabel = new QLabel(tr("IP 列表（每行一个，或导入文件自动提取）"));
+    m_inputLabel->setStyleSheet("color: #868e96; font-size: 11px; padding: 2px 0;");
 
     m_ipListInput = new QPlainTextEdit();
-    m_ipListInput->setPlaceholderText("8.8.8.8\n1.1.1.1\ngoogle.com\nbaidu.com\n...");
+    m_ipListInput->setPlaceholderText("8.8.8.8\n1.1.1.1\n114.114.114.114\n...");
+#ifdef Q_OS_MACOS
+    m_ipListInput->setFont(QFont("Menlo", 12));
+#else
+    m_ipListInput->setFont(QFont("Consolas", 10));
+#endif
     m_ipListInput->setStyleSheet(
-        "QPlainTextEdit {"
-        "border: 2px solid #bdc3c7;"
-        "border-radius: 6px;"
-        "padding: 8px;"
-        "font-family: Consolas, Monaco, monospace;"
-        "font-size: 14px;"
-        "}"
-        "QPlainTextEdit:focus {"
-        "border-color: #3498db;"
-        "}"
-    );
+        "QPlainTextEdit { border: 1px solid #dee2e6; border-radius: 4px; padding: 6px; }");
 
     m_inputButtonLayout = new QHBoxLayout();
-    m_importBtn = new QPushButton("📁 导入文件");
-    m_clearAllBtn = new QPushButton("🗑️ 清空全部");
-
-    m_importBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #f39c12;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #d68910;"
-        "}"
-    );
-
-    m_clearAllBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e74c3c;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #c0392b;"
-        "}"
-    );
-
-    m_inputButtonLayout->addWidget(m_importBtn);
-    m_inputButtonLayout->addWidget(m_clearAllBtn);
-    m_inputButtonLayout->addStretch();
+    // 按钮已移到控制栏
 
     m_inputLayout->addWidget(m_inputLabel);
     m_inputLayout->addWidget(m_ipListInput);
-    m_inputLayout->addLayout(m_inputButtonLayout);
-
-    // 控制区域
-    m_controlLayout = new QHBoxLayout();
-
-    m_startBtn = new QPushButton("🚀 开始批量查询");
-    m_stopBtn = new QPushButton("⏹️ 停止查询");
-    m_progressBar = new QProgressBar();
-    m_statusLabel = new QLabel("准备就绪");
-
-    m_startBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #27ae60;"
-        "color: white;"
-        "border: none;"
-        "padding: 10px 20px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #219a52;"
-        "}"
-    );
-
-    m_stopBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e74c3c;"
-        "color: white;"
-        "border: none;"
-        "padding: 10px 20px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #c0392b;"
-        "}"
-    );
-
-    m_stopBtn->setEnabled(false);
-
-    m_progressBar->setStyleSheet(
-        "QProgressBar {"
-        "border: 2px solid #bdc3c7;"
-        "border-radius: 5px;"
-        "text-align: center;"
-        "}"
-        "QProgressBar::chunk {"
-        "background-color: #3498db;"
-        "border-radius: 3px;"
-        "}"
-    );
-
-    m_statusLabel->setStyleSheet("color: #7f8c8d; font-style: italic;");
-
-    m_controlLayout->addWidget(m_startBtn);
-    m_controlLayout->addWidget(m_stopBtn);
-    m_controlLayout->addWidget(m_progressBar, 1);
-    m_controlLayout->addWidget(m_statusLabel);
 
     // 结果区域
     m_resultWidget = new QWidget();
     m_resultLayout = new QVBoxLayout(m_resultWidget);
-
-    auto* resultLabel = new QLabel("查询结果:");
-    resultLabel->setStyleSheet("font-weight: bold; color: #2c3e50; margin-bottom: 5px;");
+    m_resultLayout->setContentsMargins(0, 0, 0, 0);
+    m_resultLayout->setSpacing(4);
 
     m_resultTable = new QTableWidget();
     m_resultTable->setColumnCount(6);
-    QStringList headers = { "IP地址", "国家", "省/州", "城市", "ISP", "状态" };
-    m_resultTable->setHorizontalHeaderLabels(headers);
-
+    m_resultTable->setHorizontalHeaderLabels({tr("IP"), tr("国家"), tr("省/州"), tr("城市"), tr("ISP"), tr("状态")});
     m_resultTable->horizontalHeader()->setStretchLastSection(false);
     m_resultTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     m_resultTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
@@ -542,54 +532,35 @@ void BatchIpLookup::setupUI() {
     m_resultTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     m_resultTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);
     m_resultTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    m_resultTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_resultTable->setAlternatingRowColors(true);
+    m_resultTable->verticalHeader()->setDefaultSectionSize(26);
 
     m_resultButtonLayout = new QHBoxLayout();
-    m_exportBtn = new QPushButton("💾 导出结果");
-    m_copyAllBtn = new QPushButton("📋 复制全部");
+    m_resultButtonLayout->setSpacing(4);
 
-    m_exportBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #9b59b6;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #8e44ad;"
-        "}"
-    );
+    m_exportBtn = new QPushButton(tr("导出"));
+    m_exportBtn->setStyleSheet("QPushButton { color: #495057; font-size: 11px; padding: 3px 8px; }"
+        "QPushButton:hover { background: #f1f3f5; border-radius: 4px; }");
 
-    m_copyAllBtn->setStyleSheet(
-        "QPushButton {"
-        "background-color: #e67e22;"
-        "color: white;"
-        "border: none;"
-        "padding: 8px 16px;"
-        "border-radius: 6px;"
-        "font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #d35400;"
-        "}"
-    );
+    m_copyAllBtn = new QPushButton(tr("复制全部"));
+    m_copyAllBtn->setStyleSheet("QPushButton { color: #228be6; font-size: 11px; padding: 3px 8px; }"
+        "QPushButton:hover { background: #e7f5ff; border-radius: 4px; }");
 
+    m_resultButtonLayout->addStretch();
     m_resultButtonLayout->addWidget(m_exportBtn);
     m_resultButtonLayout->addWidget(m_copyAllBtn);
-    m_resultButtonLayout->addStretch();
 
-    m_resultLayout->addWidget(resultLabel);
     m_resultLayout->addWidget(m_resultTable);
     m_resultLayout->addLayout(m_resultButtonLayout);
 
-    // 组装主布局
+    // 组装
     m_mainSplitter->addWidget(m_inputWidget);
     m_mainSplitter->addWidget(m_resultWidget);
-    m_mainSplitter->setSizes({ 300, 500 });
+    m_mainSplitter->setSizes({250, 550});
+    m_mainSplitter->setChildrenCollapsible(false);
 
-    m_mainLayout->addLayout(m_controlLayout);
-    m_mainLayout->addWidget(m_mainSplitter);
+    m_mainLayout->addWidget(m_mainSplitter, 1);
 
     // 连接信号
     connect(m_startBtn, &QPushButton::clicked, this, &BatchIpLookup::onStartBatchClicked);
@@ -627,17 +598,43 @@ void BatchIpLookup::onClearAllClicked() {
 }
 
 void BatchIpLookup::onImportFromFileClicked() {
-    QString fileName = QFileDialog::getOpenFileName(this, "导入IP地址文件", "", "文本文件 (*.txt);;所有文件 (*.*)");
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-            QString content = in.readAll();
-            m_ipListInput->setPlainText(content);
-        } else {
-            QMessageBox::warning(this, "错误", "无法打开文件: " + fileName);
+    QString fileName = QFileDialog::getOpenFileName(this, tr("导入文件"),
+        "", tr("所有文件 (*);;文本文件 (*.txt *.log *.csv)"));
+    if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("错误"), tr("无法打开文件: ") + fileName);
+        return;
+    }
+
+    QString content = QTextStream(&file).readAll();
+    file.close();
+
+    // 用正则从任意格式文件中提取所有 IPv4 地址
+    QRegularExpression ipRe(R"(\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b)");
+    auto it = ipRe.globalMatch(content);
+
+    QStringList ips;
+    QSet<QString> seen;
+    while (it.hasNext()) {
+        QString ip = it.next().captured(0);
+        if (!seen.contains(ip)) {
+            seen.insert(ip);
+            ips.append(ip);
         }
     }
+
+    if (ips.isEmpty()) {
+        QMessageBox::information(this, tr("提示"),
+            tr("未从文件中提取到 IP 地址\n\n文件: %1\n大小: %2 字节")
+                .arg(QFileInfo(fileName).fileName())
+                .arg(content.size()));
+        return;
+    }
+
+    m_ipListInput->setPlainText(ips.join('\n'));
+    m_statusLabel->setText(tr("已从文件提取 %1 个唯一 IP").arg(ips.size()));
 }
 
 void BatchIpLookup::onExportResultsClicked() {
@@ -807,7 +804,20 @@ void BatchIpLookup::lookupNextIp() {
 
     m_statusLabel->setText(QString("正在查询 %1 (%2/%3)").arg(ip).arg(m_currentIndex + 1).arg(m_ipList.size()));
 
-    // API查询
+    // 优先使用 ip2region 离线查询
+    auto& db = Ip2RegionLookup::instance();
+    if (db.isAvailable()) {
+        IpLookupResult result = db.lookup(actualIp);
+        if (result.error.isEmpty() && !result.country.isEmpty()) {
+            displayResult(ip, result);
+            m_currentIndex++;
+            updateProgress();
+            m_batchTimer->start(10); // 离线查询极快，几乎无延迟
+            return;
+        }
+    }
+
+    // 回退到 API 查询
     QString url = QString("http://ip-api.com/json/%1?fields=status,message,country,regionName,city,isp,org,timezone,lat,lon,as,query").arg(actualIp);
     QNetworkRequest networkRequest { QUrl(url) };
     networkRequest.setRawHeader(QByteArray("User-Agent"), QByteArray("IP Lookup Tool 1.0"));
@@ -896,17 +906,37 @@ void BatchIpLookup::updateProgress() {
 }
 
 QStringList BatchIpLookup::parseIpList(const QString& text) {
-    QStringList ips;
+    // 先尝试按行解析（每行一个 IP 或域名）
     QStringList lines = text.split('\n', Qt::SkipEmptyParts);
+    QStringList result;
+    QSet<QString> seen;
 
     for (QString line : lines) {
         line = line.trimmed();
-        if (!line.isEmpty() && !line.startsWith('#')) {
-            ips.append(line);
+        if (line.isEmpty() || line.startsWith('#')) continue;
+
+        // 如果整行是一个合法 IP 或域名，直接加入
+        if (isValidIp(line) || !line.contains(' ')) {
+            if (!seen.contains(line)) {
+                seen.insert(line);
+                result.append(line);
+            }
+            continue;
+        }
+
+        // 否则用正则从行中提取 IP
+        QRegularExpression ipRe(R"(\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b)");
+        auto it = ipRe.globalMatch(line);
+        while (it.hasNext()) {
+            QString ip = it.next().captured(0);
+            if (!seen.contains(ip)) {
+                seen.insert(ip);
+                result.append(ip);
+            }
         }
     }
 
-    return ips;
+    return result;
 }
 
 bool BatchIpLookup::isValidIp(const QString& ip) {
@@ -940,11 +970,11 @@ void IpLookupTool::setupUI() {
 
     // 创建单个查询标签页
     m_singleLookup = new SingleIpLookup();
-    m_tabWidget->addTab(m_singleLookup, "🔍 单个查询");
+    m_tabWidget->addTab(m_singleLookup, tr("单个查询"));
 
     // 创建批量查询标签页
     m_batchLookup = new BatchIpLookup();
-    m_tabWidget->addTab(m_batchLookup, "📊 批量查询");
+    m_tabWidget->addTab(m_batchLookup, tr("批量查询"));
 
     m_mainLayout->addWidget(m_tabWidget);
 }

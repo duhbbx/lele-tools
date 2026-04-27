@@ -32,8 +32,8 @@ HttpClient::~HttpClient() {
 
 void HttpClient::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
-    m_mainLayout->setSpacing(10);
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setSpacing(0);
     m_nextTabId = 0;
 
     setupToolbar();
@@ -53,8 +53,10 @@ void HttpClient::setupUI() {
 
     // 添加新标签页按钮
     const auto newTabBtn = new QPushButton("+");
-    newTabBtn->setFixedSize(25, 25);
-    newTabBtn->setStyleSheet("QPushButton { font-weight: bold; font-size: 14px; }");
+    newTabBtn->setFixedSize(28, 28);
+    newTabBtn->setStyleSheet(
+        "QPushButton { font-weight: bold; font-size: 16px; color: #868e96; border: none; border-radius: 4px; }"
+        "QPushButton:hover { background: #e7f5ff; color: #228be6; }");
     m_mainTabWidget->setCornerWidget(newTabBtn, Qt::TopRightCorner);
 
     // 连接标签页信号
@@ -72,113 +74,166 @@ void HttpClient::setupUI() {
     // 创建第一个默认标签页
     createNewTab(tr("新请求"));
 
-    // 应用样式
+    // 应用样式 — 现代扁平风格
     setStyleSheet(R"(
 QWidget {
-    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
     font-size: 12px;
 }
 QGroupBox {
-    font-weight: bold;
-    border: 2px solid #cccccc;
-    border-radius: 5px;
-    margin-top: 10px;
-    padding-top: 5px;
+    border: none;
+    margin-top: 0;
+    padding-top: 0;
 }
 QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 10px;
-    padding: 0 5px 0 5px;
+    color: transparent;
+    height: 0;
 }
 QPushButton {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    padding: 6px 12px;
-    font-weight: normal;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    color: #495057;
+    font-size: 12px;
 }
 QPushButton:hover {
     background-color: #e9ecef;
-    border-color: #adb5bd;
 }
 QPushButton:pressed {
     background-color: #dee2e6;
 }
-QLineEdit, QTextEdit, QComboBox {
-    border: 1px solid #ced4da;
-    padding: 6px;
+QPushButton:disabled {
+    color: #adb5bd;
+}
+QLineEdit, QPlainTextEdit, QTextEdit {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 8px;
     background-color: #ffffff;
+    selection-background-color: #228be6;
 }
-QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
-    border-color: #80bdff;
-    outline: 0;
+QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus {
+    border-color: #228be6;
 }
+QComboBox {
+    combobox-popup: 0;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 24px 5px 8px;
+    background-color: #ffffff;
+    min-height: 14px;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 20px;
+    border: none;
+    background: transparent;
+}
+QComboBox::down-arrow {
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #868e96;
+    margin-right: 6px;
+}
+QComboBox:hover { border-color: #adb5bd; }
+QComboBox:focus { border-color: #228be6; }
+QComboBox QAbstractItemView {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background-color: #ffffff;
+    selection-background-color: #e7f5ff;
+    selection-color: #1c7ed6;
+    outline: none;
+    padding: 4px;
+    font-size: 12px;
+    font-weight: normal;
+}
+QComboBox QAbstractItemView::item {
+    padding: 5px 10px;
+    min-height: 18px;
+    border-radius: 4px;
+    color: #495057;
+}
+QComboBox QAbstractItemView::item:selected {
+    background-color: #e7f5ff;
+    color: #1c7ed6;
+}
+QComboBox QAbstractItemView::item:hover {
+    background-color: #f1f3f5;
+}
+QSpinBox {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 4px 6px;
+    background: white;
+}
+QSpinBox:focus { border-color: #228be6; }
 QTableWidget {
-    gridline-color: #dee2e6;
+    gridline-color: #e9ecef;
     background-color: #ffffff;
     alternate-background-color: #f8f9fa;
     outline: none;
     border: 1px solid #dee2e6;
-
+    border-radius: 4px;
 }
 QTableWidget::item {
     outline: 0;
-    border-left: 0;   /* 去掉 header 下边框，避免和 table 重叠 */
-    border-top: 0;   /* 去掉 header 下边框，避免和 table 重叠 */
-    padding: 0;
+    border: none;
+    padding: 2px 4px;
 }
-
-QTableWidget::item:focus {
-    outline: none;
-}
+QTableWidget::item:focus { outline: none; }
 QTableWidget::item:selected {
-    padding: 0px;
-    background-color: #007bff;
-    color: white;
+    background-color: #e7f5ff;
+    color: #1c7ed6;
     outline: none;
 }
-
 QHeaderView::section {
     background-color: #f8f9fa;
-    padding: 4px;
-    border: 1px solid #dee2e6;
-    border-left: none;   /* 去掉 header 下边框，避免和 table 重叠 */
-    border-top: none;   /* 去掉 header 下边框，避免和 table 重叠 */
-}
-
-QHeaderView::section:last {
-    margin-right: -1px;    /* 解决左右 tab 边框重叠 */
-}
-
-
-QTabWidget::pane {
-    border: 1px solid #c0c0c0;
-    background-color: #ffffff;
-}
-
-QTabWidget::pane QTextEdit {
+    padding: 5px 8px;
     border: none;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #e9ecef;
+    font-weight: 500;
+    color: #868e96;
+    font-size: 11px;
 }
-
-QTabBar::tab {
-    background-color: #f0f0f0;
-    color: #333333;
-    padding: 8px 16px;
-    border: 1px solid #c0c0c0;
-    border-bottom: none;   /* 避免和 pane 重叠 */
-    margin-right: -1px;    /* 解决左右 tab 边框重叠 */
-}
-
-QTabBar::tab:last {
-    margin-right: 0px;
-}
-
-QTabBar::tab:selected {
+QTabWidget::pane {
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 4px 4px;
     background-color: #ffffff;
-    font-weight: bold;
+    border-top: none;
+}
+QTabWidget::pane QPlainTextEdit, QTabWidget::pane QTextEdit {
+    border: none;
+    border-radius: 0;
+}
+QTabBar::tab {
+    background-color: transparent;
+    color: #868e96;
+    padding: 6px 14px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-right: 2px;
+    font-size: 12px;
+}
+QTabBar::tab:selected {
+    color: #228be6;
+    border-bottom: 2px solid #228be6;
+    font-weight: 500;
 }
 QTabBar::tab:hover {
-    background-color: #e0e0e0;
+    color: #495057;
+    background-color: #f1f3f5;
+    border-radius: 4px 4px 0 0;
 }
+QSplitter::handle {
+    background-color: #e9ecef;
+}
+QSplitter::handle:horizontal { width: 1px; }
+QSplitter::handle:vertical { height: 1px; }
 )");
 
 }
@@ -967,7 +1022,7 @@ void HttpClient::setupRequestTreeView() {
 
     // 添加标题
     QLabel* titleLabel = new QLabel(tr("请求集合"));
-    titleLabel->setStyleSheet("font-weight: bold; font-size: 12px; padding: 5px;");
+    titleLabel->setStyleSheet("font-weight: 600; font-size: 11px; color: #868e96; padding: 4px 2px; text-transform: uppercase;");
     leftLayout->addWidget(titleLabel);
 
     // 创建搜索区域
@@ -1026,30 +1081,29 @@ void HttpClient::setupRequestTreeView() {
     // 设置样式（现代化）
     m_requestTreeView->setStyleSheet(
         "QTreeView {"
-        "    border: 1px solid #e0e0e0;"
-        "    background-color: #fafafa;"
-        "    selection-background-color: #2563eb;"
+        "    border: none;"
+        "    background-color: transparent;"
+        "    selection-background-color: #e7f5ff;"
         "    outline: none;"
-        "    font-size: 10pt;"
+        "    font-size: 12px;"
         "}"
         "QTreeView::item {"
-        "    height: 24px;"
-        "    padding: 2px 4px;"
+        "    height: 28px;"
+        "    padding: 2px 6px;"
+        "    border-radius: 4px;"
         "    border: none;"
         "}"
         "QTreeView::item:hover {"
-        "    background-color: #e8f0fe;"
+        "    background-color: #f1f3f5;"
         "}"
         "QTreeView::item:selected {"
-        "    background-color: #2563eb;"
-        "    color: white;"
+        "    background-color: #e7f5ff;"
+        "    color: #1c7ed6;"
         "}"
         "QHeaderView::section {"
-        "    background-color: #f3f4f6;"
+        "    background-color: transparent;"
         "    padding: 2px 4px;"
         "    border: none;"
-        "    border-bottom: 1px solid #e5e7eb;"
-        "    font-size: 10pt;"
         "}"
     );
 
@@ -1720,6 +1774,8 @@ HttpRequestTab* HttpClient::createNewTab(const QString& tabName, int requestId, 
     // 创建标签页的主容器
     tab->tabWidget = new QWidget();
     QVBoxLayout* mainLayout = new QVBoxLayout(tab->tabWidget);
+    mainLayout->setContentsMargins(4, 4, 4, 4);
+    mainLayout->setSpacing(0);
 
     // 创建垂直分割器（上下分隔）
     QSplitter* splitter = new QSplitter(Qt::Vertical);
@@ -1730,10 +1786,12 @@ HttpRequestTab* HttpClient::createNewTab(const QString& tabName, int requestId, 
     // 添加到分割器
     QWidget* requestWidget = new QWidget();
     QVBoxLayout* requestLayout = new QVBoxLayout(requestWidget);
+    requestLayout->setContentsMargins(0, 0, 0, 0);
     requestLayout->addWidget(tab->requestGroup);
 
     QWidget* responseWidget = new QWidget();
     QVBoxLayout* responseLayout = new QVBoxLayout(responseWidget);
+    responseLayout->setContentsMargins(0, 0, 0, 0);
     responseLayout->addWidget(tab->responseGroup);
 
     splitter->addWidget(requestWidget);
@@ -1770,79 +1828,115 @@ HttpRequestTab* HttpClient::createTabFromRequest(const HttpClientStore::HttpRequ
 }
 
 void HttpClient::setupTabUI(HttpRequestTab* tab) {
-    // 请求区域
-    tab->requestGroup = new QGroupBox(tr("HTTP 请求"));
+    // 请求区域（扁平化，无 GroupBox 边框）
+    tab->requestGroup = new QGroupBox();
     QVBoxLayout* groupLayout = new QVBoxLayout(tab->requestGroup);
+    groupLayout->setContentsMargins(4, 4, 4, 4);
+    groupLayout->setSpacing(6);
 
-    // 方法、协议、端口、主机在一行
-    QHBoxLayout* topLayout = new QHBoxLayout();
+    // URL 栏：方法 + 协议://主机:端口/路径 + 发送按钮（一行）
+    QHBoxLayout* urlBar = new QHBoxLayout();
+    urlBar->setSpacing(0);
+    const int urlBarH = 32; // 统一高度
 
-    // 方法
-    topLayout->addWidget(new QLabel(tr("方法:")));
+    // 方法选择
     tab->methodCombo = new QComboBox();
     tab->methodCombo->addItems({ "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS" });
-    tab->methodCombo->setMinimumWidth(80);
-    tab->methodCombo->setMaximumWidth(80);
-    topLayout->addWidget(tab->methodCombo);
-
-    topLayout->addSpacing(10);
+    tab->methodCombo->setFixedSize(100, urlBarH);
+    tab->methodCombo->setStyleSheet(
+        "QComboBox { combobox-popup: 0; border: 1px solid #dee2e6; border-radius: 4px 0 0 4px;"
+        "  padding-left: 10px; font-weight: 600; color: #228be6; background: #f8f9fa; border-right: none; }"
+        "QComboBox::drop-down { subcontrol-origin: padding; subcontrol-position: center right;"
+        "  width: 20px; border: none; background: transparent; }"
+        "QComboBox::down-arrow { image: none; border-left: 4px solid transparent;"
+        "  border-right: 4px solid transparent; border-top: 5px solid #228be6; margin-right: 4px; }"
+        "QComboBox QAbstractItemView { border: 1px solid #dee2e6; border-radius: 6px;"
+        "  background: #fff; padding: 4px; outline: none; font-weight: normal; }"
+        "QComboBox QAbstractItemView::item { padding: 5px 12px; min-height: 18px; border-radius: 4px; color: #495057; }"
+        "QComboBox QAbstractItemView::item:selected { background: #e7f5ff; color: #228be6; font-weight: 600; }"
+        "QComboBox QAbstractItemView::item:hover { background: #f1f3f5; }");
+    tab->methodCombo->view()->setMinimumWidth(120);
+    urlBar->addWidget(tab->methodCombo);
 
     // 协议
-    topLayout->addWidget(new QLabel(tr("协议:")));
     tab->protocolCombo = new QComboBox();
     tab->protocolCombo->addItems({ "https", "http" });
-    tab->protocolCombo->setMinimumWidth(70);
-    tab->protocolCombo->setMaximumWidth(70);
-    topLayout->addWidget(tab->protocolCombo);
+    tab->protocolCombo->setFixedSize(72, urlBarH);
+    tab->protocolCombo->setStyleSheet(
+        "QComboBox { combobox-popup: 0; border: 1px solid #dee2e6; border-radius: 0;"
+        "  padding-left: 6px; color: #868e96; background: #f8f9fa; border-right: none; }"
+        "QComboBox::drop-down { subcontrol-origin: padding; subcontrol-position: center right;"
+        "  width: 16px; border: none; background: transparent; }"
+        "QComboBox::down-arrow { image: none; border-left: 3px solid transparent;"
+        "  border-right: 3px solid transparent; border-top: 4px solid #adb5bd; margin-right: 3px; }"
+        "QComboBox QAbstractItemView { border: 1px solid #dee2e6; border-radius: 6px;"
+        "  background: #fff; padding: 4px; outline: none; }"
+        "QComboBox QAbstractItemView::item { padding: 5px 12px; min-height: 18px; border-radius: 4px; color: #495057; }"
+        "QComboBox QAbstractItemView::item:selected { background: #e7f5ff; color: #1c7ed6; }"
+        "QComboBox QAbstractItemView::item:hover { background: #f1f3f5; }");
+    tab->protocolCombo->view()->setMinimumWidth(90);
+    urlBar->addWidget(tab->protocolCombo);
 
-    topLayout->addSpacing(10);
+    // 主机
+    tab->hostEdit = new QLineEdit();
+    tab->hostEdit->setPlaceholderText(tr("api.example.com"));
+    tab->hostEdit->setFixedHeight(urlBarH);
+    tab->hostEdit->setStyleSheet(
+        "QLineEdit { border: 1px solid #dee2e6; border-radius: 0; padding: 0 8px; border-right: none; }");
+    urlBar->addWidget(tab->hostEdit, 3);
 
     // 端口
-    topLayout->addWidget(new QLabel(tr("端口:")));
     tab->portSpin = new QSpinBox();
     tab->portSpin->setRange(1, 65535);
     tab->portSpin->setValue(443);
-    topLayout->addWidget(tab->portSpin);
-    topLayout->addSpacing(10);
+    tab->portSpin->setFixedSize(72, urlBarH);
+    tab->portSpin->setPrefix(":");
+    tab->portSpin->setStyleSheet(
+        "QSpinBox { border: 1px solid #dee2e6; border-radius: 0; padding: 0 4px;"
+        "  color: #868e96; border-right: none; }");
+    urlBar->addWidget(tab->portSpin);
 
-    // 主机
-    topLayout->addWidget(new QLabel(tr("主机:")));
-    tab->hostEdit = new QLineEdit();
-    tab->hostEdit->setPlaceholderText(tr("例如: api.example.com"));
-    tab->hostEdit->setMinimumWidth(200);
-    topLayout->addWidget(tab->hostEdit, 1);
-
-    groupLayout->addLayout(topLayout);
-
-    // 路径单独一行
-    QHBoxLayout* pathLayout = new QHBoxLayout();
-    pathLayout->addWidget(new QLabel(tr("路径:")));
+    // 路径
     tab->pathEdit = new QLineEdit();
-    tab->pathEdit->setPlaceholderText(tr("例如: /api/v1/users"));
+    tab->pathEdit->setPlaceholderText(tr("/api/v1/users"));
     tab->pathEdit->setText("/");
-    pathLayout->addWidget(tab->pathEdit);
-    groupLayout->addLayout(pathLayout);
+    tab->pathEdit->setFixedHeight(urlBarH);
+    tab->pathEdit->setStyleSheet(
+        "QLineEdit { border: 1px solid #dee2e6; border-radius: 0; padding: 0 8px; border-right: none; }");
+    urlBar->addWidget(tab->pathEdit, 2);
 
-    // 按钮行
-    auto* buttonLayout = new QHBoxLayout();
-    tab->sendBtn = new QPushButton(tr("发送请求"));
-    tab->sendBtn->setStyleSheet("QPushButton { background-color: #28a745; color: white;  }");
-    tab->sendBtn->setMinimumWidth(100);
-    buttonLayout->addWidget(tab->sendBtn);
+    // 发送按钮
+    tab->sendBtn = new QPushButton(tr("Send"));
+    tab->sendBtn->setFixedSize(70, urlBarH);
+    tab->sendBtn->setStyleSheet(
+        "QPushButton { background: #228be6; color: white; border: none; border-radius: 0 4px 4px 0;"
+        "  font-weight: 600; font-size: 12px; }"
+        "QPushButton:hover { background: #1c7ed6; }"
+        "QPushButton:pressed { background: #1971c2; }"
+        "QPushButton:disabled { background: #adb5bd; }");
+    urlBar->addWidget(tab->sendBtn);
+
+    groupLayout->addLayout(urlBar);
+
+    // 工具栏：取消 + 保存（小按钮，右对齐）
+    auto* toolRow = new QHBoxLayout();
+    toolRow->setSpacing(4);
 
     tab->cancelBtn = new QPushButton(tr("取消"));
-    tab->cancelBtn->setStyleSheet("QPushButton { background-color: #6c757d; color: white; }");
-    tab->cancelBtn->setMinimumWidth(80);
     tab->cancelBtn->setEnabled(false);
-    buttonLayout->addWidget(tab->cancelBtn);
+    tab->cancelBtn->setStyleSheet(
+        "QPushButton { color: #868e96; font-size: 11px; padding: 2px 8px; }"
+        "QPushButton:hover { background: #f1f3f5; }");
+    toolRow->addWidget(tab->cancelBtn);
 
     tab->saveBtn = new QPushButton(tr("保存"));
-    tab->saveBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; }");
-    tab->saveBtn->setMinimumWidth(80);
-    buttonLayout->addWidget(tab->saveBtn);
-    buttonLayout->addStretch();
+    tab->saveBtn->setStyleSheet(
+        "QPushButton { color: #228be6; font-size: 11px; padding: 2px 8px; }"
+        "QPushButton:hover { background: #e7f5ff; }");
+    toolRow->addWidget(tab->saveBtn);
+    toolRow->addStretch();
 
-    groupLayout->addLayout(buttonLayout);
+    groupLayout->addLayout(toolRow);
 
     // 请求详情标签页
     tab->requestTabs = new QTabWidget();
@@ -2097,36 +2191,39 @@ void HttpClient::setupTabBodyTab(HttpRequestTab* tab) {
 
 void HttpClient::setupTabResponseArea(HttpRequestTab* tab) {
     tab->responseWidget = new QWidget();
-    tab->responseGroup = new QGroupBox(tr("HTTP 响应"));
+    tab->responseGroup = new QGroupBox();
     QVBoxLayout* responseLayout = new QVBoxLayout(tab->responseWidget);
+    responseLayout->setContentsMargins(0, 0, 0, 0);
     responseLayout->addWidget(tab->responseGroup);
 
     QVBoxLayout* groupLayout = new QVBoxLayout(tab->responseGroup);
+    groupLayout->setContentsMargins(4, 4, 4, 4);
+    groupLayout->setSpacing(4);
 
-    // 状态信息行，把按钮添加到右侧
+    // 状态栏
     QHBoxLayout* statusLayout = new QHBoxLayout();
-    tab->statusLabel = new QLabel(tr("状态: 就绪"));
-    tab->statusLabel->setStyleSheet("font-weight: bold; color: #666;");
+    statusLayout->setSpacing(8);
+
+    tab->statusLabel = new QLabel(tr("就绪"));
+    tab->statusLabel->setStyleSheet("color: #868e96; font-size: 11px;");
     statusLayout->addWidget(tab->statusLabel);
 
-    // 时间标签
-    tab->timeLabel = new QLabel(tr("时间: --"));
-    tab->timeLabel->setStyleSheet("font-weight: bold; color: #666;");
+    tab->timeLabel = new QLabel();
+    tab->timeLabel->setStyleSheet("color: #868e96; font-size: 11px;");
     statusLayout->addWidget(tab->timeLabel);
 
     statusLayout->addStretch();
 
-    // 响应操作按钮
     tab->copyResponseBtn = new QPushButton(tr("复制"));
-    tab->copyResponseBtn->setMinimumWidth(60);
+    tab->copyResponseBtn->setStyleSheet("QPushButton { color: #495057; font-size: 11px; padding: 2px 8px; } QPushButton:hover { background: #f1f3f5; }");
     statusLayout->addWidget(tab->copyResponseBtn);
 
     tab->formatResponseBtn = new QPushButton(tr("格式化"));
-    tab->formatResponseBtn->setMinimumWidth(60);
+    tab->formatResponseBtn->setStyleSheet("QPushButton { color: #495057; font-size: 11px; padding: 2px 8px; } QPushButton:hover { background: #f1f3f5; }");
     statusLayout->addWidget(tab->formatResponseBtn);
 
     tab->saveResponseBtn = new QPushButton(tr("保存"));
-    tab->saveResponseBtn->setMinimumWidth(60);
+    tab->saveResponseBtn->setStyleSheet("QPushButton { color: #495057; font-size: 11px; padding: 2px 8px; } QPushButton:hover { background: #f1f3f5; }");
     statusLayout->addWidget(tab->saveResponseBtn);
 
     groupLayout->addLayout(statusLayout);
@@ -2134,15 +2231,24 @@ void HttpClient::setupTabResponseArea(HttpRequestTab* tab) {
     // 响应标签页
     tab->responseTabs = new QTabWidget();
 
-    // 响应体标签页
+    // 响应体
     tab->responseBodyEdit = new QPlainTextEdit();
     tab->responseBodyEdit->setReadOnly(true);
+#ifdef Q_OS_MACOS
+    tab->responseBodyEdit->setFont(QFont("Menlo", 12));
+#else
+    tab->responseBodyEdit->setFont(QFont("Consolas", 10));
+#endif
     tab->responseTabs->addTab(tab->responseBodyEdit, tr("响应体"));
 
-    // 原始响应标签页
+    // 原始响应
     tab->rawResponseEdit = new QPlainTextEdit();
     tab->rawResponseEdit->setReadOnly(true);
+#ifdef Q_OS_MACOS
+    tab->rawResponseEdit->setFont(QFont("Menlo", 12));
+#else
     tab->rawResponseEdit->setFont(QFont("Consolas", 10));
+#endif
     tab->responseTabs->addTab(tab->rawResponseEdit, tr("原始响应"));
 
     groupLayout->addWidget(tab->responseTabs);
