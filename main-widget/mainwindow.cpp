@@ -256,6 +256,10 @@ void MainWindow::itemClickedSlot(QListWidgetItem* item) {
     if (!widget) {
         return;
     }
+
+    // 记录工具使用次数（用于左侧列表按使用频率排序）
+    object->setToolDisplayName(title);
+    object->recordToolUsage();
     // 用 QScrollArea 包裹，防止内容 widget 的 minimumSize 撑宽整个窗口
     widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     auto* scrollArea = new QScrollArea();

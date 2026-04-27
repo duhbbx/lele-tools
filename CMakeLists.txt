@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(lele-tools VERSION 1.2.0 LANGUAGES CXX)
+project(lele-tools VERSION 1.2.0 LANGUAGES CXX C)
 
 # 添加自定义模块路径，告诉 CMake 去哪里找 Find*.cmake
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -130,6 +130,17 @@ list(FILTER COMMON_SOURCES EXCLUDE REGEX ".*thirdparty.*")
 
 
 
+# ip2region 离线IP数据库（静态库）
+add_library(ip2region STATIC
+    common/thirdparty/ip2region/xdb_searcher.c
+    common/thirdparty/ip2region/xdb_util.c
+)
+set_target_properties(ip2region PROPERTIES
+    AUTOMOC OFF
+    AUTOUIC OFF
+)
+target_include_directories(ip2region PUBLIC common/thirdparty/ip2region)
+
 # 将模块的源码加进来
 SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 
@@ -138,6 +149,26 @@ SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 # 必需的Qt组件 (包含SQL用于SQLite，MySQL使用原生驱动)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport)
+
+# Qt Pdf 可选支持（用于PDF盖章/签名工具，渲染PDF页面）
+option(WITH_QT_PDF "Enable Qt Pdf support for PDF stamp tool" ON)
+if(WITH_QT_PDF)
+    find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Pdf)
+    if(Qt${QT_VERSION_MAJOR}Pdf_FOUND)
+        message(STATUS "Qt Pdf found: ${Qt${QT_VERSION_MAJOR}Pdf_VERSION}")
+        set(HAVE_QT_PDF TRUE)
+        set(QT_PDF_LIBS Qt${QT_VERSION_MAJOR}::Pdf)
+    else()
+        message(WARNING "Qt Pdf not found. PDF stamp tool will be disabled.")
+        message(STATUS "  Install qtpdf module (e.g. brew install qtwebengine on macOS) to enable")
+        set(HAVE_QT_PDF FALSE)
+        set(QT_PDF_LIBS "")
+    endif()
+else()
+    message(STATUS "Qt Pdf support disabled")
+    set(HAVE_QT_PDF FALSE)
+    set(QT_PDF_LIBS "")
+endif()
 
 # 可选的Qt多媒体组件
 option(WITH_QT_MULTIMEDIA "Enable Qt Multimedia support" ON)
@@ -254,7 +285,11 @@ target_compile_definitions(lele-tools PRIVATE
     APP_VERSION_PATCH=${PROJECT_VERSION_PATCH}
 )
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport ${QT_MULTIMEDIA_LIBS} yaml-cpp ScreenCaptureLib)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport ${QT_MULTIMEDIA_LIBS} ${QT_PDF_LIBS} yaml-cpp ScreenCaptureLib ip2region)
+
+if(HAVE_QT_PDF)
+    target_compile_definitions(lele-tools PRIVATE WITH_QT_PDF)
+endif()
 
 
 # 链接库

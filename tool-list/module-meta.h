@@ -35,6 +35,7 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "Database Tool", "DatabaseTool"},
 {"xxx", "IP Lookup Tool", "IpLookupTool"},
 {"xxx", "PDF Merge", "PdfMerge"},
+{"xxx", "PDF Stamp & Sign", "PdfStamp"},
 {"xxx", "Regex Test Tool", "RegExTest"},
 {"xxx", "Image Compression", "ImageCompression"},
 {"xxx", "Favicon Production", "FaviconProduction"},

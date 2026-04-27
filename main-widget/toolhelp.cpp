@@ -152,6 +152,15 @@ void ToolHelp::init() {
         "Windows / macOS / Linux"
     };
 
+    s_helpData["PDF Stamp & Sign"] = {
+        "PDF 盖章 / 签名",
+        "打开 PDF，在任意位置加盖公章、加上签名与手写日期，并另存为新 PDF。",
+        "1. 点击\"打开 PDF\"载入文件\n2. 通过\"导入图章 / 导入签名 / 手写签名\"将公章和签名保存到本工具，下次可直接复用\n3. 在左侧选择资源后点击\"盖到当前页\"，或双击列表项\n4. 选择日期格式后点击\"加日期到当前页\"\n5. 拖拽覆盖物可移动；滚轮缩放；右键删除\n6. 点击\"另存为 PDF\"导出新文件",
+        "使用 Qt QPdfDocument 渲染 PDF 页面为高分辨率位图，使用可拖拽的覆盖物组件\n承载图章 / 签名 / 日期，最终通过 QPdfWriter 重新输出 PDF。\n图章和签名缓存到 QStandardPaths::AppDataLocation/pdf-stamp/ 目录，跨会话保留。",
+        "建议导入透明背景的 PNG 图章；输出 PDF 为重新栅格化版本，文字层不再可选。",
+        "Windows / macOS / Linux（需 Qt Pdf 模块）"
+    };
+
     s_helpData["Regex Test Tool"] = {
         "正则测试工具",
         "测试正则表达式是否匹配目标文本，实时高亮显示匹配结果。",
