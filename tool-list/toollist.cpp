@@ -178,64 +178,52 @@ void ToolList::sortToolsByUsage() const {
     };
     Q_UNUSED(translationKeys); // 避免编译器警告
 
-    // 获取最近一周的使用统计
-    QList<ToolUsageStats> usageStats = ToolUsageTracker::instance()->getWeeklyUsageStats();
+    // 取所有时段的统计，主要用 lastUsed 字段做"最近使用排前面"
+    QList<ToolUsageStats> usageStats = ToolUsageTracker::instance()->getAllTimeUsageStats();
 
-    // 创建使用次数映射表
-    QMap<QString, int> usageCountMap;
+    // toolName → lastUsed
+    QMap<QString, QDateTime> lastUsedMap;
     for (const auto& stat : usageStats) {
-        usageCountMap[stat.toolName] = stat.usageCount;
-        qDebug() << "Tool usage:" << stat.toolName << "count:" << stat.usageCount;
+        lastUsedMap[stat.toolName] = stat.lastUsed;
     }
 
-    // 创建工具项目列表，包含使用次数信息
     struct ToolItem {
         QString icon;
         QString title;
         QString className;
-        int usageCount;
+        QDateTime lastUsed;   // 无效 = 从未使用
 
         bool operator<(const ToolItem& other) const {
-            // 首先按使用次数降序排序
-            if (usageCount != other.usageCount) {
-                return usageCount > other.usageCount;
-            }
-            // 使用次数相同时按标题字母序排序
+            // 用过的排前面；都用过的看 lastUsed 降序
+            const bool aUsed = lastUsed.isValid();
+            const bool bUsed = other.lastUsed.isValid();
+            if (aUsed != bUsed) return aUsed;
+            if (aUsed && lastUsed != other.lastUsed) return lastUsed > other.lastUsed;
+            // 都没用过 / 同一时刻 → 字母序
             return title < other.title;
         }
     };
 
     QList<ToolItem> toolItems;
-
-    // 从原始数据创建工具项目列表
     for (const auto& [icon, titleKey, className] : moduleMetaArray) {
         ToolItem item;
         item.icon = icon;
         item.title = tr(titleKey.toUtf8().constData());
         item.className = className;
-        item.usageCount = usageCountMap.value(className, 0); // 默认为0
+        item.lastUsed = lastUsedMap.value(className);
         toolItems.append(item);
     }
 
-    // 按使用频率排序
     std::sort(toolItems.begin(), toolItems.end());
 
-    // 添加排序后的项目到列表
     for (const auto& toolItem : toolItems) {
         auto* item = new QListWidgetItem(QIcon(toolItem.icon), toolItem.title);
         item->setData(Qt::UserRole, QVariant(toolItem.className));
         item->setData(Qt::DisplayRole, QVariant(toolItem.title));
-
-        // 如果有使用记录，在标题后显示使用次数
-        if (toolItem.usageCount > 0) {
-            QString titleWithCount = QString("%1 (%2次)").arg(toolItem.title).arg(toolItem.usageCount);
-            item->setText(titleWithCount);
-        }
-
         listWidget->addItem(item);
     }
 
-    qDebug() << "Tools sorted by usage frequency. Total tools:" << toolItems.size();
+    qDebug() << "Tools sorted by last-used time. Total tools:" << toolItems.size();
 }
 
 ToolList::~ToolList() = default;
