@@ -62,11 +62,9 @@ private slots:
     void exportToFile();
     void processBatchLines();
     void updateTableBatch();
-#ifdef Q_OS_WIN
     void showContextMenu(const QPoint& pos);
     void onKillProcessRequested();
     void onShowProcessPathRequested();
-#endif
 
 private:
     // UI 组件
@@ -120,6 +118,9 @@ private:
     void showStatusMessage(const QString& message, int timeout = 3000);
     void resizeTableColumns();
 
+    // 跨平台终止进程（成功返回 true）
+    bool terminateProcessByPid(qint64 pid, QString* err = nullptr);
+
 #ifdef Q_OS_WIN
     // Windows API 方法
     void scanPortsWithWindowsAPI();
@@ -129,7 +130,6 @@ private:
     QString getProcessPathByPid(DWORD pid);
     QString getStateString(DWORD state);
     QString formatAddress(DWORD addr, WORD port);
-    void killProcessByPid(DWORD pid);
 #endif
 
     // 样式

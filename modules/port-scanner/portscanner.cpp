@@ -179,9 +179,7 @@ void PortScanner::setupConnections()
     connect(clearButton, &QPushButton::clicked, this, &PortScanner::clearSearch);
     connect(searchEdit, &QLineEdit::returnPressed, this, &PortScanner::searchPorts);
     connect(portTable, &QTableWidget::cellDoubleClicked, this, &PortScanner::onTableItemDoubleClicked);
-#ifdef Q_OS_WIN
     connect(portTable, &QTableWidget::customContextMenuRequested, this, &PortScanner::showContextMenu);
-#endif
 }
 
 void PortScanner::refreshPortList()
@@ -949,28 +947,6 @@ QString PortScanner::getProcessPathByPid(DWORD pid)
     return QString("");
 }
 
-void PortScanner::killProcessByPid(DWORD pid)
-{
-    if (pid == 0 || pid == 4) {
-        QMessageBox::warning(this, "警告", "无法终止系统进程！");
-        return;
-    }
-
-    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
-    if (hProcess) {
-        if (TerminateProcess(hProcess, 0)) {
-            CloseHandle(hProcess);
-            QMessageBox::information(this, "成功", QString("进程 PID:%1 已被终止").arg(pid));
-            // 自动重新扫描
-            QTimer::singleShot(500, this, &PortScanner::refreshPortList);
-        } else {
-            CloseHandle(hProcess);
-            QMessageBox::critical(this, "错误", QString("无法终止进程 PID:%1\n可能需要管理员权限").arg(pid));
-        }
-    } else {
-        QMessageBox::critical(this, "错误", QString("无法打开进程 PID:%1\n可能需要管理员权限").arg(pid));
-    }
-}
 
 QString PortScanner::getStateString(DWORD state)
 {
@@ -1003,6 +979,48 @@ QString PortScanner::formatAddress(DWORD addr, WORD port)
         .arg((addr >> 24) & 0xFF);
 
     return QString("%1:%2").arg(ipStr).arg(port);
+}
+#endif // Q_OS_WIN
+
+// ========== 跨平台进程终止 + 上下文菜单 ==========
+
+#ifndef Q_OS_WIN
+#include <signal.h>
+#include <errno.h>
+#include <string.h>
+#endif
+
+bool PortScanner::terminateProcessByPid(qint64 pid, QString* err)
+{
+#ifdef Q_OS_WIN
+    if (pid == 0 || pid == 4) {
+        if (err) *err = QStringLiteral("无法终止系统进程");
+        return false;
+    }
+    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, static_cast<DWORD>(pid));
+    if (!hProcess) {
+        if (err) *err = QStringLiteral("无法打开进程，可能需要管理员权限");
+        return false;
+    }
+    BOOL ok = TerminateProcess(hProcess, 0);
+    CloseHandle(hProcess);
+    if (!ok && err) *err = QStringLiteral("终止失败，可能需要管理员权限");
+    return ok;
+#else
+    if (pid <= 1) {
+        if (err) *err = QStringLiteral("无法终止系统进程");
+        return false;
+    }
+    // 先 SIGTERM 礼貌请求
+    if (::kill(static_cast<pid_t>(pid), SIGTERM) == 0) return true;
+    // 失败则 SIGKILL
+    if (::kill(static_cast<pid_t>(pid), SIGKILL) == 0) return true;
+    if (err) {
+        *err = QString::fromLocal8Bit(strerror(errno));
+        if (errno == EPERM) *err += QStringLiteral("（可能需要 sudo）");
+    }
+    return false;
+#endif
 }
 
 void PortScanner::showContextMenu(const QPoint& pos)
@@ -1078,8 +1096,14 @@ void PortScanner::onShowProcessPathRequested()
     if (msgBox.clickedButton() == openLocationBtn) {
         QFileInfo fileInfo(processPath);
         if (fileInfo.exists()) {
+#ifdef Q_OS_WIN
             QString command = QString("explorer /select,\"%1\"").arg(QDir::toNativeSeparators(processPath));
             QProcess::startDetached(command);
+#elif defined(Q_OS_MAC)
+            QProcess::startDetached("open", {"-R", processPath});
+#else
+            QProcess::startDetached("xdg-open", {fileInfo.absolutePath()});
+#endif
         }
     }
 }
@@ -1095,7 +1119,7 @@ void PortScanner::onKillProcessRequested()
     if (!pidItem) return;
 
     bool ok;
-    DWORD pid = pidItem->text().toULong(&ok);
+    qint64 pid = pidItem->text().toLongLong(&ok);
     if (!ok) return;
 
     QString processName = nameItem ? nameItem->text() : "未知";
@@ -1108,9 +1132,14 @@ void PortScanner::onKillProcessRequested()
             .arg(pid),
         QMessageBox::Yes | QMessageBox::No
     );
+    if (reply != QMessageBox::Yes) return;
 
-    if (reply == QMessageBox::Yes) {
-        killProcessByPid(pid);
+    QString err;
+    if (terminateProcessByPid(pid, &err)) {
+        QMessageBox::information(this, "成功", QString("进程 PID:%1 已被终止").arg(pid));
+        QTimer::singleShot(500, this, &PortScanner::refreshPortList);
+    } else {
+        QMessageBox::critical(this, "错误",
+            QString("无法终止进程 PID:%1\n%2").arg(pid).arg(err));
     }
 }
-#endif

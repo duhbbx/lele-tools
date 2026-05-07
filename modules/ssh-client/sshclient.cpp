@@ -1631,22 +1631,33 @@ void SSHConnection::requestPtyShell()
 
     m_shellActive = true;
 
-    m_readThread = QThread::create([this]() {
-        char buffer[4096];
-        while (m_shellActive && m_channel && ssh_channel_is_open(m_channel)) {
-            int nbytes = ssh_channel_read_timeout(m_channel, buffer, sizeof(buffer), 0, 100);
+    // 在主线程用 QTimer 轮询读，避免与可能的 ssh_channel_write 跨线程冲突。
+    // 之前用 QThread::create 跑读循环会导致主线程的 write 与读循环对同一个 channel 并发访问，libssh 在某些版本下会丢数据/挂起。
+    if (!m_readTimer) {
+        m_readTimer = new QTimer(this);
+        m_readTimer->setInterval(20);
+        connect(m_readTimer, &QTimer::timeout, this, [this]() {
+            if (!m_shellActive || !m_channel || !ssh_channel_is_open(m_channel)) {
+                m_readTimer->stop();
+                return;
+            }
+            char buffer[4096];
+            // stdout（非阻塞，timeout=0）
+            int nbytes = ssh_channel_read_timeout(m_channel, buffer, sizeof(buffer), 0, 0);
             if (nbytes > 0) {
                 emit dataReceived(QByteArray(buffer, nbytes));
             } else if (nbytes == SSH_ERROR) {
-                break;
+                m_readTimer->stop();
+                return;
             }
-            nbytes = ssh_channel_read_timeout(m_channel, buffer, sizeof(buffer), 1, 10);
+            // stderr
+            nbytes = ssh_channel_read_timeout(m_channel, buffer, sizeof(buffer), 1, 0);
             if (nbytes > 0) {
                 emit dataReceived(QByteArray(buffer, nbytes));
             }
-        }
-    });
-    m_readThread->start();
+        });
+    }
+    m_readTimer->start();
 #endif
 }
 
@@ -1830,11 +1841,10 @@ void SSHConnection::cleanup()
     }
 
     m_shellActive = false;
-    if (m_readThread) {
-        m_readThread->quit();
-        m_readThread->wait(2000);
-        delete m_readThread;
-        m_readThread = nullptr;
+    if (m_readTimer) {
+        m_readTimer->stop();
+        delete m_readTimer;
+        m_readTimer = nullptr;
     }
 
 #ifdef WITH_LIBSSH

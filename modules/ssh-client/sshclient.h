@@ -258,7 +258,7 @@ private:
 
     bool m_connected;
     QMutex m_mutex;
-    QThread* m_readThread = nullptr;
+    QTimer* m_readTimer = nullptr;
     bool m_shellActive = false;
     QTimer* m_keepAliveTimer = nullptr;
 };
