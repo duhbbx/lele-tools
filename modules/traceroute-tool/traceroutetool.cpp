@@ -1,893 +1,523 @@
 #include "traceroutetool.h"
+#include "../ip-lookup-tool/iplookuptool.h"   // 复用 Ip2RegionLookup
+
 #include <QApplication>
-#include <QMessageBox>
-#include <QHeaderView>
+#include <QClipboard>
 #include <QFileDialog>
-#include <QDateTime>
-#include <QDebug>
-#include <QSplitter>
+#include <QFrame>
+#include <QHeaderView>
+#include <QHostAddress>
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QTableWidgetItem>
 #include <QTextStream>
-#include <QHostInfo>
-#include <QNetworkInterface>
-#include <QStandardPaths>
-#include <QDir>
-
-#ifdef Q_OS_WIN
-#include <windows.h>
-#include <icmpapi.h>
-#pragma comment(lib, "iphlpapi.lib")
-
-#ifdef WITH_PCAP
-#include <pcap.h>
-#endif
-
-#endif
 
 REGISTER_DYNAMICOBJECT(TracerouteTool);
 
-// TracerouteWorker 实现
-TracerouteWorker::TracerouteWorker(QObject *parent)
-    : QObject(parent)
-    , m_running(false)
-#ifdef Q_OS_WIN
-    , m_socket(INVALID_SOCKET)
-#ifdef WITH_PCAP
-    , m_pcapHandle(nullptr)
-#endif
-#ifdef WITH_WINDOWS_ICMP
-    , m_icmpHandle(INVALID_HANDLE_VALUE)
-#endif
-#else
-    , m_socket(-1)
-#ifdef WITH_PCAP
-    , m_pcapHandle(nullptr)
-#endif
-#endif
-{
-    initializeNetwork();
-}
+// ============= 构造 / 析构 =============
 
-TracerouteWorker::~TracerouteWorker()
-{
-    cleanup();
-}
-
-bool TracerouteWorker::initializeNetwork()
-{
-#ifdef Q_OS_WIN
-    bool winsockOk = initializeWinsock();
-    if (!winsockOk) return false;
-    
-#ifdef WITH_PCAP
-    // 尝试使用Npcap
-    if (initializeNpcap()) {
-        qDebug() << "Using Npcap for traceroute";
-        return true;
-    }
-#endif
-
-#ifdef WITH_WINDOWS_ICMP
-    // 备用方案：使用Windows ICMP API
-    if (initializeIcmp()) {
-        qDebug() << "Using Windows ICMP API for traceroute";
-        return true;
-    }
-#endif
-
-    qDebug() << "No suitable network API available";
-    return false;
-#else
-    // Linux/macOS实现将在后续添加
-    return false;
-#endif
-}
-
-#ifdef Q_OS_WIN
-bool TracerouteWorker::initializeWinsock()
-{
-    WSADATA wsaData;
-    int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (result != 0) {
-        qDebug() << "WSAStartup failed:" << result;
-        return false;
-    }
-    
-    // 创建原始套接字用于发送ICMP包
-    m_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (m_socket == INVALID_SOCKET) {
-        qDebug() << "Create socket failed:" << WSAGetLastError();
-        qDebug() << "注意：需要管理员权限才能创建原始套接字";
-        WSACleanup();
-        return false;
-    }
-    
-    return true;
-}
-#endif
-
-#ifdef WITH_PCAP
-bool TracerouteWorker::initializeNpcap()
-{
-    pcap_if_t *alldevs;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    
-    // 查找网络设备
-    if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-        qDebug() << "Error in pcap_findalldevs:" << errbuf;
-        return false;
-    }
-    
-    if (alldevs == nullptr) {
-        qDebug() << "No network devices found";
-        return false;
-    }
-    
-    // 寻找活动的网络接口（跳过回环接口）
-    pcap_if_t *device = nullptr;
-    for (pcap_if_t *d = alldevs; d != nullptr; d = d->next) {
-        qDebug() << "Found device:" << d->name << d->description;
-        
-        // 跳过回环接口和无地址的接口
-        if (d->addresses != nullptr && 
-            !(d->flags & PCAP_IF_LOOPBACK) &&
-            (d->flags & PCAP_IF_UP)) {
-            device = d;
-            qDebug() << "Selected device:" << d->name;
-            break;
-        }
-    }
-    
-    if (device == nullptr) {
-        qDebug() << "No suitable network device found";
-        pcap_freealldevs(alldevs);
-        return false;
-    }
-    
-    // 打开网络设备
-    m_pcapHandle = pcap_open_live(device->name, 65536, 1, 100, errbuf);
-    if (m_pcapHandle == nullptr) {
-        qDebug() << "Unable to open device:" << errbuf;
-        pcap_freealldevs(alldevs);
-        return false;
-    }
-    
-    // 设置ICMP过滤器
-    struct bpf_program filter;
-    if (pcap_compile(m_pcapHandle, &filter, "icmp", 1, PCAP_NETMASK_UNKNOWN) == -1) {
-        qDebug() << "Error compiling filter:" << pcap_geterr(m_pcapHandle);
-        pcap_close(m_pcapHandle);
-        pcap_freealldevs(alldevs);
-        return false;
-    }
-    
-    if (pcap_setfilter(m_pcapHandle, &filter) == -1) {
-        qDebug() << "Error setting filter:" << pcap_geterr(m_pcapHandle);
-        pcap_freecode(&filter);
-        pcap_close(m_pcapHandle);
-        pcap_freealldevs(alldevs);
-        return false;
-    }
-    
-    pcap_freecode(&filter);
-    pcap_freealldevs(alldevs);
-    qDebug() << "Npcap initialized successfully with ICMP filter";
-    return true;
-}
-#endif
-
-#ifdef WITH_WINDOWS_ICMP
-bool TracerouteWorker::initializeIcmp()
-{
-    m_icmpHandle = IcmpCreateFile();
-    if (m_icmpHandle == INVALID_HANDLE_VALUE) {
-        qDebug() << "IcmpCreateFile failed:" << GetLastError();
-        return false;
-    }
-    
-    qDebug() << "Windows ICMP API initialized successfully";
-    return true;
-}
-#endif
-
-#ifdef Q_OS_WIN
-void TracerouteWorker::cleanupWindows()
-{
-    if (m_socket != INVALID_SOCKET) {
-        closesocket(m_socket);
-        m_socket = INVALID_SOCKET;
-    }
-
-#ifdef WITH_PCAP
-    if (m_pcapHandle) {
-        pcap_close(m_pcapHandle);
-        m_pcapHandle = nullptr;
-    }
-#endif
-
-#ifdef WITH_WINDOWS_ICMP
-    if (m_icmpHandle != INVALID_HANDLE_VALUE) {
-        IcmpCloseHandle(m_icmpHandle);
-        m_icmpHandle = INVALID_HANDLE_VALUE;
-    }
-#endif
-
-    WSACleanup();
-}
-#endif
-
-void TracerouteWorker::cleanup()
-{
-#ifdef Q_OS_WIN
-    cleanupWindows();
-#else
-    // Linux/macOS cleanup将在后续添加
-#endif
-}
-
-void TracerouteWorker::startTraceroute(const QString &target, int maxHops, int timeout)
-{
-    QMutexLocker locker(&m_mutex);
-    
-    if (m_running) {
-        emit errorOccurred("Traceroute already running");
-        return;
-    }
-    
-    m_running = true;
-    
-    // 在工作线程中执行traceroute
-    QTimer::singleShot(0, this, [this, target, maxHops, timeout]() {
-        performTraceroute(target, maxHops, timeout);
-    });
-}
-
-void TracerouteWorker::stopTraceroute()
-{
-    QMutexLocker locker(&m_mutex);
-    m_running = false;
-}
-
-void TracerouteWorker::performTraceroute(const QString &target, int maxHops, int timeoutMs)
-{
-    qDebug() << "开始traceroute到" << target << "最大跳数:" << maxHops;
-    
-    for (int ttl = 1; ttl <= maxHops && m_running; ++ttl) {
-        emit progressUpdated(ttl, maxHops);
-        
-        RouteHop hop;
-        hop.hopNumber = ttl;
-        
-        // 发送3个ICMP包测试RTT
-        for (int i = 0; i < 3 && m_running; ++i) {
-            if (sendICMPPacket(target, ttl, timeoutMs, hop)) {
-                switch (i) {
-                case 0: hop.rtt1 = hop.rtt1; break;
-                case 1: hop.rtt2 = hop.rtt1; hop.rtt1 = -1; break;
-                case 2: hop.rtt3 = hop.rtt1; hop.rtt1 = -1; break;
-                }
-            } else {
-                hop.timeout = true;
-            }
-        }
-        
-        emit hopDiscovered(hop);
-        
-        // 如果到达目标，结束traceroute
-        if (hop.ipAddress == target || 
-            (!hop.hostname.isEmpty() && hop.hostname.contains(target))) {
-            break;
-        }
-        
-        // 短暂延迟
-        QThread::msleep(100);
-    }
-    
-    {
-        QMutexLocker locker(&m_mutex);
-        m_running = false;
-    }
-    
-    emit tracerouteCompleted();
-}
-
-bool TracerouteWorker::sendICMPPacket(const QString &target, int ttl, int timeoutMs, RouteHop &hop)
-{
-#ifdef Q_OS_WIN
-    // 检查网络是否初始化
-#ifdef WITH_PCAP
-    if (m_socket == INVALID_SOCKET || m_pcapHandle == nullptr) {
-        qDebug() << "Network not initialized (Npcap)";
-        return false;
-    }
-#else
-    if (m_socket == INVALID_SOCKET) {
-        qDebug() << "Network not initialized (Raw socket)";
-        return false;
-    }
-#endif
-    
-    // 目标地址解析
-    struct sockaddr_in targetAddr;
-    memset(&targetAddr, 0, sizeof(targetAddr));
-    targetAddr.sin_family = AF_INET;
-    
-    // 尝试直接解析IP
-    targetAddr.sin_addr.s_addr = inet_addr(target.toLocal8Bit().data());
-    if (targetAddr.sin_addr.s_addr == INADDR_NONE) {
-        // 尝试解析主机名
-        struct hostent *host = gethostbyname(target.toLocal8Bit().data());
-        if (host == nullptr) {
-            hop.status = "无法解析主机名";
-            return false;
-        }
-        targetAddr.sin_addr.s_addr = *((unsigned long*)host->h_addr_list[0]);
-    }
-    
-    // 设置套接字TTL
-    if (setsockopt(m_socket, IPPROTO_IP, IP_TTL, (char*)&ttl, sizeof(ttl)) == SOCKET_ERROR) {
-        qDebug() << "Set TTL failed:" << WSAGetLastError();
-    }
-    
-    // 构造ICMP Echo请求包
-    struct icmp_header {
-        unsigned char type;      // ICMP类型
-        unsigned char code;      // ICMP代码  
-        unsigned short checksum; // 校验和
-        unsigned short id;       // 标识符
-        unsigned short seq;      // 序列号
-        char data[32];          // 数据部分
-    };
-    
-    icmp_header icmpPacket;
-    memset(&icmpPacket, 0, sizeof(icmpPacket));
-    icmpPacket.type = 8;  // ICMP Echo Request
-    icmpPacket.code = 0;
-    icmpPacket.id = GetCurrentProcessId() & 0xFFFF;
-    icmpPacket.seq = ttl;
-    strcpy_s(icmpPacket.data, sizeof(icmpPacket.data), "TracerouteTest");
-    
-    // 计算校验和
-    icmpPacket.checksum = 0;
-    unsigned short *p = (unsigned short*)&icmpPacket;
-    unsigned long sum = 0;
-    int len = sizeof(icmpPacket);
-    
-    while (len > 1) {
-        sum += *p++;
-        len -= 2;
-    }
-    if (len == 1) {
-        sum += *(unsigned char*)p;
-    }
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    icmpPacket.checksum = (unsigned short)(~sum);
-    
-    QElapsedTimer timer;
-    timer.start();
-    
-    // 发送ICMP包
-    qDebug() << "Sending ICMP packet to" << target << "with TTL=" << ttl;
-    int bytesSent = sendto(m_socket, (char*)&icmpPacket, sizeof(icmpPacket), 0,
-                          (struct sockaddr*)&targetAddr, sizeof(targetAddr));
-    
-    if (bytesSent == SOCKET_ERROR) {
-        DWORD error = WSAGetLastError();
-        qDebug() << "Send failed:" << error;
-        if (error == WSAEACCES) {
-            hop.status = "权限不足";
-        } else {
-            hop.status = QString("发送失败(%1)").arg(error);
-        }
-        hop.timeout = true;
-        return false;
-    }
-    
-    qDebug() << "ICMP packet sent successfully, waiting for reply...";
-    
-    // 使用pcap捕获ICMP回复包
-    struct pcap_pkthdr *header;
-    const u_char *packet;
-    bool replyReceived = false;
-    
-    // 设置超时
-    QElapsedTimer timeoutTimer;
-    timeoutTimer.start();
-    
-    while (timeoutTimer.elapsed() < timeoutMs && !replyReceived) {
-        int result = pcap_next_ex(m_pcapHandle, &header, &packet);
-        
-        if (result == 1) {
-            // 解析以太网帧
-            if (header->caplen >= 14) {  // 以太网头部最小长度
-                const u_char *ipHeader = packet + 14;  // 跳过以太网头部
-                
-                // 检查IP版本
-                if ((ipHeader[0] & 0xF0) == 0x40 && header->caplen >= 34) {  // IPv4且长度足够
-                    // 检查是否是ICMP包
-                    if (ipHeader[9] == 1) {  // ICMP协议号
-                        // 计算IP头部长度
-                        int ipHeaderLen = (ipHeader[0] & 0x0F) * 4;
-                        if (header->caplen >= 14 + ipHeaderLen + 8) {  // 确保有足够的ICMP头部
-                            const u_char *icmpHeader = ipHeader + ipHeaderLen;
-                            
-                            // 提取源IP地址（发送ICMP消息的路由器/主机）
-                            struct in_addr sourceAddr;
-                            memcpy(&sourceAddr, &ipHeader[12], 4);
-                            QString sourceIP = QString::fromLocal8Bit(inet_ntoa(sourceAddr));
-                            
-                            qDebug() << "Received ICMP packet from" << sourceIP 
-                                     << "Type:" << (int)icmpHeader[0] 
-                                     << "Code:" << (int)icmpHeader[1];
-                            
-                            // 检查ICMP类型
-                            if (icmpHeader[0] == 11) {  // Time Exceeded
-                                hop.ipAddress = sourceIP;
-                                hop.rtt1 = timer.nsecsElapsed() / 1000000.0;
-                                hop.timeout = false;
-                                hop.status = QString("TTL=%1").arg(ttl);
-                                replyReceived = true;
-                                qDebug() << "Time Exceeded from router:" << sourceIP;
-                            }
-                            else if (icmpHeader[0] == 0) {  // Echo Reply (到达目标)
-                                hop.ipAddress = sourceIP;
-                                hop.rtt1 = timer.nsecsElapsed() / 1000000.0;
-                                hop.timeout = false;
-                                hop.status = "目标到达";
-                                replyReceived = true;
-                                qDebug() << "Echo Reply from target:" << sourceIP;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else if (result == 0) {
-            // 超时，继续等待
-            QThread::msleep(10);
-        }
-        else {
-            // 错误
-            break;
-        }
-    }
-    
-    if (!replyReceived) {
-        hop.timeout = true;
-        hop.status = "超时";
-        hop.ipAddress = "*";
-        qDebug() << "No ICMP reply received within" << timeoutMs << "ms for TTL" << ttl;
-    }
-    
-    // 尝试反向DNS解析
-    QHostInfo::lookupHost(hop.ipAddress, [&hop](const QHostInfo &info) {
-        if (info.error() == QHostInfo::NoError && !info.hostName().isEmpty()) {
-            hop.hostname = info.hostName();
-        }
-    });
-    
-    return true;
-#else
-    // Linux/macOS实现将在后续添加
-    Q_UNUSED(target)
-    Q_UNUSED(ttl)
-    Q_UNUSED(timeoutMs)
-    Q_UNUSED(hop)
-    return false;
-#endif
-}
-
-// TracerouteTool 实现
-TracerouteTool::TracerouteTool(QWidget *parent)
+TracerouteTool::TracerouteTool(QWidget* parent)
     : QWidget(parent), DynamicObjectBase()
-    , m_workerThread(nullptr)
-    , m_worker(nullptr)
-    , m_running(false)
-    , m_currentHop(0)
-    , m_maxHops(30)
 {
     setupUI();
-    loadSettings();
-    
-    // 创建工作线程
-    m_workerThread = new QThread(this);
-    m_worker = new TracerouteWorker();
-    m_worker->moveToThread(m_workerThread);
-    
-    // 连接信号
-    connect(m_worker, &TracerouteWorker::hopDiscovered,
-            this, &TracerouteTool::onHopDiscovered);
-    connect(m_worker, &TracerouteWorker::tracerouteCompleted,
-            this, &TracerouteTool::onTracerouteCompleted);
-    connect(m_worker, &TracerouteWorker::errorOccurred,
-            this, &TracerouteTool::onErrorOccurred);
-    connect(m_worker, &TracerouteWorker::progressUpdated,
-            this, &TracerouteTool::onProgressUpdated);
-    
-    // 启动工作线程
-    m_workerThread->start();
-    
-    logMessage("Traceroute工具初始化完成");
-#ifdef Q_OS_WIN
-    logMessage("Windows平台 - 使用Npcap库");
-    logMessage("注意：需要管理员权限才能使用原始套接字");
-    logMessage("确保已安装Npcap SDK");
-#else
-    logMessage("Linux/macOS平台 - 使用libpcap库");
-#endif
 }
 
 TracerouteTool::~TracerouteTool()
 {
-    if (m_running) {
-        m_worker->stopTraceroute();
+    if (m_proc && m_proc->state() != QProcess::NotRunning) {
+        m_proc->kill();
+        m_proc->waitForFinished(2000);
     }
-    
-    if (m_workerThread) {
-        m_workerThread->quit();
-        if (!m_workerThread->wait(3000)) {
-            m_workerThread->terminate();
-            m_workerThread->wait(1000);
-        }
-    }
-    
-    saveSettings();
 }
+
+// ============= UI =============
 
 void TracerouteTool::setupUI()
 {
-    m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
-    m_mainLayout->setSpacing(10);
-    
-    setupControlArea();
-    setupResultsArea();
-    setupStatusArea();
-}
+    setStyleSheet(R"(
+        QLineEdit, QSpinBox {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 8px;
+            background: #fff;
+            min-height: 22px;
+            selection-background-color: #b8d4ff;
+        }
+        QLineEdit:focus, QSpinBox:focus { border-color: #228be6; }
+        QPushButton {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 14px;
+            background: #ffffff;
+            min-height: 22px;
+            color: #343a40;
+        }
+        QPushButton:hover  { background: #f1f3f5; border-color: #adb5bd; }
+        QPushButton:pressed{ background: #e9ecef; }
+        QPushButton:disabled { color: #adb5bd; background: #f8f9fa; }
+        QPushButton#primaryBtn {
+            background: #228be6; border: 1px solid #1c7ed6; color: white; font-weight: bold;
+        }
+        QPushButton#primaryBtn:hover  { background: #1c7ed6; }
+        QPushButton#primaryBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+        QPushButton#dangerBtn {
+            background: #fa5252; border: 1px solid #f03e3e; color: white; font-weight: bold;
+        }
+        QPushButton#dangerBtn:hover  { background: #f03e3e; }
+        QPushButton#dangerBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+        QFrame#card {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;
+        }
+        QTableWidget {
+            border: 1px solid #dee2e6; border-radius: 6px; background: #fff;
+            gridline-color: #e9ecef;
+        }
+        QHeaderView::section {
+            background: #f1f3f5; color: #495057; font-weight: bold;
+            padding: 6px; border: none; border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+        }
+    )");
 
-void TracerouteTool::setupControlArea()
-{
-    m_controlGroup = new QGroupBox("Traceroute配置", this);
-    QGridLayout *layout = new QGridLayout(m_controlGroup);
-    layout->setSpacing(8);
-    
-    // 目标地址输入
-    layout->addWidget(new QLabel(tr("目标地址:")), 0, 0);
-    m_targetEdit = new QLineEdit();
-    m_targetEdit->setPlaceholderText(tr("输入IP地址或域名 (例: google.com, 8.8.8.8)"));
-    layout->addWidget(m_targetEdit, 0, 1, 1, 2);
-    
-    // 最大跳数
-    layout->addWidget(new QLabel(tr("最大跳数:")), 1, 0);
-    m_maxHopsSpin = new QSpinBox();
-    m_maxHopsSpin->setRange(1, 64);
-    m_maxHopsSpin->setValue(30);
-    layout->addWidget(m_maxHopsSpin, 1, 1);
-    
-    // 超时时间
-    layout->addWidget(new QLabel(tr("超时(ms):")), 1, 2);
-    m_timeoutSpin = new QSpinBox();
-    m_timeoutSpin->setRange(1000, 10000);
-    m_timeoutSpin->setValue(3000);
-    m_timeoutSpin->setSingleStep(500);
-    layout->addWidget(m_timeoutSpin, 1, 3);
-    
-    // 解析主机名选项
-    m_resolveNamesCheck = new QCheckBox("解析主机名");
-    m_resolveNamesCheck->setChecked(true);
-    layout->addWidget(m_resolveNamesCheck, 2, 0, 1, 2);
-    
-    // 控制按钮
-    QHBoxLayout *btnLayout = new QHBoxLayout();
-    m_startBtn = new QPushButton(tr("开始追踪"));
-    m_startBtn->setObjectName("startBtn");
-    m_stopBtn = new QPushButton(tr("停止"));
-    m_stopBtn->setObjectName("stopBtn");
+    auto* main = new QVBoxLayout(this);
+    main->setContentsMargins(12, 10, 12, 10);
+    main->setSpacing(10);
+
+    main->addWidget(buildTargetCard());
+    main->addWidget(buildOptionsCard());
+
+    // 操作按钮
+    auto* btnRow = new QHBoxLayout();
+    btnRow->setSpacing(6);
+    m_startBtn = new QPushButton(tr("🚀 开始追踪"));
+    m_startBtn->setObjectName("primaryBtn");
+    m_startBtn->setMinimumWidth(110);
+    m_stopBtn = new QPushButton(tr("⏹ 停止"));
+    m_stopBtn->setObjectName("dangerBtn");
+    m_stopBtn->setMinimumWidth(80);
     m_stopBtn->setEnabled(false);
-    m_clearBtn = new QPushButton(tr("清空结果"));
-    m_exportBtn = new QPushButton(tr("导出结果"));
-    
-    btnLayout->addWidget(m_startBtn);
-    btnLayout->addWidget(m_stopBtn);
-    btnLayout->addWidget(m_clearBtn);
-    btnLayout->addWidget(m_exportBtn);
-    btnLayout->addStretch();
-    
-    layout->addLayout(btnLayout, 3, 0, 1, 4);
-    
-    m_mainLayout->addWidget(m_controlGroup);
-    
-    // 连接信号
-    connect(m_targetEdit, &QLineEdit::textChanged, this, &TracerouteTool::onTargetChanged);
+    m_clearBtn = new QPushButton(tr("🗑 清空"));
+    m_clearBtn->setMinimumWidth(80);
+    m_exportBtn = new QPushButton(tr("📋 复制结果"));
+    m_exportBtn->setMinimumWidth(110);
+    btnRow->addWidget(m_startBtn);
+    btnRow->addWidget(m_stopBtn);
+    btnRow->addWidget(m_clearBtn);
+    btnRow->addWidget(m_exportBtn);
+    btnRow->addStretch();
+    main->addLayout(btnRow);
+
+    // 状态条
+    m_status = new QLabel(tr("就绪"));
+    m_status->setStyleSheet(
+        "color: #2e7d32; padding: 6px 10px; background: #e8f5e8;"
+        " border-radius: 4px; font-weight: bold;");
+    main->addWidget(m_status);
+
+    main->addWidget(buildResultsArea(), 1);
+
+    // 信号
     connect(m_startBtn, &QPushButton::clicked, this, &TracerouteTool::onStartTraceroute);
     connect(m_stopBtn, &QPushButton::clicked, this, &TracerouteTool::onStopTraceroute);
     connect(m_clearBtn, &QPushButton::clicked, this, &TracerouteTool::onClearResults);
     connect(m_exportBtn, &QPushButton::clicked, this, &TracerouteTool::onExportResults);
+    connect(m_targetEdit, &QLineEdit::textChanged, this, &TracerouteTool::onTargetChanged);
+    connect(m_targetEdit, &QLineEdit::returnPressed, this, &TracerouteTool::onStartTraceroute);
+
+    m_targetEdit->setText("baidu.com");
 }
 
-void TracerouteTool::setupResultsArea()
+QWidget* TracerouteTool::buildTargetCard()
 {
-    m_resultsGroup = new QGroupBox("路由追踪结果", this);
-    QVBoxLayout *layout = new QVBoxLayout(m_resultsGroup);
-    
-    // 进度条
-    m_progressBar = new QProgressBar();
-    m_progressBar->setVisible(false);
-    layout->addWidget(m_progressBar);
-    
-    // 结果表格
-    m_resultsTable = new QTableWidget();
-    m_resultsTable->setColumnCount(7);
-    QStringList headers;
-    headers << "跳数" << "IP地址" << "主机名" << "RTT1(ms)" << "RTT2(ms)" << "RTT3(ms)" << "状态";
-    m_resultsTable->setHorizontalHeaderLabels(headers);
-    
-    // 设置表格属性
-    m_resultsTable->setAlternatingRowColors(true);
-    m_resultsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_resultsTable->horizontalHeader()->setStretchLastSection(true);
-    m_resultsTable->verticalHeader()->setVisible(false);
-    
-    // 设置列宽
-    m_resultsTable->setColumnWidth(0, 50);   // 跳数
-    m_resultsTable->setColumnWidth(1, 120);  // IP地址
-    m_resultsTable->setColumnWidth(2, 200);  // 主机名
-    m_resultsTable->setColumnWidth(3, 80);   // RTT1
-    m_resultsTable->setColumnWidth(4, 80);   // RTT2
-    m_resultsTable->setColumnWidth(5, 80);   // RTT3
-    
-    layout->addWidget(m_resultsTable);
-    
-    m_mainLayout->addWidget(m_resultsGroup);
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* row = new QHBoxLayout(card);
+    row->setContentsMargins(12, 10, 12, 10);
+    row->setSpacing(8);
+
+    auto* lbl = new QLabel(tr("🌐 目标"));
+    lbl->setStyleSheet("font-weight: bold; color: #495057; background: transparent;");
+    m_targetEdit = new QLineEdit();
+    m_targetEdit->setPlaceholderText(tr("输入域名或 IP 地址"));
+    m_targetEdit->setMinimumWidth(260);
+
+    row->addWidget(lbl);
+    row->addWidget(m_targetEdit, 1);
+    return card;
 }
 
-void TracerouteTool::setupStatusArea()
+QWidget* TracerouteTool::buildOptionsCard()
 {
-    m_logGroup = new QGroupBox("状态日志", this);
-    QVBoxLayout *layout = new QVBoxLayout(m_logGroup);
-    
-    // 状态标签
-    m_statusLabel = new QLabel(tr("就绪"));
-    m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
-    layout->addWidget(m_statusLabel);
-    
-    // 日志文本
-    m_logText = new QTextEdit();
-    m_logText->setMaximumHeight(120);
-    m_logText->setReadOnly(true);
-    layout->addWidget(m_logText);
-    
-    m_mainLayout->addWidget(m_logGroup);
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* row = new QHBoxLayout(card);
+    row->setContentsMargins(12, 10, 12, 10);
+    row->setSpacing(10);
+
+    auto labelStyle = QStringLiteral("color:#495057; background: transparent;");
+
+    auto* l1 = new QLabel(tr("⚙️ 最大跳数"));
+    l1->setStyleSheet("font-weight: bold; color:#495057; background: transparent;");
+    m_maxHopsSpin = new QSpinBox();
+    m_maxHopsSpin->setRange(1, 64);
+    m_maxHopsSpin->setValue(30);
+    m_maxHopsSpin->setMinimumWidth(70);
+
+    auto* l2 = new QLabel(tr("超时"));
+    l2->setStyleSheet(labelStyle);
+    m_timeoutSpin = new QSpinBox();
+    m_timeoutSpin->setRange(1, 30);
+    m_timeoutSpin->setValue(5);
+    m_timeoutSpin->setSuffix(tr(" s"));
+    m_timeoutSpin->setMinimumWidth(80);
+
+    m_resolveNamesCheck = new QCheckBox(tr("解析主机名"));
+    m_resolveNamesCheck->setChecked(true);
+    m_resolveNamesCheck->setStyleSheet(labelStyle);
+
+    row->addWidget(l1);
+    row->addWidget(m_maxHopsSpin);
+    row->addSpacing(10);
+    row->addWidget(l2);
+    row->addWidget(m_timeoutSpin);
+    row->addSpacing(10);
+    row->addWidget(m_resolveNamesCheck);
+    row->addStretch();
+    return card;
 }
 
-void TracerouteTool::updateUI()
+QWidget* TracerouteTool::buildResultsArea()
 {
-    m_startBtn->setEnabled(!m_running && !m_targetEdit->text().trimmed().isEmpty());
-    m_stopBtn->setEnabled(m_running);
-    m_clearBtn->setEnabled(!m_running && m_resultsTable->rowCount() > 0);
-    m_exportBtn->setEnabled(!m_running && m_resultsTable->rowCount() > 0);
-    m_progressBar->setVisible(m_running);
-    
-    if (m_running) {
-        m_statusLabel->setText(QString("正在追踪到 %1...").arg(m_currentTarget));
-        m_statusLabel->setStyleSheet("font-weight: bold; color: #28a745;");
-    } else {
-        m_statusLabel->setText(tr("就绪"));
-        m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
-    }
+    auto* w = new QWidget();
+    auto* col = new QVBoxLayout(w);
+    col->setContentsMargins(0, 0, 0, 0);
+    col->setSpacing(6);
+
+    m_progress = new QProgressBar();
+    m_progress->setRange(0, 30);
+    m_progress->setValue(0);
+    m_progress->setTextVisible(true);
+    m_progress->setFormat(tr("已经探测 %v / %m 跳"));
+    col->addWidget(m_progress);
+
+    m_table = new QTableWidget();
+    m_table->setColumnCount(7);
+    m_table->setHorizontalHeaderLabels(QStringList()
+        << tr("跳") << tr("IP") << tr("主机名")
+        << tr("RTT 1") << tr("RTT 2") << tr("RTT 3")
+        << tr("地区"));
+    m_table->verticalHeader()->setVisible(false);
+    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_table->setAlternatingRowColors(true);
+    auto* hdr = m_table->horizontalHeader();
+    hdr->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(2, QHeaderView::Stretch);
+    hdr->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(6, QHeaderView::Stretch);
+    col->addWidget(m_table, 1);
+    return w;
 }
 
-void TracerouteTool::addHopToTable(const RouteHop &hop)
-{
-    int row = m_resultsTable->rowCount();
-    m_resultsTable->insertRow(row);
-    
-    m_resultsTable->setItem(row, 0, new QTableWidgetItem(QString::number(hop.hopNumber)));
-    m_resultsTable->setItem(row, 1, new QTableWidgetItem(hop.ipAddress));
-    m_resultsTable->setItem(row, 2, new QTableWidgetItem(hop.hostname));
-    m_resultsTable->setItem(row, 3, new QTableWidgetItem(formatRTT(hop.rtt1)));
-    m_resultsTable->setItem(row, 4, new QTableWidgetItem(formatRTT(hop.rtt2)));
-    m_resultsTable->setItem(row, 5, new QTableWidgetItem(formatRTT(hop.rtt3)));
-    m_resultsTable->setItem(row, 6, new QTableWidgetItem(hop.status));
-    
-    // 设置超时行的样式
-    if (hop.timeout) {
-        for (int col = 0; col < 7; ++col) {
-            QTableWidgetItem *item = m_resultsTable->item(row, col);
-            if (item) {
-                item->setBackground(QColor("#fff3cd"));
-                item->setForeground(QColor("#856404"));
-            }
-        }
-    }
-    
-    // 滚动到最新行
-    m_resultsTable->scrollToBottom();
-}
+// ============= 启动 / 停止 =============
 
-void TracerouteTool::logMessage(const QString &message)
-{
-    QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
-    QString logEntry = QString("[%1] %2").arg(timestamp, message);
-    m_logText->append(logEntry);
-    
-    // 限制日志行数
-    if (m_logText->document()->lineCount() > 100) {
-        QTextCursor cursor = m_logText->textCursor();
-        cursor.movePosition(QTextCursor::Start);
-        cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, 10);
-        cursor.removeSelectedText();
-    }
-}
-
-QString TracerouteTool::formatRTT(double rtt) const
-{
-    if (rtt < 0) {
-        return "*";
-    }
-    return QString::number(rtt, 'f', 1);
-}
-
-void TracerouteTool::saveSettings()
-{
-    QSettings settings;
-    settings.setValue("TracerouteTool/target", m_targetEdit->text());
-    settings.setValue("TracerouteTool/maxHops", m_maxHopsSpin->value());
-    settings.setValue("TracerouteTool/timeout", m_timeoutSpin->value());
-    settings.setValue("TracerouteTool/resolveNames", m_resolveNamesCheck->isChecked());
-}
-
-void TracerouteTool::loadSettings()
-{
-    QSettings settings;
-    if (m_targetEdit) {
-        m_targetEdit->setText(settings.value("TracerouteTool/target", "google.com").toString());
-    }
-    if (m_maxHopsSpin) {
-        m_maxHopsSpin->setValue(settings.value("TracerouteTool/maxHops", 30).toInt());
-    }
-    if (m_timeoutSpin) {
-        m_timeoutSpin->setValue(settings.value("TracerouteTool/timeout", 3000).toInt());
-    }
-    if (m_resolveNamesCheck) {
-        m_resolveNamesCheck->setChecked(settings.value("TracerouteTool/resolveNames", true).toBool());
-    }
-}
-
-// 槽函数实现
 void TracerouteTool::onStartTraceroute()
 {
     QString target = m_targetEdit->text().trimmed();
     if (target.isEmpty()) {
-        QMessageBox::warning(this, tr("错误"), tr("请输入目标地址"));
+        QMessageBox::warning(this, tr("错误"), tr("请输入要追踪的目标"));
         return;
     }
-    
-    m_running = true;
-    m_currentTarget = target;
-    m_maxHops = m_maxHopsSpin->value();
-    m_currentHop = 0;
-    
-    // 清空结果
-    m_resultsTable->setRowCount(0);
-    
-    // 设置进度条
-    m_progressBar->setRange(1, m_maxHops);
-    m_progressBar->setValue(0);
-    
-    updateUI();
-    logMessage(QString("开始追踪路由到 %1，最大跳数: %2").arg(target).arg(m_maxHops));
-    
-    // 启动traceroute
-    QMetaObject::invokeMethod(m_worker, "startTraceroute", Qt::QueuedConnection,
-                              Q_ARG(QString, target),
-                              Q_ARG(int, m_maxHops),
-                              Q_ARG(int, m_timeoutSpin->value()));
+    m_target = target;
+    m_lastHopSeen = 0;
+    m_pendingBuffer.clear();
+    onClearResults();
+    setBusyState(true);
+
+    if (m_proc) { m_proc->deleteLater(); m_proc = nullptr; }
+    m_proc = new QProcess(this);
+    m_proc->setProcessChannelMode(QProcess::MergedChannels);  // 一起读 stdout/stderr
+    connect(m_proc, &QProcess::readyReadStandardOutput,
+            this, &TracerouteTool::onProcessOutput);
+    connect(m_proc, &QProcess::errorOccurred,
+            this, [this](QProcess::ProcessError){ onProcessError(); });
+    connect(m_proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &TracerouteTool::onProcessFinished);
+
+    int maxHops = m_maxHopsSpin->value();
+    int timeoutS = m_timeoutSpin->value();
+    bool resolveNames = m_resolveNamesCheck->isChecked();
+
+    m_progress->setRange(0, maxHops);
+    m_progress->setValue(0);
+
+    QString program;
+    QStringList args;
+#ifdef Q_OS_WIN
+    program = "tracert";
+    if (!resolveNames) args << "-d";
+    args << "-h" << QString::number(maxHops);
+    args << "-w" << QString::number(timeoutS * 1000);     // ms
+    args << target;
+#else
+    program = "traceroute";
+    if (!resolveNames) args << "-n";
+    args << "-m" << QString::number(maxHops);
+    args << "-w" << QString::number(timeoutS);
+    // macOS / Linux 默认走 UDP，无需 sudo
+    args << target;
+#endif
+
+    updateStatus(tr("正在追踪 %1 ...").arg(target));
+    m_proc->start(program, args);
+    if (!m_proc->waitForStarted(3000)) {
+        updateStatus(tr("无法启动 %1：请确认系统已安装该命令").arg(program), true);
+        setBusyState(false);
+    }
 }
 
 void TracerouteTool::onStopTraceroute()
 {
-    m_running = false;
-    QMetaObject::invokeMethod(m_worker, "stopTraceroute", Qt::QueuedConnection);
-    logMessage("用户停止了路由追踪");
-    updateUI();
+    if (m_proc && m_proc->state() != QProcess::NotRunning) {
+        m_proc->kill();
+        m_proc->waitForFinished(1000);
+    }
+    setBusyState(false);
+    updateStatus(tr("已停止"));
 }
 
 void TracerouteTool::onClearResults()
 {
-    m_resultsTable->setRowCount(0);
-    m_logText->clear();
-    logMessage("结果已清空");
-}
-
-void TracerouteTool::onExportResults()
-{
-    if (m_resultsTable->rowCount() == 0) {
-        QMessageBox::information(this, tr("提示"), tr("没有结果可导出"));
-        return;
-    }
-    
-    QString fileName = QFileDialog::getSaveFileName(
-        this,
-        "导出Traceroute结果",
-        QString("traceroute_%1_%2.txt")
-            .arg(m_currentTarget)
-            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")),
-        "文本文件 (*.txt);;CSV文件 (*.csv)"
-    );
-    
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream out(&file);
-            
-            // 写入标题
-            out << "Traceroute to " << m_currentTarget << "\n";
-            out << "Generated at: " << QDateTime::currentDateTime().toString() << "\n";
-            out << "Max hops: " << m_maxHops << "\n\n";
-            
-            // 写入表头
-            out << "Hop\tIP Address\tHostname\tRTT1(ms)\tRTT2(ms)\tRTT3(ms)\tStatus\n";
-            
-            // 写入数据
-            for (int row = 0; row < m_resultsTable->rowCount(); ++row) {
-                for (int col = 0; col < m_resultsTable->columnCount(); ++col) {
-                    QTableWidgetItem *item = m_resultsTable->item(row, col);
-                    if (item) {
-                        out << item->text();
-                    }
-                    if (col < m_resultsTable->columnCount() - 1) {
-                        out << "\t";
-                    }
-                }
-                out << "\n";
-            }
-            
-            logMessage("结果已导出到: " + fileName);
-            QMessageBox::information(this, "成功", "结果已导出到:\n" + fileName);
-        } else {
-            QMessageBox::warning(this, tr("错误"), tr("无法写入文件"));
-        }
-    }
+    m_table->setRowCount(0);
+    m_progress->setValue(0);
 }
 
 void TracerouteTool::onTargetChanged()
 {
-    updateUI();
+    // 占位，保留以便将来做"目标变化时重置 IP 标签"等
 }
 
-void TracerouteTool::onHopDiscovered(const RouteHop &hop)
+void TracerouteTool::onExportResults()
 {
-    addHopToTable(hop);
-    logMessage(QString("跳 %1: %2 (%3ms)")
-               .arg(hop.hopNumber)
-               .arg(hop.ipAddress.isEmpty() ? "*" : hop.ipAddress)
-               .arg(formatRTT(hop.rtt1)));
+    if (m_table->rowCount() == 0) {
+        QMessageBox::information(this, tr("提示"), tr("没有可复制的结果"));
+        return;
+    }
+    QString out;
+    QTextStream ts(&out);
+    ts << QString("# Traceroute to %1").arg(m_target) << "\n";
+    for (int r = 0; r < m_table->rowCount(); ++r) {
+        QStringList cells;
+        for (int c = 0; c < m_table->columnCount(); ++c) {
+            auto* it = m_table->item(r, c);
+            cells << (it ? it->text() : QString());
+        }
+        ts << cells.join('\t') << "\n";
+    }
+    QApplication::clipboard()->setText(out);
+    updateStatus(tr("已复制 %1 行到剪贴板").arg(m_table->rowCount()));
 }
 
-void TracerouteTool::onTracerouteCompleted()
+// ============= 进程事件 =============
+
+void TracerouteTool::onProcessOutput()
 {
-    m_running = false;
-    updateUI();
-    logMessage("路由追踪完成");
-    
-    QMessageBox::information(this, "完成", 
-                           QString("路由追踪到 %1 已完成\n共发现 %2 个跳点")
-                           .arg(m_currentTarget)
-                           .arg(m_resultsTable->rowCount()));
+    if (!m_proc) return;
+    m_pendingBuffer += m_proc->readAllStandardOutput();
+    while (true) {
+        int nl = m_pendingBuffer.indexOf('\n');
+        if (nl < 0) break;
+        QByteArray rawLine = m_pendingBuffer.left(nl);
+        m_pendingBuffer.remove(0, nl + 1);
+        QString line = QString::fromLocal8Bit(rawLine).trimmed();
+        if (line.isEmpty()) continue;
+        parseLine(line);
+    }
 }
 
-void TracerouteTool::onErrorOccurred(const QString &error)
+void TracerouteTool::onProcessError()
 {
-    m_running = false;
-    updateUI();
-    logMessage("错误: " + error);
-    QMessageBox::critical(this, "错误", error);
+    if (!m_proc) return;
+    QString err = m_proc->errorString();
+    updateStatus(tr("进程错误：%1").arg(err), true);
 }
 
-void TracerouteTool::onProgressUpdated(int currentHop, int maxHops)
+void TracerouteTool::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
-    m_currentHop = currentHop;
-    m_progressBar->setValue(currentHop);
-    m_statusLabel->setText(QString("正在追踪跳点 %1/%2...").arg(currentHop).arg(maxHops));
+    Q_UNUSED(exitCode);
+    Q_UNUSED(status);
+    if (!m_pendingBuffer.isEmpty()) {
+        QString line = QString::fromLocal8Bit(m_pendingBuffer).trimmed();
+        m_pendingBuffer.clear();
+        if (!line.isEmpty()) parseLine(line);
+    }
+    setBusyState(false);
+    updateStatus(tr("追踪完成（共 %1 跳）").arg(m_lastHopSeen));
+}
+
+// ============= 解析 =============
+
+// 多平台 traceroute / tracert 输出格式不一，但都满足：
+//   - 行首是跳数（整数）
+//   - 包含若干 "<num> ms"（时间）
+//   - 包含 IP（IPv4 / IPv6），可能括号或方括号包裹
+//   - 失败时含 `*`
+void TracerouteTool::parseLine(const QString& line)
+{
+    static const QRegularExpression rxHopStart(R"(^\s*(\d+)\s)");
+    auto m = rxHopStart.match(line);
+    if (!m.hasMatch()) return;
+    int hopNum = m.captured(1).toInt();
+
+    RouteHop hop;
+    hop.hopNumber = hopNum;
+
+    // IPv4 / IPv6 抓取
+    static const QRegularExpression rxIp(
+        R"((?:(\d{1,3}(?:\.\d{1,3}){3})|\b([0-9a-fA-F:]{2,39})\b))");
+    QStringList ips;
+    auto it = rxIp.globalMatch(line);
+    while (it.hasNext()) {
+        auto mi = it.next();
+        QString s = !mi.captured(1).isEmpty() ? mi.captured(1) : mi.captured(2);
+        if (!s.contains('.') && !s.contains(':')) continue;
+        QHostAddress addr;
+        if (addr.setAddress(s)) ips << s;
+    }
+    if (!ips.isEmpty()) hop.ipAddress = ips.first();
+
+    // RTT 数字
+    static const QRegularExpression rxTime(R"(([\d.]+)\s*ms)",
+                                           QRegularExpression::CaseInsensitiveOption);
+    QList<double> rtts;
+    auto it2 = rxTime.globalMatch(line);
+    while (it2.hasNext()) rtts << it2.next().captured(1).toDouble();
+    if (rtts.size() >= 1) hop.rtt1 = rtts[0];
+    if (rtts.size() >= 2) hop.rtt2 = rtts[1];
+    if (rtts.size() >= 3) hop.rtt3 = rtts[2];
+
+    // 主机名（如果有 — Unix `hostname (ip)` 或 Win `... hostname [ip]`）
+    if (!hop.ipAddress.isEmpty()) {
+        QString rest = line.mid(m.capturedEnd());
+        int parenPos = rest.indexOf('(');
+        int bracketPos = rest.indexOf('[');
+        QString candidate;
+        if (parenPos > 0) {
+            candidate = rest.left(parenPos).trimmed();
+        } else if (bracketPos > 0) {
+            QString before = rest.left(bracketPos).trimmed();
+            static const QRegularExpression rxTail(
+                R"((?:(?:\d+\s*ms\s*)+|\*\s*)+)",
+                QRegularExpression::CaseInsensitiveOption);
+            QString hostPart = before;
+            hostPart.remove(rxTail);
+            candidate = hostPart.trimmed();
+        }
+        if (!candidate.isEmpty() && candidate != hop.ipAddress
+            && QHostAddress(candidate).isNull()) {
+            hop.hostname = candidate;
+        }
+    }
+
+    // 失败检测
+    if (hop.ipAddress.isEmpty() && rtts.isEmpty() && line.contains('*')) {
+        hop.timeout = true;
+    }
+
+    // 离线 ip2region 地理位置
+    if (!hop.ipAddress.isEmpty()) {
+        auto& db = Ip2RegionLookup::instance();
+        if (db.isAvailable()) {
+            IpLookupResult r = db.lookup(hop.ipAddress);
+            if (r.error.isEmpty()) {
+                QStringList parts;
+                if (!r.country.isEmpty() && r.country != "0") parts << r.country;
+                if (!r.region.isEmpty() && r.region != "0")  parts << r.region;
+                if (!r.city.isEmpty() && r.city != "0")      parts << r.city;
+                if (!r.isp.isEmpty() && r.isp != "0")        parts << r.isp;
+                hop.region = parts.join(" · ");
+            }
+        }
+    }
+
+    appendHop(hop);
+    m_lastHopSeen = qMax(m_lastHopSeen, hopNum);
+    m_progress->setValue(m_lastHopSeen);
+}
+
+// ============= 显示 =============
+
+void TracerouteTool::appendHop(const RouteHop& hop)
+{
+    int row = -1;
+    for (int r = 0; r < m_table->rowCount(); ++r) {
+        auto* it = m_table->item(r, 0);
+        if (it && it->text().toInt() == hop.hopNumber) { row = r; break; }
+    }
+    if (row < 0) {
+        row = m_table->rowCount();
+        m_table->insertRow(row);
+    }
+
+    auto setCell = [&](int col, const QString& text,
+                       Qt::Alignment align = Qt::AlignLeft | Qt::AlignVCenter) {
+        auto* it = new QTableWidgetItem(text);
+        it->setTextAlignment(align);
+        m_table->setItem(row, col, it);
+    };
+
+    setCell(0, QString::number(hop.hopNumber), Qt::AlignCenter);
+    setCell(1, hop.ipAddress.isEmpty() ? "*" : hop.ipAddress);
+    setCell(2, hop.hostname);
+
+    auto fmt = [](double v) {
+        return v < 0 ? QStringLiteral("*") : QString("%1 ms").arg(v, 0, 'f', 2);
+    };
+    setCell(3, fmt(hop.rtt1), Qt::AlignRight | Qt::AlignVCenter);
+    setCell(4, fmt(hop.rtt2), Qt::AlignRight | Qt::AlignVCenter);
+    setCell(5, fmt(hop.rtt3), Qt::AlignRight | Qt::AlignVCenter);
+    setCell(6, hop.region);
+
+    QColor bg;
+    if (hop.timeout || hop.ipAddress.isEmpty()) {
+        bg = QColor(255, 235, 238);
+    } else if (hop.rtt1 > 0 || hop.rtt2 > 0 || hop.rtt3 > 0) {
+        bg = QColor(232, 245, 233);
+    }
+    if (bg.isValid()) {
+        for (int c = 0; c < m_table->columnCount(); ++c) {
+            if (auto* it = m_table->item(row, c))
+                it->setBackground(QBrush(bg));
+        }
+    }
+    m_table->scrollToBottom();
+}
+
+// ============= 状态切换 =============
+
+void TracerouteTool::setBusyState(bool busy)
+{
+    m_startBtn->setEnabled(!busy);
+    m_stopBtn->setEnabled(busy);
+    m_targetEdit->setEnabled(!busy);
+    m_maxHopsSpin->setEnabled(!busy);
+    m_timeoutSpin->setEnabled(!busy);
+    m_resolveNamesCheck->setEnabled(!busy);
+}
+
+void TracerouteTool::updateStatus(const QString& msg, bool err)
+{
+    m_status->setText(msg);
+    if (err) {
+        m_status->setStyleSheet(
+            "color: #c62828; padding: 6px 10px; background: #ffebee;"
+            " border-radius: 4px; font-weight: bold;");
+    } else {
+        m_status->setStyleSheet(
+            "color: #2e7d32; padding: 6px 10px; background: #e8f5e8;"
+            " border-radius: 4px; font-weight: bold;");
+    }
 }

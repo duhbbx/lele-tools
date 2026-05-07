@@ -1,818 +1,630 @@
 #include "routetesttool.h"
+#include "../ip-lookup-tool/iplookuptool.h"   // Ip2RegionLookup
+
 #include <QApplication>
-#include <QMessageBox>
+#include <QClipboard>
+#include <QFrame>
 #include <QHeaderView>
-#include <QFileDialog>
-#include <QDateTime>
-#include <QDebug>
+#include <QHostAddress>
+#include <QListWidgetItem>
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QSplitter>
+#include <QTableWidgetItem>
 #include <QTextStream>
-#include <QStandardPaths>
-#include <QDir>
 
 REGISTER_DYNAMICOBJECT(RouteTestTool);
 
-// RouteTestWorker 实现
-RouteTestWorker::RouteTestWorker(QObject *parent)
-    : QObject(parent)
-    , m_running(false)
-    , m_process(nullptr)
+namespace {
+
+// 内置节点（覆盖电信/联通/移动/教育网，做线路对比）
+static const RouteTarget kPresetNodes[] = {
+    {"上海电信",       "202.96.209.5",      "电信"},
+    {"北京电信",       "219.141.140.10",    "电信"},
+    {"广州电信",       "58.60.188.222",     "电信"},
+    {"北京联通",       "123.125.81.6",      "联通"},
+    {"上海联通",       "210.22.97.1",       "联通"},
+    {"广州联通",       "210.21.196.6",      "联通"},
+    {"北京移动",       "211.136.17.107",    "移动"},
+    {"上海移动",       "211.136.150.66",    "移动"},
+    {"广州移动",       "211.139.129.222",   "移动"},
+    {"北京教育网",     "101.4.117.211",     "教育网"},
+    {"Cloudflare DNS", "1.1.1.1",           "国际"},
+    {"Google DNS",     "8.8.8.8",           "国际"},
+};
+
+QString isoLookupRegion(const QString& ip)
 {
+    auto& db = Ip2RegionLookup::instance();
+    if (!db.isAvailable() || ip.isEmpty()) return QString();
+    IpLookupResult r = db.lookup(ip);
+    if (!r.error.isEmpty()) return QString();
+    QStringList parts;
+    if (!r.country.isEmpty() && r.country != "0") parts << r.country;
+    if (!r.region.isEmpty()  && r.region  != "0") parts << r.region;
+    if (!r.city.isEmpty()    && r.city    != "0") parts << r.city;
+    if (!r.isp.isEmpty()     && r.isp     != "0") parts << r.isp;
+    return parts.join(" · ");
 }
 
-void RouteTestWorker::testSingleRoute(const QString &ip, const QString &name)
-{
-    if (m_running) {
-        emit logMessage("测试正在进行中，请等待完成");
-        return;
-    }
-    
-    m_running = true;
-    emit testStarted(name.isEmpty() ? ip : name);
-    
-    RouteTestResult result = performTraceroute(ip, name);
-    
-    m_running = false;
-    emit testCompleted(result);
-}
+} // namespace
 
-void RouteTestWorker::testMultipleRoutes(const QList<TestNode> &nodes)
-{
-    if (m_running) {
-        emit logMessage("测试正在进行中，请等待完成");
-        return;
-    }
-    
-    m_running = true;
-    
-    for (int i = 0; i < nodes.size() && m_running; ++i) {
-        const TestNode &node = nodes[i];
-        
-        emit progressUpdated(i + 1, nodes.size());
-        emit testStarted(node.name);
-        emit logMessage(QString("开始测试 %1 (%2)").arg(node.name, node.ip));
-        
-        RouteTestResult result = performTraceroute(node.ip, node.name);
-        emit testCompleted(result);
-        
-        // 测试间隔
-        if (i < nodes.size() - 1 && m_running) {
-            QThread::msleep(1000);
-        }
-    }
-    
-    m_running = false;
-    emit allTestsCompleted();
-}
+// ============= ctor / dtor =============
 
-void RouteTestWorker::stopTest()
-{
-    m_running = false;
-    if (m_process && m_process->state() != QProcess::NotRunning) {
-        m_process->kill();
-    }
-}
-
-RouteTestResult RouteTestWorker::performTraceroute(const QString &ip, const QString &name)
-{
-    RouteTestResult result;
-    result.targetIP = ip;
-    result.targetName = name;
-    result.testTime = QDateTime::currentDateTime();
-    
-    // 创建traceroute进程
-    m_process = new QProcess();
-    m_process->setProgram("tracert");  // Windows使用tracert命令
-    m_process->setArguments({"-h", "30", ip});  // 最大30跳
-    
-    emit logMessage(QString("执行命令: tracert -h 30 %1").arg(ip));
-    
-    // 启动进程并等待完成
-    m_process->start();
-    
-    if (!m_process->waitForStarted(5000)) {
-        result.success = false;
-        result.errorMessage = "无法启动tracert命令";
-        emit logMessage("错误: " + result.errorMessage);
-        delete m_process;
-        m_process = nullptr;
-        return result;
-    }
-    
-    if (!m_process->waitForFinished(60000)) {  // 最多等待60秒
-        result.success = false;
-        result.errorMessage = "tracert命令超时";
-        m_process->kill();
-        emit logMessage("错误: " + result.errorMessage);
-        delete m_process;
-        m_process = nullptr;
-        return result;
-    }
-    
-    // 读取输出
-    QString output = QString::fromLocal8Bit(m_process->readAllStandardOutput());
-    QString errorOutput = QString::fromLocal8Bit(m_process->readAllStandardError());
-    
-    if (m_process->exitCode() == 0) {
-        result.success = true;
-        result.routeHops = parseTracerouteOutput(output);
-        result.totalHops = result.routeHops.size();
-        emit logMessage(QString("成功: 共%1跳到达%2").arg(result.totalHops).arg(ip));
-    } else {
-        result.success = false;
-        result.errorMessage = errorOutput.isEmpty() ? "tracert命令执行失败" : errorOutput;
-        emit logMessage("错误: " + result.errorMessage);
-    }
-    
-    delete m_process;
-    m_process = nullptr;
-    
-    return result;
-}
-
-QStringList RouteTestWorker::parseTracerouteOutput(const QString &output)
-{
-    QStringList hops;
-    QStringList lines = output.split('\n');
-    
-    for (const QString &line : lines) {
-        QString trimmedLine = line.trimmed();
-        
-        // 跳过空行和标题行
-        if (trimmedLine.isEmpty() || 
-            trimmedLine.contains("tracert") || 
-            trimmedLine.contains("Tracing route") ||
-            trimmedLine.contains("over a maximum")) {
-            continue;
-        }
-        
-        // 解析跳点行（格式：序号 时间1 时间2 时间3 IP/主机名）
-        if (trimmedLine.contains("ms") || trimmedLine.contains("*")) {
-            hops.append(trimmedLine);
-        }
-    }
-    
-    return hops;
-}
-
-// RouteTestTool 实现
-RouteTestTool::RouteTestTool(QWidget *parent)
+RouteTestTool::RouteTestTool(QWidget* parent)
     : QWidget(parent), DynamicObjectBase()
-    , m_workerThread(nullptr)
-    , m_worker(nullptr)
-    , m_testing(false)
-    , m_currentTestIndex(0)
-    , m_totalTests(0)
 {
     setupUI();
-    initializeTestNodes();
-    loadSettings();
-    
-    // 创建工作线程
-    m_workerThread = new QThread(this);
-    m_worker = new RouteTestWorker();
-    m_worker->moveToThread(m_workerThread);
-    
-    // 连接信号
-    connect(m_worker, &RouteTestWorker::testStarted,
-            this, &RouteTestTool::onTestStarted);
-    connect(m_worker, &RouteTestWorker::testCompleted,
-            this, &RouteTestTool::onTestCompleted);
-    connect(m_worker, &RouteTestWorker::allTestsCompleted,
-            this, &RouteTestTool::onAllTestsCompleted);
-    connect(m_worker, &RouteTestWorker::progressUpdated,
-            this, &RouteTestTool::onProgressUpdated);
-    connect(m_worker, &RouteTestWorker::logMessage,
-            this, &RouteTestTool::onLogMessage);
-    
-    // 启动工作线程
-    m_workerThread->start();
-    
-    logMessage("回程路由测试工具初始化完成");
-    logMessage("支持电信、联通、移动、教育网四网测试");
+    populatePresets();
 }
 
 RouteTestTool::~RouteTestTool()
 {
-    if (m_testing) {
-        m_worker->stopTest();
+    if (m_proc && m_proc->state() != QProcess::NotRunning) {
+        m_proc->kill();
+        m_proc->waitForFinished(2000);
     }
-    
-    if (m_workerThread) {
-        m_workerThread->quit();
-        if (!m_workerThread->wait(3000)) {
-            m_workerThread->terminate();
-            m_workerThread->wait(1000);
-        }
-    }
-    
-    saveSettings();
 }
+
+// ============= UI =============
 
 void RouteTestTool::setupUI()
 {
-    m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
-    m_mainLayout->setSpacing(10);
-    
-    // 创建主分割器
-    m_mainSplitter = new QSplitter(Qt::Horizontal, this);
-    
-    // 左侧控制面板
-    m_controlPanel = new QWidget();
-    m_controlLayout = new QVBoxLayout(m_controlPanel);
-    m_controlLayout->setSpacing(10);
-    
-    setupQuickTestArea();
-    setupCustomTestArea();
-    setupNodeTestArea();
-    setupControlArea();
-    
-    m_controlLayout->addStretch();
-    
-    // 右侧结果面板
-    m_resultsPanel = new QWidget();
-    m_resultsLayout = new QVBoxLayout(m_resultsPanel);
-    
-    setupResultsArea();
-    
-    // 设置分割器
-    m_mainSplitter->addWidget(m_controlPanel);
-    m_mainSplitter->addWidget(m_resultsPanel);
-    m_mainSplitter->setStretchFactor(0, 0);
-    m_mainSplitter->setStretchFactor(1, 1);
-    m_mainSplitter->setSizes({400, 600});
-    
-    m_mainLayout->addWidget(m_mainSplitter);
-    
-    // 应用样式
     setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 10px;
+        QLineEdit, QSpinBox {
+            border: 1px solid #ced4da; border-radius: 4px;
+            padding: 5px 8px; background: #fff; min-height: 22px;
+            selection-background-color: #b8d4ff;
         }
+        QLineEdit:focus, QSpinBox:focus { border-color: #228be6; }
         QPushButton {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-size: 10px;
-            min-height: 20px;
+            border: 1px solid #ced4da; border-radius: 4px;
+            padding: 5px 14px; background: #ffffff; min-height: 22px; color: #343a40;
         }
-        QPushButton:hover {
-            background-color: #e9ecef;
-            border-color: #adb5bd;
+        QPushButton:hover  { background: #f1f3f5; border-color: #adb5bd; }
+        QPushButton:pressed{ background: #e9ecef; }
+        QPushButton:disabled { color: #adb5bd; background: #f8f9fa; }
+        QPushButton#primaryBtn {
+            background: #228be6; border: 1px solid #1c7ed6; color: white; font-weight: bold;
         }
-        QPushButton#quickTestBtn {
-            background-color: #28a745;
-            color: white;
-            font-weight: bold;
-            font-size: 11px;
+        QPushButton#primaryBtn:hover  { background: #1c7ed6; }
+        QPushButton#primaryBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+        QPushButton#dangerBtn {
+            background: #fa5252; border: 1px solid #f03e3e; color: white; font-weight: bold;
         }
-        QPushButton#quickTestBtn:hover {
-            background-color: #218838;
+        QPushButton#dangerBtn:hover  { background: #f03e3e; }
+        QPushButton#dangerBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+        QFrame#card {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;
         }
-        QPushButton#stopBtn {
-            background-color: #dc3545;
-            color: white;
-            font-weight: bold;
+        QListWidget {
+            border: 1px solid #dee2e6; border-radius: 4px; background: #ffffff;
+            outline: none;
         }
-        QPushButton#stopBtn:hover {
-            background-color: #c82333;
+        QListWidget::item {
+            padding: 5px 6px; border-bottom: 1px solid #f1f3f5;
         }
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            margin-top: 1ex;
-            padding-top: 8px;
-            font-size: 11px;
+        QListWidget::item:hover { background: #f1f3f5; }
+        QListWidget::item:selected { background: #e7f5ff; color: #1864ab; }
+        QTabWidget::pane {
+            border: 1px solid #dee2e6; border-radius: 6px;
+            background: #fff; top: -1px;
         }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 8px;
-            padding: 0 4px 0 4px;
-            color: #495057;
+        QTabBar::tab {
+            background: #f1f3f5; border: 1px solid #dee2e6;
+            border-bottom: none; border-top-left-radius: 5px; border-top-right-radius: 5px;
+            padding: 6px 14px; margin-right: 2px; color: #495057;
         }
-        QLineEdit, QComboBox {
-            border: 2px solid #e1e5e9;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 10px;
-            min-height: 20px;
-        }
-        QLineEdit:focus, QComboBox:focus {
-            border-color: #007bff;
-        }
+        QTabBar::tab:selected { background: #fff; color: #1864ab; font-weight: bold; }
+        QTabBar::tab:hover:!selected { background: #e9ecef; }
         QTableWidget {
-            border: 1px solid #dee2e6;
-            gridline-color: #dee2e6;
-            background-color: white;
-            alternate-background-color: #f8f9fa;
+            border: none; background: #fff; gridline-color: #e9ecef;
         }
-        QTextEdit {
-            border: 2px solid #e1e5e9;
-            border-radius: 6px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 9px;
+        QHeaderView::section {
+            background: #f8f9fa; color: #495057; font-weight: bold;
+            padding: 6px; border: none; border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
         }
     )");
-}
 
-void RouteTestTool::setupQuickTestArea()
-{
-    m_quickTestGroup = new QGroupBox("🚀 四网快速测试", this);
-    QVBoxLayout *layout = new QVBoxLayout(m_quickTestGroup);
-    
-    m_quickTestDesc = new QLabel(
-        "一键测试到以下节点的回程路由：\n"
-        "• 上海电信(天翼云)\n"
-        "• 厦门电信CN2\n" 
-        "• 浙江杭州联通\n"
-        "• 浙江杭州移动\n"
-        "• 北京教育网"
-    );
-    m_quickTestDesc->setStyleSheet("color: #6c757d; font-weight: normal;");
-    layout->addWidget(m_quickTestDesc);
-    
-    m_quickTestBtn = new QPushButton(tr("开始四网快速测试"));
-    m_quickTestBtn->setObjectName("quickTestBtn");
-    layout->addWidget(m_quickTestBtn);
-    
-    m_controlLayout->addWidget(m_quickTestGroup);
-    
-    connect(m_quickTestBtn, &QPushButton::clicked, this, &RouteTestTool::onQuickTestClicked);
-}
+    auto* main = new QVBoxLayout(this);
+    main->setContentsMargins(12, 10, 12, 10);
+    main->setSpacing(10);
 
-void RouteTestTool::setupCustomTestArea()
-{
-    m_customTestGroup = new QGroupBox("🎯 自定义IP测试", this);
-    QVBoxLayout *layout = new QVBoxLayout(m_customTestGroup);
-    
-    // IP输入
-    layout->addWidget(new QLabel(tr("目标IP地址:")));
-    m_customIPEdit = new QLineEdit();
-    m_customIPEdit->setPlaceholderText(tr("输入IP地址，如: 8.8.8.8"));
-    layout->addWidget(m_customIPEdit);
-    
-    // 名称输入
-    layout->addWidget(new QLabel(tr("节点名称(可选):")));
-    m_customNameEdit = new QLineEdit();
-    m_customNameEdit->setPlaceholderText(tr("为此IP起个名字，如: Google DNS"));
-    layout->addWidget(m_customNameEdit);
-    
-    m_customTestBtn = new QPushButton(tr("测试此IP"));
-    layout->addWidget(m_customTestBtn);
-    
-    m_controlLayout->addWidget(m_customTestGroup);
-    
-    connect(m_customIPEdit, &QLineEdit::textChanged, this, &RouteTestTool::onCustomIPChanged);
-    connect(m_customTestBtn, &QPushButton::clicked, this, &RouteTestTool::onCustomTestClicked);
-}
+    // 左右分栏
+    auto* split = new QSplitter(Qt::Horizontal);
+    split->setHandleWidth(6);
 
-void RouteTestTool::setupNodeTestArea()
-{
-    m_nodeTestGroup = new QGroupBox("🌐 节点选择测试", this);
-    QVBoxLayout *layout = new QVBoxLayout(m_nodeTestGroup);
-    
-    // ISP选择
-    layout->addWidget(new QLabel(tr("选择运营商:")));
-    m_ispCombo = new QComboBox();
-    m_ispCombo->addItems({"电信", "联通", "移动", "教育网"});
-    layout->addWidget(m_ispCombo);
-    
-    // 节点选择
-    layout->addWidget(new QLabel(tr("选择节点:")));
-    m_nodeCombo = new QComboBox();
-    layout->addWidget(m_nodeCombo);
-    
-    m_nodeTestBtn = new QPushButton(tr("测试选中节点"));
-    layout->addWidget(m_nodeTestBtn);
-    
-    m_controlLayout->addWidget(m_nodeTestGroup);
-    
-    connect(m_ispCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &RouteTestTool::onNodeSelectionChanged);
-    connect(m_nodeTestBtn, &QPushButton::clicked, this, &RouteTestTool::onNodeTestClicked);
-}
+    // 左：节点选择 + 自定义
+    auto* left = new QWidget();
+    auto* leftCol = new QVBoxLayout(left);
+    leftCol->setContentsMargins(0, 0, 0, 0);
+    leftCol->setSpacing(8);
+    leftCol->addWidget(buildPresetCard(), 1);
+    leftCol->addWidget(buildCustomCard());
 
-void RouteTestTool::setupControlArea()
-{
-    m_controlGroup = new QGroupBox("🔧 控制操作", this);
-    QVBoxLayout *layout = new QVBoxLayout(m_controlGroup);
-    
-    // 进度条
-    m_progressBar = new QProgressBar();
-    m_progressBar->setVisible(false);
-    layout->addWidget(m_progressBar);
-    
-    // 状态标签
-    m_statusLabel = new QLabel(tr("就绪"));
-    m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
-    layout->addWidget(m_statusLabel);
-    
-    // 控制按钮
-    QHBoxLayout *btnLayout = new QHBoxLayout();
-    m_stopBtn = new QPushButton(tr("停止测试"));
-    m_stopBtn->setObjectName("stopBtn");
+    // 操作按钮（左下）
+    auto* btnRow = new QHBoxLayout();
+    m_startBtn = new QPushButton(tr("🚀 测试已选"));
+    m_startBtn->setObjectName("primaryBtn");
+    m_stopBtn = new QPushButton(tr("⏹ 停止"));
+    m_stopBtn->setObjectName("dangerBtn");
     m_stopBtn->setEnabled(false);
-    m_clearBtn = new QPushButton(tr("清空结果"));
-    m_exportBtn = new QPushButton(tr("导出结果"));
-    
-    btnLayout->addWidget(m_stopBtn);
-    btnLayout->addWidget(m_clearBtn);
-    btnLayout->addWidget(m_exportBtn);
-    
-    layout->addLayout(btnLayout);
-    m_controlLayout->addWidget(m_controlGroup);
-    
-    connect(m_stopBtn, &QPushButton::clicked, this, &RouteTestTool::onStopTestClicked);
-    connect(m_clearBtn, &QPushButton::clicked, this, &RouteTestTool::onClearResultsClicked);
-    connect(m_exportBtn, &QPushButton::clicked, this, &RouteTestTool::onExportResultsClicked);
+    btnRow->addWidget(m_startBtn);
+    btnRow->addWidget(m_stopBtn);
+    btnRow->addStretch();
+    leftCol->addLayout(btnRow);
+    split->addWidget(left);
+
+    // 右：进度 + 状态条 + Tab 结果
+    auto* right = new QWidget();
+    auto* rightCol = new QVBoxLayout(right);
+    rightCol->setContentsMargins(0, 0, 0, 0);
+    rightCol->setSpacing(8);
+
+    auto* topBar = new QHBoxLayout();
+    m_progress = new QProgressBar();
+    m_progress->setRange(0, 1);
+    m_progress->setValue(0);
+    m_progress->setTextVisible(true);
+    m_progress->setFormat(tr("已完成 %v / %m"));
+    m_clearBtn = new QPushButton(tr("🗑 清空"));
+    m_copyBtn = new QPushButton(tr("📋 复制全部"));
+    topBar->addWidget(m_progress, 1);
+    topBar->addWidget(m_clearBtn);
+    topBar->addWidget(m_copyBtn);
+    rightCol->addLayout(topBar);
+
+    m_status = new QLabel(tr("就绪"));
+    m_status->setStyleSheet(
+        "color: #2e7d32; padding: 6px 10px; background: #e8f5e8;"
+        " border-radius: 4px; font-weight: bold;");
+    rightCol->addWidget(m_status);
+
+    rightCol->addWidget(buildResultsArea(), 1);
+    split->addWidget(right);
+
+    split->setStretchFactor(0, 0);
+    split->setStretchFactor(1, 1);
+    split->setSizes({320, 700});
+    main->addWidget(split);
+
+    connect(m_startBtn, &QPushButton::clicked, this, &RouteTestTool::onStartSelected);
+    connect(m_stopBtn, &QPushButton::clicked, this, &RouteTestTool::onStop);
+    connect(m_clearBtn, &QPushButton::clicked, this, &RouteTestTool::onClearTabs);
+    connect(m_copyBtn, &QPushButton::clicked, this, &RouteTestTool::onCopyAll);
+    connect(m_addCustomBtn, &QPushButton::clicked, this, &RouteTestTool::onAddCustom);
 }
 
-void RouteTestTool::setupResultsArea()
+QWidget* RouteTestTool::buildPresetCard()
 {
-    // 创建标签页
-    m_resultTabs = new QTabWidget();
-    
-    // 结果表格标签页
-    m_resultsTable = new QTableWidget();
-    m_resultsTable->setColumnCount(5);
-    QStringList headers;
-    headers << "测试时间" << "目标名称" << "目标IP" << "跳数" << "状态";
-    m_resultsTable->setHorizontalHeaderLabels(headers);
-    
-    m_resultsTable->setAlternatingRowColors(true);
-    m_resultsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_resultsTable->horizontalHeader()->setStretchLastSection(true);
-    m_resultsTable->verticalHeader()->setVisible(false);
-    
-    m_resultTabs->addTab(m_resultsTable, tr("📊 测试结果"));
-    
-    // 当前测试详情标签页
-    m_currentTestText = new QTextEdit();
-    m_currentTestText->setReadOnly(true);
-    m_resultTabs->addTab(m_currentTestText, tr("🔍 当前测试详情"));
-    
-    // 日志标签页
-    m_logText = new QTextEdit();
-    m_logText->setReadOnly(true);
-    m_logText->setMaximumHeight(150);
-    m_resultTabs->addTab(m_logText, tr("📝 操作日志"));
-    
-    m_resultsLayout->addWidget(m_resultTabs);
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* col = new QVBoxLayout(card);
+    col->setContentsMargins(12, 10, 12, 10);
+    col->setSpacing(6);
+
+    auto* hdr = new QLabel(tr("🌐 内置节点（按 ISP 分组，勾选后批量测试）"));
+    hdr->setStyleSheet("font-weight: bold; color: #495057; background: transparent;");
+    col->addWidget(hdr);
+
+    m_presetList = new QListWidget();
+    m_presetList->setSelectionMode(QAbstractItemView::NoSelection);
+    col->addWidget(m_presetList, 1);
+
+    auto* btns = new QHBoxLayout();
+    auto* selAll = new QPushButton(tr("全选"));
+    auto* selNone = new QPushButton(tr("全不选"));
+    btns->addWidget(selAll);
+    btns->addWidget(selNone);
+    btns->addStretch();
+    col->addLayout(btns);
+
+    connect(selAll, &QPushButton::clicked, this, [this](){
+        for (int i = 0; i < m_presetList->count(); ++i)
+            m_presetList->item(i)->setCheckState(Qt::Checked);
+    });
+    connect(selNone, &QPushButton::clicked, this, [this](){
+        for (int i = 0; i < m_presetList->count(); ++i)
+            m_presetList->item(i)->setCheckState(Qt::Unchecked);
+    });
+
+    return card;
 }
 
-void RouteTestTool::initializeTestNodes()
+QWidget* RouteTestTool::buildCustomCard()
 {
-    // 电信节点
-    QList<TestNode> telecomNodes;
-    telecomNodes.append(TestNode("上海电信(天翼云)", "101.227.255.45", "电信", "上海"));
-    telecomNodes.append(TestNode("厦门电信CN2", "117.28.254.129", "电信", "厦门"));
-    telecomNodes.append(TestNode("湖北襄阳电信", "58.51.94.106", "电信", "湖北"));
-    telecomNodes.append(TestNode("江西南昌电信", "182.98.238.226", "电信", "江西"));
-    telecomNodes.append(TestNode("广东深圳电信", "119.147.52.35", "电信", "广东"));
-    telecomNodes.append(TestNode("广州电信(天翼云)", "14.215.116.1", "电信", "广州"));
-    m_testNodes["电信"] = telecomNodes;
-    
-    // 联通节点
-    QList<TestNode> unicomNodes;
-    unicomNodes.append(TestNode("西藏拉萨联通", "221.13.70.244", "联通", "西藏"));
-    unicomNodes.append(TestNode("重庆联通", "113.207.32.65", "联通", "重庆"));
-    unicomNodes.append(TestNode("河南郑州联通", "61.168.23.74", "联通", "河南"));
-    unicomNodes.append(TestNode("安徽合肥联通", "112.122.10.26", "联通", "安徽"));
-    unicomNodes.append(TestNode("江苏南京联通", "58.240.53.78", "联通", "江苏"));
-    unicomNodes.append(TestNode("浙江杭州联通", "101.71.241.238", "联通", "浙江"));
-    m_testNodes["联通"] = unicomNodes;
-    
-    // 移动节点
-    QList<TestNode> mobileNodes;
-    mobileNodes.append(TestNode("上海移动", "221.130.188.251", "移动", "上海"));
-    mobileNodes.append(TestNode("四川成都移动", "183.221.247.9", "移动", "四川"));
-    mobileNodes.append(TestNode("安徽合肥移动", "120.209.140.60", "移动", "安徽"));
-    mobileNodes.append(TestNode("浙江杭州移动", "112.17.0.106", "移动", "浙江"));
-    m_testNodes["移动"] = mobileNodes;
-    
-    // 教育网节点
-    QList<TestNode> eduNodes;
-    eduNodes.append(TestNode("北京教育网", "202.205.6.30", "教育网", "北京"));
-    m_testNodes["教育网"] = eduNodes;
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* col = new QVBoxLayout(card);
+    col->setContentsMargins(12, 10, 12, 10);
+    col->setSpacing(6);
+
+    auto* hdr = new QLabel(tr("🎯 自定义节点"));
+    hdr->setStyleSheet("font-weight: bold; color: #495057; background: transparent;");
+    col->addWidget(hdr);
+
+    auto* row1 = new QHBoxLayout();
+    m_customName = new QLineEdit();
+    m_customName->setPlaceholderText(tr("名称（可选）"));
+    row1->addWidget(m_customName);
+    col->addLayout(row1);
+
+    auto* row2 = new QHBoxLayout();
+    m_customIp = new QLineEdit();
+    m_customIp->setPlaceholderText(tr("IP 或域名"));
+    m_addCustomBtn = new QPushButton(tr("+ 添加"));
+    row2->addWidget(m_customIp, 1);
+    row2->addWidget(m_addCustomBtn);
+    col->addLayout(row2);
+
+    return card;
 }
 
-QList<TestNode> RouteTestTool::getQuickTestNodes() const
+QWidget* RouteTestTool::buildResultsArea()
 {
-    QList<TestNode> quickNodes;
-    quickNodes.append(TestNode("上海电信(天翼云)", "101.227.255.45", "电信", "上海"));
-    quickNodes.append(TestNode("厦门电信CN2", "117.28.254.129", "电信", "厦门"));
-    quickNodes.append(TestNode("浙江杭州联通", "101.71.241.238", "联通", "浙江"));
-    quickNodes.append(TestNode("浙江杭州移动", "112.17.0.106", "移动", "浙江"));
-    quickNodes.append(TestNode("北京教育网", "202.205.6.30", "教育网", "北京"));
-    return quickNodes;
+    m_tabs = new QTabWidget();
+    m_tabs->setTabsClosable(true);
+    m_tabs->setMovable(true);
+    connect(m_tabs, &QTabWidget::tabCloseRequested, this, [this](int idx){
+        QWidget* w = m_tabs->widget(idx);
+        m_tabs->removeTab(idx);
+        if (w) w->deleteLater();
+    });
+    return m_tabs;
 }
 
-void RouteTestTool::updateUI()
+QTableWidget* RouteTestTool::makeHopTable()
 {
-    bool hasCustomIP = !m_customIPEdit->text().trimmed().isEmpty();
-    
-    m_quickTestBtn->setEnabled(!m_testing);
-    m_customTestBtn->setEnabled(!m_testing && hasCustomIP);
-    m_nodeTestBtn->setEnabled(!m_testing);
-    m_stopBtn->setEnabled(m_testing);
-    m_clearBtn->setEnabled(!m_testing && !m_testResults.isEmpty());
-    m_exportBtn->setEnabled(!m_testing && !m_testResults.isEmpty());
-    
-    m_progressBar->setVisible(m_testing && m_totalTests > 1);
-    
-    if (m_testing) {
-        m_statusLabel->setText(tr("测试进行中..."));
-        m_statusLabel->setStyleSheet("font-weight: bold; color: #28a745;");
-    } else {
-        m_statusLabel->setText(tr("就绪"));
-        m_statusLabel->setStyleSheet("font-weight: bold; color: #007bff;");
-    }
+    auto* tbl = new QTableWidget();
+    tbl->setColumnCount(7);
+    tbl->setHorizontalHeaderLabels(QStringList()
+        << tr("跳") << tr("IP") << tr("主机名")
+        << tr("RTT 1") << tr("RTT 2") << tr("RTT 3")
+        << tr("地区"));
+    tbl->verticalHeader()->setVisible(false);
+    tbl->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tbl->setSelectionBehavior(QAbstractItemView::SelectRows);
+    tbl->setAlternatingRowColors(true);
+    auto* hdr = tbl->horizontalHeader();
+    hdr->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(2, QHeaderView::Stretch);
+    hdr->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    hdr->setSectionResizeMode(6, QHeaderView::Stretch);
+    return tbl;
 }
 
-void RouteTestTool::addResultToTable(const RouteTestResult &result)
+void RouteTestTool::populatePresets()
 {
-    int row = m_resultsTable->rowCount();
-    m_resultsTable->insertRow(row);
-    
-    m_resultsTable->setItem(row, 0, new QTableWidgetItem(result.testTime.toString("MM-dd hh:mm:ss")));
-    m_resultsTable->setItem(row, 1, new QTableWidgetItem(result.targetName));
-    m_resultsTable->setItem(row, 2, new QTableWidgetItem(result.targetIP));
-    m_resultsTable->setItem(row, 3, new QTableWidgetItem(QString::number(result.totalHops)));
-    
-    QTableWidgetItem *statusItem = new QTableWidgetItem(result.success ? "成功" : "失败");
-    if (result.success) {
-        statusItem->setBackground(QColor("#d4edda"));
-        statusItem->setForeground(QColor("#155724"));
-    } else {
-        statusItem->setBackground(QColor("#f8d7da"));
-        statusItem->setForeground(QColor("#721c24"));
-    }
-    m_resultsTable->setItem(row, 4, statusItem);
-    
-    m_resultsTable->scrollToBottom();
-    
-    // 显示详细路由信息
-    QString detailText = QString("=== %1 (%2) ===\n").arg(result.targetName).arg(result.targetIP);
-    detailText += QString("测试时间: %1\n").arg(result.testTime.toString());
-    detailText += QString("状态: %1\n").arg(result.success ? "成功" : "失败");
-    detailText += QString("总跳数: %1\n\n").arg(result.totalHops);
-    
-    if (result.success) {
-        detailText += "路由详情:\n";
-        for (int i = 0; i < result.routeHops.size(); ++i) {
-            detailText += QString("%1\n").arg(result.routeHops[i]);
+    QString lastIsp;
+    for (const auto& n : kPresetNodes) {
+        if (n.isp != lastIsp) {
+            // 分组分隔行
+            auto* group = new QListWidgetItem(QString("── %1 ──").arg(n.isp));
+            group->setFlags(Qt::ItemIsEnabled);
+            group->setForeground(QColor(0x86, 0x8e, 0x96));
+            QFont f = group->font(); f.setBold(true); group->setFont(f);
+            m_presetList->addItem(group);
+            lastIsp = n.isp;
         }
-    } else {
-        detailText += QString("错误信息: %1\n").arg(result.errorMessage);
-    }
-    
-    detailText += "\n" + QString("=").repeated(50) + "\n\n";
-    m_currentTestText->append(detailText);
-}
-
-void RouteTestTool::logMessage(const QString &message)
-{
-    QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
-    QString logEntry = QString("[%1] %2").arg(timestamp, message);
-    m_logText->append(logEntry);
-    
-    // 限制日志行数
-    if (m_logText->document()->lineCount() > 200) {
-        QTextCursor cursor = m_logText->textCursor();
-        cursor.movePosition(QTextCursor::Start);
-        cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, 20);
-        cursor.removeSelectedText();
+        auto* it = new QListWidgetItem(QString("%1   %2").arg(n.name, n.ip));
+        it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
+        it->setCheckState(Qt::Unchecked);
+        QVariant v; v.setValue(n);
+        it->setData(Qt::UserRole, v);
+        m_presetList->addItem(it);
     }
 }
 
-void RouteTestTool::saveSettings()
-{
-    QSettings settings;
-    settings.setValue("RouteTestTool/customIP", m_customIPEdit->text());
-    settings.setValue("RouteTestTool/customName", m_customNameEdit->text());
-    settings.setValue("RouteTestTool/selectedISP", m_ispCombo->currentText());
-}
+// ============= 启动 / 停止 =============
 
-void RouteTestTool::loadSettings()
+void RouteTestTool::onStartSelected()
 {
-    QSettings settings;
-    if (m_customIPEdit) {
-        m_customIPEdit->setText(settings.value("RouteTestTool/customIP", "8.8.8.8").toString());
-    }
-    if (m_customNameEdit) {
-        m_customNameEdit->setText(settings.value("RouteTestTool/customName", "Google DNS").toString());
-    }
-    if (m_ispCombo) {
-        QString savedISP = settings.value("RouteTestTool/selectedISP", "电信").toString();
-        int index = m_ispCombo->findText(savedISP);
-        if (index >= 0) {
-            m_ispCombo->setCurrentIndex(index);
+    m_queue.clear();
+    for (int i = 0; i < m_presetList->count(); ++i) {
+        auto* it = m_presetList->item(i);
+        if (!(it->flags() & Qt::ItemIsUserCheckable)) continue;  // 跳过分组行
+        if (it->checkState() == Qt::Checked) {
+            m_queue.append(it->data(Qt::UserRole).value<RouteTarget>());
         }
     }
-    
-    // 触发节点选择更新
-    onNodeSelectionChanged();
+
+    if (m_queue.isEmpty()) {
+        QMessageBox::information(this, tr("提示"),
+            tr("请先勾选要测试的节点，或在右侧自定义添加。"));
+        return;
+    }
+
+    setBusy(true);
+    m_progress->setRange(0, m_queue.size());
+    m_progress->setValue(0);
+    m_currentIdx = -1;
+    runNextTarget();
 }
 
-// 槽函数实现
-void RouteTestTool::onQuickTestClicked()
+void RouteTestTool::onAddCustom()
 {
-    QList<TestNode> quickNodes = getQuickTestNodes();
-    
-    m_testing = true;
-    m_totalTests = quickNodes.size();
-    m_currentTestIndex = 0;
-    
-    m_progressBar->setRange(0, m_totalTests);
-    m_progressBar->setValue(0);
-    
-    updateUI();
-    logMessage("开始四网快速测试");
-    
-    QMetaObject::invokeMethod(m_worker, "testMultipleRoutes", Qt::QueuedConnection,
-                              Q_ARG(QList<TestNode>, quickNodes));
-}
-
-void RouteTestTool::onCustomTestClicked()
-{
-    QString ip = m_customIPEdit->text().trimmed();
-    QString name = m_customNameEdit->text().trimmed();
-    
+    QString ip = m_customIp->text().trimmed();
     if (ip.isEmpty()) {
-        QMessageBox::warning(this, tr("错误"), tr("请输入目标IP地址"));
+        QMessageBox::warning(this, tr("错误"), tr("请输入 IP 或域名"));
         return;
     }
-    
-    if (name.isEmpty()) {
-        name = ip;
-    }
-    
-    m_testing = true;
-    m_totalTests = 1;
-    updateUI();
-    
-    logMessage(QString("开始测试自定义IP: %1").arg(ip));
-    
-    QMetaObject::invokeMethod(m_worker, "testSingleRoute", Qt::QueuedConnection,
-                              Q_ARG(QString, ip), Q_ARG(QString, name));
+    QString name = m_customName->text().trimmed();
+    if (name.isEmpty()) name = ip;
+
+    RouteTarget t;
+    t.name = name;
+    t.ip = ip;
+    t.isp = tr("自定义");
+
+    m_queue = {t};
+
+    setBusy(true);
+    m_progress->setRange(0, 1);
+    m_progress->setValue(0);
+    m_currentIdx = -1;
+    runNextTarget();
 }
 
-void RouteTestTool::onNodeTestClicked()
+void RouteTestTool::onStop()
 {
-    QList<TestNode> selectedNodes = getSelectedNodes();
-    if (selectedNodes.isEmpty()) {
-        QMessageBox::warning(this, tr("错误"), tr("请选择要测试的节点"));
+    if (m_proc && m_proc->state() != QProcess::NotRunning) {
+        m_proc->kill();
+        m_proc->waitForFinished(1000);
+    }
+    m_queue.clear();
+    setBusy(false);
+    setStatus(tr("已停止"));
+}
+
+void RouteTestTool::onClearTabs()
+{
+    while (m_tabs->count() > 0) {
+        QWidget* w = m_tabs->widget(0);
+        m_tabs->removeTab(0);
+        if (w) w->deleteLater();
+    }
+    m_progress->setValue(0);
+    setStatus(tr("已清空"));
+}
+
+void RouteTestTool::onCopyAll()
+{
+    if (m_tabs->count() == 0) {
+        QMessageBox::information(this, tr("提示"), tr("没有可复制的内容"));
         return;
     }
-    
-    m_testing = true;
-    m_totalTests = selectedNodes.size();
-    m_currentTestIndex = 0;
-    
-    if (m_totalTests > 1) {
-        m_progressBar->setRange(0, m_totalTests);
-        m_progressBar->setValue(0);
-    }
-    
-    updateUI();
-    logMessage(QString("开始测试%1节点").arg(m_ispCombo->currentText()));
-    
-    QMetaObject::invokeMethod(m_worker, "testMultipleRoutes", Qt::QueuedConnection,
-                              Q_ARG(QList<TestNode>, selectedNodes));
-}
-
-void RouteTestTool::onStopTestClicked()
-{
-    m_testing = false;
-    QMetaObject::invokeMethod(m_worker, "stopTest", Qt::QueuedConnection);
-    logMessage("用户停止了测试");
-    updateUI();
-}
-
-void RouteTestTool::onClearResultsClicked()
-{
-    m_resultsTable->setRowCount(0);
-    m_currentTestText->clear();
-    m_logText->clear();
-    m_testResults.clear();
-    logMessage("结果已清空");
-}
-
-void RouteTestTool::onExportResultsClicked()
-{
-    if (m_testResults.isEmpty()) {
-        QMessageBox::information(this, tr("提示"), tr("没有测试结果可导出"));
-        return;
-    }
-    
-    QString fileName = QFileDialog::getSaveFileName(
-        this,
-        "导出路由测试结果",
-        QString("route_test_results_%1.txt")
-            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")),
-        "文本文件 (*.txt)"
-    );
-    
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream out(&file);
-            out << "回程路由测试结果报告\n";
-            out << "生成时间: " << QDateTime::currentDateTime().toString() << "\n";
-            out << "总计测试: " << m_testResults.size() << " 个节点\n\n";
-            
-            for (const RouteTestResult &result : m_testResults) {
-                out << QString("=== %1 (%2) ===\n").arg(result.targetName, result.targetIP);
-                out << QString("测试时间: %1\n").arg(result.testTime.toString());
-                out << QString("状态: %1\n").arg(result.success ? "成功" : "失败");
-                out << QString("跳数: %1\n\n").arg(result.totalHops);
-                
-                if (result.success) {
-                    for (const QString &hop : result.routeHops) {
-                        out << hop << "\n";
-                    }
-                } else {
-                    out << "错误: " << result.errorMessage << "\n";
-                }
-                out << "\n";
+    QString out;
+    QTextStream ts(&out);
+    for (int t = 0; t < m_tabs->count(); ++t) {
+        QString tabName = m_tabs->tabText(t);
+        ts << "\n# " << tabName << "\n";
+        auto* tbl = qobject_cast<QTableWidget*>(m_tabs->widget(t));
+        if (!tbl) continue;
+        for (int r = 0; r < tbl->rowCount(); ++r) {
+            QStringList cells;
+            for (int c = 0; c < tbl->columnCount(); ++c) {
+                auto* it = tbl->item(r, c);
+                cells << (it ? it->text() : QString());
             }
-            
-            logMessage("结果已导出到: " + fileName);
-            QMessageBox::information(this, tr("成功"), tr("测试结果已导出"));
+            ts << cells.join('\t') << "\n";
         }
     }
+    QApplication::clipboard()->setText(out);
+    setStatus(tr("已复制 %1 个节点的结果到剪贴板").arg(m_tabs->count()));
 }
 
-void RouteTestTool::onCustomIPChanged()
+// ============= 队列 =============
+
+void RouteTestTool::runNextTarget()
 {
-    updateUI();
+    m_currentIdx++;
+    if (m_currentIdx >= m_queue.size()) {
+        // 队列结束
+        setBusy(false);
+        setStatus(tr("全部完成（共测试 %1 个节点）").arg(m_queue.size()));
+        return;
+    }
+
+    const RouteTarget& tgt = m_queue.at(m_currentIdx);
+    m_pendingBuffer.clear();
+    m_currentLastHop = 0;
+
+    // 创建该 target 的 tab + table
+    m_currentTable = makeHopTable();
+    int tabIdx = m_tabs->addTab(m_currentTable,
+        QString("%1 (%2)").arg(tgt.name, tgt.ip));
+    m_tabs->setCurrentIndex(tabIdx);
+
+    setStatus(tr("正在测试 %1 (%2) ... [%3 / %4]")
+                  .arg(tgt.name, tgt.ip)
+                  .arg(m_currentIdx + 1).arg(m_queue.size()));
+
+    if (m_proc) { m_proc->deleteLater(); m_proc = nullptr; }
+    m_proc = new QProcess(this);
+    m_proc->setProcessChannelMode(QProcess::MergedChannels);
+    connect(m_proc, &QProcess::readyReadStandardOutput, this, &RouteTestTool::onProcOutput);
+    connect(m_proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &RouteTestTool::onProcFinished);
+
+    QString program;
+    QStringList args;
+#ifdef Q_OS_WIN
+    program = "tracert";
+    args << "-d" << "-h" << "30" << "-w" << "5000" << tgt.ip;
+#else
+    program = "traceroute";
+    args << "-n" << "-m" << "30" << "-w" << "5" << tgt.ip;
+#endif
+    m_proc->start(program, args);
+    if (!m_proc->waitForStarted(3000)) {
+        setStatus(tr("无法启动 %1").arg(program), true);
+        runNextTarget();   // 跳过当前，继续下一个
+    }
 }
 
-void RouteTestTool::onNodeSelectionChanged()
+// ============= 进程事件 =============
+
+void RouteTestTool::onProcOutput()
 {
-    QString isp = m_ispCombo->currentText();
-    m_nodeCombo->clear();
-    
-    if (m_testNodes.contains(isp)) {
-        const QList<TestNode> &nodes = m_testNodes[isp];
-        for (const TestNode &node : nodes) {
-            m_nodeCombo->addItem(QString("%1 (%2)").arg(node.name, node.location), 
-                                QVariant::fromValue(node));
+    if (!m_proc) return;
+    m_pendingBuffer += m_proc->readAllStandardOutput();
+    while (true) {
+        int nl = m_pendingBuffer.indexOf('\n');
+        if (nl < 0) break;
+        QByteArray rawLine = m_pendingBuffer.left(nl);
+        m_pendingBuffer.remove(0, nl + 1);
+        QString line = QString::fromLocal8Bit(rawLine).trimmed();
+        if (!line.isEmpty()) parseLine(line);
+    }
+}
+
+void RouteTestTool::onProcFinished(int code, QProcess::ExitStatus status)
+{
+    Q_UNUSED(code);
+    Q_UNUSED(status);
+    if (!m_pendingBuffer.isEmpty()) {
+        QString line = QString::fromLocal8Bit(m_pendingBuffer).trimmed();
+        m_pendingBuffer.clear();
+        if (!line.isEmpty()) parseLine(line);
+    }
+    m_progress->setValue(m_currentIdx + 1);
+    runNextTarget();
+}
+
+// ============= 解析（与 TracerouteTool 一致的通用规则）=============
+
+void RouteTestTool::parseLine(const QString& line)
+{
+    static const QRegularExpression rxHopStart(R"(^\s*(\d+)\s)");
+    auto m = rxHopStart.match(line);
+    if (!m.hasMatch()) return;
+    int hopNum = m.captured(1).toInt();
+
+    QString ipAddr;
+    static const QRegularExpression rxIp(
+        R"((?:(\d{1,3}(?:\.\d{1,3}){3})|\b([0-9a-fA-F:]{2,39})\b))");
+    auto it = rxIp.globalMatch(line);
+    while (it.hasNext()) {
+        auto mi = it.next();
+        QString s = !mi.captured(1).isEmpty() ? mi.captured(1) : mi.captured(2);
+        if (!s.contains('.') && !s.contains(':')) continue;
+        QHostAddress addr;
+        if (addr.setAddress(s)) { ipAddr = s; break; }
+    }
+
+    static const QRegularExpression rxTime(R"(([\d.]+)\s*ms)",
+                                           QRegularExpression::CaseInsensitiveOption);
+    QList<double> rtts;
+    auto it2 = rxTime.globalMatch(line);
+    while (it2.hasNext()) rtts << it2.next().captured(1).toDouble();
+    double r1 = rtts.size() >= 1 ? rtts[0] : -1;
+    double r2 = rtts.size() >= 2 ? rtts[1] : -1;
+    double r3 = rtts.size() >= 3 ? rtts[2] : -1;
+
+    QString hostname;
+    if (!ipAddr.isEmpty()) {
+        QString rest = line.mid(m.capturedEnd());
+        int parenPos = rest.indexOf('(');
+        int bracketPos = rest.indexOf('[');
+        QString candidate;
+        if (parenPos > 0) {
+            candidate = rest.left(parenPos).trimmed();
+        } else if (bracketPos > 0) {
+            QString before = rest.left(bracketPos).trimmed();
+            static const QRegularExpression rxTail(
+                R"((?:(?:\d+\s*ms\s*)+|\*\s*)+)",
+                QRegularExpression::CaseInsensitiveOption);
+            QString hostPart = before;
+            hostPart.remove(rxTail);
+            candidate = hostPart.trimmed();
+        }
+        if (!candidate.isEmpty() && candidate != ipAddr
+            && QHostAddress(candidate).isNull()) {
+            hostname = candidate;
         }
     }
+
+    bool timeout = (ipAddr.isEmpty() && rtts.isEmpty() && line.contains('*'));
+    QString region = isoLookupRegion(ipAddr);
+
+    appendHopToCurrent(hopNum, ipAddr, hostname, r1, r2, r3, timeout, region);
 }
 
-QList<TestNode> RouteTestTool::getSelectedNodes() const
+// ============= 显示 =============
+
+void RouteTestTool::appendHopToCurrent(int hop, const QString& ip, const QString& host,
+                                       double r1, double r2, double r3,
+                                       bool timeout, const QString& region)
 {
-    QList<TestNode> selectedNodes;
-    QVariant nodeData = m_nodeCombo->currentData();
-    if (nodeData.canConvert<TestNode>()) {
-        selectedNodes.append(nodeData.value<TestNode>());
+    if (!m_currentTable) return;
+
+    int row = -1;
+    for (int r = 0; r < m_currentTable->rowCount(); ++r) {
+        auto* it = m_currentTable->item(r, 0);
+        if (it && it->text().toInt() == hop) { row = r; break; }
     }
-    return selectedNodes;
+    if (row < 0) {
+        row = m_currentTable->rowCount();
+        m_currentTable->insertRow(row);
+    }
+
+    auto setCell = [&](int col, const QString& text,
+                       Qt::Alignment align = Qt::AlignLeft | Qt::AlignVCenter) {
+        auto* it = new QTableWidgetItem(text);
+        it->setTextAlignment(align);
+        m_currentTable->setItem(row, col, it);
+    };
+
+    setCell(0, QString::number(hop), Qt::AlignCenter);
+    setCell(1, ip.isEmpty() ? "*" : ip);
+    setCell(2, host);
+    auto fmt = [](double v) {
+        return v < 0 ? QStringLiteral("*") : QString("%1 ms").arg(v, 0, 'f', 2);
+    };
+    setCell(3, fmt(r1), Qt::AlignRight | Qt::AlignVCenter);
+    setCell(4, fmt(r2), Qt::AlignRight | Qt::AlignVCenter);
+    setCell(5, fmt(r3), Qt::AlignRight | Qt::AlignVCenter);
+    setCell(6, region);
+
+    QColor bg;
+    if (timeout || ip.isEmpty()) bg = QColor(255, 235, 238);
+    else if (r1 > 0 || r2 > 0 || r3 > 0) bg = QColor(232, 245, 233);
+    if (bg.isValid()) {
+        for (int c = 0; c < m_currentTable->columnCount(); ++c) {
+            if (auto* it = m_currentTable->item(row, c))
+                it->setBackground(QBrush(bg));
+        }
+    }
+    m_currentTable->scrollToBottom();
+    m_currentLastHop = qMax(m_currentLastHop, hop);
 }
 
-// 工作线程信号处理
-void RouteTestTool::onTestStarted(const QString &target)
+// ============= 状态切换 =============
+
+void RouteTestTool::setBusy(bool busy)
 {
-    logMessage(QString("开始测试: %1").arg(target));
-    m_statusLabel->setText(QString("正在测试: %1").arg(target));
+    m_startBtn->setEnabled(!busy);
+    m_addCustomBtn->setEnabled(!busy);
+    m_stopBtn->setEnabled(busy);
+    m_presetList->setEnabled(!busy);
+    m_customName->setEnabled(!busy);
+    m_customIp->setEnabled(!busy);
 }
 
-void RouteTestTool::onTestCompleted(const RouteTestResult &result)
+void RouteTestTool::setStatus(const QString& s, bool err)
 {
-    m_testResults.append(result);
-    addResultToTable(result);
-    
-    if (result.success) {
-        logMessage(QString("测试完成: %1 (%2跳)").arg(result.targetName).arg(result.totalHops));
+    m_status->setText(s);
+    if (err) {
+        m_status->setStyleSheet(
+            "color: #c62828; padding: 6px 10px; background: #ffebee;"
+            " border-radius: 4px; font-weight: bold;");
     } else {
-        logMessage(QString("测试失败: %1 - %2").arg(result.targetName, result.errorMessage));
+        m_status->setStyleSheet(
+            "color: #2e7d32; padding: 6px 10px; background: #e8f5e8;"
+            " border-radius: 4px; font-weight: bold;");
     }
-}
-
-void RouteTestTool::onAllTestsCompleted()
-{
-    m_testing = false;
-    updateUI();
-    
-    logMessage("所有测试已完成");
-    QMessageBox::information(this, "完成", 
-                           QString("回程路由测试已完成\n共测试 %1 个节点")
-                           .arg(m_testResults.size()));
-}
-
-void RouteTestTool::onProgressUpdated(int current, int total)
-{
-    m_currentTestIndex = current;
-    m_progressBar->setValue(current);
-    m_statusLabel->setText(QString("测试进度: %1/%2").arg(current).arg(total));
-}
-
-void RouteTestTool::onLogMessage(const QString &message)
-{
-    logMessage(message);
 }

@@ -1,10 +1,17 @@
 #include "iplookuptool.h"
 #include <QHostInfo>
 #include <QNetworkInterface>
+#include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QRegularExpression>
+#include <QHostAddress>
+#include <QAbstractSocket>
+#include <QPointer>
+#include <functional>
+#include <memory>
 
 extern "C" {
 #include "../../common/thirdparty/ip2region/xdb_api.h"
@@ -12,6 +19,88 @@ extern "C" {
 
 // 动态对象创建宏
 REGISTER_DYNAMICOBJECT(IpLookupTool);
+
+// 依次尝试多个公网 IP 服务，第一个返回有效 IPv4 的获胜。
+// 需要这一层备份是因为单一服务（如 api.ipify.org）经常被国内网络阻断 → "Connection refused"。
+static void fetchPublicIpWithFallback(
+    QNetworkAccessManager* mgr, QObject* context,
+    std::function<void(const QString& ip, const QString& err)> done)
+{
+    // 优先 IPv4 专用源（避免双栈服务在 IPv6 网络上返回 IPv6）
+    static const QStringList endpoints = {
+        "https://4.ident.me",                // IPv4 专用
+        "https://ipv4.icanhazip.com",        // IPv4 专用
+        "https://api-ipv4.ip.sb/ip",         // IPv4 专用
+        "https://api.ipify.org",             // 通常解析到 IPv4
+        "https://4.ipw.cn",                  // 国内 IPv4（DNS 可能不通）
+        "https://api64.ipify.org",           // 双栈
+        "https://ident.me",                  // 双栈
+        "https://icanhazip.com",             // 双栈
+        "https://ifconfig.me/ip",            // 双栈
+        "https://api.ip.sb/ip",              // 双栈
+    };
+    auto idx = std::make_shared<int>(0);
+    auto errors = std::make_shared<QStringList>();
+    auto tryNext = std::make_shared<std::function<void()>>();
+    QPointer<QObject> ctx(context);
+    *tryNext = [=]() {
+        if (!ctx) return;
+        if (*idx >= endpoints.size()) {
+            done(QString(), errors->join("; "));
+            return;
+        }
+        QString url = endpoints[*idx];
+        ++(*idx);
+        QNetworkRequest req((QUrl(url)));
+        req.setHeader(QNetworkRequest::UserAgentHeader,
+                      QByteArray("Mozilla/5.0 (lele-tools)"));
+        req.setTransferTimeout(5000);
+        auto* reply = mgr->get(req);
+        QObject::connect(reply, &QNetworkReply::finished, ctx, [=]() {
+            reply->deleteLater();
+            if (!ctx) return;
+            if (reply->error() == QNetworkReply::NoError) {
+                QString s = QString::fromUtf8(reply->readAll()).trimmed();
+                // 1. 整段就是一个 IP（多数服务）
+                QHostAddress addr;
+                if (addr.setAddress(s)) {
+                    done(addr.toString(), QString());
+                    return;
+                }
+                // 2. JSON / HTML 包裹时，从内容里提取 IPv4
+                static QRegularExpression rxV4(
+                    QStringLiteral(R"(\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b)"));
+                auto m4 = rxV4.match(s);
+                if (m4.hasMatch()) {
+                    QHostAddress a;
+                    if (a.setAddress(m4.captured(1))
+                        && a.protocol() == QAbstractSocket::IPv4Protocol) {
+                        done(m4.captured(1), QString());
+                        return;
+                    }
+                }
+                // 3. 提取 IPv6
+                static QRegularExpression rxV6(
+                    QStringLiteral(R"(([0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F:]{1,39})"));
+                auto m6 = rxV6.match(s);
+                if (m6.hasMatch()) {
+                    QHostAddress a;
+                    if (a.setAddress(m6.captured(0))
+                        && a.protocol() == QAbstractSocket::IPv6Protocol) {
+                        done(a.toString(), QString());
+                        return;
+                    }
+                }
+                QString preview = s.left(40).replace('\n', ' ');
+                errors->append(QString("%1: 返回内容不像 IP（%2）").arg(url, preview));
+            } else {
+                errors->append(url + ": " + reply->errorString());
+            }
+            (*tryNext)();
+        });
+    };
+    (*tryNext)();
+}
 
 // ── ip2region 离线查询 ──
 
@@ -284,22 +373,18 @@ void SingleIpLookup::onGetMyIpClicked() {
     m_getMyIpBtn->setEnabled(false);
     m_lookupBtn->setText(tr("获取中..."));
 
-    QNetworkRequest networkRequest(QUrl("https://api.ipify.org"));
-    auto* reply = m_networkManager->get(networkRequest);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        reply->deleteLater();
-        m_lookupBtn->setEnabled(true);
-        m_getMyIpBtn->setEnabled(true);
-        m_lookupBtn->setText(tr("查询"));
-
-        if (reply->error() == QNetworkReply::NoError) {
-            QString myIp = QString::fromUtf8(reply->readAll()).trimmed();
-            m_ipInput->setText(myIp);
-            lookupIp(myIp);
-        } else {
-            displayError(tr("获取外网IP失败: ") + reply->errorString());
-        }
-    });
+    fetchPublicIpWithFallback(m_networkManager, this,
+        [this](const QString& ip, const QString& err) {
+            m_lookupBtn->setEnabled(true);
+            m_getMyIpBtn->setEnabled(true);
+            m_lookupBtn->setText(tr("查询"));
+            if (!ip.isEmpty()) {
+                m_ipInput->setText(ip);
+                lookupIp(ip);
+            } else {
+                displayError(tr("获取外网IP失败（已尝试所有备用源）：") + err);
+            }
+        });
 }
 
 void SingleIpLookup::lookupIp(const QString& ip) {
@@ -1012,20 +1097,14 @@ void IpApiClient::getMyPublicIp() {
         m_currentReply = nullptr;
     }
 
-    QNetworkRequest request(QUrl("https://api.ipify.org"));
-    request.setHeader(QNetworkRequest::UserAgentHeader, "IpLookupTool/1.0");
-
-    m_currentReply = m_networkManager->get(request);
-    connect(m_currentReply, &QNetworkReply::finished, [this]() {
-        if (m_currentReply->error() == QNetworkReply::NoError) {
-            QString ip = QString::fromUtf8(m_currentReply->readAll()).trimmed();
-            emit myIpDetected(ip);
-        } else {
-            emit errorOccurred("无法获取公网IP地址: " + m_currentReply->errorString());
-        }
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-    });
+    fetchPublicIpWithFallback(m_networkManager, this,
+        [this](const QString& ip, const QString& err) {
+            if (!ip.isEmpty()) {
+                emit myIpDetected(ip);
+            } else {
+                emit errorOccurred(QString("无法获取公网IP地址（已尝试所有备用源）: %1").arg(err));
+            }
+        });
 }
 
 void IpApiClient::onNetworkReplyFinished() {

@@ -1,19 +1,119 @@
 #include "ping.h"
 
-#include <QDebug>
+#include <QAbstractSocket>
 #include <QApplication>
 #include <QClipboard>
-#include <QMessageBox>
-#include <QHeaderView>
-#include <QTableWidgetItem>
+#include <QDebug>
 #include <QFont>
+#include <QFrame>
+#include <QHeaderView>
+#include <QMessageBox>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QRegularExpression>
+#include <QTableWidgetItem>
+#include <cmath>
 
 REGISTER_DYNAMICOBJECT(Ping);
 
-Ping::Ping() : QWidget(nullptr), DynamicObjectBase(), isPinging(false), currentSequence(0) {
+// ============= RttChart =============
+
+RttChart::RttChart(QWidget* parent) : QWidget(parent) {
+    setMinimumHeight(120);
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
+    setAutoFillBackground(false);
+}
+
+void RttChart::addPoint(double rttMs, bool success) {
+    m_points.append({rttMs, success});
+    while (m_points.size() > m_maxPoints) m_points.removeFirst();
+    update();
+}
+
+void RttChart::clear() {
+    m_points.clear();
+    update();
+}
+
+void RttChart::paintEvent(QPaintEvent*) {
+    QPainter p(this);
+    p.fillRect(rect(), QColor(0xfa, 0xfb, 0xfc));
+
+    const int padL = 36, padR = 8, padT = 8, padB = 18;
+    QRect plot(padL, padT, width() - padL - padR, height() - padT - padB);
+
+    // 网格 + 轴
+    p.setPen(QColor(0xe9, 0xec, 0xef));
+    p.drawRect(plot);
+
+    if (m_points.isEmpty()) {
+        p.setPen(QColor(0xad, 0xb5, 0xbd));
+        p.drawText(plot, Qt::AlignCenter, tr("（暂无数据）"));
+        return;
+    }
+
+    // 计算 Y 范围
+    double yMax = 0;
+    for (const auto& pt : m_points) if (pt.ok && pt.rtt > yMax) yMax = pt.rtt;
+    if (yMax <= 0) yMax = 10;
+    yMax *= 1.15;
+
+    // Y 标签
+    p.setPen(QColor(0x86, 0x8e, 0x96));
+    QFont f = p.font(); f.setPointSize(8); p.setFont(f);
+    for (int i = 0; i <= 4; ++i) {
+        int y = plot.bottom() - i * plot.height() / 4;
+        p.setPen(QColor(0xf1, 0xf3, 0xf5));
+        p.drawLine(plot.left(), y, plot.right(), y);
+        p.setPen(QColor(0x86, 0x8e, 0x96));
+        p.drawText(QRect(0, y - 8, padL - 4, 16),
+                   Qt::AlignRight | Qt::AlignVCenter,
+                   QString("%1ms").arg(yMax * i / 4.0, 0, 'f', 0));
+    }
+
+    // 折线
+    int n = m_points.size();
+    auto xAt = [&](int i) {
+        return plot.left() + (n > 1 ? (i * plot.width() / (n - 1)) : plot.width() / 2);
+    };
+    auto yAt = [&](double v) {
+        return plot.bottom() - int(v / yMax * plot.height());
+    };
+
+    QPolygonF line;
+    for (int i = 0; i < n; ++i) {
+        if (m_points[i].ok) line << QPointF(xAt(i), yAt(m_points[i].rtt));
+    }
+    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setPen(QPen(QColor(34, 139, 230), 2));
+    p.setBrush(Qt::NoBrush);
+    p.drawPolyline(line);
+
+    // 失败点：底部红色短竖
+    p.setPen(QPen(QColor(220, 50, 50), 2));
+    for (int i = 0; i < n; ++i) {
+        if (!m_points[i].ok) {
+            int x = xAt(i);
+            p.drawLine(x, plot.bottom() - 6, x, plot.bottom());
+        }
+    }
+
+    // 成功点：小圆
+    p.setBrush(QColor(34, 139, 230));
+    p.setPen(Qt::NoPen);
+    for (int i = 0; i < n; ++i) {
+        if (m_points[i].ok) {
+            p.drawEllipse(QPointF(xAt(i), yAt(m_points[i].rtt)), 2.5, 2.5);
+        }
+    }
+}
+
+// ============= Ping =============
+
+Ping::Ping() : QWidget(nullptr), DynamicObjectBase(), isPinging(false), currentSequence(0),
+               attemptsMade(0), useIPv6(false) {
     // 初始化统计数据
-    statistics = { 0, 0, 0, 0.0, 999999.0, 0.0, 0.0, "" };
+    statistics = { 0, 0, 0, 0.0, 999999.0, 0.0, 0.0, 0.0, "" };
 
     // 初始化进程和定时器
     pingProcess = nullptr;
@@ -50,194 +150,286 @@ Ping::~Ping() {
 }
 
 void Ping::setupUI() {
-    // 主布局
+    // 全局样式：让所有控件视觉一致
+    setStyleSheet(R"(
+        QWidget#pingRoot { background: #ffffff; }
+        QLineEdit, QSpinBox {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 8px;
+            background: #fff;
+            min-height: 22px;
+            selection-background-color: #b8d4ff;
+        }
+        QLineEdit:focus, QSpinBox:focus { border-color: #228be6; }
+        QPushButton {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 14px;
+            background: #ffffff;
+            min-height: 22px;
+            color: #343a40;
+        }
+        QPushButton:hover  { background: #f1f3f5; border-color: #adb5bd; }
+        QPushButton:pressed{ background: #e9ecef; }
+        QPushButton:disabled { color: #adb5bd; background: #f8f9fa; }
+
+        QPushButton#primaryBtn {
+            background: #228be6; border: 1px solid #1c7ed6; color: white; font-weight: bold;
+        }
+        QPushButton#primaryBtn:hover  { background: #1c7ed6; }
+        QPushButton#primaryBtn:pressed{ background: #1971c2; }
+        QPushButton#primaryBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+
+        QPushButton#dangerBtn {
+            background: #fa5252; border: 1px solid #f03e3e; color: white; font-weight: bold;
+        }
+        QPushButton#dangerBtn:hover  { background: #f03e3e; }
+        QPushButton#dangerBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+
+        QFrame#card {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;
+        }
+        QLabel.fieldLabel { color: #495057; }
+        QLabel.tileLabel  { color: #868e96; font-size: 9pt; }
+        QLabel.tileValue  { color: #212529; font-size: 14pt; font-weight: bold; }
+        QTableWidget {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #fff;
+            gridline-color: #e9ecef;
+        }
+        QHeaderView::section {
+            background: #f1f3f5; color: #495057; font-weight: bold;
+            padding: 6px; border: none; border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+        }
+    )");
+    setObjectName("pingRoot");
+
     mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
+    mainLayout->setContentsMargins(12, 10, 12, 10);
     mainLayout->setSpacing(10);
 
-    // 设置输入区域
     setupInputArea();
-
-    // 设置控制区域
     setupControlArea();
 
-    // 设置按钮区域
+    // 操作按钮：主按钮蓝、停止红、其他中性
     buttonLayout = new QHBoxLayout();
-    buttonLayout->setSizeConstraint(QLayout::SetFixedSize);
+    buttonLayout->setSpacing(6);
 
-    startBtn = new QPushButton(tr("🚀 开始Ping"));
-    startBtn->setFixedSize(110, 32);
+    startBtn = new QPushButton(tr("🚀 开始 Ping"));
+    startBtn->setObjectName("primaryBtn");
+    startBtn->setMinimumWidth(110);
 
-    stopBtn = new QPushButton(tr("⏹️ 停止"));
-    stopBtn->setFixedSize(80, 32);
+    stopBtn = new QPushButton(tr("⏹ 停止"));
+    stopBtn->setObjectName("dangerBtn");
+    stopBtn->setMinimumWidth(80);
     stopBtn->setEnabled(false);
 
-    clearBtn = new QPushButton(tr("🗑️ 清空"));
-    clearBtn->setFixedSize(80, 32);
+    clearBtn = new QPushButton(tr("🗑 清空"));
+    clearBtn->setMinimumWidth(80);
 
     copyBtn = new QPushButton(tr("📋 复制"));
-    copyBtn->setFixedSize(80, 32);
-
-    statusLabel = new QLabel(tr("就绪"));
-    statusLabel->setFixedHeight(32);
-    statusLabel->setStyleSheet("color: #666; font-weight: bold; padding: 4px 8px; background: #f9f9f9; border-radius: 0px; border: 1px solid #ddd;");
+    copyBtn->setMinimumWidth(80);
 
     buttonLayout->addWidget(startBtn);
     buttonLayout->addWidget(stopBtn);
     buttonLayout->addWidget(clearBtn);
     buttonLayout->addWidget(copyBtn);
     buttonLayout->addStretch();
-    buttonLayout->addWidget(statusLabel);
 
-    // 创建分割器
-    mainSplitter = new QSplitter(Qt::Vertical);
+    // 状态条独立一行，更易读
+    statusLabel = new QLabel(tr("就绪"));
+    statusLabel->setStyleSheet(
+        "color: #2e7d32; padding: 6px 10px; background: #e8f5e8;"
+        " border-radius: 4px; font-weight: bold;");
 
-    // 设置结果区域
     setupResultsArea();
-
-    // 设置统计区域
     setupStatisticsArea();
 
-    // 添加到分割器
-    QWidget* topWidget = new QWidget();
-    QVBoxLayout* topLayout = new QVBoxLayout(topWidget);
+    // 顶部容器：依次堆叠"主机卡 / 参数卡 / 按钮 / 状态条"
+    QWidget* top = new QWidget();
+    QVBoxLayout* tl = new QVBoxLayout(top);
+    tl->setContentsMargins(0, 0, 0, 0);
+    tl->setSpacing(8);
+    tl->addWidget(inputGroup);
+    tl->addWidget(controlGroup);
+    tl->addLayout(buttonLayout);
+    tl->addWidget(statusLabel);
 
-    // 设置布局顶对齐
-    topLayout->setAlignment(Qt::AlignTop);
-
-    // 可选：去掉多余间距
-    topLayout->setSpacing(5);       // 控件间间距
-    topLayout->setContentsMargins(0,0,0,0); // 外边距
-
-
-    topLayout->addWidget(inputGroup);
-    topLayout->addWidget(controlGroup);
-    topLayout->addLayout(buttonLayout);
-
-
-
-
-    mainSplitter->addWidget(topWidget);
+    // 主体可拉伸：图表 + 表格在中间，统计固定在底
+    mainSplitter = new QSplitter(Qt::Vertical);
+    mainSplitter->setHandleWidth(6);
+    mainSplitter->addWidget(top);
     mainSplitter->addWidget(resultsWidget);
     mainSplitter->addWidget(statsGroup);
+    mainSplitter->setStretchFactor(0, 0);
+    mainSplitter->setStretchFactor(1, 1);
+    mainSplitter->setStretchFactor(2, 0);
+    mainSplitter->setCollapsible(0, false);
+    mainSplitter->setCollapsible(2, false);
 
-    mainSplitter->setStretchFactor(0, 0); // topWidget 不拉伸
-    mainSplitter->setStretchFactor(1, 1); // resultsWidget 可拉伸
-    mainSplitter->setStretchFactor(2, 0); // statsGroup 不拉伸
-
-
-    // 添加到主布局
     mainLayout->addWidget(mainSplitter);
 }
 
 void Ping::setupInputArea() {
-    inputGroup = new QGroupBox("🌐 目标主机");
-    inputLayout = new QGridLayout(inputGroup);
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* row = new QHBoxLayout(card);
+    row->setContentsMargins(12, 10, 12, 10);
+    row->setSpacing(8);
 
-    hostLabel = new QLabel(tr("主机地址:"));
+    hostLabel = new QLabel(tr("🌐 主机"));
+    hostLabel->setStyleSheet("font-weight: bold; color: #495057; background: transparent;");
+
     hostEdit = new QLineEdit();
-    hostEdit->setPlaceholderText(tr("输入域名或IP地址"));
+    hostEdit->setPlaceholderText(tr("输入域名或 IP 地址，如 baidu.com"));
+    hostEdit->setMinimumWidth(220);
 
     resolveBtn = new QPushButton(tr("🔍 解析"));
-    resolveBtn->setFixedSize(85, 32);
+    resolveBtn->setMinimumWidth(80);
 
-    ipLabel = new QLabel(tr("解析IP:"));
+    ipLabel = new QLabel(tr("→"));
+    ipLabel->setStyleSheet("color: #adb5bd; font-size: 14pt; background: transparent;");
+
     ipValueLabel = new QLabel(tr("未解析"));
+    ipValueLabel->setStyleSheet(
+        "color: #868e96; padding: 4px 10px; background: #ffffff;"
+        " border: 1px solid #dee2e6; border-radius: 4px;");
 
-    inputLayout->addWidget(hostLabel, 0, 0);
-    inputLayout->addWidget(hostEdit, 0, 1);
-    inputLayout->addWidget(resolveBtn, 0, 2);
-    inputLayout->addWidget(ipLabel, 1, 0);
-    inputLayout->addWidget(ipValueLabel, 1, 1, 1, 2);
+    row->addWidget(hostLabel);
+    row->addWidget(hostEdit, 1);
+    row->addWidget(resolveBtn);
+    row->addWidget(ipLabel);
+    row->addWidget(ipValueLabel);
 
-    inputGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
-
+    inputGroup = card;
+    inputLayout = nullptr;
 }
 
 void Ping::setupControlArea() {
-    controlGroup = new QGroupBox("⚙️ Ping参数");
-    controlLayout = new QHBoxLayout(controlGroup);
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* row = new QHBoxLayout(card);
+    row->setContentsMargins(12, 10, 12, 10);
+    row->setSpacing(10);
 
-    countLabel = new QLabel(tr("次数:"));
+    auto labelStyle = QStringLiteral("color:#495057; background: transparent;");
+
+    countLabel = new QLabel(tr("⚙️ 次数"));
+    countLabel->setStyleSheet("font-weight: bold; color: #495057; background: transparent;");
     countSpinBox = new QSpinBox();
     countSpinBox->setRange(1, 100);
     countSpinBox->setValue(4);
+    countSpinBox->setMinimumWidth(70);
 
-    intervalLabel = new QLabel(tr("间隔(ms):"));
+    intervalLabel = new QLabel(tr("间隔"));
+    intervalLabel->setStyleSheet(labelStyle);
     intervalSpinBox = new QSpinBox();
     intervalSpinBox->setRange(100, 10000);
     intervalSpinBox->setValue(1000);
+    intervalSpinBox->setSuffix(tr(" ms"));
+    intervalSpinBox->setMinimumWidth(96);
 
-    timeoutLabel = new QLabel(tr("超时(ms):"));
+    timeoutLabel = new QLabel(tr("超时"));
+    timeoutLabel->setStyleSheet(labelStyle);
     timeoutSpinBox = new QSpinBox();
     timeoutSpinBox->setRange(1000, 30000);
     timeoutSpinBox->setValue(5000);
+    timeoutSpinBox->setSuffix(tr(" ms"));
+    timeoutSpinBox->setMinimumWidth(96);
 
-    continuousCheck = new QCheckBox("连续Ping");
+    continuousCheck = new QCheckBox(tr("连续 Ping"));
+    continuousCheck->setStyleSheet(labelStyle);
 
-    controlLayout->addWidget(countLabel);
-    controlLayout->addWidget(countSpinBox);
-    controlLayout->addWidget(intervalLabel);
-    controlLayout->addWidget(intervalSpinBox);
-    controlLayout->addWidget(timeoutLabel);
-    controlLayout->addWidget(timeoutSpinBox);
-    controlLayout->addWidget(continuousCheck);
-    controlLayout->addStretch();
+    row->addWidget(countLabel);
+    row->addWidget(countSpinBox);
+    row->addSpacing(10);
+    row->addWidget(intervalLabel);
+    row->addWidget(intervalSpinBox);
+    row->addSpacing(10);
+    row->addWidget(timeoutLabel);
+    row->addWidget(timeoutSpinBox);
+    row->addSpacing(10);
+    row->addWidget(continuousCheck);
+    row->addStretch();
 
-    controlGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
-
+    controlGroup = card;
+    controlLayout = nullptr;
 }
 
 void Ping::setupResultsArea() {
     resultsWidget = new QWidget();
     resultsLayout = new QVBoxLayout(resultsWidget);
 
-    resultsLabel = new QLabel(tr("📊 Ping结果"));
+    resultsLabel = new QLabel(tr("📊 Ping 结果"));
     resultsLabel->setStyleSheet("font-weight: bold; font-size: 10pt; color: #333;");
+
+    rttChart = new RttChart();
 
     resultsTable = new QTableWidget();
     resultsTable->setColumnCount(6);
-    resultsTable->setHorizontalHeaderLabels(QStringList() << "序号" << "目标主机" << "IP地址" << "响应时间" << "TTL" << "状态");
+    resultsTable->setHorizontalHeaderLabels(QStringList()
+        << tr("序号") << tr("目标主机") << tr("IP地址") << tr("响应时间")
+        << tr("TTL") << tr("状态"));
     resultsTable->horizontalHeader()->setStretchLastSection(true);
     resultsTable->setAlternatingRowColors(true);
     resultsTable->verticalHeader()->setVisible(false);
-
     resultsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    resultsTable->setSortingEnabled(false);   // 排序会和"按时间到达顺序追加"冲突
 
     resultsLayout->addWidget(resultsLabel);
-    resultsLayout->addWidget(resultsTable);
+    resultsLayout->addWidget(rttChart);
+    resultsLayout->addWidget(resultsTable, 1);
 }
 
 void Ping::setupStatisticsArea() {
-    statsGroup = new QGroupBox("📈 统计信息");
-    statsLayout = new QGridLayout(statsGroup);
+    auto* card = new QFrame();
+    card->setObjectName("card");
+    auto* row = new QHBoxLayout(card);
+    row->setContentsMargins(12, 10, 12, 10);
+    row->setSpacing(8);
 
-    sentLabel = new QLabel(tr("已发送:"));
-    sentValueLabel = new QLabel(tr("0"));
-    receivedLabel = new QLabel(tr("已接收:"));
-    receivedValueLabel = new QLabel(tr("0"));
-    lossLabel = new QLabel(tr("丢包率:"));
-    lossValueLabel = new QLabel(tr("0%"));
-    minLabel = new QLabel(tr("最小时间:"));
-    minValueLabel = new QLabel(tr("0ms"));
-    maxLabel = new QLabel(tr("最大时间:"));
-    maxValueLabel = new QLabel(tr("0ms"));
-    avgLabel = new QLabel(tr("平均时间:"));
-    avgValueLabel = new QLabel(tr("0ms"));
+    // 创建一个"瓦片"：上面小灰标签，下面大粗值（无边框，纯靠白底与父卡片浅灰底对比）
+    auto makeTile = [](const QString& title, QLabel*& valueOut) {
+        auto* w = new QFrame();
+        w->setStyleSheet(
+            "QFrame { background:#ffffff; border: none; border-radius: 6px; }");
+        auto* col = new QVBoxLayout(w);
+        col->setContentsMargins(10, 6, 10, 6);
+        col->setSpacing(2);
+        auto* t = new QLabel(title);
+        t->setStyleSheet("color: #868e96; font-size: 9pt; background: transparent;");
+        valueOut = new QLabel("0");
+        valueOut->setStyleSheet("color: #212529; font-size: 14pt; font-weight: bold; background: transparent;");
+        col->addWidget(t);
+        col->addWidget(valueOut);
+        return w;
+    };
 
-    statsLayout->addWidget(sentLabel, 0, 0);
-    statsLayout->addWidget(sentValueLabel, 0, 1);
-    statsLayout->addWidget(receivedLabel, 0, 2);
-    statsLayout->addWidget(receivedValueLabel, 0, 3);
-    statsLayout->addWidget(lossLabel, 0, 4);
-    statsLayout->addWidget(lossValueLabel, 0, 5);
+    sentLabel = nullptr; receivedLabel = nullptr;
+    lossLabel = nullptr; minLabel = nullptr; maxLabel = nullptr;
+    avgLabel = nullptr; jitterLabel = nullptr;
 
-    statsLayout->addWidget(minLabel, 1, 0);
-    statsLayout->addWidget(minValueLabel, 1, 1);
-    statsLayout->addWidget(maxLabel, 1, 2);
-    statsLayout->addWidget(maxValueLabel, 1, 3);
-    statsLayout->addWidget(avgLabel, 1, 4);
-    statsLayout->addWidget(avgValueLabel, 1, 5);
+    row->addWidget(makeTile(tr("已发送"),  sentValueLabel),    1);
+    row->addWidget(makeTile(tr("已接收"),  receivedValueLabel),1);
+    row->addWidget(makeTile(tr("丢包率"),  lossValueLabel),    1);
+    row->addWidget(makeTile(tr("最小"),    minValueLabel),     1);
+    row->addWidget(makeTile(tr("平均"),    avgValueLabel),     1);
+    row->addWidget(makeTile(tr("最大"),    maxValueLabel),     1);
+    row->addWidget(makeTile(tr("抖动"),    jitterValueLabel),  1);
+
+    sentValueLabel->setText("0");
+    receivedValueLabel->setText("0");
+    lossValueLabel->setText("0%");
+    minValueLabel->setText("0ms");
+    avgValueLabel->setText("0ms");
+    maxValueLabel->setText("0ms");
+    jitterValueLabel->setText("0ms");
+
+    statsGroup = card;
+    statsLayout = nullptr;
 }
 
 void Ping::onStartPing() {
@@ -250,11 +442,17 @@ void Ping::onStartPing() {
     currentHost = host;
     isPinging = true;
     currentSequence = 0;
+    attemptsMade = 0;
+
+    // 检测 IPv6（用解析结果，没解析过则跑一次）
+    if (resolvedIP.isEmpty()) onResolveHost();
+    QHostAddress addr(resolvedIP);
+    useIPv6 = (addr.protocol() == QAbstractSocket::IPv6Protocol);
 
     startBtn->setEnabled(false);
     stopBtn->setEnabled(true);
 
-    updateStatus("正在Ping " + host + "...", false);
+    updateStatus(tr("正在 Ping %1 ...").arg(host), false);
     startPingProcess();
 }
 
@@ -269,9 +467,10 @@ void Ping::onStopPing() {
 void Ping::onClearResults() {
     resultsTable->setRowCount(0);
     pingResults.clear();
-    statistics = { 0, 0, 0, 0.0, 999999.0, 0.0, 0.0, "" };
+    statistics = { 0, 0, 0, 0.0, 999999.0, 0.0, 0.0, 0.0, "" };
+    rttChart->clear();
     updateStatistics();
-    updateStatus("已清空结果", false);
+    updateStatus(tr("已清空结果"), false);
 }
 
 void Ping::onCopyResults() {
@@ -288,6 +487,9 @@ void Ping::onCopyResults() {
 
 void Ping::onHostChanged() {
     ipValueLabel->setText(tr("未解析"));
+    ipValueLabel->setStyleSheet(
+        "color: #868e96; padding: 4px 10px; background: #ffffff;"
+        " border: 1px solid #dee2e6; border-radius: 4px;");
     resolvedIP.clear();
 }
 
@@ -301,10 +503,14 @@ void Ping::onResolveHost() {
     if (info.error() == QHostInfo::NoError && !info.addresses().isEmpty()) {
         resolvedIP = info.addresses().first().toString();
         ipValueLabel->setText(resolvedIP);
-        ipValueLabel->setStyleSheet("color: #4CAF50; font-weight: bold;");
+        ipValueLabel->setStyleSheet(
+            "color: #2e7d32; padding: 4px 10px; background: #e8f5e8;"
+            " border: 1px solid #b7dfb9; border-radius: 4px; font-weight: bold;");
     } else {
         ipValueLabel->setText(tr("解析失败"));
-        ipValueLabel->setStyleSheet("color: #f44336; font-weight: bold;");
+        ipValueLabel->setStyleSheet(
+            "color: #c62828; padding: 4px 10px; background: #ffebee;"
+            " border: 1px solid #ffcdd2; border-radius: 4px; font-weight: bold;");
         resolvedIP.clear();
     }
 }
@@ -324,20 +530,20 @@ void Ping::startPingProcess() {
     QString program;
     QStringList arguments;
 
+    int timeoutMs = qMax(100, timeoutSpinBox->value());
+
 #ifdef Q_OS_WIN
-    program = "ping";
-    arguments << "-n" << "1";  // 发送一个包
-    arguments << "-w" << QString::number(timeoutSpinBox->value());  // 超时时间(ms)
-
-    // 检查是否需要指定包大小(可选)
-    // arguments << "-l" << "32";  // 数据包大小
-
+    program = useIPv6 ? "ping" : "ping";
+    if (useIPv6) arguments << "-6";
+    arguments << "-n" << "1";
+    arguments << "-w" << QString::number(timeoutMs);  // ms
     arguments << currentHost;
 #else
-    // Linux/Unix/Mac
-    program = "ping";
-    arguments << "-c" << "1";  // 发送一个包
-    arguments << "-W" << QString::number(timeoutSpinBox->value() / 1000);  // 超时时间(秒)
+    // macOS / Linux / BSD
+    program = useIPv6 ? "ping6" : "ping";
+    arguments << "-c" << "1";
+    // 不向 ping 传超时（不同平台 -W 单位不一样：Linux 是秒、macOS 是毫秒）
+    // 全部交给 timeoutTimer 兜底，结果一致。
     arguments << currentHost;
 #endif
 
@@ -442,15 +648,14 @@ void Ping::pingProcessFinished(int exitCode, QProcess::ExitStatus exitStatus) {
         }
     }
 
-    // 检查是否继续ping
+    // 检查是否继续ping — 用 attemptsMade 而不是 currentSequence
+    attemptsMade++;
     if (isPinging) {
-        if (continuousCheck->isChecked() || currentSequence < countSpinBox->value()) {
-            // 延迟后继续下一次ping
+        if (continuousCheck->isChecked() || attemptsMade < countSpinBox->value()) {
             pingTimer->start(intervalSpinBox->value());
         } else {
-            // 完成所有ping
             onStopPing();
-            updateStatus(QString("Ping完成，共发送%1个包").arg(statistics.packetsSent), false);
+            updateStatus(tr("Ping 完成，共发送 %1 个包").arg(statistics.packetsSent), false);
         }
     }
 }
@@ -461,43 +666,45 @@ PingResult Ping::parsePingOutput(const QString& output) {
     result.responseTime = 0;
     result.ttl = 0;
 
-#ifdef Q_OS_WIN
-    // Windows ping输出格式:
-    // 来自 14.215.177.38 的回复: 字节=32 时间=8ms TTL=54
-    // 请求超时。
+    // 不再按平台/语言区分 — 用三个通用 token 抓：
+    //   time=Xms / time<1ms / 时间=Xms / time = X ms
+    //   TTL=N / ttl=N / TTL: N
+    //   from <ip>  / 来自 <ip>
+    // 这些在 Linux/macOS/BSD/Windows 中、英文 ping 输出里都稳定。
+    static const QRegularExpression rxTime(
+        R"((?:time|时间)\s*[=<]\s*([\d.]+)\s*ms)",
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression rxTtl(
+        R"(ttl\s*[=:]\s*(\d+))",
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression rxIp(
+        R"((?:from|来自)\s+\(?([0-9a-fA-F:.]+))",
+        QRegularExpression::CaseInsensitiveOption);
 
-    QRegularExpression successRegex(R"(来自\s+([^\s]+)\s+的回复.*时间[=<](\d+)ms.*TTL=(\d+))");
-    QRegularExpression timeoutRegex(R"(请求超时|Request timed out|Destination host unreachable|找不到主机)");
-
-    QRegularExpressionMatch match = successRegex.match(output);
-    if (match.hasMatch()) {
+    auto mt = rxTime.match(output);
+    if (mt.hasMatch()) {
         result.success = true;
-        result.ip = match.captured(1);
-        result.responseTime = match.captured(2).toDouble();
-        result.ttl = match.captured(3).toInt();
-    } else if (timeoutRegex.match(output).hasMatch()) {
-        result.success = false;
-        result.errorMessage = "请求超时";
+        result.responseTime = mt.captured(1).toDouble();
+        auto mttl = rxTtl.match(output);
+        if (mttl.hasMatch()) result.ttl = mttl.captured(1).toInt();
+        auto mip = rxIp.match(output);
+        if (mip.hasMatch()) result.ip = mip.captured(1);
+        return result;
     }
-#else
-    // Linux/Mac ping输出格式:
-    // 64 bytes from 14.215.177.38: icmp_seq=1 ttl=54 time=8.123 ms
 
-    QRegularExpression successRegex(R"((\d+)\s+bytes from\s+([^:]+).*ttl=(\d+).*time=([\d.]+)\s*ms)");
-    QRegularExpression timeoutRegex(R"(timeout|no answer|unreachable)");
-
-    QRegularExpressionMatch match = successRegex.match(output);
-    if (match.hasMatch()) {
-        result.success = true;
-        result.ip = match.captured(2);
-        result.ttl = match.captured(3).toInt();
-        result.responseTime = match.captured(4).toDouble();
-    } else if (timeoutRegex.match(output).hasMatch()) {
-        result.success = false;
-        result.errorMessage = "请求超时";
+    // 失败：宽松关键字匹配（中英文都覆盖）
+    static const QStringList kFailKeywords = {
+        "timeout", "timed out", "unreachable", "no answer",
+        "could not find host", "name or service not known",
+        "请求超时", "找不到主机", "无法访问目标主机", "传送失败",
+        "Destination Host Unreachable",
+    };
+    for (const QString& kw : kFailKeywords) {
+        if (output.contains(kw, Qt::CaseInsensitive)) {
+            result.errorMessage = tr("请求超时");
+            return result;
+        }
     }
-#endif
-
     return result;
 }
 
@@ -527,12 +734,10 @@ void Ping::addPingResult(const PingResult& result) {
     ttlItem->setTextAlignment(Qt::AlignCenter);
     statusItem->setTextAlignment(Qt::AlignCenter);
 
-    // 设置颜色
-    if (result.success) {
-        statusItem->setForeground(QBrush(QColor("#4CAF50")));
-    } else {
-        statusItem->setForeground(QBrush(QColor("#f44336")));
-    }
+    // 整行染色：成功淡绿、失败淡红
+    QColor rowBg = result.success ? QColor(232, 245, 233) : QColor(255, 235, 238);
+    QColor statusFg = result.success ? QColor("#2e7d32") : QColor("#c62828");
+    statusItem->setForeground(QBrush(statusFg));
 
     resultsTable->setItem(row, 0, seqItem);
     resultsTable->setItem(row, 1, hostItem);
@@ -540,8 +745,14 @@ void Ping::addPingResult(const PingResult& result) {
     resultsTable->setItem(row, 3, timeItem);
     resultsTable->setItem(row, 4, ttlItem);
     resultsTable->setItem(row, 5, statusItem);
+    for (int c = 0; c < 6; ++c) {
+        if (auto* it = resultsTable->item(row, c))
+            it->setBackground(QBrush(rowBg));
+    }
 
-    // 滚动到最新行
+    // 喂入折线图
+    rttChart->addPoint(result.success ? result.responseTime : 0.0, result.success);
+
     resultsTable->scrollToBottom();
 
     // 更新状态
@@ -559,17 +770,23 @@ void Ping::updateStatistics() {
         statistics.lossPercentage = 0.0;
     }
 
-    // 计算平均响应时间
+    // 计算平均响应时间和抖动（标准差）
     if (statistics.packetsReceived > 0) {
         double totalTime = 0;
-        for (const PingResult& result : pingResults) {
-            if (result.success) {
-                totalTime += result.responseTime;
+        for (const PingResult& r : pingResults) if (r.success) totalTime += r.responseTime;
+        statistics.avgTime = totalTime / statistics.packetsReceived;
+
+        double sqSum = 0;
+        for (const PingResult& r : pingResults) {
+            if (r.success) {
+                double d = r.responseTime - statistics.avgTime;
+                sqSum += d * d;
             }
         }
-        statistics.avgTime = totalTime / statistics.packetsReceived;
+        statistics.jitter = std::sqrt(sqSum / statistics.packetsReceived);
     } else {
         statistics.avgTime = 0.0;
+        statistics.jitter = 0.0;
         statistics.minTime = 0.0;
         statistics.maxTime = 0.0;
     }
@@ -577,9 +794,11 @@ void Ping::updateStatistics() {
     sentValueLabel->setText(QString::number(statistics.packetsSent));
     receivedValueLabel->setText(QString::number(statistics.packetsReceived));
     lossValueLabel->setText(QString("%1%").arg(statistics.lossPercentage, 0, 'f', 1));
-    minValueLabel->setText(QString("%1ms").arg(statistics.minTime == 999999.0 ? 0.0 : statistics.minTime, 0, 'f', 1));
+    double showMin = (statistics.minTime == 999999.0) ? 0.0 : statistics.minTime;
+    minValueLabel->setText(QString("%1ms").arg(showMin, 0, 'f', 1));
     maxValueLabel->setText(QString("%1ms").arg(statistics.maxTime, 0, 'f', 1));
     avgValueLabel->setText(QString("%1ms").arg(statistics.avgTime, 0, 'f', 1));
+    jitterValueLabel->setText(QString("%1ms").arg(statistics.jitter, 0, 'f', 1));
 }
 
 void Ping::updateStatus(const QString& message, bool isError) {

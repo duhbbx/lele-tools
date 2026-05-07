@@ -34,6 +34,26 @@ struct PingResult {
     QString errorMessage;
 };
 
+// 实时 RTT 折线图（轻量自绘控件，避免引入 QtCharts）
+class RttChart : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit RttChart(QWidget* parent = nullptr);
+    void addPoint(double rttMs, bool success);
+    void clear();
+    void setMaxPoints(int n) { m_maxPoints = n; }
+
+protected:
+    void paintEvent(QPaintEvent* e) override;
+    QSize sizeHint() const override { return QSize(400, 140); }
+
+private:
+    struct P { double rtt; bool ok; };
+    QList<P> m_points;
+    int m_maxPoints = 200;
+};
+
 struct PingStatistics {
     int packetsSent;
     int packetsReceived;
@@ -42,6 +62,7 @@ struct PingStatistics {
     double minTime;
     double maxTime;
     double avgTime;
+    double jitter;       // RTT 抖动（标准差）
     QString resolvedIP;
 };
 
@@ -87,16 +108,16 @@ private:
     QSplitter* mainSplitter;
     
     // 输入区域
-    QGroupBox* inputGroup;
+    QWidget* inputGroup;
     QGridLayout* inputLayout;
     QLabel* hostLabel;
     QLineEdit* hostEdit;
     QPushButton* resolveBtn;
     QLabel* ipLabel;
     QLabel* ipValueLabel;
-    
+
     // 控制区域
-    QGroupBox* controlGroup;
+    QWidget* controlGroup;
     QHBoxLayout* controlLayout;
     QLabel* countLabel;
     QSpinBox* countSpinBox;
@@ -121,7 +142,7 @@ private:
     QTableWidget* resultsTable;
     
     // 统计区域
-    QGroupBox* statsGroup;
+    QWidget* statsGroup;
     QGridLayout* statsLayout;
     QLabel* sentLabel;
     QLabel* sentValueLabel;
@@ -135,6 +156,9 @@ private:
     QLabel* maxValueLabel;
     QLabel* avgLabel;
     QLabel* avgValueLabel;
+    QLabel* jitterLabel;
+    QLabel* jitterValueLabel;
+    RttChart* rttChart;
     
     // 进度显示
     QProgressBar* progressBar;
@@ -149,6 +173,8 @@ private:
     int currentSequence;
     QString currentHost;
     QString resolvedIP;
+    int attemptsMade;        // 实际发起的 ping 次数（用于正确计数）
+    bool useIPv6;
 };
 
 #endif // PING_H
