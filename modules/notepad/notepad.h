@@ -146,6 +146,7 @@ private:
     ResizeHandle m_currentHandle;
     QPoint m_dragStartPos;
     QRect m_originalImageRect;
+    double m_originalAspectRatio = 1.0;   // 原图宽 / 高，用于按比例缩放
     QTextCursor m_selectedImageCursor;
     QTextImageFormat m_selectedImageFormat;
 };
@@ -196,6 +197,7 @@ protected:
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
 private slots:
     void onSearchTextChanged();
@@ -222,6 +224,7 @@ private slots:
     void onAutoSaveTimer();
     void onImagePasted(const QPixmap& pixmap);
     void onFileDropped(const QString& filePath);
+    void onExportPdf();
 
 private:
     void setupUI();
@@ -266,7 +269,8 @@ private:
     // 右侧编辑区域
     QWidget* editorWidget;
     QVBoxLayout* editorLayout;
-    QToolBar* toolbar;
+    QToolBar* toolbar;        // 第一行：字体 / B I U / 颜色
+    QToolBar* toolbar2;       // 第二行：对齐 / 插入 / 保存 / 导出
     QWidget* editorContainer; // 包含行号和编辑器的容器
     QHBoxLayout* editorContainerLayout;
 
@@ -287,6 +291,7 @@ private:
     QPushButton* insertImageBtn;
     QPushButton* insertMediaBtn;
     QPushButton* saveBtn;
+    QPushButton* exportPdfBtn;
 
     // 数据相关
     SqliteWrapper::SqliteManager* dbManager;

@@ -1,15 +1,42 @@
 #include "notepad.h"
+#include "../markdown-to-pdf/pdfoutlineinjector.h"
+
+#include <QAbstractTextDocumentLayout>
+#include <QApplication>
+#include <QBuffer>
 #include <QDebug>
-#include <QStandardPaths>
+#include <QDesktopServices>
+#include <QFontMetricsF>
+#include <QPainter>
+#include <QPdfWriter>
+#include <QPrinter>
+#include <QScrollBar>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QTextCharFormat>
+#include <QStandardPaths>
 #include <QTextBlockFormat>
+#include <QTextCharFormat>
 #include <QTextCursor>
-#include <QBuffer>
-#include <QScrollBar>
+#include <QTextDocument>
+#include <QTextFragment>
+#include <QUrl>
+#include <functional>
 
 REGISTER_DYNAMICOBJECT(Notepad);
+
+namespace {
+// 各平台默认中文字体
+QString defaultEditorFontFamily()
+{
+#if defined(Q_OS_WIN)
+    return QStringLiteral("Microsoft YaHei");      // 微软雅黑
+#elif defined(Q_OS_MAC) || defined(Q_OS_IOS)
+    return QStringLiteral("PingFang SC");          // 苹方
+#else
+    return QStringLiteral("Noto Sans CJK SC");     // Linux 常见中文字体
+#endif
+}
+}  // namespace
 
 // RichTextEdit 实现
 RichTextEdit::RichTextEdit(QWidget* parent) : QTextEdit(parent),
@@ -249,6 +276,9 @@ void RichTextEdit::mousePressEvent(QMouseEvent* event) {
                 m_currentHandle = handle;
                 m_dragStartPos = event->pos();
                 m_originalImageRect = imageRect;
+                m_originalAspectRatio = imageRect.height() > 0
+                    ? double(imageRect.width()) / imageRect.height()
+                    : 1.0;
                 m_selectedImageCursor = cursor;
                 m_selectedImageFormat = imageFormat;
 
@@ -276,64 +306,79 @@ void RichTextEdit::mousePressEvent(QMouseEvent* event) {
 
 void RichTextEdit::mouseMoveEvent(QMouseEvent* event) {
     if (m_isDragging && m_currentHandle != None) {
-        // 计算新的图片尺寸
-        QPoint delta = event->pos() - m_dragStartPos;
-        QRect newRect = m_originalImageRect;
+        // 默认按比例缩放，按住 Shift 才允许自由拉伸（拒绝默认乱变形）
+        const QPoint delta = event->pos() - m_dragStartPos;
+        const QRect orig = m_originalImageRect;
+        const double aspect = m_originalAspectRatio > 0 ? m_originalAspectRatio : 1.0;
+        const bool freeResize = event->modifiers() & Qt::ShiftModifier;
 
+        double newW = orig.width();
+        double newH = orig.height();
+
+        // 1) 按手柄分发：直接修改对应方向的尺寸
         switch (m_currentHandle) {
-        case TopLeft:
-            newRect.setTopLeft(newRect.topLeft() + delta);
-            break;
-        case TopRight:
-            newRect.setTopRight(newRect.topRight() + delta);
-            break;
-        case BottomLeft:
-            newRect.setBottomLeft(newRect.bottomLeft() + delta);
-            break;
-        case BottomRight:
-            newRect.setBottomRight(newRect.bottomRight() + delta);
-            break;
-        case Top:
-            newRect.setTop(newRect.top() + delta.y());
-            break;
-        case Bottom:
-            newRect.setBottom(newRect.bottom() + delta.y());
-            break;
-        case Left:
-            newRect.setLeft(newRect.left() + delta.x());
-            break;
-        case Right:
-            newRect.setRight(newRect.right() + delta.x());
-            break;
-        default:
-            break;
+        case Right:        newW = orig.width()  + delta.x(); break;
+        case Left:         newW = orig.width()  - delta.x(); break;
+        case Bottom:       newH = orig.height() + delta.y(); break;
+        case Top:          newH = orig.height() - delta.y(); break;
+        case BottomRight:  newW = orig.width() + delta.x(); newH = orig.height() + delta.y(); break;
+        case BottomLeft:   newW = orig.width() - delta.x(); newH = orig.height() + delta.y(); break;
+        case TopRight:     newW = orig.width() + delta.x(); newH = orig.height() - delta.y(); break;
+        case TopLeft:      newW = orig.width() - delta.x(); newH = orig.height() - delta.y(); break;
+        default: break;
         }
 
-        // 限制最小尺寸
-        if (newRect.width() < 50)
-            newRect.setWidth(50);
-        if (newRect.height() < 50)
-            newRect.setHeight(50);
+        // 2) 锁比例（Shift 才放开）
+        if (!freeResize) {
+            switch (m_currentHandle) {
+            case Right: case Left:
+                newH = newW / aspect;
+                break;
+            case Top: case Bottom:
+                newW = newH * aspect;
+                break;
+            default: {
+                // 角点：按"鼠标移动较多的那个轴"为主，另一轴按比例换算 — 跟手感一致
+                double dxRel = qAbs(newW - orig.width())  / qMax(1, orig.width());
+                double dyRel = qAbs(newH - orig.height()) / qMax(1, orig.height());
+                if (dxRel >= dyRel) newH = newW / aspect;
+                else                newW = newH * aspect;
+                break;
+            }
+            }
+        }
 
-        // 限制最大尺寸
-        if (newRect.width() > 800)
-            newRect.setWidth(800);
-        if (newRect.height() > 600)
-            newRect.setHeight(600);
+        // 3) 钳制：保持比例的前提下不破坏比例
+        const double minDim = 40, maxDim = 2000;
+        if (newW < minDim) { newW = minDim; if (!freeResize) newH = newW / aspect; }
+        if (newH < minDim) { newH = minDim; if (!freeResize) newW = newH * aspect; }
+        if (newW > maxDim) { newW = maxDim; if (!freeResize) newH = newW / aspect; }
+        if (newH > maxDim) { newH = maxDim; if (!freeResize) newW = newH * aspect; }
 
-        // 更新图片格式
-        QTextCursor editCursor = m_selectedImageCursor;
-        editCursor.select(QTextCursor::WordUnderCursor);
-
+        // 4) 写回 charFormat — 精确选中图片这个字符（长度 1），避免覆盖周围文本
         QTextImageFormat newFormat = m_selectedImageFormat;
-        newFormat.setWidth(newRect.width());
-        newFormat.setHeight(newRect.height());
+        newFormat.setWidth(qRound(newW));
+        newFormat.setHeight(qRound(newH));
 
-        editCursor.setCharFormat(newFormat);
+        QTextCursor c(document());
+        int pos = m_selectedImageCursor.position();
+        // 图片字符可能位于 pos 或 pos-1（取决于点击落点），探测一下
+        c.setPosition(pos);
+        c.setPosition(pos + 1, QTextCursor::KeepAnchor);
+        if (!c.charFormat().isImageFormat() && pos > 0) {
+            c.setPosition(pos - 1);
+            c.setPosition(pos, QTextCursor::KeepAnchor);
+        }
+        if (c.charFormat().isImageFormat()) {
+            c.setCharFormat(newFormat);
+        } else {
+            // 兜底：旧逻辑
+            QTextCursor fallback = m_selectedImageCursor;
+            fallback.select(QTextCursor::WordUnderCursor);
+            fallback.setCharFormat(newFormat);
+        }
 
-        // 发出图片调整信号
         emit imageResized();
-
         event->accept();
         return;
     } else {
@@ -384,13 +429,16 @@ QRect RichTextEdit::getImageRect(const QTextCursor& cursor) {
         return QRect();
     }
 
-    // 获取光标在视口中的位置
-    QRect cRect = cursorRect(cursor);
+    // QTextCursor::charFormat() 返回的是光标"左侧"那个字符的格式，
+    // 所以这里 cursor 实际位于图片**之后**。要得到图片左边缘，需要把
+    // 辅助光标退回 1 位（图片字符长度始终是 1）。
+    QTextCursor before(document());
+    int pos = cursor.position();
+    before.setPosition(pos > 0 ? pos - 1 : pos);
+    QRect cRect = cursorRect(before);
 
-    // 使用格式中的尺寸，如果没有则使用原始图片尺寸
     int width = format.width();
     int height = format.height();
-
     if (width <= 0 || height <= 0) {
         QPixmap pixmap(format.name());
         if (!pixmap.isNull()) {
@@ -406,50 +454,57 @@ QRect RichTextEdit::getImageRect(const QTextCursor& cursor) {
 }
 
 RichTextEdit::ResizeHandle RichTextEdit::getResizeHandle(const QPoint& pos, const QRect& imageRect) {
-    const int handleSize = 8;
-    const int margin = 4;
+    // 把命中区域加大（hitSize > 视觉手柄 visSize），实际触发更宽容
+    const int hitSize = 16;
+    const int half = hitSize / 2;
 
-    // 检查角落
-    if (QRect(imageRect.topLeft() - QPoint(margin, margin), QSize(handleSize, handleSize)).contains(pos))
-        return TopLeft;
-    if (QRect(imageRect.topRight() - QPoint(handleSize - margin, margin), QSize(handleSize, handleSize)).contains(pos))
-        return TopRight;
-    if (QRect(imageRect.bottomLeft() - QPoint(margin, handleSize - margin), QSize(handleSize, handleSize)).contains(pos))
-        return BottomLeft;
-    if (QRect(imageRect.bottomRight() - QPoint(handleSize - margin, handleSize - margin), QSize(handleSize, handleSize)).contains(pos))
-        return BottomRight;
+    auto hit = [&](const QPoint& center) {
+        return QRect(center.x() - half, center.y() - half, hitSize, hitSize).contains(pos);
+    };
 
-    // 检查边缘
-    if (QRect(imageRect.left() - margin, imageRect.top() + handleSize, handleSize, imageRect.height() - 2 * handleSize).contains(pos))
-        return Left;
-    if (QRect(imageRect.right() - margin, imageRect.top() + handleSize, handleSize, imageRect.height() - 2 * handleSize).contains(pos))
-        return Right;
-    if (QRect(imageRect.left() + handleSize, imageRect.top() - margin, imageRect.width() - 2 * handleSize, handleSize).contains(pos))
-        return Top;
-    if (QRect(imageRect.left() + handleSize, imageRect.bottom() - margin, imageRect.width() - 2 * handleSize, handleSize).contains(pos))
-        return Bottom;
+    if (hit(imageRect.topLeft()))     return TopLeft;
+    if (hit(imageRect.topRight()))    return TopRight;
+    if (hit(imageRect.bottomLeft()))  return BottomLeft;
+    if (hit(imageRect.bottomRight())) return BottomRight;
+
+    QPoint midL(imageRect.left(),  imageRect.center().y());
+    QPoint midR(imageRect.right(), imageRect.center().y());
+    QPoint midT(imageRect.center().x(), imageRect.top());
+    QPoint midB(imageRect.center().x(), imageRect.bottom());
+    if (hit(midL)) return Left;
+    if (hit(midR)) return Right;
+    if (hit(midT)) return Top;
+    if (hit(midB)) return Bottom;
 
     return None;
 }
 
 void RichTextEdit::drawResizeHandles(QPainter& painter, const QRect& imageRect) {
-    const int handleSize = 8;
-    const int margin = 4;
+    const int visSize = 10;
+    const int half = visSize / 2;
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
-    painter.setPen(QPen(Qt::blue, 2));
-    painter.setBrush(Qt::white);
+    // 蓝色选择框
+    painter.setPen(QPen(QColor(34, 139, 230), 2, Qt::SolidLine));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(imageRect.adjusted(-1, -1, 1, 1));
 
-    // 绘制角落句柄
-    painter.drawRect(QRect(imageRect.topLeft() - QPoint(margin, margin), QSize(handleSize, handleSize)));
-    painter.drawRect(QRect(imageRect.topRight() - QPoint(handleSize - margin, margin), QSize(handleSize, handleSize)));
-    painter.drawRect(QRect(imageRect.bottomLeft() - QPoint(margin, handleSize - margin), QSize(handleSize, handleSize)));
-    painter.drawRect(QRect(imageRect.bottomRight() - QPoint(handleSize - margin, handleSize - margin), QSize(handleSize, handleSize)));
+    // 8 个手柄：白底蓝边
+    auto drawHandle = [&](const QPoint& c) {
+        QRect r(c.x() - half, c.y() - half, visSize, visSize);
+        painter.setBrush(Qt::white);
+        painter.setPen(QPen(QColor(34, 139, 230), 2));
+        painter.drawRoundedRect(r, 2, 2);
+    };
 
-    // 绘制边缘句柄
-    painter.drawRect(QRect(imageRect.left() - margin, imageRect.center().y() - handleSize / 2, handleSize, handleSize));
-    painter.drawRect(QRect(imageRect.right() - margin, imageRect.center().y() - handleSize / 2, handleSize, handleSize));
-    painter.drawRect(QRect(imageRect.center().x() - handleSize / 2, imageRect.top() - margin, handleSize, handleSize));
-    painter.drawRect(QRect(imageRect.center().x() - handleSize / 2, imageRect.bottom() - margin, handleSize, handleSize));
+    drawHandle(imageRect.topLeft());
+    drawHandle(imageRect.topRight());
+    drawHandle(imageRect.bottomLeft());
+    drawHandle(imageRect.bottomRight());
+    drawHandle(QPoint(imageRect.left(),  imageRect.center().y()));
+    drawHandle(QPoint(imageRect.right(), imageRect.center().y()));
+    drawHandle(QPoint(imageRect.center().x(), imageRect.top()));
+    drawHandle(QPoint(imageRect.center().x(), imageRect.bottom()));
 }
 
 void RichTextEdit::setCursorForHandle(ResizeHandle handle) {
@@ -497,11 +552,14 @@ Notepad::Notepad() : QWidget(nullptr), DynamicObjectBase(),
     mediaStorageBasePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/notepad_media";
     createMediaDirectory(mediaStorageBasePath);
 
-    // 设置自动保存定时器
+    // 设置自动保存定时器（缩短为 3 秒，丢失更新窗口更小）
     autoSaveTimer = new QTimer(this);
-    autoSaveTimer->setSingleShot(false); // 设置为重复定时器
+    autoSaveTimer->setSingleShot(false);
     connect(autoSaveTimer, &QTimer::timeout, this, &Notepad::onAutoSaveTimer);
-    autoSaveTimer->start(10 * 1000); // 每3秒检查一次
+    autoSaveTimer->start(3 * 1000);
+
+    // 失焦立即保存：编辑器失去焦点（点别处、切窗口、切笔记前一刻）就 flush 一次
+    contentEdit->installEventFilter(this);
 
     loadNotes();
     updateButtonStates();
@@ -602,17 +660,31 @@ void Notepad::setupEditorArea() {
 
     // 内容编辑器
     contentEdit = new RichTextEdit();
-    contentEdit->setPlaceholderText(tr("开始编写你的笔记..."));
+    contentEdit->setPlaceholderText(
+        tr("开始编写你的笔记...\n\n"
+           "提示：插入图片后，点击图片可显示蓝色拖拽手柄；按住 Ctrl + 滚轮可整体缩放；"
+           "右键图片有 200/400/600px 与原始尺寸快捷菜单。"));
     contentEdit->setAcceptRichText(true);
+    {
+        QFont editorFont;
+        // 把当前平台的默认中文字体放到 fallback 链最前面
+        editorFont.setFamilies({defaultEditorFontFamily(),
+                                QStringLiteral("PingFang SC"),
+                                QStringLiteral("Microsoft YaHei"),
+                                QStringLiteral("Helvetica Neue"),
+                                QStringLiteral("sans-serif")});
+        editorFont.setPointSize(13);
+        contentEdit->setFont(editorFont);
+    }
     contentEdit->setStyleSheet(
         "QTextEdit {"
-        "    border: 1px solid #e0e0e0;"
-        "    border-left: none;"
-        "    padding: 8px;"
-        "    font-family: 'Consolas', 'Monaco', monospace;"
-        "    font-size: 12px;"
-        "    line-height: 1.4;"
+        "    border: 1px solid #d0d7de;"
+        "    border-radius: 6px;"
+        "    padding: 14px 18px;"
+        "    background: #ffffff;"
+        "    selection-background-color: #b8d4ff;"
         "}"
+        "QTextEdit:focus { border-color: #228be6; }"
     );
 
     // 连接信号
@@ -639,6 +711,7 @@ void Notepad::setupEditorArea() {
     editorContainerLayout->addWidget(contentEdit);
 
     editorLayout->addWidget(toolbar);
+    editorLayout->addWidget(toolbar2);
     editorLayout->addWidget(editorContainer);
 }
 
@@ -677,12 +750,40 @@ void Notepad::keyPressEvent(QKeyEvent* event) {
 }
 
 void Notepad::setupToolbar() {
+    // 共用样式（两个工具栏一致）
+    static const QString kToolbarCss = QStringLiteral(
+        "QToolBar { spacing: 3px; padding: 4px 6px; border: none;"
+        "           background: #f8f9fa; }"
+        "QToolBar QPushButton {"
+        "  padding: 4px 9px; min-height: 24px; border: 1px solid transparent;"
+        "  border-radius: 4px; color: #343a40; background: transparent; }"
+        "QToolBar QPushButton:hover {"
+        "  background: #e7f5ff; border-color: #d0ebff; }"
+        "QToolBar QPushButton:pressed { background: #d0ebff; }"
+        "QToolBar QPushButton:checked {"
+        "  background: #d0ebff; border-color: #74c0fc; color: #1864ab; }"
+        "QToolBar QPushButton:disabled { color: #adb5bd; }"
+        "QToolBar QSpinBox, QToolBar QFontComboBox {"
+        "  padding: 2px 4px; border: 1px solid #ced4da; border-radius: 4px; background:#fff; }"
+        "QToolBar QLabel { color: #495057; padding: 0 4px; background: transparent; }"
+        "QToolBar::separator { background: #dee2e6; width: 1px; margin: 4px 4px; }"
+    );
+
     toolbar = new QToolBar();
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar->setIconSize(QSize(16, 16));
+    toolbar->setMovable(false);
+    toolbar->setStyleSheet(kToolbarCss);
+
+    toolbar2 = new QToolBar();
+    toolbar2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar2->setIconSize(QSize(16, 16));
+    toolbar2->setMovable(false);
+    toolbar2->setStyleSheet(kToolbarCss + "QToolBar { border-bottom: 1px solid #dee2e6; }");
 
     // 字体设置
     fontCombo = new QFontComboBox();
-    fontCombo->setCurrentFont(QFont("Microsoft YaHei"));
+    fontCombo->setCurrentFont(QFont(defaultEditorFontFamily()));
     connect(fontCombo, &QFontComboBox::currentFontChanged, this, &Notepad::onFontChanged);
 
     fontSizeSpinBox = new QSpinBox();
@@ -691,60 +792,90 @@ void Notepad::setupToolbar() {
     fontSizeSpinBox->setSuffix(tr("pt"));
     connect(fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &Notepad::onFontSizeChanged);
 
-    // 文本样式按钮
+    // 文本样式按钮（用 setProperty + 字体属性，避免覆盖工具栏 CSS 的 hover/checked 状态）
+    auto styleBtn = [](QPushButton* btn, const char* css) {
+        btn->setStyleSheet(QString::fromLatin1(
+            "QPushButton { %1 padding: 4px 9px; min-width: 22px;"
+            "              border: 1px solid transparent; border-radius: 4px; }"
+            "QPushButton:hover { background: #e7f5ff; border-color:#d0ebff; }"
+            "QPushButton:checked { background: #d0ebff; border-color:#74c0fc; color:#1864ab; }"
+        ).arg(css));
+    };
+
     boldBtn = new QPushButton(tr("B"));
     boldBtn->setCheckable(true);
-    boldBtn->setStyleSheet("QPushButton { font-weight: bold; }");
+    boldBtn->setToolTip(tr("加粗 (Ctrl+B)"));
+    styleBtn(boldBtn, "font-weight: bold;");
     connect(boldBtn, &QPushButton::clicked, this, &Notepad::onBoldClicked);
 
     italicBtn = new QPushButton(tr("I"));
     italicBtn->setCheckable(true);
-    italicBtn->setStyleSheet("QPushButton { font-style: italic; }");
+    italicBtn->setToolTip(tr("斜体 (Ctrl+I)"));
+    styleBtn(italicBtn, "font-style: italic;");
     connect(italicBtn, &QPushButton::clicked, this, &Notepad::onItalicClicked);
 
     underlineBtn = new QPushButton(tr("U"));
     underlineBtn->setCheckable(true);
-    underlineBtn->setStyleSheet("QPushButton { text-decoration: underline; }");
+    underlineBtn->setToolTip(tr("下划线 (Ctrl+U)"));
+    styleBtn(underlineBtn, "text-decoration: underline;");
     connect(underlineBtn, &QPushButton::clicked, this, &Notepad::onUnderlineClicked);
 
-    // 颜色按钮
-    textColorBtn = new QPushButton(tr("🎨 字体颜色"));
+    // 颜色按钮（纯 emoji + tooltip，节省工具栏宽度）
+    textColorBtn = new QPushButton(tr("🎨"));
+    textColorBtn->setToolTip(tr("字体颜色"));
     connect(textColorBtn, &QPushButton::clicked, this, &Notepad::onTextColorClicked);
 
-    bgColorBtn = new QPushButton(tr("🖍️ 背景颜色"));
+    bgColorBtn = new QPushButton(tr("🖍️"));
+    bgColorBtn->setToolTip(tr("背景颜色"));
     connect(bgColorBtn, &QPushButton::clicked, this, &Notepad::onBackgroundColorClicked);
 
     // 对齐按钮
-    alignLeftBtn = new QPushButton(tr("⬅️"));
+    alignLeftBtn = new QPushButton(tr("⬅"));
     alignLeftBtn->setCheckable(true);
     alignLeftBtn->setChecked(true);
+    alignLeftBtn->setToolTip(tr("左对齐"));
     connect(alignLeftBtn, &QPushButton::clicked, this, &Notepad::onAlignLeftClicked);
 
-    alignCenterBtn = new QPushButton(tr("⬅️➡️"));
+    alignCenterBtn = new QPushButton(tr("⇔"));
     alignCenterBtn->setCheckable(true);
+    alignCenterBtn->setToolTip(tr("居中对齐"));
     connect(alignCenterBtn, &QPushButton::clicked, this, &Notepad::onAlignCenterClicked);
 
-    alignRightBtn = new QPushButton(tr("➡️"));
+    alignRightBtn = new QPushButton(tr("➡"));
     alignRightBtn->setCheckable(true);
+    alignRightBtn->setToolTip(tr("右对齐"));
     connect(alignRightBtn, &QPushButton::clicked, this, &Notepad::onAlignRightClicked);
 
-    alignJustifyBtn = new QPushButton(tr("⬅️➡️"));
+    alignJustifyBtn = new QPushButton(tr("≡"));
     alignJustifyBtn->setCheckable(true);
+    alignJustifyBtn->setToolTip(tr("两端对齐"));
     connect(alignJustifyBtn, &QPushButton::clicked, this, &Notepad::onAlignJustifyClicked);
 
-    // 媒体插入按钮
-    insertImageBtn = new QPushButton(tr("🖼️ 插入图片"));
+    // 媒体插入按钮（纯 emoji + tooltip）
+    insertImageBtn = new QPushButton(tr("🖼️"));
+    insertImageBtn->setToolTip(tr("插入图片"));
     connect(insertImageBtn, &QPushButton::clicked, this, &Notepad::onInsertImage);
 
-    insertMediaBtn = new QPushButton(tr("🎬 插入媒体"));
+    insertMediaBtn = new QPushButton(tr("🎬"));
+    insertMediaBtn->setToolTip(tr("插入媒体"));
     connect(insertMediaBtn, &QPushButton::clicked, this, &Notepad::onInsertMedia);
 
-    // 保存按钮
+    // 保存 + 导出
     saveBtn = new QPushButton(tr("💾 保存"));
-    saveBtn->setStyleSheet("QPushButton { background-color: #007bff; color: white; } QPushButton:hover { background-color: #0056b3; }");
+    saveBtn->setStyleSheet(
+        "QPushButton { background:#228be6; color:#fff; border:none;"
+        "              padding: 5px 12px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton:hover { background:#1c7ed6; }"
+        "QPushButton:pressed { background:#1971c2; }"
+    );
+    saveBtn->setToolTip(tr("保存当前笔记 (Ctrl+S)"));
     connect(saveBtn, &QPushButton::clicked, this, &Notepad::onSaveNote);
 
-    // 添加到工具栏
+    exportPdfBtn = new QPushButton(tr("📄 导出 PDF"));
+    exportPdfBtn->setToolTip(tr("把当前笔记另存为 PDF 文件"));
+    connect(exportPdfBtn, &QPushButton::clicked, this, &Notepad::onExportPdf);
+
+    // 第一行：字体 / 字号 / B I U / 颜色
     toolbar->addWidget(new QLabel(tr("字体:")));
     toolbar->addWidget(fontCombo);
     toolbar->addWidget(new QLabel(tr("大小:")));
@@ -756,16 +887,23 @@ void Notepad::setupToolbar() {
     toolbar->addSeparator();
     toolbar->addWidget(textColorBtn);
     toolbar->addWidget(bgColorBtn);
-    toolbar->addSeparator();
-    toolbar->addWidget(alignLeftBtn);
-    toolbar->addWidget(alignCenterBtn);
-    toolbar->addWidget(alignRightBtn);
-    toolbar->addWidget(alignJustifyBtn);
-    toolbar->addSeparator();
-    toolbar->addWidget(insertImageBtn);
-    toolbar->addWidget(insertMediaBtn);
-    toolbar->addSeparator();
-    toolbar->addWidget(saveBtn);
+
+    // 第二行：对齐 / 插入 / 保存 / 导出
+    toolbar2->addWidget(alignLeftBtn);
+    toolbar2->addWidget(alignCenterBtn);
+    toolbar2->addWidget(alignRightBtn);
+    toolbar2->addWidget(alignJustifyBtn);
+    toolbar2->addSeparator();
+    toolbar2->addWidget(insertImageBtn);
+    toolbar2->addWidget(insertMediaBtn);
+    // 用 stretch widget 把保存/导出推到右边
+    {
+        auto* spacer = new QWidget();
+        spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        toolbar2->addWidget(spacer);
+    }
+    toolbar2->addWidget(saveBtn);
+    toolbar2->addWidget(exportPdfBtn);
 }
 
 void Notepad::setupStatusBar() {
@@ -945,7 +1083,10 @@ void Notepad::onItemSelectionChanged() {
     if (selectedItems.size() == 1) {
         onNoteSelectionChanged();
     } else if (selectedItems.size() > 1) {
-        // 多选时，清空编辑器
+        // 多选时清空编辑器前，先把当前笔记的脏数据持久化，避免静默丢失
+        if (hasUnsavedChanges && currentNoteId != -1) {
+            saveCurrentNote();
+        }
         currentNoteId = -1;
         contentEdit->clear();
         hasUnsavedChanges = false;
@@ -1292,6 +1433,187 @@ void Notepad::onImagePasted(const QPixmap& pixmap) {
     } else {
         // updateStatus(tr("保存粘贴图片失败"), true); // 移除状态栏
     }
+}
+
+bool Notepad::eventFilter(QObject* obj, QEvent* event)
+{
+    // 当编辑器失去焦点时立刻持久化（防止 3s 自动保存窗口内的丢失）
+    if (event->type() == QEvent::FocusOut && obj == contentEdit) {
+        if (hasUnsavedChanges && currentNoteId != -1) {
+            saveCurrentNote();
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
+
+void Notepad::onExportPdf()
+{
+    // 必要时先保存
+    if (hasUnsavedChanges && currentNoteId != -1) {
+        saveCurrentNote();
+    }
+    if (contentEdit->document()->isEmpty()) {
+        QMessageBox::information(this, tr("提示"), tr("当前笔记为空，无内容可导出。"));
+        return;
+    }
+
+    // 默认文件名：用当前笔记标题（如果能从 notes 表里取到）
+    QString suggestedName = tr("笔记");
+    for (const NoteItem& n : notes) {
+        if (n.id == currentNoteId) {
+            QString t = n.title.trimmed();
+            if (!t.isEmpty()) suggestedName = t;
+            break;
+        }
+    }
+    QString defaultPath =
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+        + "/" + suggestedName + ".pdf";
+    QString savePath = QFileDialog::getSaveFileName(
+        this, tr("导出为 PDF"), defaultPath, tr("PDF 文件 (*.pdf)"));
+    if (savePath.isEmpty()) return;
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(savePath);
+    printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageMargins(QMarginsF(20, 20, 20, 20), QPageLayout::Millimeter);
+
+    QSizeF pageSizePx = printer.pageRect(QPrinter::DevicePixel).size();
+
+    // 页脚：用 QFontMetricsF 在 printer 设备上拿真实像素高度，避免 12pt 文字被裁
+    QFont footerFont;
+    footerFont.setFamilies({defaultEditorFontFamily(),
+                            QStringLiteral("PingFang SC"),
+                            QStringLiteral("Microsoft YaHei"),
+                            QStringLiteral("sans-serif")});
+    footerFont.setPointSize(9);
+    QFontMetricsF footerFm(footerFont, &printer);
+    qreal footerBandH = footerFm.height() * 2.2;
+
+    // 正文实际可用区域要预留页脚带
+    QSizeF bodyPageSize(pageSizePx.width(), pageSizePx.height() - footerBandH);
+
+    // 用编辑器文档的克隆，避免改 layout/paintDevice 影响 UI
+    QTextDocument* doc = contentEdit->document()->clone();
+    doc->documentLayout()->setPaintDevice(&printer);  // 关键：让 pt → 像素映射用 printer 真实 DPI
+
+    // A4 上 12pt 文字偏小、不舒适，按比例放大每段文字与默认字号
+    constexpr qreal kPdfScale = 1.4;
+    {
+        QFont df = doc->defaultFont();
+        int pt = df.pointSize();
+        if (pt <= 0) pt = 12;
+        df.setPointSizeF(pt * kPdfScale);
+        doc->setDefaultFont(df);
+
+        for (auto block = doc->begin(); block.isValid(); block = block.next()) {
+            for (auto it = block.begin(); !it.atEnd(); ++it) {
+                QTextFragment frag = it.fragment();
+                if (!frag.isValid()) continue;
+                QTextCharFormat fmt = frag.charFormat();
+                qreal cur = fmt.fontPointSize();
+                if (cur <= 0) {
+                    QFont f = fmt.font();
+                    cur = f.pointSizeF();
+                    if (cur <= 0) cur = 12;
+                }
+                fmt.setFontPointSize(cur * kPdfScale);
+                QTextCursor c(doc);
+                c.setPosition(frag.position());
+                c.setPosition(frag.position() + frag.length(), QTextCursor::KeepAnchor);
+                c.mergeCharFormat(fmt);
+            }
+        }
+    }
+
+    doc->setPageSize(bodyPageSize);
+
+    // ── 收集书签条目 ──
+    // 1) 优先用文档里的 heading block（headingLevel > 0）
+    struct HItem { int level; QString text; int page; };
+    QList<HItem> headings;
+    for (auto block = doc->begin(); block.isValid(); block = block.next()) {
+        int level = block.blockFormat().headingLevel();
+        if (level <= 0 || level > 6) continue;
+        QString text = block.text().trimmed();
+        if (text.isEmpty()) continue;
+        QRectF r = doc->documentLayout()->blockBoundingRect(block);
+        int page = bodyPageSize.height() > 0
+                       ? int(r.y() / bodyPageSize.height()) : 0;
+        headings.append({level, text, page});
+    }
+    // 2) 没找到 heading 的话，至少给整个笔记加一条根书签（用标题）
+    if (headings.isEmpty()) {
+        headings.append({1, suggestedName, 0});
+    }
+
+    // ── 按页渲染：正文 + 底部页码 ──
+    int totalPages = doc->pageCount();
+    QPainter painter(&printer);
+    for (int i = 0; i < totalPages; ++i) {
+        if (i > 0) printer.newPage();
+
+        painter.save();
+        painter.translate(0, -i * bodyPageSize.height());
+        QRectF clip(0, i * bodyPageSize.height(),
+                    bodyPageSize.width(), bodyPageSize.height());
+        painter.setClipRect(clip);
+        doc->drawContents(&painter, clip);
+        painter.restore();
+
+        painter.save();
+        painter.setFont(footerFont);
+        painter.setPen(QColor(120, 120, 120));
+        QRectF footerRect(0, pageSizePx.height() - footerBandH,
+                          pageSizePx.width(), footerBandH);
+        painter.drawText(footerRect, Qt::AlignCenter,
+            tr("第 %1 / %2 页").arg(i + 1).arg(totalPages));
+        painter.restore();
+    }
+    painter.end();
+    delete doc;
+
+    // ── 注入 PDF 侧边栏书签（incremental update）──
+    {
+        // 把扁平 heading 列表按 level 嵌套成树
+        std::function<void(int,
+                           QList<HItem>::const_iterator&,
+                           QList<HItem>::const_iterator,
+                           QList<pdfoutline::Item>&)> build;
+        build = [&](int parentLevel,
+                    QList<HItem>::const_iterator& it,
+                    QList<HItem>::const_iterator end,
+                    QList<pdfoutline::Item>& out) {
+            while (it != end && it->level > parentLevel) {
+                pdfoutline::Item node;
+                node.title = it->text;
+                node.page0 = it->page;
+                int myLevel = it->level;
+                ++it;
+                build(myLevel, it, end, node.children);
+                out.append(node);
+            }
+        };
+        QList<pdfoutline::Item> tree;
+        auto it = headings.cbegin();
+        build(0, it, headings.cend(), tree);
+        QString outlineErr;
+        pdfoutline::inject(savePath, tree, &outlineErr);
+    }
+
+    QMessageBox box(this);
+    box.setWindowTitle(tr("导出完成"));
+    box.setText(tr("PDF 已保存:\n%1").arg(savePath));
+    box.setIcon(QMessageBox::Information);
+    auto* openBtn = box.addButton(tr("打开 PDF"), QMessageBox::ActionRole);
+    auto* dirBtn = box.addButton(tr("打开所在目录"), QMessageBox::ActionRole);
+    box.addButton(QMessageBox::Ok);
+    box.exec();
+    if (box.clickedButton() == openBtn)
+        QDesktopServices::openUrl(QUrl::fromLocalFile(savePath));
+    else if (box.clickedButton() == dirBtn)
+        QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(savePath).absolutePath()));
 }
 
 void Notepad::onFileDropped(const QString& filePath) {
