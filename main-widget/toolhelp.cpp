@@ -152,6 +152,24 @@ void ToolHelp::init() {
         "Windows / macOS / Linux"
     };
 
+    s_helpData["Markdown to PDF"] = {
+        "Markdown 转 PDF",
+        "把 Markdown 文本渲染成 PDF，支持标题、列表、表格、代码块、引用、图片等。",
+        "1. 点\"打开 .md\"或拖入 Markdown 文件；也可直接在左侧编辑\n2. 右侧实时预览渲染效果\n3. 选页面尺寸 / 方向 / 字号 / 页边距，可勾选\"加页码\"\n4. 点\"导出 PDF\"另存为新文件",
+        "用 Qt QTextDocument::setMarkdown() 解析 GitHub 风格 Markdown，套用 CSS 样式后通过\nQPrinter（PDF 输出模式）+ QTextDocument::print() / drawContents 渲染到 PDF。\n勾选页码时按页手动绘制，可在底部加上\"第 X / Y 页\"。",
+        "图片若使用相对路径，请先\"打开 .md\"以正确解析。代码块无语法高亮，但保留等宽字体与背景色。",
+        "Windows / macOS / Linux"
+    };
+
+    s_helpData["Stamp Extractor"] = {
+        "抠图章工具",
+        "从带印章的照片中提取红色印章为透明背景 PNG，并支持重新着色。",
+        "1. 点击\"选择图片...\"或将带印章的照片拖入预览区\n2. 拖动\"最小红色强度\"和\"红色优势度\"滑块，左右两边实时对比\n3. 点击\"输出颜色\"色块可换成蓝、紫、黑等其他颜色\n4. 点击\"保存为图章\"自动写入 PDF 盖章工具的资源库",
+        "逐像素扫描判断 R 通道是否显著高于 G/B（即 redness = R - max(G,B)），按\"红色程度\"线性映射成 alpha，再将 RGB 替换为用户选定颜色。\n保存路径与 PDF Stamp & Sign 共享：QStandardPaths::AppDataLocation/pdf-stamp/。",
+        "建议使用对比度高、白纸背景的照片；颜色复杂的背景可能造成误抠。",
+        "Windows / macOS / Linux"
+    };
+
     s_helpData["PDF Stamp & Sign"] = {
         "PDF 盖章 / 签名",
         "打开 PDF，在任意位置加盖公章、加上签名与手写日期，并另存为新 PDF。",
