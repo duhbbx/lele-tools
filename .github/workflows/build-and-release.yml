@@ -1149,7 +1149,11 @@ jobs:
             if ("${{ github.ref }}" -like "refs/tags/v*") {
                 $version = "${{ github.ref_name }}".Substring(1)
             } else {
-                $version = "1.0.${{ github.run_number }}"
+                # patch 到 99 后自动 bump minor：run 100 → 1.1.0、200 → 1.2.0、213 → 1.2.13
+                $runNum = [int]"${{ github.run_number }}"
+                $minor = [math]::Floor($runNum / 100)
+                $patch = $runNum % 100
+                $version = "1.$minor.$patch"
             }
         }
         Write-Host "Version: $version"
@@ -1631,7 +1635,11 @@ jobs:
                 version="${{ github.ref_name }}"
                 version="${version#v}"
             else
-                version="1.0.${{ github.run_number }}"
+                # patch 到 99 后自动 bump minor：run 100 → 1.1.0、213 → 1.2.13
+                RUN_NUM=${{ github.run_number }}
+                MINOR=$((RUN_NUM / 100))
+                PATCH=$((RUN_NUM % 100))
+                version="1.${MINOR}.${PATCH}"
             fi
         fi
         echo "Version: $version"
@@ -1839,7 +1847,11 @@ jobs:
                 version="${{ github.ref_name }}"
                 version="${version#v}"
             else
-                version="1.0.${{ github.run_number }}"
+                # patch 到 99 后自动 bump minor：run 100 → 1.1.0、213 → 1.2.13
+                RUN_NUM=${{ github.run_number }}
+                MINOR=$((RUN_NUM / 100))
+                PATCH=$((RUN_NUM % 100))
+                version="1.${MINOR}.${PATCH}"
             fi
         fi
         echo "Version: $version"
@@ -1955,7 +1967,11 @@ jobs:
                 version="${{ github.ref_name }}"
                 version="${version#v}"
             else
-                version="1.0.${{ github.run_number }}"
+                # patch 到 99 后自动 bump minor：run 100 → 1.1.0、213 → 1.2.13
+                RUN_NUM=${{ github.run_number }}
+                MINOR=$((RUN_NUM / 100))
+                PATCH=$((RUN_NUM % 100))
+                version="1.${MINOR}.${PATCH}"
             fi
         fi
         echo "version=$version" >> $GITHUB_OUTPUT
