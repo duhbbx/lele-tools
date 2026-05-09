@@ -147,8 +147,8 @@ SET(MODULE_SOURCES ${SOURCES} ${COMMON_SOURCES})
 
 
 # 必需的Qt组件 (包含SQL用于SQLite，MySQL使用原生驱动)
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Concurrent Sql PrintSupport Svg)
 
 # Qt Pdf 可选支持（用于PDF盖章/签名工具，渲染PDF页面）
 option(WITH_QT_PDF "Enable Qt Pdf support for PDF stamp tool" ON)
@@ -285,7 +285,7 @@ target_compile_definitions(lele-tools PRIVATE
     APP_VERSION_PATCH=${PROJECT_VERSION_PATCH}
 )
 
-target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport ${QT_MULTIMEDIA_LIBS} ${QT_PDF_LIBS} yaml-cpp ScreenCaptureLib ip2region)
+target_link_libraries(lele-tools PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Sql Qt${QT_VERSION_MAJOR}::PrintSupport Qt${QT_VERSION_MAJOR}::Svg ${QT_MULTIMEDIA_LIBS} ${QT_PDF_LIBS} yaml-cpp ScreenCaptureLib ip2region)
 
 if(HAVE_QT_PDF)
     target_compile_definitions(lele-tools PRIVATE WITH_QT_PDF)

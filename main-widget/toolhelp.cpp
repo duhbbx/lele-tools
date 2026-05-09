@@ -152,6 +152,25 @@ void ToolHelp::init() {
         "Windows / macOS / Linux"
     };
 
+    s_helpData["Salary Calculator"] = {
+        "工资计算器",
+        "月度日历区分工作日 / 周末 / 节假日 / 调休，可标记请假/加班，自动计算应发、社保、个税、实发。",
+        "1. 选年月：左侧日历自动加载法定节假日（内置 2024–2026 数据）\n2. 点击任意日期切换「请假 → 加班 → 默认」；右键展开更多状态\n3. 在右侧填写税前月薪、社保/公积金比例、起征点、专项附加扣除\n4. 任何字段变化都即时重算，结果显示在「工资明细」卡片",
+        "节假日数据按国务院安排内置，调休工作日（周末上班）也会标记。\n出勤天数由用户标记的请假/加班 + 自动识别的节假日计算。\n个税按月度近似分档表（未做累计预扣预缴）；社保按「月薪 × 比例」近似计算。",
+        "节假日如有更新可在日历右键单日覆盖。结果写入 SQLite，跨会话保留。",
+        "Windows / macOS / Linux"
+    };
+
+    s_helpData["Todo"] = {
+        "待办事项",
+        "管理待办任务，可设置截止时间、提醒、分类、优先级，统计本周完成情况并导出 PDF。",
+        "1. 点\"➕ 新建任务\"添加；右侧详情面板填标题、备注、截止、优先级、分类、提醒\n2. 顶部 Tab 过滤：全部 / 今天 / 本周 / 已完成；搜索框支持标题/备注/分类\n3. 列表项左侧勾选 = 标记完成；自动加删除线\n4. 点\"📊 统计\"切到统计视图：最近 7 天每日完成数 + 待办总数\n5. 点\"📄 导出 PDF\"导出本周（周一至周日）所有任务为 PDF",
+        "数据存 SQLite（与笔记共用 default 实例的库）。每 30 秒检查一次到期任务，"
+        "通过 QSystemTrayIcon 弹系统通知；无 tray 时回退为对话框。\nPDF 用 QTextDocument::setHtml + QPrinter 输出 A4。",
+        "提醒只在程序运行时触发；任务被改后 reminded 标志重置。",
+        "Windows / macOS / Linux"
+    };
+
     s_helpData["Markdown to PDF"] = {
         "Markdown 转 PDF",
         "把 Markdown 文本渲染成 PDF，支持标题、列表、表格、代码块、引用、图片等。",
@@ -289,10 +308,10 @@ void ToolHelp::init() {
 
     s_helpData["Image Format Conversion"] = {
         "图片格式转换",
-        "在不同图片格式之间进行转换，如 PNG、JPG、BMP、WebP 等。",
-        "1. 选择或拖入源图片\n2. 选择目标格式\n3. 点击\"转换\"并保存",
-        "使用 Qt QImage 加载源图片（自动识别格式），\n通过 QImage::save() 指定目标格式名称参数输出为不同格式的图片文件。",
-        "支持批量转换，转换过程中可能会有质量损失（如 PNG 转 JPG）。",
+        "批量转换图片格式：PNG / JPEG / WEBP / BMP / GIF / TIFF / ICO / SVG 互转。",
+        "1. 拖入图片或点\"添加图片\"批量加入待转列表\n2. 选目标格式（JPEG/WEBP 时可调质量滑块）\n3. 选输出目录（留空则与源同目录）\n4. 选调整尺寸（保持原尺寸 / 适应最大边 / 精确尺寸）\n5. 点\"开始转换\"",
+        "光栅图用 QImageReader/QImageWriter 读写；SVG 输入用 QSvgRenderer 栅格化\n（默认尺寸来自 SVG viewBox），SVG 输出把光栅图以 base64 嵌入 <image> 标签包成 SVG。\n质量滑块对 JPEG/WEBP 设 setQuality；对 PNG 映射成 0-9 压缩级别。",
+        "WEBP 需要 qtimageformats 插件；ICO 在大尺寸时输出可能被裁；SVG 输出非真矢量。",
         "Windows / macOS / Linux"
     };
 

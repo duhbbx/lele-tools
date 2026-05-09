@@ -222,7 +222,14 @@ void OverlayItem::contextMenuEvent(QContextMenuEvent* e)
 PdfPageView::PdfPageView(int pageIndex, const QImage& rendered, QWidget* parent)
     : QWidget(parent), m_pageIndex(pageIndex), m_rendered(rendered)
 {
-    setFixedSize(rendered.size());
+    // rendered 可能是高 DPR 图（设过 setDevicePixelRatio）
+    // size() 返回设备像素，要按 DPR 还原回逻辑像素再做 fixedSize
+    qreal r = rendered.devicePixelRatio();
+    QSize logical = (r > 0)
+        ? QSize(int(rendered.width()  / r),
+                int(rendered.height() / r))
+        : rendered.size();
+    setFixedSize(logical);
     setStyleSheet("background-color: white;");
     setAcceptDrops(true);
 }
@@ -1024,23 +1031,15 @@ void PdfStamp::renderAllPages()
         QSizeF pts = m_pdfDoc->pagePointSize(i);  // points (1/72 inch)
         if (pts.width() <= 0) continue;
         double scale = targetWidth / pts.width();
+        // 渲染到 device pixel 分辨率（HiDPI 下是 2× / 3×）
         QSize px(int(pts.width() * scale * dpr), int(pts.height() * scale * dpr));
         QImage img = m_pdfDoc->render(i, px);
         if (img.isNull()) continue;
+        // 关键：设 devicePixelRatio，让 Qt 知道这是高 DPR 图，不要再升采样
         img.setDevicePixelRatio(dpr);
 
-        // 显示尺寸（逻辑像素）
-        QImage display = img;
-        // PdfPageView 需要按显示像素显示
-        QImage logical(QSize(int(pts.width() * scale), int(pts.height() * scale)),
-                       QImage::Format_ARGB32);
-        logical.fill(Qt::white);
-        QPainter pp(&logical);
-        pp.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        pp.drawImage(QRect(QPoint(0,0), logical.size()), img);
-        pp.end();
-
-        auto* view = new pdfstamp::PdfPageView(i, logical);
+        // 直接把高 DPR 图交给 PdfPageView，不再做"先下采样到逻辑尺寸"这种损耗操作
+        auto* view = new pdfstamp::PdfPageView(i, img);
         connect(view, &pdfstamp::PdfPageView::emptyClicked, this, &PdfStamp::onPageEmptyClicked);
         connect(view, &pdfstamp::PdfPageView::overlayClicked, this, &PdfStamp::onOverlayClicked);
         connect(view, &pdfstamp::PdfPageView::assetDropped, this, &PdfStamp::onAssetDropped);
@@ -1081,6 +1080,10 @@ void PdfStamp::onSaveAs()
     writer.setPageSize(ps);
 
     QPainter painter(&writer);
+    // 关键：让覆盖物 / 页面位图在 1200 DPI 输出上做平滑缩放，不要锯齿
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
 
     for (int i = 0; i < m_pageViews.size(); ++i) {
         if (i > 0) {

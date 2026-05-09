@@ -8709,6 +8709,14 @@ https://example3.com</translation>
         <source>Markdown to PDF</source>
         <translation>Markdown 转 PDF</translation>
     </message>
+    <message>
+        <source>Todo</source>
+        <translation>待办事项</translation>
+    </message>
+    <message>
+        <source>Salary Calculator</source>
+        <translation>工资计算器</translation>
+    </message>
 </context>
 <context>
     <name>TorrentFileAnalysis</name>

@@ -332,66 +332,76 @@ KeyRemapper::~KeyRemapper()
 void KeyRemapper::setupUI()
 {
     mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
-    mainLayout->setSpacing(5);
+    mainLayout->setContentsMargins(12, 10, 12, 10);
+    mainLayout->setSpacing(8);
 
-    // 精简的控制区域
-    controlGroup = new QGroupBox("控制面板");
-    controlLayout = new QHBoxLayout(controlGroup);
-    controlGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    // ── 卡片化的控制区 ──
+    auto* card = new QFrame();
+    card->setObjectName("kbrCard");
+    auto* row = new QHBoxLayout(card);
+    row->setContentsMargins(12, 10, 12, 10);
+    row->setSpacing(6);
 
-    // 主要按钮
-    addButton = new QPushButton("➕ 新建");
-    addButton->setFixedHeight(32);
-    addButton->setFixedWidth(80);
+    // 创建竖线分隔
+    auto makeSep = [this]() -> QWidget* {
+        auto* s = new QFrame(this);
+        s->setFrameShape(QFrame::VLine);
+        s->setFrameShadow(QFrame::Plain);
+        s->setStyleSheet("color: #dee2e6;");
+        s->setFixedWidth(1);
+        return s;
+    };
 
-    removeButton = new QPushButton("➖ 删除");
-    removeButton->setFixedHeight(32);
-    removeButton->setFixedWidth(80);
+    addButton    = new QPushButton(tr("➕ 新建"));
+    removeButton = new QPushButton(tr("➖ 删除"));
+    clearButton  = new QPushButton(tr("🗑 清空"));
+    saveButton   = new QPushButton(tr("💾 保存"));
+    loadButton   = new QPushButton(tr("📂 加载"));
 
-    clearButton = new QPushButton("🗑️ 清空");
-    clearButton->setFixedHeight(32);
-    clearButton->setFixedWidth(80);
+    addButton->setObjectName("primaryBtn");
+    removeButton->setObjectName("dangerBtn");
+    saveButton->setObjectName("primaryBtn");
+    addButton->setMinimumWidth(86);
+    removeButton->setMinimumWidth(86);
+    clearButton->setMinimumWidth(86);
+    saveButton->setMinimumWidth(86);
+    loadButton->setMinimumWidth(86);
 
-    // 文件操作按钮
-    saveButton = new QPushButton("💾 保存");
-    saveButton->setFixedHeight(32);
-    saveButton->setFixedWidth(80);
-
-    loadButton = new QPushButton("📂 加载");
-    loadButton->setFixedHeight(32);
-    loadButton->setFixedWidth(80);
-
-    // 全局钩子开关
-    enableGlobalHook = new QCheckBox("启用全局拦截");
+    enableGlobalHook = new QCheckBox(tr("启用全局拦截"));
     enableGlobalHook->setChecked(false);
+    enableGlobalHook->setStyleSheet("background: transparent;");
 
-    statusLabel = new QLabel("已就绪");
-    statusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+    statusLabel = new QLabel(tr("已就绪"));
+    statusLabel->setStyleSheet(
+        "color:#2e7d32; padding:5px 10px; background:#e8f5e8;"
+        " border-radius:4px; font-weight:bold;");
 
-    controlLayout->addWidget(addButton);
-    controlLayout->addWidget(removeButton);
-    controlLayout->addWidget(clearButton);
-    controlLayout->addWidget(new QLabel(" | "));
-    controlLayout->addWidget(saveButton);
-    controlLayout->addWidget(loadButton);
-    controlLayout->addStretch();
-    controlLayout->addWidget(enableGlobalHook);
-    controlLayout->addWidget(new QLabel(" | "));
-    controlLayout->addWidget(statusLabel);
+    row->addWidget(addButton);
+    row->addWidget(removeButton);
+    row->addWidget(clearButton);
+    row->addSpacing(8);
+    row->addWidget(makeSep());
+    row->addSpacing(8);
+    row->addWidget(saveButton);
+    row->addWidget(loadButton);
+    row->addStretch();
+    row->addWidget(enableGlobalHook);
+    row->addSpacing(8);
+    row->addWidget(makeSep());
+    row->addSpacing(8);
+    row->addWidget(statusLabel);
 
     // 映射表格
     mappingTable = new QTableWidget();
     mappingTable->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    // 布局组装
-    mainLayout->addWidget(controlGroup, 0); // 固定高度
-    mainLayout->addWidget(mappingTable, 1); // 拉伸占据剩余空间
+    mainLayout->addWidget(card, 0);
+    mainLayout->addWidget(mappingTable, 1);
 
-    // 不再需要KeyCaptureWidget，直接在表格中捕获
+    // 兼容性占位（旧代码可能引用）
+    controlGroup = nullptr;
+    controlLayout = nullptr;
     keyCaptureWidget = nullptr;
-
-    // 保留这些按钮的引用但不显示，用于保持兼容性
     addAppButton = nullptr;
     addCommandButton = nullptr;
     editButton = nullptr;
@@ -401,38 +411,36 @@ void KeyRemapper::setupUI()
 
 void KeyRemapper::setupTable()
 {
-    // 设置列：启用、原始按键（可点击捕获）、类型、目标（可点击捕获/选择）、操作
-    QStringList headers = {"启用", "原始按键", "映射类型", "目标/动作", "详细信息", "操作"};
+    // 5 列：启用 / 原始按键 / 映射类型 / 目标·动作 / 详细信息
+    QStringList headers = {
+        tr("启用"), tr("原始按键"), tr("映射类型"),
+        tr("目标 / 动作"), tr("详细信息")
+    };
     mappingTable->setColumnCount(headers.size());
     mappingTable->setHorizontalHeaderLabels(headers);
 
-    // 表格属性
     mappingTable->setAlternatingRowColors(true);
     mappingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     mappingTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     mappingTable->setSortingEnabled(false);
-    mappingTable->setEditTriggers(QAbstractItemView::DoubleClicked); // 允许双击编辑
+    mappingTable->setEditTriggers(QAbstractItemView::DoubleClicked);
 
-    // 设置键捕获委托到"原始按键"和"目标按键"列
     mappingTable->setItemDelegateForColumn(1, keyCaptureDelegate);
     mappingTable->setItemDelegateForColumn(3, keyCaptureDelegate);
 
-    // 表头属性
     QHeaderView* header = mappingTable->horizontalHeader();
     header->setStretchLastSection(true);
-    header->setSectionResizeMode(QHeaderView::Interactive);
+    header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    header->setSectionResizeMode(1, QHeaderView::Interactive);
+    header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    header->setSectionResizeMode(3, QHeaderView::Interactive);
+    header->setSectionResizeMode(4, QHeaderView::Stretch);
 
-    // 设置列宽
-    mappingTable->setColumnWidth(0, 60);   // 启用
-    mappingTable->setColumnWidth(1, 150);  // 原始按键
-    mappingTable->setColumnWidth(2, 100);  // 类型
-    mappingTable->setColumnWidth(3, 200);  // 目标
-    mappingTable->setColumnWidth(4, 250);  // 详细信息
-    mappingTable->setColumnWidth(5, 120);  // 操作
+    mappingTable->setColumnWidth(1, 160);
+    mappingTable->setColumnWidth(3, 220);
 
-    // 垂直表头
     mappingTable->verticalHeader()->setVisible(false);
-    mappingTable->verticalHeader()->setDefaultSectionSize(35);
+    mappingTable->verticalHeader()->setDefaultSectionSize(36);
 }
 
 void KeyRemapper::setupConnections()
@@ -804,13 +812,17 @@ void KeyRemapper::installGlobalHook()
     s_keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandle(nullptr), 0);
     if (s_keyboardHook) {
         s_hookEnabled = true;
-        statusLabel->setText("状态: 全局钩子已启用");
-        statusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
-        showStatusMessage("全局按键拦截已启用");
+        statusLabel->setText(tr("● 全局钩子已启用"));
+        statusLabel->setStyleSheet(
+            "color:#2e7d32; padding:5px 10px; background:#e8f5e8;"
+            " border-radius:4px; font-weight:bold;");
+        showStatusMessage(tr("全局按键拦截已启用"));
     } else {
-        statusLabel->setText("状态: 钩子安装失败");
-        statusLabel->setStyleSheet("font-weight: bold; color: #e74c3c;");
-        showStatusMessage("全局按键拦截启用失败");
+        statusLabel->setText(tr("✕ 钩子安装失败"));
+        statusLabel->setStyleSheet(
+            "color:#c62828; padding:5px 10px; background:#ffebee;"
+            " border-radius:4px; font-weight:bold;");
+        showStatusMessage(tr("全局按键拦截启用失败"));
         enableGlobalHook->setChecked(false);
     }
 #endif
@@ -823,24 +835,29 @@ void KeyRemapper::uninstallGlobalHook()
         UnhookWindowsHookEx(s_keyboardHook);
         s_keyboardHook = nullptr;
         s_hookEnabled = false;
-        statusLabel->setText("状态: 全局钩子已禁用");
-        statusLabel->setStyleSheet("font-weight: bold; color: #7f8c8d;");
-        showStatusMessage("全局按键拦截已禁用");
+        statusLabel->setText(tr("○ 全局钩子已禁用"));
+        statusLabel->setStyleSheet(
+            "color:#495057; padding:5px 10px; background:#e9ecef;"
+            " border-radius:4px; font-weight:bold;");
+        showStatusMessage(tr("全局按键拦截已禁用"));
     }
 #endif
 }
 
 void KeyRemapper::showStatusMessage(const QString& message, int timeout)
 {
+    statusLabel->setText(message);
+    statusLabel->setStyleSheet(
+        "color:#1864ab; padding:5px 10px; background:#d0ebff;"
+        " border-radius:4px; font-weight:bold;");
     if (timeout > 0) {
         QTimer::singleShot(timeout, [this]() {
-            statusLabel->setText("状态: 已准备");
-            statusLabel->setStyleSheet("font-weight: bold; color: #27ae60;");
+            statusLabel->setText(tr("已就绪"));
+            statusLabel->setStyleSheet(
+                "color:#2e7d32; padding:5px 10px; background:#e8f5e8;"
+                " border-radius:4px; font-weight:bold;");
         });
     }
-
-    statusLabel->setText("状态: " + message);
-    statusLabel->setStyleSheet("font-weight: bold; color: #3498db;");
 }
 
 void KeyRemapper::saveProfileToFile(const QString& filePath)
@@ -1161,86 +1178,73 @@ QString KeyRemapper::getMappingDisplayText(const KeyMapping& mapping)
 void KeyRemapper::applyStyles()
 {
     this->setStyleSheet(R"(
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-        }
-
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 15px;
-            padding: 0 8px 0 8px;
-            color: #2c3e50;
+        QFrame#kbrCard {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
         }
 
         QPushButton {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-weight: bold;
-            min-width: 100px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 14px;
+            background: #ffffff;
+            min-height: 22px;
+            color: #343a40;
         }
+        QPushButton:hover  { background: #f1f3f5; border-color: #adb5bd; }
+        QPushButton:pressed{ background: #e9ecef; }
+        QPushButton:disabled { color: #adb5bd; background: #f8f9fa; }
 
-        QPushButton:hover {
-            background-color: #2980b9;
+        QPushButton#primaryBtn {
+            background: #228be6; border: 1px solid #1c7ed6; color: white; font-weight: bold;
         }
+        QPushButton#primaryBtn:hover  { background: #1c7ed6; }
+        QPushButton#primaryBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
 
-        QPushButton:pressed {
-            background-color: #21618c;
+        QPushButton#dangerBtn {
+            background: #fa5252; border: 1px solid #f03e3e; color: white; font-weight: bold;
         }
+        QPushButton#dangerBtn:hover  { background: #f03e3e; }
+        QPushButton#dangerBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
 
-        QCheckBox {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        QCheckBox::indicator {
-            width: 18px;
-            height: 18px;
-        }
-
+        QCheckBox { color: #495057; spacing: 6px; }
+        QCheckBox::indicator { width: 16px; height: 16px; }
         QCheckBox::indicator:unchecked {
-            border: 2px solid #bdc3c7;
-            border-radius: 3px;
-            background-color: white;
+            border: 1px solid #adb5bd; border-radius: 3px; background: #fff;
         }
-
         QCheckBox::indicator:checked {
-            border: 2px solid #27ae60;
-            border-radius: 3px;
-            background-color: #27ae60;
-            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDNMNC41IDguNUwyIDYiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=);
+            border: 1px solid #228be6; border-radius: 3px; background: #228be6;
+            image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTAgM0w0LjUgOC41TDIgNiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=);
         }
 
         QTableWidget {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            gridline-color: #ecf0f1;
-            background-color: white;
-            selection-background-color: #3498db;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #ffffff;
+            gridline-color: #e9ecef;
+            selection-background-color: #d0ebff;
+            selection-color: #1864ab;
         }
-
-        QTableWidget::item {
-            padding: 8px;
-        }
-
-        QTableWidget::item:selected {
-            background-color: #3498db;
-            color: white;
-        }
-
+        QTableWidget::item { padding: 6px; }
         QHeaderView::section {
-            background-color: #34495e;
-            color: white;
-            border: none;
-            padding: 8px;
+            background: #f1f3f5;
+            color: #495057;
             font-weight: bold;
+            padding: 8px;
+            border: none;
+            border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
         }
+        QLineEdit, QComboBox, QSpinBox {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 4px 8px;
+            background: #fff;
+            min-height: 22px;
+            selection-background-color: #b8d4ff;
+        }
+        QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border-color: #228be6; }
     )");
 }
 

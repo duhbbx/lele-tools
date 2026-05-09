@@ -112,41 +112,40 @@ bool HostScanTask::scanWithArp() {
 
     arpProcess.start("arp", QStringList() << "-a" << m_ip);
 #else
-    // Linux/Unix: 尝试使用arping命令（最佳），如果失败则回退到ping + arp
-    arpProcess.start("arping", QStringList() << "-c" << "1" << "-w" << "1" << m_ip);
-
-    int waited = 0;
-    while (arpProcess.state() == QProcess::Running && waited < 1200) {
-        if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
-            arpProcess.kill();
-            arpProcess.waitForFinished(100);
-            return false;
-        }
-        QThread::msleep(10);
-        waited += 10;
-    }
-
-    if (arpProcess.state() == QProcess::Running) {
-        arpProcess.kill();
-        arpProcess.waitForFinished(100);
-        return false;
-    }
-
-    // 如果arping成功，直接返回
-    if (arpProcess.exitCode() == 0) {
-        return true;
-    }
-
-    // arping失败，回退到ping + arp
-    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
-        return false;
-    }
-
+    // 非 Windows：直接用 ping 判定，**不依赖** arping、不依赖 arp 表
+    // 之前的 bug：arping 在 macOS 没装时 exitCode() 返回未定义值（常 0），
+    //              导致每个 IP 都被当作存活。
+    // 现在严格校验：QProcess 必须真启动 → 正常退出 → exit 0 → 输出中含 "1 received"
+    Q_UNUSED(arpProcess);
     QProcess pingProc;
-    pingProc.start("ping", QStringList() << "-c" << "1" << "-W" << "1" << m_ip);
-    pingProc.waitForFinished(1200);
+    pingProc.setProcessChannelMode(QProcess::MergedChannels);
+#  if defined(Q_OS_MAC) || defined(Q_OS_FREEBSD) || defined(Q_OS_NETBSD) || defined(Q_OS_OPENBSD)
+    // macOS GUI 进程的 PATH 通常没有 /sbin，写绝对路径
+    int waitMs = qMax(200, m_timeout);
+    pingProc.start("/sbin/ping", QStringList() << "-c" << "1" << "-W"
+                                                << QString::number(waitMs) << m_ip);
+#  else
+    int waitSec = qMax(1, m_timeout / 1000);
+    pingProc.start("/bin/ping", QStringList() << "-c" << "1" << "-W"
+                                               << QString::number(waitSec) << m_ip);
+#  endif
+    if (!pingProc.waitForStarted(500)) {
+        // 绝对路径找不到时再退回 PATH 查找一次
+        pingProc.start("ping", pingProc.arguments());
+        if (!pingProc.waitForStarted(500)) return false;
+    }
 
-    arpProcess.start("arp", QStringList() << "-n" << m_ip);
+    // 直接用 waitForFinished —— 内部 select() 实现，不依赖工作线程的事件循环。
+    // 之前的 while+state() 轮询在无事件循环线程里不会得到 SIGCHLD 通知，
+    // state() 永远卡在 Running 直到我们 kill 它。
+    if (!pingProc.waitForFinished(m_timeout + 1500)) {
+        pingProc.kill();
+        pingProc.waitForFinished(200);
+        return false;   // 真超时
+    }
+    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) return false;
+    if (pingProc.exitStatus() != QProcess::NormalExit) return false;
+    return pingProc.exitCode() == 0;
 #endif
 
     if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
@@ -178,26 +177,25 @@ bool HostScanTask::scanWithPing() {
 
 #ifdef Q_OS_WIN
     ping.start("ping", { "-n", "1", "-w", QString::number(m_timeout), m_ip });
+#elif defined(Q_OS_MAC) || defined(Q_OS_FREEBSD) || defined(Q_OS_NETBSD) || defined(Q_OS_OPENBSD)
+    // BSD/macOS：-W 单位是 ms；用绝对路径，GUI 进程 PATH 可能不含 /sbin
+    ping.start("/sbin/ping", { "-c", "1", "-W", QString::number(qMax(200, m_timeout)), m_ip });
+    if (!ping.waitForStarted(300)) ping.start("ping", { "-c", "1", "-W", QString::number(qMax(200, m_timeout)), m_ip });
 #else
-    ping.start("ping", { "-c", "1", "-W", QString::number(m_timeout / 1000), m_ip });
+    // Linux：-W 单位是秒
+    ping.start("/bin/ping", { "-c", "1", "-W", QString::number(qMax(1, m_timeout / 1000)), m_ip });
+    if (!ping.waitForStarted(300)) ping.start("ping", { "-c", "1", "-W", QString::number(qMax(1, m_timeout / 1000)), m_ip });
 #endif
 
-    int waited = 0;
-    while (ping.state() == QProcess::Running && waited < m_timeout + 1000) {
-        if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) {
-            ping.kill();
-            ping.waitForFinished(500);
-            return false;
-        }
-        QThread::msleep(50);
-        waited += 50;
-    }
+    if (!ping.waitForStarted(500)) return false;
 
-    if (ping.state() == QProcess::Running) {
+    if (!ping.waitForFinished(m_timeout + 1500)) {
         ping.kill();
-        ping.waitForFinished(500);
+        ping.waitForFinished(200);
+        return false;
     }
-
+    if (m_stopFlag && m_stopFlag->loadRelaxed() != 0) return false;
+    if (ping.exitStatus() != QProcess::NormalExit) return false;
     return ping.exitCode() == 0;
 }
 

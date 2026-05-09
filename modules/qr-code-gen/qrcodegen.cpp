@@ -1,4 +1,5 @@
 #include "qrcodegen.h"
+#include <QAbstractItemView>
 
 REGISTER_DYNAMICOBJECT(QrCodeGen);
 
@@ -378,7 +379,7 @@ QrCodeGen::QrCodeGen() : QWidget(nullptr), DynamicObjectBase()
     connect(dataTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QrCodeGen::onDataTypeChanged);
     connect(errorCorrectionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QrCodeGen::onErrorCorrectionChanged);
     connect(sizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &QrCodeGen::onSizeChanged);
-    connect(sizeSlider, &QSlider::valueChanged, this, &QrCodeGen::onSizeChanged);
+    if (sizeSlider) connect(sizeSlider, &QSlider::valueChanged, this, &QrCodeGen::onSizeChanged);
     connect(presetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QrCodeGen::onPresetSelected);
     
     connect(foregroundColorBtn, &ColorButton::colorChanged, this, &QrCodeGen::onForegroundColorChanged);
@@ -466,95 +467,73 @@ void QrCodeGen::setupUI()
     setupStatusArea();
     mainLayout->addLayout(statusLayout);
     
-    // 应用样式
+    // 全局样式 — 扁平化，去掉重 GroupBox 边框，按钮统一中性 + 主操作蓝
     setStyleSheet(R"(
-        QWidget {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-        }
-        QPushButton {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 10pt;
-            font-weight: normal;
-            min-width: 80px;
-            background-color: #f8f9fa;
-        }
-        QPushButton:hover { 
-            background-color: #e9ecef; 
-            border-color: #adb5bd;
-        }
-        QPushButton:pressed {
-            background-color: #dee2e6;
-        }
-        QPushButton:disabled {
-            background-color: #e9ecef;
-            color: #6c757d;
-            border-color: #dee2e6;
-        }
+        /* GroupBox 改为"无边框小标题"风格 — 只留标题 + 顶部 1px 分隔线 */
         QGroupBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
             font-weight: bold;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            margin-top: 1ex;
-            padding-top: 10px;
-            font-size: 12pt;
+            color: #495057;
+            border: none;
+            margin-top: 14px;
+            padding: 4px 0 0 0;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        QLineEdit, QTextEdit, QPlainTextEdit {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px;
-            border: 2px solid #ced4da;
-            border-radius: 4px;
-            font-size: 10pt;
-            background-color: white;
-        }
-        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
-            border-color: #80bdff;
-            outline: 0;
-        }
-        QComboBox, QSpinBox {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 6px;
-            border: 2px solid #ced4da;
-            border-radius: 4px;
-            font-size: 10pt;
-            background-color: white;
-            min-width: 80px;
-        }
-        QLabel {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 10pt;
-        }
-        QCheckBox, QRadioButton {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            font-size: 10pt;
-        }
-        QTabWidget::pane {
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-        }
-        QTabBar::tab {
-            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
-            padding: 8px 16px;
-            margin: 2px;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-        }
-        QTabBar::tab:selected {
-            background-color: #007bff;
-            color: white;
-        }
-        QTabBar::tab:hover {
-            background-color: #e9ecef;
+            left: 0; padding: 0;
+            color: #495057;
         }
 
+        QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 8px;
+            background: #ffffff;
+            min-height: 22px;
+            selection-background-color: #b8d4ff;
+        }
+        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus,
+        QComboBox:focus, QSpinBox:focus { border-color: #228be6; }
+
+        QPushButton {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px 14px;
+            background: #ffffff;
+            min-height: 22px;
+            color: #343a40;
+        }
+        QPushButton:hover  { background: #f1f3f5; border-color: #adb5bd; }
+        QPushButton:pressed{ background: #e9ecef; }
+        QPushButton:disabled { color: #adb5bd; background: #f8f9fa; }
+        QPushButton#primaryBtn {
+            background: #228be6; border: 1px solid #1c7ed6; color: white; font-weight: bold;
+        }
+        QPushButton#primaryBtn:hover  { background: #1c7ed6; }
+        QPushButton#primaryBtn:disabled { background: #adb5bd; border-color: #adb5bd; color: #f1f3f5; }
+
+        QTabWidget::pane {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #ffffff;
+            top: -1px;
+        }
+        QTabBar::tab {
+            background: #f1f3f5; color: #495057;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            border-top-left-radius: 5px; border-top-right-radius: 5px;
+            padding: 6px 14px; margin-right: 2px;
+        }
+        QTabBar::tab:selected { background: #fff; color: #1864ab; font-weight: bold; }
+        QTabBar::tab:hover:!selected { background: #e9ecef; }
+
+        QCheckBox { background: transparent; }
+        QLabel.section {
+            font-weight: bold; color: #495057;
+            padding: 6px 0 4px 0;
+            border-bottom: 1px solid #e9ecef;
+            margin-top: 4px;
+        }
     )");
 }
 
@@ -572,17 +551,25 @@ void QrCodeGen::setupGenerateArea()
     inputLayout = new QVBoxLayout(inputGroup);
     
     QHBoxLayout *typeLayout = new QHBoxLayout();
-    typeLayout->addWidget(new QLabel(tr("数据类型:")));
+    typeLayout->addWidget(new QLabel(tr("数据类型")));
     dataTypeCombo = new QComboBox();
-    dataTypeCombo->addItems({"文本", "网址", "邮箱", "电话", "短信", "WiFi", "电子名片", "日历事件", "地理位置"});
+    dataTypeCombo->addItems({tr("文本"), tr("网址"), tr("邮箱"), tr("电话"),
+                             tr("短信"), tr("WiFi"), tr("电子名片"),
+                             tr("日历事件"), tr("地理位置")});
+    dataTypeCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    dataTypeCombo->setMinimumContentsLength(8);
+    dataTypeCombo->view()->setMinimumWidth(140);
     typeLayout->addWidget(dataTypeCombo);
     typeLayout->addStretch();
     inputLayout->addLayout(typeLayout);
-    
+
     QHBoxLayout *presetLayout = new QHBoxLayout();
-    presetLayout->addWidget(new QLabel(tr("快速模板:")));
+    presetLayout->addWidget(new QLabel(tr("快速模板")));
     presetCombo = new QComboBox();
-    presetCombo->addItem("选择模板...");
+    presetCombo->addItem(tr("选择模板..."));
+    presetCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    presetCombo->setMinimumContentsLength(14);
+    presetCombo->view()->setMinimumWidth(220);
     presetLayout->addWidget(presetCombo);
     presetLayout->addStretch();
     inputLayout->addLayout(presetLayout);
@@ -652,36 +639,34 @@ void QrCodeGen::setupGenerateArea()
     leftLayout->addWidget(inputGroup);
     
     // 设置区域
-    settingsGroup = new QGroupBox("⚙️ 生成设置");
+    settingsGroup = new QGroupBox("⚙ 生成设置");
     settingsLayout = new QGridLayout(settingsGroup);
-    
-    settingsLayout->addWidget(new QLabel(tr("容错级别:")), 0, 0);
+    settingsLayout->setContentsMargins(0, 6, 0, 0);
+    settingsLayout->setHorizontalSpacing(8);
+    settingsLayout->setVerticalSpacing(6);
+
+    settingsLayout->addWidget(new QLabel(tr("容错级别")), 0, 0);
     errorCorrectionCombo = new QComboBox();
     errorCorrectionCombo->addItems({"低 (L)", "中 (M)", "高 (Q)", "最高 (H)"});
     errorCorrectionCombo->setCurrentIndex(1);
     settingsLayout->addWidget(errorCorrectionCombo, 0, 1);
-    
-    settingsLayout->addWidget(new QLabel(tr("图片大小:")), 1, 0);
-    QHBoxLayout *sizeLayout = new QHBoxLayout();
+
+    settingsLayout->addWidget(new QLabel(tr("图片大小")), 1, 0);
     sizeSpinBox = new QSpinBox();
     sizeSpinBox->setRange(100, 1000);
     sizeSpinBox->setValue(300);
     sizeSpinBox->setSuffix(" px");
-    sizeLayout->addWidget(sizeSpinBox);
-    
-    sizeSlider = new QSlider(Qt::Horizontal);
-    sizeSlider->setRange(100, 1000);
-    sizeSlider->setValue(300);
-    sizeLayout->addWidget(sizeSlider);
-    settingsLayout->addLayout(sizeLayout, 1, 1);
-    
-    settingsLayout->addWidget(new QLabel(tr("边框大小:")), 2, 0);
+    sizeSpinBox->setSingleStep(50);
+    settingsLayout->addWidget(sizeSpinBox, 1, 1);
+    sizeSlider = nullptr;   // 旧的滑块跟 spinbox 冗余 — 直接砍掉
+
+    settingsLayout->addWidget(new QLabel(tr("边框大小")), 2, 0);
     borderSpinBox = new QSpinBox();
     borderSpinBox->setRange(0, 20);
     borderSpinBox->setValue(4);
-    borderSpinBox->setSuffix(" 模块");
+    borderSpinBox->setSuffix(tr(" 模块"));
     settingsLayout->addWidget(borderSpinBox, 2, 1);
-    
+
     leftLayout->addWidget(settingsGroup);
     
     setupStyleArea();
@@ -703,58 +688,59 @@ void QrCodeGen::setupGenerateArea()
 
 void QrCodeGen::setupStyleArea()
 {
-    styleGroup = new QGroupBox("🎨 样式设置");
+    styleGroup = new QGroupBox("🎨 样式");
     styleLayout = new QGridLayout(styleGroup);
-    
-    styleLayout->addWidget(new QLabel(tr("前景色:")), 0, 0);
+    styleLayout->setContentsMargins(0, 6, 0, 0);
+    styleLayout->setHorizontalSpacing(8);
+    styleLayout->setVerticalSpacing(6);
+
+    // 颜色行
+    styleLayout->addWidget(new QLabel(tr("颜色")), 0, 0);
     foregroundColorBtn = new ColorButton(Qt::black);
+    foregroundColorBtn->setToolTip(tr("前景色"));
     styleLayout->addWidget(foregroundColorBtn, 0, 1);
-    
-    styleLayout->addWidget(new QLabel(tr("背景色:")), 0, 2);
     backgroundColorBtn = new ColorButton(Qt::white);
-    styleLayout->addWidget(backgroundColorBtn, 0, 3);
-    
-    logoCheckBox = new QCheckBox("添加Logo");
-    styleLayout->addWidget(logoCheckBox, 1, 0);
-    
-    selectLogoBtn = new QPushButton(tr("📁 选择Logo"));
-    selectLogoBtn->setEnabled(false);
-    styleLayout->addWidget(selectLogoBtn, 1, 1);
-    
-    removeLogoBtn = new QPushButton(tr("🗑️ 移除"));
-    removeLogoBtn->setEnabled(false);
-    styleLayout->addWidget(removeLogoBtn, 1, 2);
-    
-    logoPreviewLabel = new QLabel();
-    logoPreviewLabel->setFixedSize(40, 40);
-    logoPreviewLabel->setStyleSheet("border: 1px solid #ccc; border-radius: 4px;");
-    logoPreviewLabel->setAlignment(Qt::AlignCenter);
-    logoPreviewLabel->setText(tr("Logo"));
-    styleLayout->addWidget(logoPreviewLabel, 1, 3);
-    
-    styleLayout->addWidget(new QLabel(tr("Logo大小:")), 2, 0);
-    logoSizeSpinBox = new QSpinBox();
-    logoSizeSpinBox->setRange(20, 100);
-    logoSizeSpinBox->setValue(50);
-    logoSizeSpinBox->setSuffix(" px");
-    logoSizeSpinBox->setEnabled(false);
-    styleLayout->addWidget(logoSizeSpinBox, 2, 1);
-    
-    roundedCornersCheckBox = new QCheckBox("圆角");
-    styleLayout->addWidget(roundedCornersCheckBox, 2, 2);
-    
-    styleLayout->addWidget(new QLabel(tr("圆角半径:")), 3, 0);
+    backgroundColorBtn->setToolTip(tr("背景色"));
+    styleLayout->addWidget(backgroundColorBtn, 0, 2);
+    styleLayout->addWidget(new QLabel(tr("图案")), 0, 3);
+    patternCombo = new QComboBox();
+    patternCombo->addItems({tr("方形"), tr("圆形"), tr("圆角方形")});
+    styleLayout->addWidget(patternCombo, 0, 4);
+
+    // 圆角行
+    roundedCornersCheckBox = new QCheckBox(tr("整体圆角"));
+    styleLayout->addWidget(roundedCornersCheckBox, 1, 0, 1, 2);
+    styleLayout->addWidget(new QLabel(tr("半径")), 1, 2);
     cornerRadiusSpinBox = new QSpinBox();
     cornerRadiusSpinBox->setRange(0, 50);
     cornerRadiusSpinBox->setValue(10);
     cornerRadiusSpinBox->setSuffix(" px");
     cornerRadiusSpinBox->setEnabled(false);
-    styleLayout->addWidget(cornerRadiusSpinBox, 3, 1);
-    
-    styleLayout->addWidget(new QLabel(tr("图案样式:")), 3, 2);
-    patternCombo = new QComboBox();
-    patternCombo->addItems({"方形", "圆形", "圆角方形"});
-    styleLayout->addWidget(patternCombo, 3, 3);
+    styleLayout->addWidget(cornerRadiusSpinBox, 1, 3, 1, 2);
+
+    // Logo 行（紧凑成单行：☐ Logo  [选择] [移除]  大小 [50 px] | 隐藏的小预览）
+    logoCheckBox = new QCheckBox(tr("添加 Logo"));
+    styleLayout->addWidget(logoCheckBox, 2, 0);
+
+    selectLogoBtn = new QPushButton(tr("选择..."));
+    selectLogoBtn->setEnabled(false);
+    styleLayout->addWidget(selectLogoBtn, 2, 1);
+
+    removeLogoBtn = new QPushButton(tr("移除"));
+    removeLogoBtn->setEnabled(false);
+    styleLayout->addWidget(removeLogoBtn, 2, 2);
+
+    styleLayout->addWidget(new QLabel(tr("大小")), 2, 3);
+    logoSizeSpinBox = new QSpinBox();
+    logoSizeSpinBox->setRange(20, 100);
+    logoSizeSpinBox->setValue(50);
+    logoSizeSpinBox->setSuffix(" px");
+    logoSizeSpinBox->setEnabled(false);
+    styleLayout->addWidget(logoSizeSpinBox, 2, 4);
+
+    // 隐藏的 Logo 预览（保留以兼容旧逻辑里 logoPreviewLabel->setPixmap(...) 的调用）
+    logoPreviewLabel = new QLabel();
+    logoPreviewLabel->setVisible(false);
     
     // 连接Logo相关信号
     connect(logoCheckBox, &QCheckBox::toggled, [this](bool checked) {
@@ -1084,14 +1070,14 @@ void QrCodeGen::onDataTypeChanged()
 }
 
 void QrCodeGen::onErrorCorrectionChanged() { onStyleChanged(); }
-void QrCodeGen::onSizeChanged() { 
-    // 同步滑块和数值框
-    if (sender() == sizeSpinBox) {
+void QrCodeGen::onSizeChanged() {
+    // 旧版有 spinbox + slider，二者会双向同步；现在只剩 spinbox
+    if (sizeSlider && sender() == sizeSpinBox) {
         sizeSlider->setValue(sizeSpinBox->value());
-    } else if (sender() == sizeSlider) {
+    } else if (sizeSlider && sender() == sizeSlider) {
         sizeSpinBox->setValue(sizeSlider->value());
     }
-    onStyleChanged(); 
+    onStyleChanged();
 }
 
 void QrCodeGen::onStyleChanged()
