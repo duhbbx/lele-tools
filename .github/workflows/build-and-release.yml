@@ -398,8 +398,9 @@ jobs:
       id: mysql-cache
       with:
         path: C:\mysql-connector
-        key: ${{ runner.os }}-mysql-connector-9.4.0-v1
+        key: ${{ runner.os }}-mysql-connector-v2
         restore-keys: |
+          ${{ runner.os }}-mysql-connector-9.4.0-v1
           ${{ runner.os }}-mysql-connector-9.4.0
           ${{ runner.os }}-mysql-connector-8.0.33-v1
           ${{ runner.os }}-mysql-connector
@@ -485,104 +486,77 @@ jobs:
         Write-Host "Downloading MySQL Connector/C++..." -ForegroundColor Yellow
 
         try {
-            # 使用MySQL官方预编译的Windows安装包
             Write-Host "Downloading MySQL Connector/C++ pre-built binaries..." -ForegroundColor Yellow
-            # 使用最新版本的MySQL Connector/C++ 9.4.0
-            $MySQLUrl = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-9.4.0-winx64.zip"
             $MySQLZip = "mysql-connector.zip"
-
-            # 下载MySQL Connector（带重试机制）
-            $maxRetries = 3
-            $retryCount = 0
             $downloadSuccess = $false
 
-            # 下载源列表（按优先级排序）
-            $downloadSources = @(
-                @{
-                    url = "https://cdn.mysql.com/Downloads/Connector-C++/mysql-connector-c++-9.4.0-winx64.zip"
-                    description = "MySQL CDN (9.4.0)"
-                },
-                @{
-                    url = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-9.4.0-winx64.zip"
-                    description = "MySQL Official (9.4.0)"
-                },
-                @{
-                    url = "https://cdn.mysql.com/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
-                    description = "MySQL CDN (8.0.33 fallback)"
-                },
-                @{
-                    url = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
-                    description = "MySQL Official (8.0.33 fallback)"
-                },
-                @{
-                    url = "https://archive.mariadb.org/connector-c++-9.4.0/mysql-connector-c++-9.4.0-winx64.zip"
-                    description = "MariaDB Archive Mirror (9.4.0)"
-                },
-                @{
-                    url = "https://downloads.mysql.com/archives/get/p/19/file/mysql-connector-c%2B%2B-8.0.33-winx64.zip"
-                    description = "MySQL Archives (8.0.33)"
-                }
+            # 候选版本（新→旧）。MySQL 经常下架旧版本（如 9.4.0 已 404），
+            # 所以列出多个版本，从新到旧依次尝试，第一个能下成的就用。
+            $candidateVersions = @(
+                "9.5.0", "9.4.0", "9.3.0", "9.2.0", "9.1.0", "9.0.0",
+                "8.4.4", "8.4.3", "8.4.2", "8.4.0",
+                "8.0.43", "8.0.42", "8.0.40", "8.0.39", "8.0.33"
+            )
+            # 每个版本对应的下载镜像（dev.mysql.com 通常会 302 到 cdn.mysql.com）
+            $mirrorTemplates = @(
+                "https://cdn.mysql.com/Downloads/Connector-C++/mysql-connector-c++-{0}-winx64.zip",
+                "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-{0}-winx64.zip"
             )
 
-            foreach ($source in $downloadSources) {
-                if ($downloadSuccess) { break }
-                Write-Host "Trying download from: $($source.description)" -ForegroundColor Yellow
-                Write-Host "URL: $($source.url)" -ForegroundColor Gray
-
-                $retryCount = 0
-                while ($retryCount -lt $maxRetries -and -not $downloadSuccess) {
-                    try {
-                        Write-Host "Downloading MySQL Connector (attempt $($retryCount + 1)/$maxRetries)..." -ForegroundColor Yellow
-
-                        # 使用更强健的下载参数
-                        $webClient = New-Object System.Net.WebClient
-                        $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                        $webClient.DownloadFile($source.url, $MySQLZip)
-                        # 验证下载文件大小
-                        $fileSize = (Get-Item $MySQLZip).Length
-                        Write-Host "Downloaded file size: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Yellow
-
-                        if ($fileSize -lt 1MB) {
-                            throw "Downloaded file too small, possibly corrupted"
-                        }
-
-                        $downloadSuccess = $true
-                        break
-                    } catch {
-                        $retryCount++
-                        Write-Host "Download attempt failed: $($_.Exception.Message)" -ForegroundColor Red
-                        if ($retryCount -eq $maxRetries) {
-                            Write-Host "Failed to download from $($source.description) after $maxRetries attempts" -ForegroundColor Red
-                            break
-                        }
-                        Write-Host "Retrying in 10 seconds..." -ForegroundColor Yellow
-                        Start-Sleep -Seconds 10
-                    } finally {
-                        if ($webClient) {
-                            $webClient.Dispose()
-                        }
+            # 笛卡尔积生成完整下载列表
+            $downloadSources = @()
+            foreach ($ver in $candidateVersions) {
+                foreach ($tmpl in $mirrorTemplates) {
+                    $downloadSources += @{
+                        url = ($tmpl -f $ver)
+                        description = "MySQL Connector/C++ $ver"
                     }
                 }
             }
 
-            if (-not $downloadSuccess) {
-                Write-Host "All primary sources failed. Trying final backup methods..." -ForegroundColor Yellow
+            # 单次尝试 — 404 类错误回得快，没必要 retry × sleep 浪费时间；
+            # 跨版本/跨镜像本身已是回退策略
+            foreach ($source in $downloadSources) {
+                if ($downloadSuccess) { break }
+                Write-Host "Trying: $($source.description)" -ForegroundColor Yellow
+                Write-Host "  URL: $($source.url)" -ForegroundColor Gray
 
-                # 最后尝试：使用curl命令（通常更好的重定向处理）
+                $webClient = $null
                 try {
-                    $curlUrl = "https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.33-winx64.zip"
-                    Write-Host "Trying with curl: $curlUrl" -ForegroundColor Yellow
-                    & curl -L -o $MySQLZip $curlUrl --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    $webClient.DownloadFile($source.url, $MySQLZip)
 
+                    $fileSize = (Get-Item $MySQLZip).Length
+                    if ($fileSize -lt 1MB) {
+                        throw "File too small ($([math]::Round($fileSize/1KB,2)) KB), likely error page"
+                    }
+                    Write-Host "  [OK] $([math]::Round($fileSize/1MB,2)) MB" -ForegroundColor Green
+                    $downloadSuccess = $true
+                } catch {
+                    Write-Host "  [FAIL] $($_.Exception.Message)" -ForegroundColor Red
+                    Remove-Item $MySQLZip -Force -ErrorAction SilentlyContinue
+                } finally {
+                    if ($webClient) { $webClient.Dispose() }
+                }
+            }
+
+            # 最后兜底：用 curl（重定向处理更好，HTTP/2 也更稳）再试一遍前几个版本
+            if (-not $downloadSuccess) {
+                Write-Host "Primary download via WebClient failed for all candidates; falling back to curl..." -ForegroundColor Yellow
+                foreach ($source in ($downloadSources | Select-Object -First 8)) {
+                    if ($downloadSuccess) { break }
+                    Write-Host "curl: $($source.url)" -ForegroundColor Yellow
+                    & curl -L --max-time 60 -o $MySQLZip $source.url --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" 2>&1 | Out-Null
                     if ($LASTEXITCODE -eq 0 -and (Test-Path $MySQLZip)) {
                         $fileSize = (Get-Item $MySQLZip).Length
                         if ($fileSize -gt 1MB) {
-                            Write-Host "[OK] Successfully downloaded with curl: $([math]::Round($fileSize / 1MB, 2)) MB" -ForegroundColor Green
+                            Write-Host "  [OK] curl downloaded $([math]::Round($fileSize/1MB,2)) MB" -ForegroundColor Green
                             $downloadSuccess = $true
+                        } else {
+                            Remove-Item $MySQLZip -Force -ErrorAction SilentlyContinue
                         }
                     }
-                } catch {
-                    Write-Host "Curl download also failed: $($_.Exception.Message)" -ForegroundColor Red
                 }
             }
 
