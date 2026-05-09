@@ -1604,6 +1604,7 @@ jobs:
           build-essential cmake ninja-build pkg-config \
           qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools \
           qt6-l10n-tools libqt6sql6-sqlite \
+          qt6-svg-dev libqt6svg6 \
           libqt6concurrent6 libqt6network6 libqt6printsupport6 libqt6sql6 \
           libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
           libxcb-cursor-dev libxcb-xinerama0-dev \
@@ -1632,6 +1633,7 @@ jobs:
         dnf install -y \
           gcc-c++ cmake ninja-build pkg-config \
           qt6-qtbase-devel qt6-qttools-devel qt6-linguist \
+          qt6-qtsvg-devel \
           mesa-libGL-devel libxkbcommon-devel libxkbcommon-x11-devel \
           fontconfig-devel freetype-devel \
           libX11-devel libXext-devel libXfixes-devel libXi-devel libXrender-devel \
