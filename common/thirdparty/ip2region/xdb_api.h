@@ -21,9 +21,14 @@
 #   define XDB_PUBLIC(type)    extern __declspec(dllexport) type
 #   define XDB_PRIVATE(type)   static type
 #   define XDB_WINDOWS
-#include <windows.h>
+// 必须 winsock2.h 在 windows.h 之前 —— 否则 windows.h 会拉旧的 winsock.h 导致 sockaddr/fd_set 等大量重定义。
+// 另外 WIN32_LEAN_AND_MEAN 是双保险。
+#ifndef WIN32_LEAN_AND_MEAN
+#   define WIN32_LEAN_AND_MEAN
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 #pragma comment(lib, "ws2_32.lib")
 #elif (defined(linux) || defined(_UNIX) || defined(__APPLE__) || defined(unix) || defined(__unix) || defined(__unix__) || defined(__linux__) || defined(linux) || defined(__linux))
 #   define XDB_PUBLIC(type)    extern type
