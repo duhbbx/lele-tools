@@ -184,12 +184,14 @@ public:
             mysql_options(m_conn, MYSQL_OPT_SSL_MODE, &sslMode);
         }
 #endif
+#ifdef MYSQL_OPT_SSL_VERIFY_SERVER_CERT
         {
-            // 老 API 兜底：MYSQL_OPT_SSL_VERIFY_SERVER_CERT = 0，type 在各版本里
-            // 是 my_bool/bool/char，用 char 最稳（mysql_options 按字节读）
+            // 老 API 兜底（仅 MariaDB Connector/C 有此选项；Ubuntu 系自带的
+            // libmysqlclient 旧版没有这个枚举值，编译时直接走 #ifndef 分支）
             char noVerify = 0;
             mysql_options(m_conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &noVerify);
         }
+#endif
 
         if (!mysql_real_connect(m_conn,
                                 cfg.host.toUtf8().constData(),
