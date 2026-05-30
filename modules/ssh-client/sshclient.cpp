@@ -11,6 +11,29 @@
 #include <QMenuBar>
 #include <QStatusBar>
 
+// SFTP 上传 / 创建目录用到的 POSIX 权限位（rwxrwxrwx）。
+// Linux/macOS 由 <sys/stat.h> 给；MSVC 的 sys/stat.h 只给 user 三位，没有 group/other，
+// 这里按 POSIX 八进制值兜底，确保 wire 协议传给远端是标准 POSIX 权限值。
+#include <sys/stat.h>
+#ifndef S_IRUSR
+#  define S_IRUSR  0400
+#  define S_IWUSR  0200
+#  define S_IXUSR  0100
+#  define S_IRWXU  0700
+#endif
+#ifndef S_IRGRP
+#  define S_IRGRP  0040
+#  define S_IWGRP  0020
+#  define S_IXGRP  0010
+#  define S_IRWXG  0070
+#endif
+#ifndef S_IROTH
+#  define S_IROTH  0004
+#  define S_IWOTH  0002
+#  define S_IXOTH  0001
+#  define S_IRWXO  0007
+#endif
+
 REGISTER_DYNAMICOBJECT(SSHClient);
 
 SSHClient::SSHClient(QWidget* parent)
