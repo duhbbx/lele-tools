@@ -1530,18 +1530,41 @@ jobs:
   build-linux:
     needs: check-should-build
     if: needs.check-should-build.outputs.should_build == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
+          # x86_64 三发行版
           - distro: ubuntu
+            arch: amd64
+            runner: ubuntu-latest
             container: ''               # 不使用容器，直接在 runner 上跑
             pkg_fmt: deb
           - distro: debian
+            arch: amd64
+            runner: ubuntu-latest
             container: 'debian:bookworm'
             pkg_fmt: deb
           - distro: fedora
+            arch: amd64
+            runner: ubuntu-latest
+            container: 'fedora:41'
+            pkg_fmt: rpm
+          # arm64 / aarch64（GitHub 24Q4 推出的免费 ARM Linux runner）
+          - distro: ubuntu
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            container: ''
+            pkg_fmt: deb
+          - distro: debian
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            container: 'debian:bookworm'
+            pkg_fmt: deb
+          - distro: fedora
+            arch: arm64
+            runner: ubuntu-24.04-arm
             container: 'fedora:41'
             pkg_fmt: rpm
 
@@ -1697,8 +1720,9 @@ jobs:
         set -e
         VERSION="${{ steps.version.outputs.version }}"
         DISTRO="${{ matrix.distro }}"
+        ARCH="${{ matrix.arch }}"     # amd64 | arm64
         EXE="${{ steps.build.outputs.exe_path }}"
-        PKG_NAME="lele-tools_${VERSION}_${DISTRO}_amd64"
+        PKG_NAME="lele-tools_${VERSION}_${DISTRO}_${ARCH}"
 
         mkdir -p "${PKG_NAME}/DEBIAN"
         mkdir -p "${PKG_NAME}/usr/bin"
@@ -1714,7 +1738,7 @@ jobs:
         Version: ${VERSION}
         Section: utils
         Priority: optional
-        Architecture: amd64
+        Architecture: ${ARCH}
         Depends: libqt6widgets6, libqt6network6, libqt6concurrent6, libqt6sql6, libqt6printsupport6
         Maintainer: lele-tools maintainers
         Description: Lele Tools - Collection of useful desktop utilities
@@ -1777,7 +1801,11 @@ jobs:
         rpmbuild -bb ~/rpmbuild/SPECS/lele-tools.spec
 
         RPM_FILE=$(find ~/rpmbuild/RPMS -name "*.rpm" | head -n1)
-        RPM_NAME="lele-tools-${VERSION}-1.fedora.x86_64.rpm"
+        # arm64 → aarch64（rpm 用 aarch64 命名），amd64 → x86_64
+        RPM_ARCH="${{ matrix.arch }}"
+        if [ "$RPM_ARCH" = "amd64" ]; then RPM_ARCH="x86_64"; fi
+        if [ "$RPM_ARCH" = "arm64" ]; then RPM_ARCH="aarch64"; fi
+        RPM_NAME="lele-tools-${VERSION}-1.fedora.${RPM_ARCH}.rpm"
         cp "$RPM_FILE" "$(pwd)/$RPM_NAME"
 
         echo "pkg_path=$(pwd)/$RPM_NAME" >> $GITHUB_OUTPUT
@@ -1789,7 +1817,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: lele-tools-${{ matrix.distro }}-${{ steps.version.outputs.version }}
+        name: lele-tools-${{ matrix.distro }}-${{ matrix.arch }}-${{ steps.version.outputs.version }}
         path: |
           ${{ steps.pkg_deb.outputs.pkg_path }}
           ${{ steps.pkg_rpm.outputs.pkg_path }}
@@ -1827,8 +1855,8 @@ jobs:
         echo "PKG_CONFIG_PATH=$(brew --prefix mysql-client)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
         echo "$(brew --prefix mysql-client)/bin" >> $GITHUB_PATH
 
-    # 安装 Qt 6（macOS / clang_64）
-    - name: Setup Qt (macOS)
+    # 安装 Qt 6（macOS ARM64 — Apple Silicon 专用，不再做 x64 / universal）
+    - name: Setup Qt (macOS arm64)
       uses: jurplel/install-qt-action@v3
       with:
         version: ${{ env.QT_VERSION_WINDOWS }}
@@ -1867,6 +1895,7 @@ jobs:
         rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR"
         cd "$BUILD_DIR"
 
+        # 强制单架构 ARM64（Apple Silicon），不出 universal binary、不要 x86_64
         CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DWITH_OPENCV=ON \
           -DWITH_MYSQL=ON \
@@ -1874,6 +1903,7 @@ jobs:
           -DWITH_LIBSSH=ON \
           -DWITH_PCAP=OFF \
           -DWITH_QT_MULTIMEDIA=ON \
+          -DCMAKE_OSX_ARCHITECTURES=arm64 \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0"
 
         cmake "$PROJECT_ROOT" $CMAKE_ARGS
@@ -1915,7 +1945,7 @@ jobs:
 
         # 创建临时可读写 DMG
         DMG_TEMP="$BUILD_DIR/LeleTools-temp.dmg"
-        DMG_FILE="$BUILD_DIR/LeleTools-$VERSION-macOS.dmg"
+        DMG_FILE="$BUILD_DIR/LeleTools-$VERSION-macOS-arm64.dmg"
         hdiutil create -volname "LeleTools" -srcfolder "$STAGING" -ov -format UDRW "$DMG_TEMP"
 
         # 挂载并设置窗口样式（图标大小、窗口尺寸、图标位置）
