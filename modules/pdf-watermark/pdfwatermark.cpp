@@ -23,8 +23,10 @@
 #include <QMimeData>
 #include <QPageSize>
 #include <QPainter>
+#ifdef WITH_QT_PDF
 #include <QPdfDocument>
 #include <QPdfWriter>
+#endif
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
@@ -45,7 +47,9 @@ REGISTER_DYNAMICOBJECT(PdfWatermark);
 PdfWatermark::PdfWatermark() : QWidget(nullptr), DynamicObjectBase()
 {
     setAcceptDrops(true);
+#ifdef WITH_QT_PDF
     m_pdfDoc = new QPdfDocument(this);
+#endif
     setupUI();
     onTypeChanged(0);
 }
@@ -383,6 +387,11 @@ void PdfWatermark::onOpenPdf()
 
 void PdfWatermark::loadPdf(const QString& path)
 {
+#ifndef WITH_QT_PDF
+    Q_UNUSED(path);
+    QMessageBox::warning(this, tr("未启用"),
+        tr("当前构建未启用 Qt Pdf 支持，无法打开 PDF。"));
+#else
     auto err = m_pdfDoc->load(path);
     if (err != QPdfDocument::Error::None) {
         QMessageBox::warning(this, tr("打不开"),
@@ -396,10 +405,12 @@ void PdfWatermark::loadPdf(const QString& path)
     buildPageList();
     m_exportBtn->setEnabled(true);
     refreshPreview();
+#endif
 }
 
 void PdfWatermark::buildPageList()
 {
+#ifdef WITH_QT_PDF
     m_pageList->clear();
     int n = m_pdfDoc->pageCount();
     // 缩略图渲染目标尺寸（实际渲染会按页面长宽比保比例）
@@ -414,6 +425,7 @@ void PdfWatermark::buildPageList()
         m_pageList->addItem(item);
     }
     if (n > 0) m_pageList->setCurrentRow(0);
+#endif
 }
 
 void PdfWatermark::onPageSelected()
@@ -428,6 +440,9 @@ void PdfWatermark::schedulePreview()
 
 void PdfWatermark::refreshPreview()
 {
+#ifndef WITH_QT_PDF
+    return;
+#else
     if (!m_pdfDoc || m_pdfDoc->pageCount() <= 0) return;
     QListWidgetItem* it = m_pageList->currentItem();
     if (!it) return;
@@ -462,6 +477,7 @@ void PdfWatermark::refreshPreview()
     m_previewLabel->resize(QSize(int(pm.width() / dpr + 0.5),
                                  int(pm.height() / dpr + 0.5)));
     m_previewLabel->setStyleSheet("background:white; border:1px solid #ced4da;");
+#endif
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -470,6 +486,9 @@ void PdfWatermark::refreshPreview()
 
 void PdfWatermark::onRangePreset()
 {
+#ifndef WITH_QT_PDF
+    return;
+#else
     if (m_pdfDoc->pageCount() <= 0) return;
     int n = m_pdfDoc->pageCount();
     auto* btn = qobject_cast<QPushButton*>(sender());
@@ -490,11 +509,15 @@ void PdfWatermark::onRangePreset()
     else if (btn == m_skipFirstBtn) r = n > 1 ? QString("2-%1").arg(n) : "";
     m_rangeEdit->setText(r);
     schedulePreview();
+#endif
 }
 
 QSet<int> PdfWatermark::parsePageRange() const
 {
     QSet<int> result;
+#ifndef WITH_QT_PDF
+    return result;
+#else
     int n = m_pdfDoc->pageCount();
     if (n <= 0) return result;
 
@@ -526,6 +549,7 @@ QSet<int> PdfWatermark::parsePageRange() const
         }
     }
     return result;
+#endif
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -690,6 +714,10 @@ void PdfWatermark::drawWatermarkOnImage(QImage& img, qreal logicalScale)
 
 void PdfWatermark::onExportPdf()
 {
+#ifndef WITH_QT_PDF
+    QMessageBox::warning(this, tr("未启用"),
+        tr("当前构建未启用 Qt Pdf 支持，无法导出 PDF。"));
+#else
     if (m_pdfDoc->pageCount() <= 0) {
         QMessageBox::warning(this, tr("无 PDF"), tr("请先打开一个 PDF。"));
         return;
@@ -811,4 +839,5 @@ void PdfWatermark::onExportPdf()
         QDesktopServices::openUrl(QUrl::fromLocalFile(savePath));
     else if (box.clickedButton() == dirBtn)
         QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(savePath).absolutePath()));
+#endif
 }

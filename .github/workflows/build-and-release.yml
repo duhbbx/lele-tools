@@ -1620,8 +1620,16 @@ jobs:
 
         # 可选依赖（部分发行版仓库可能没有）
         $SUDO apt-get install -y qt6-multimedia-dev || echo "qt6-multimedia-dev 不可用，跳过"
-        # WebEngine 已移除，不再安装
-        $SUDO apt-get install -y libmysqlclient-dev || $SUDO apt-get install -y default-libmysqlclient-dev || echo "MySQL dev 不可用，跳过"
+        # Qt PDF — pdf-stamp / pdf-watermark 需要
+        $SUDO apt-get install -y qt6-pdf-dev || $SUDO apt-get install -y libqt6pdf6-dev || \
+            $SUDO apt-get install -y libqt6pdf6 || echo "Qt6 PDF 不可用，跳过 PDF 相关模块"
+        # PostgreSQL libpq — db-compare 需要
+        $SUDO apt-get install -y libpq-dev || echo "libpq-dev 不可用，跳过 PG 支持"
+        # MariaDB Connector/C 优先（解决 MySQL 9 客户端的认证兼容问题）
+        $SUDO apt-get install -y libmariadb-dev || $SUDO apt-get install -y libmariadb-dev-compat \
+            || $SUDO apt-get install -y libmysqlclient-dev \
+            || $SUDO apt-get install -y default-libmysqlclient-dev \
+            || echo "MySQL dev 不可用，跳过"
 
     # ──────────────────────────────────────────────
     # 安装依赖：Fedora（dnf）
@@ -1645,8 +1653,13 @@ jobs:
 
         # 可选依赖
         dnf install -y qt6-qtmultimedia-devel || echo "qt6-qtmultimedia-devel 不可用，跳过"
-        # WebEngine 已移除，不再安装
-        dnf install -y mysql-devel || dnf install -y mariadb-devel || echo "MySQL/MariaDB dev 不可用，跳过"
+        # Qt PDF — pdf-stamp / pdf-watermark 需要
+        dnf install -y qt6-qtpdf-devel || echo "qt6-qtpdf-devel 不可用，跳过 PDF 相关模块"
+        # PostgreSQL libpq — db-compare 需要
+        dnf install -y libpq-devel || echo "libpq-devel 不可用，跳过 PG 支持"
+        # MariaDB Connector/C 优先
+        dnf install -y mariadb-connector-c-devel || dnf install -y mariadb-devel \
+            || dnf install -y mysql-devel || echo "MySQL/MariaDB dev 不可用，跳过"
 
     - name: Set version
       id: version
@@ -1695,6 +1708,16 @@ jobs:
         else
           CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_MULTIMEDIA=OFF"
         fi
+
+        # 检测 Qt Pdf（pdf-stamp / pdf-watermark 需要）
+        if find /usr -path '*/cmake/Qt6Pdf/Qt6PdfConfig.cmake' 2>/dev/null | grep -q .; then
+          CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_PDF=ON"
+        else
+          CMAKE_ARGS="$CMAKE_ARGS -DWITH_QT_PDF=OFF"
+        fi
+
+        # VTK 在 Linux CI 上不装（包太大，编译慢）— db-compare 的 PG 走 WITH_LIBPQ
+        CMAKE_ARGS="$CMAKE_ARGS -DWITH_VTK=OFF"
 
         echo "CMake args: $CMAKE_ARGS"
         cmake "$PROJECT_ROOT" $CMAKE_ARGS
@@ -1896,6 +1919,8 @@ jobs:
         cd "$BUILD_DIR"
 
         # 强制单架构 ARM64（Apple Silicon），不出 universal binary、不要 x86_64
+        # WITH_VTK=OFF —— brew opencv 会把 vtk 9.6 拉进来，它内部 find_package(Qt6)
+        # 会和 jurplel/install-qt-action 安装的 Qt 6.9.1 冲突，CI 不需要 VTK demo 模块。
         CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DWITH_OPENCV=ON \
           -DWITH_MYSQL=ON \
@@ -1903,6 +1928,7 @@ jobs:
           -DWITH_LIBSSH=ON \
           -DWITH_PCAP=OFF \
           -DWITH_QT_MULTIMEDIA=ON \
+          -DWITH_VTK=OFF \
           -DCMAKE_OSX_ARCHITECTURES=arm64 \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0"
 
