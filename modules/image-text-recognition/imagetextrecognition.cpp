@@ -1204,7 +1204,7 @@ void ImageTextRecognition::showInstallDialog()
 #ifdef Q_OS_MACOS
         proc->start("brew", QStringList() << "install" << "tesseract" << "tesseract-lang");
 #else
-        proc->start("bash", QStringList() << "-c" << tessCmd);
+        proc->start("bash", QStringList() << "-c" << tessCmdCopy);
 #endif
     });
 #endif
