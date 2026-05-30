@@ -7,7 +7,12 @@
 #include <QTranslator>
 #include <QSettings>
 #include <QDebug>
+#include <QSurfaceFormat>
 #include "common/logger.h"
+
+#ifdef WITH_VTK
+#include <QVTKOpenGLNativeWidget.h>
+#endif
 
 #ifdef Q_OS_WIN
 #include <io.h>
@@ -35,6 +40,11 @@ int main(int argc, char* argv[]) {
         // 输出一个换行，让输出从新行开始
         std::cout << std::endl;
     }
+#endif
+
+#ifdef WITH_VTK
+    // VTK 9 + Qt 推荐：在 QApplication 之前设默认 OpenGL surface format
+    QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 #endif
 
     QApplication a(argc, argv);

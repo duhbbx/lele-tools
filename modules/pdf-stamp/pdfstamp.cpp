@@ -1,6 +1,7 @@
 #include "pdfstamp.h"
 
 #include <QApplication>
+#include <QBuffer>
 #include <QComboBox>
 #include <QContextMenuEvent>
 #include <QDateTime>
@@ -31,6 +32,7 @@
 #include <QWidget>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QFormLayout>
 #include <QPainterPath>
 #include <QPen>
 #include <QShortcut>
@@ -577,6 +579,10 @@ void PdfStamp::setupUi()
     m_addSignBtn = new QPushButton(tr("导入签名"));
     m_drawSignBtn = new QPushButton(tr("手写签名"));
     m_addDateBtn = new QPushButton(tr("加日期"));
+    m_seamStampBtn = new QPushButton(tr("🔖 骑缝章"));
+    m_seamStampBtn->setToolTip(tr(
+        "把一张完整印章图按 N 等分，依次贴在指定页范围的右边缘。\n"
+        "中间页被替换后，章会错位 — 起到防伪作用。"));
     m_delOverlayBtn = new QPushButton(tr("删除选中"));
     m_delOverlayBtn->setEnabled(false);
     m_saveAsBtn = new QPushButton(tr("另存为 PDF"));
@@ -585,6 +591,20 @@ void PdfStamp::setupUi()
         "QPushButton:hover { background-color: #e7f5ff; }"
         "QPushButton:disabled { color: #adb5bd; font-weight: normal; }");
 
+    m_qualityCombo = new QComboBox();
+    m_qualityCombo->addItem(tr("高 (300 DPI)"));
+    m_qualityCombo->addItem(tr("中 (200 DPI)"));    // 默认
+    m_qualityCombo->addItem(tr("低 (150 DPI)"));
+    m_qualityCombo->addItem(tr("原始 (无压缩)"));
+    m_qualityCombo->setCurrentIndex(1);
+    m_qualityCombo->setToolTip(tr(
+        "导出 PDF 时每页会重新光栅化。降低 DPI + JPEG 预压缩能显著减小体积。\n"
+        "高：300 DPI + JPEG q95，接近无损\n"
+        "中：200 DPI + JPEG q85，肉眼无差别，推荐\n"
+        "低：150 DPI + JPEG q70，体积最小\n"
+        "原始：300 DPI 无 JPEG 压缩（旧行为，体积大）"));
+    m_qualityCombo->setMinimumWidth(120);
+
     toolbar->addWidget(m_openBtn);
     toolbar->addSpacing(8);
     toolbar->addWidget(m_addStampBtn);
@@ -592,9 +612,12 @@ void PdfStamp::setupUi()
     toolbar->addWidget(m_drawSignBtn);
     toolbar->addSpacing(8);
     toolbar->addWidget(m_addDateBtn);
+    toolbar->addWidget(m_seamStampBtn);
     toolbar->addSpacing(8);
     toolbar->addWidget(m_delOverlayBtn);
     toolbar->addStretch();
+    toolbar->addWidget(new QLabel(tr("输出质量:")));
+    toolbar->addWidget(m_qualityCombo);
     toolbar->addWidget(m_saveAsBtn);
 
     main->addLayout(toolbar);
@@ -678,6 +701,7 @@ void PdfStamp::setupUi()
     connect(m_addSignBtn, &QPushButton::clicked, this, &PdfStamp::onAddSignatureFromFile);
     connect(m_drawSignBtn, &QPushButton::clicked, this, &PdfStamp::onDrawSignature);
     connect(m_addDateBtn, &QPushButton::clicked, this, &PdfStamp::onAddDate);
+    connect(m_seamStampBtn, &QPushButton::clicked, this, &PdfStamp::onAddSeamStamp);
     connect(m_useAssetBtn, &QPushButton::clicked, this, &PdfStamp::onUseSelectedAsset);
     connect(m_delAssetBtn, &QPushButton::clicked, this, &PdfStamp::onRemoveSelectedAsset);
     connect(m_delOverlayBtn, &QPushButton::clicked, this, &PdfStamp::onRemoveSelectedOverlay);
@@ -949,6 +973,140 @@ void PdfStamp::onOverlayClicked(pdfstamp::PdfPageView* page, pdfstamp::OverlayIt
     selectOverlay(item);
 }
 
+// ─────────────────────────────────────────────────────────────
+// 骑缝章：一张完整章图按 N 等分，每片贴到对应页面的右边缘。
+// 把全部页面按顺序放在一起，整章可见；中间页被替换则错位 → 防伪。
+// ─────────────────────────────────────────────────────────────
+void PdfStamp::onAddSeamStamp()
+{
+    if (m_pageViews.isEmpty()) {
+        QMessageBox::warning(this, tr("无 PDF"), tr("请先打开 PDF。"));
+        return;
+    }
+    int pageCount = m_pageViews.size();
+
+    // 1. 选章图：优先用资源库当前选中项，没选就弹文件对话框
+    QString stampPath;
+    if (m_assetList && m_assetList->currentItem()) {
+        stampPath = m_assetList->currentItem()->data(Qt::UserRole).toString();
+    }
+    if (stampPath.isEmpty() || !QFileInfo::exists(stampPath)) {
+        stampPath = QFileDialog::getOpenFileName(
+            this, tr("选择骑缝章图片"), QString(),
+            tr("图片 (*.png *.jpg *.jpeg *.svg)"));
+        if (stampPath.isEmpty()) return;
+    }
+    QImage stampImg(stampPath);
+    if (stampImg.isNull()) {
+        QMessageBox::warning(this, tr("打不开"),
+            tr("无法加载图片：%1").arg(stampPath));
+        return;
+    }
+
+    // 2. 配置对话框：页范围 + 章高 + 垂直位置
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("骑缝章设置"));
+    dlg.setMinimumWidth(420);
+
+    auto* startSpin = new QSpinBox();
+    startSpin->setRange(1, pageCount);
+    startSpin->setValue(1);
+    auto* endSpin = new QSpinBox();
+    endSpin->setRange(1, pageCount);
+    endSpin->setValue(pageCount);
+    auto* heightSpin = new QSpinBox();
+    heightSpin->setRange(30, 400);
+    heightSpin->setValue(90);
+    heightSpin->setSuffix(tr(" px (在视图中的高度)"));
+    auto* vposCombo = new QComboBox();
+    vposCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    vposCombo->setMinimumWidth(120);
+    vposCombo->addItem(tr("顶部"),   0);
+    vposCombo->addItem(tr("居中"),   1);
+    vposCombo->addItem(tr("底部"),   2);
+    vposCombo->setCurrentIndex(1);
+
+    auto* preview = new QLabel();
+    preview->setAlignment(Qt::AlignCenter);
+    {
+        QPixmap pm = QPixmap::fromImage(stampImg).scaledToHeight(80, Qt::SmoothTransformation);
+        preview->setPixmap(pm);
+    }
+
+    auto* form = new QFormLayout();
+    form->addRow(tr("起始页"),    startSpin);
+    form->addRow(tr("结束页"),    endSpin);
+    form->addRow(tr("章高度"),    heightSpin);
+    form->addRow(tr("垂直位置"),  vposCombo);
+
+    auto* tip = new QLabel(tr(
+        "章图会被横向等分成 (结束页 - 起始页 + 1) 片，依次贴在每页右边缘。\n"
+        "建议章图本身就是横向构图（章名横排），否则切出来的片段会怪。"));
+    tip->setStyleSheet("color:#868e96; font-size:9pt;");
+    tip->setWordWrap(true);
+
+    auto* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    auto* lay = new QVBoxLayout(&dlg);
+    lay->addWidget(new QLabel(tr("章图原图（预览）:")));
+    lay->addWidget(preview);
+    lay->addLayout(form);
+    lay->addWidget(tip);
+    lay->addWidget(btns);
+
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    int s = startSpin->value() - 1;   // 0-based
+    int e = endSpin->value() - 1;
+    if (e < s) std::swap(s, e);
+    int n = e - s + 1;
+    if (n < 2) {
+        QMessageBox::warning(this, tr("范围太小"),
+            tr("骑缝章至少要跨 2 页才有意义。"));
+        return;
+    }
+
+    // 3. 切片 + 贴到每页
+    const int targetH = heightSpin->value();
+    const int vpos = vposCombo->currentIndex();
+    const int srcW = stampImg.width();
+    const int srcH = stampImg.height();
+
+    for (int i = 0; i < n; ++i) {
+        int pageIdx = s + i;
+        if (pageIdx >= m_pageViews.size()) break;
+        auto* view = m_pageViews[pageIdx].data();
+        if (!view) continue;
+
+        // 切第 i 片：[i*srcW/n, (i+1)*srcW/n)
+        int sx = int(qint64(i) * srcW / n);
+        int sw = int(qint64(i + 1) * srcW / n) - sx;
+        if (sw <= 0) continue;
+        QImage slice = stampImg.copy(sx, 0, sw, srcH);
+
+        // 按目标高度等比缩放
+        QImage scaled = slice.scaledToHeight(targetH, Qt::SmoothTransformation);
+
+        // 贴在该页右边缘 — 让切片的右沿正好顶到页面右沿
+        int x = view->width() - scaled.width();   // 切片左上角 X
+        int y = 0;
+        switch (vpos) {
+            case 0: y = 24; break;                                          // 顶
+            case 1: y = (view->height() - scaled.height()) / 2; break;      // 中
+            case 2: y = view->height() - scaled.height() - 24; break;       // 底
+        }
+
+        // addOverlay 要中心点
+        QPoint center(x + scaled.width() / 2, y + scaled.height() / 2);
+        view->addOverlay(pdfstamp::OverlayItem::Stamp, scaled, center);
+    }
+
+    m_statusLabel->setText(tr("✅ 骑缝章已添加 — 跨 %1 页（%2 → %3）")
+                               .arg(n).arg(s + 1).arg(e + 1));
+}
+
 void PdfStamp::selectOverlay(pdfstamp::OverlayItem* it)
 {
     if (m_selectedOverlay && m_selectedOverlay != it) {
@@ -1070,8 +1228,22 @@ void PdfStamp::onSaveAs()
         this, tr("另存为 PDF"), defaultPath, tr("PDF 文件 (*.pdf)"));
     if (savePath.isEmpty()) return;
 
+    // 质量预设（DPI = 0 表示走"原始"路径：300 DPI 无 JPEG）
+    struct QualityPreset { int renderDpi; int jpegQ; };
+    static const QualityPreset presets[] = {
+        {300, 95},   // 高
+        {200, 85},   // 中（默认）
+        {150, 70},   // 低
+        {  0,  0},   // 原始
+    };
+    int qi = qBound(0, m_qualityCombo->currentIndex(),
+                    int(sizeof(presets) / sizeof(presets[0])) - 1);
+    const int renderDpi = presets[qi].renderDpi;
+    const int jpegQ     = presets[qi].jpegQ;
+    const int pdfDpi    = 300;   // QPdfWriter 内部分辨率
+
     QPdfWriter writer(savePath);
-    writer.setResolution(300);
+    writer.setResolution(pdfDpi);
     writer.setPageMargins(QMarginsF(0, 0, 0, 0));
 
     // 用第一页的页面尺寸近似（QPdfDocument 给出 points = 1/72 inch）
@@ -1096,16 +1268,38 @@ void PdfStamp::onSaveAs()
         auto* view = m_pageViews[i].data();
         if (!view) continue;
 
-        // 1) 绘制原页面位图（高分辨率重新渲染，避免视图缩放损耗）
+        // 1) 绘制原页面位图。
+        // 关键瘦身：按 renderDpi 而非 pdfDpi 光栅化 — 渲染像素数从
+        // (300/pdfDpi)² 降到 (renderDpi/pdfDpi)²，体积按比例缩小。
         int pageIdx = view->pageIndex();
-        QSizeF pts = m_pdfDoc->pagePointSize(pageIdx);
-        // 输出尺寸（device pixels）
-        QRect target = painter.viewport();
-        QSize outPx(target.width(), target.height());
+        QRect target = painter.viewport();           // pdfDpi 下的整页像素 rect
+        QSize renderPx;
+        if (renderDpi > 0 && renderDpi < pdfDpi) {
+            double scale = double(renderDpi) / pdfDpi;
+            renderPx = QSize(int(target.width()  * scale + 0.5),
+                             int(target.height() * scale + 0.5));
+        } else {
+            renderPx = QSize(target.width(), target.height());
+        }
 
-        QImage hi = m_pdfDoc->render(pageIdx, outPx);
-        if (!hi.isNull())
+        QImage hi = m_pdfDoc->render(pageIdx, renderPx);
+        if (!hi.isNull()) {
+            // JPEG round-trip：把页面位图先 JPEG 编码再解码，降低数据熵 → PDF
+            // 内部 zlib 压缩后体积小很多（PNG 风格 zlib 对照片几乎压不动）
+            if (jpegQ > 0 && !hi.hasAlphaChannel()) {
+                QByteArray jpegBytes;
+                QBuffer buf(&jpegBytes);
+                buf.open(QIODevice::WriteOnly);
+                if (hi.save(&buf, "JPEG", jpegQ)) {
+                    buf.close();
+                    QImage rt = QImage::fromData(jpegBytes, "JPEG");
+                    if (!rt.isNull()) hi = rt;
+                } else {
+                    buf.close();
+                }
+            }
             painter.drawImage(target, hi);
+        }
 
         // 2) 把覆盖物按视图坐标映射到输出 painter 坐标
         QSize viewSize = view->size();

@@ -39,10 +39,24 @@ QString defaultEditorFontFamily()
 }  // namespace
 
 // RichTextEdit 实现
+// 锁定字号常量 — 改这里就能整体改默认/强制字号
+static constexpr int LOCKED_PT = 20;
+
+// 把 currentCharFormat 强制设成 20pt — 影响"下一个字符的格式"，
+// 包括按键输入、insertPlainText、按 Enter 后的新段落
+static inline void forceLockedFormat(QTextEdit* edit) {
+    if (!edit) return;
+    QTextCharFormat fmt;
+    QFont f = edit->font();
+    f.setPointSize(LOCKED_PT);
+    fmt.setFont(f);
+    edit->setCurrentCharFormat(fmt);
+}
+
 RichTextEdit::RichTextEdit(QWidget* parent) : QTextEdit(parent),
                                               m_isDragging(false), m_currentHandle(None) {
     setAcceptDrops(true);
-    setMouseTracking(true); // 启用鼠标跟踪
+    setMouseTracking(true);
 }
 
 void RichTextEdit::keyPressEvent(QKeyEvent* event) {
@@ -54,11 +68,17 @@ void RichTextEdit::keyPressEvent(QKeyEvent* event) {
         }
     }
 
+    // 关键：每次按键之前，先把 currentCharFormat 锁回 20pt
+    // 这样按下的字符、按下 Enter 后的新段落、按方向键移动后的下一次输入，
+    // 全部都以 20pt 写入文档
+    forceLockedFormat(this);
     QTextEdit::keyPressEvent(event);
+    // 按键完成后再锁一次（防御 keyPressEvent 自己改了 cursor format）
+    forceLockedFormat(this);
 }
 
 void RichTextEdit::insertFromMimeData(const QMimeData* source) {
-    // 检查是否包含图片
+    // 图片
     if (source->hasImage()) {
         if (const auto pixmap = qvariant_cast<QPixmap>(source->imageData()); !pixmap.isNull()) {
             emit imageDropped(pixmap);
@@ -66,7 +86,7 @@ void RichTextEdit::insertFromMimeData(const QMimeData* source) {
         }
     }
 
-    // 检查是否包含文件路径
+    // 文件路径
     if (source->hasUrls()) {
         for (QList<QUrl> urls = source->urls(); const QUrl& url : urls) {
             if (url.isLocalFile()) {
@@ -79,8 +99,21 @@ void RichTextEdit::insertFromMimeData(const QMimeData* source) {
         }
     }
 
-    // 默认处理文本
-    QTextEdit::insertFromMimeData(source);
+    // 文本：只取纯文本（剥掉 HTML 里所有 font-size / font-family / 颜色），
+    // 然后用 currentCharFormat（已锁 20pt）插入
+    forceLockedFormat(this);
+    QString plain;
+    if (source->hasText()) plain = source->text();
+    else if (source->hasHtml()) {
+        QTextDocument tmp;
+        tmp.setHtml(source->html());
+        plain = tmp.toPlainText();
+    }
+    if (!plain.isEmpty()) {
+        QTextCursor cur = textCursor();
+        cur.insertText(plain, currentCharFormat());
+    }
+    forceLockedFormat(this);
 }
 
 void RichTextEdit::wheelEvent(QWheelEvent* event) {
@@ -558,6 +591,12 @@ Notepad::Notepad() : QWidget(nullptr), DynamicObjectBase(),
     connect(autoSaveTimer, &QTimer::timeout, this, &Notepad::onAutoSaveTimer);
     autoSaveTimer->start(3 * 1000);
 
+    // 🔒 字号 20pt 锁定：每次文本变化（输入、删除、粘贴、HR、HTML 注入）立即同步
+    // 把全文 mergeCharFormat 到 20pt。同步执行不防抖 — 慢一拍都不行。
+    connect(contentEdit, &QTextEdit::textChanged, this, [this]() {
+        if (!suppressNormalize) normalizeMinFontSizes();
+    });
+
     // 失焦立即保存：编辑器失去焦点（点别处、切窗口、切笔记前一刻）就 flush 一次
     contentEdit->installEventFilter(this);
 
@@ -673,9 +712,12 @@ void Notepad::setupEditorArea() {
                                 QStringLiteral("Microsoft YaHei"),
                                 QStringLiteral("Helvetica Neue"),
                                 QStringLiteral("sans-serif")});
-        editorFont.setPointSize(13);
+        editorFont.setPointSize(20);   // 默认 20pt（与全局最小字号一致）
         contentEdit->setFont(editorFont);
     }
+    // 富文本模式（允许粘贴格式、B/I/U 等），但 widget 默认字体 20pt 兜底
+    contentEdit->setAcceptRichText(true);
+    contentEdit->document()->setDefaultFont(contentEdit->font());
     contentEdit->setStyleSheet(
         "QTextEdit {"
         "    border: 1px solid #d0d7de;"
@@ -698,6 +740,10 @@ void Notepad::setupEditorArea() {
     });
 
     // 连接内容变化，只做基本标记
+    // 光标移动 / 进入不同格式区域时，把工具栏字号同步成 cursor 当前 char format 的字号
+    connect(contentEdit, &QTextEdit::currentCharFormatChanged,
+            this, &Notepad::onCursorFormatChanged);
+
     connect(contentEdit, &QTextEdit::textChanged, this, [this]() {
         if (currentNoteId != -1) {
             hasUnsavedChanges = true;
@@ -787,8 +833,8 @@ void Notepad::setupToolbar() {
     connect(fontCombo, &QFontComboBox::currentFontChanged, this, &Notepad::onFontChanged);
 
     fontSizeSpinBox = new QSpinBox();
-    fontSizeSpinBox->setRange(8, 72);
-    fontSizeSpinBox->setValue(12);
+    fontSizeSpinBox->setRange(20, 72);    // 最小 20pt，最大 72，可改
+    fontSizeSpinBox->setValue(20);
     fontSizeSpinBox->setSuffix(tr("pt"));
     connect(fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &Notepad::onFontSizeChanged);
 
@@ -860,6 +906,18 @@ void Notepad::setupToolbar() {
     insertMediaBtn->setToolTip(tr("插入媒体"));
     connect(insertMediaBtn, &QPushButton::clicked, this, &Notepad::onInsertMedia);
 
+    insertHrBtn = new QPushButton(tr("─"));
+    insertHrBtn->setToolTip(tr("插入水平分割线（Ctrl+Shift+H）"));
+    insertHrBtn->setShortcut(QKeySequence("Ctrl+Shift+H"));
+    connect(insertHrBtn, &QPushButton::clicked, this, &Notepad::onInsertHr);
+
+    cleanFormatBtn = new QPushButton(tr("🧹 清理格式"));
+    cleanFormatBtn->setToolTip(tr(
+        "一键清理：把整篇内容强制统一成 20pt 纯字，\n"
+        "去掉加粗 / 斜体 / 下划线 / 颜色 / 字体名等所有格式。\n"
+        "粘贴外部内容字号混乱时用。"));
+    connect(cleanFormatBtn, &QPushButton::clicked, this, &Notepad::onCleanFormat);
+
     // 保存 + 导出
     saveBtn = new QPushButton(tr("💾 保存"));
     saveBtn->setStyleSheet(
@@ -888,6 +946,7 @@ void Notepad::setupToolbar() {
     toolbar->addWidget(textColorBtn);
     toolbar->addWidget(bgColorBtn);
 
+
     // 第二行：对齐 / 插入 / 保存 / 导出
     toolbar2->addWidget(alignLeftBtn);
     toolbar2->addWidget(alignCenterBtn);
@@ -896,6 +955,9 @@ void Notepad::setupToolbar() {
     toolbar2->addSeparator();
     toolbar2->addWidget(insertImageBtn);
     toolbar2->addWidget(insertMediaBtn);
+    toolbar2->addWidget(insertHrBtn);
+    toolbar2->addSeparator();
+    toolbar2->addWidget(cleanFormatBtn);
     // 用 stretch widget 把保存/导出推到右边
     {
         auto* spacer = new QWidget();
@@ -1100,6 +1162,7 @@ void Notepad::loadNoteContent(int noteId) {
             currentNoteId = noteId;
             contentEdit->setHtml(note.content);
             hasUnsavedChanges = false;
+            normalizeMinFontSizes();   // 自动把 <20pt 的字号升到 20pt
 
             // 延迟设置焦点，确保内容加载完成
             QTimer::singleShot(50, [this]() {
@@ -1830,10 +1893,82 @@ void Notepad::onFontChanged() {
 }
 
 void Notepad::onFontSizeChanged() {
+    // 用 mergeCurrentCharFormat 一步到位：
+    // - 有选区时合并到选区的 char format
+    // - 无选区时合并到 cursor 的 "current char format"（即下一个字符的格式）
+    // 这样按回车后新段落继承的就是工具栏上的字号，不会再"时大时小"
+    QTextCharFormat fmt;
+    fmt.setFontPointSize(fontSizeSpinBox->value());
+    contentEdit->mergeCurrentCharFormat(fmt);
+}
+
+// 光标位置变化时把工具栏字号同步成 cursor 当前 char format 的字号 —
+// 让"工具栏显示的字号" 始终等于"下一个字符的字号"，避免用户误判
+void Notepad::onCursorFormatChanged(const QTextCharFormat& fmt) {
+    qreal pt = fmt.fontPointSize();
+    if (pt <= 0) return;
+    int v = int(pt + 0.5);
+    if (v < 20) v = 20;     // 工具栏也强制 ≥20
+    QSignalBlocker block(fontSizeSpinBox);
+    fontSizeSpinBox->setValue(v);
+}
+
+// 全局最小字号规范化：遍历文档每个 block 的每个 fragment，凡是 fontPointSize < 20
+// 都强制 mergeCharFormat 升到 20pt。处理三种来源：
+//   1. 粘贴进来的小字体（如从 13pt 的 Word/网页粘进来）
+//   2. 旧笔记加载时的历史字号
+//   3. 任何意外的小字号设置
+// 走 textChanged 触发 + 200ms 防抖，输入流畅不卡。
+// 用 suppressNormalize 标志防止自己引起的 textChanged 反复触发死循环。
+void Notepad::normalizeMinFontSizes() {
+    if (!contentEdit || suppressNormalize) return;
+    // 🔒 终极锁定：把整篇文档每个字符的字号统统设为 20pt，
+    // 同时清掉 fontPixelSize / fontFamily 覆盖等可能干扰显示尺寸的属性。
+    // selectAll + mergeCharFormat(只动 font) — 保留 B / I / 颜色 / 链接等其它属性。
+    suppressNormalize = true;
+    QTextCursor cur(contentEdit->document());
+    cur.beginEditBlock();
+    cur.select(QTextCursor::Document);
+    QTextCharFormat fmt;
+    QFont f = contentEdit->font();
+    f.setPointSize(20);
+    fmt.setFont(f);
+    cur.mergeCharFormat(fmt);
+    cur.endEditBlock();
+    suppressNormalize = false;
+}
+
+// 应急按钮：把整篇内容统一成 20pt 纯字，去掉所有格式（B/I/U/颜色/字体名）
+void Notepad::onCleanFormat() {
+    if (!contentEdit) return;
+    suppressNormalize = true;
+    QTextCursor cur = contentEdit->textCursor();
+    int oldPos = cur.position();
+    cur.select(QTextCursor::Document);
+    QTextCharFormat clean;
+    clean.setFont(contentEdit->font());     // widget 字体（20pt）
+    cur.setCharFormat(clean);                // 整覆盖，所有 char-level 格式清光
+    cur.clearSelection();
+    cur.setPosition(qMin(oldPos, contentEdit->document()->characterCount() - 1));
+    contentEdit->setTextCursor(cur);
+    suppressNormalize = false;
+}
+
+// 在光标处插入一条水平分割线（独立成段）
+void Notepad::onInsertHr() {
     QTextCursor cursor = contentEdit->textCursor();
-    QTextCharFormat format = cursor.charFormat();
-    format.setFontPointSize(fontSizeSpinBox->value());
-    cursor.setCharFormat(format);
+    cursor.beginEditBlock();
+    // 如果当前不在段首，先 break 一段
+    if (!cursor.atBlockStart()) cursor.insertBlock();
+    cursor.insertHtml("<hr>");
+    // 让分割线后另起一段，并继承工具栏字号
+    cursor.insertBlock();
+    QTextCharFormat fmt;
+    fmt.setFontPointSize(fontSizeSpinBox->value());
+    cursor.mergeCharFormat(fmt);
+    contentEdit->mergeCurrentCharFormat(fmt);
+    cursor.endEditBlock();
+    contentEdit->setFocus();
 }
 
 void Notepad::onBoldClicked() {

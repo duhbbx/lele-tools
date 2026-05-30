@@ -41,7 +41,6 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "Todo", "Todo"},
 {"xxx", "Salary Calculator", "SalaryCalc"},
 {"xxx", "Regex Test Tool", "RegExTest"},
-{"xxx", "Image Compression", "ImageCompression"},
 {"xxx", "Favicon Production", "FaviconProduction"},
 {"xxx", "Color Tools", "ColorTools"},
 {"xxx", "Mobile Location", "MobileLocation"},
@@ -82,6 +81,11 @@ inline ModuleMeta moduleMetaArray[] = {
 {"xxx", "Images to PDF", "ImagesToPdf"},
 {"xxx", "Tiny Image Compress", "TinyImageCompress"},
 {"xxx", "Image Collection", "ImageCollection"},
+{"xxx", "DB Compare", "DbCompare"},
+{"xxx", "Markdown To Long Image", "MarkdownToLongImage"},
+{"xxx", "VTK Demo", "VtkDemo"},
+{"xxx", "OSS Image Host", "OssImageHost"},
+{"xxx", "PDF Watermark", "PdfWatermark"},
 };
 
 #endif // MOUDULEMETA_H

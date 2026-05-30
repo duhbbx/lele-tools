@@ -134,6 +134,7 @@ private slots:
     void onUseSelectedAsset();
     void onRemoveSelectedAsset();
     void onAddDate();
+    void onAddSeamStamp();        // 骑缝章：一张章拆 N 片贴右边缘
     void onRemoveSelectedOverlay();
 
     // 放置/选中处理
@@ -161,11 +162,13 @@ private:
     QPushButton* m_addSignBtn = nullptr;
     QPushButton* m_drawSignBtn = nullptr;
     QPushButton* m_addDateBtn = nullptr;
+    QPushButton* m_seamStampBtn = nullptr;
     QPushButton* m_useAssetBtn = nullptr;
     QPushButton* m_delAssetBtn = nullptr;
 
     QListWidget* m_assetList = nullptr;
     QComboBox* m_dateFormatCombo = nullptr;
+    QComboBox* m_qualityCombo = nullptr;   // 导出质量（DPI + JPEG q）
     QLineEdit* m_customDateEdit = nullptr;
 
     QScrollArea* m_scrollArea = nullptr;

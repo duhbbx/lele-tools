@@ -19,7 +19,6 @@
 #include <QApplication>
 #include <QClipboard>
 #include "mainwindowtabwidget.h"
-#include <QGraphicsDropShadowEffect>
 #include <QResizeEvent>
 #include <QTranslator>
 #include <QLocale>

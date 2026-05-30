@@ -2002,6 +2002,68 @@ jobs:
         echo "=== 将要上传到 Release 的文件 ==="
         ls -lh release-files/ || echo "（无文件）"
 
+    # ─────────────────────────────────────────────────────────────
+    # 并行上传到阿里云 OSS（skylerx-build bucket）
+    # 不替换 GitHub Release 上传，跟 softprops/action-gh-release 完全独立。
+    # AK 从 GitHub Secrets 读，未配置时整步跳过 — 不会因为 fork 仓库没设
+    # secrets 而失败。
+    # ─────────────────────────────────────────────────────────────
+    - name: Upload artifacts to Aliyun OSS (skylerx-build)
+      shell: bash
+      env:
+        OSS_AK_ID:     ${{ secrets.OSS_BUILD_AK_ID }}
+        OSS_AK_SECRET: ${{ secrets.OSS_BUILD_AK_SECRET }}
+        OSS_BUCKET:    skylerx-build
+        OSS_ENDPOINT:  oss-cn-shanghai.aliyuncs.com
+        OSS_CDN:       https://skylerx-build.cn-shanghai.taihangpfm.cn
+        VERSION:       ${{ steps.version.outputs.version }}
+      run: |
+        if [ -z "$OSS_AK_ID" ] || [ -z "$OSS_AK_SECRET" ]; then
+          echo "::warning::OSS_BUILD_AK_ID / OSS_BUILD_AK_SECRET 未配置，跳过 OSS 上传"
+          exit 0
+        fi
+
+        # 安装 ossutil v2（官方推荐方式）
+        OSSUTIL_VERSION=2.0.5
+        curl -fSsL -o /tmp/ossutil.tar.gz \
+          "https://gosspublic.alicdn.com/ossutil/v2/${OSSUTIL_VERSION}/ossutil-${OSSUTIL_VERSION}-linux-amd64.tar.gz"
+        tar -xzf /tmp/ossutil.tar.gz -C /tmp
+        sudo mv "/tmp/ossutil-${OSSUTIL_VERSION}-linux-amd64/ossutil" /usr/local/bin/ossutil
+        sudo chmod +x /usr/local/bin/ossutil
+        ossutil version || true
+
+        # 路径前缀按版本号分目录：lele-tools/1.2.<patch>/
+        PREFIX="lele-tools/${VERSION}"
+
+        # 把 release-files/ 下所有文件上传 — 跟 GitHub Release 同一份资产
+        echo "==== 上传到 oss://${OSS_BUCKET}/${PREFIX}/ ===="
+        for f in release-files/*; do
+          [ -f "$f" ] || continue
+          BASENAME=$(basename "$f")
+          ossutil cp "$f" "oss://${OSS_BUCKET}/${PREFIX}/${BASENAME}" \
+            --endpoint "${OSS_ENDPOINT}" \
+            --access-key-id "${OSS_AK_ID}" \
+            --access-key-secret "${OSS_AK_SECRET}" \
+            --force
+          echo "  · ${OSS_CDN}/${PREFIX}/${BASENAME}"
+        done
+
+        # 同时把每个文件复制一份到 latest/ 路径，方便固定链接
+        echo "==== 同步 latest/ ===="
+        for f in release-files/*; do
+          [ -f "$f" ] || continue
+          BASENAME=$(basename "$f")
+          ossutil cp "$f" "oss://${OSS_BUCKET}/lele-tools/latest/${BASENAME}" \
+            --endpoint "${OSS_ENDPOINT}" \
+            --access-key-id "${OSS_AK_ID}" \
+            --access-key-secret "${OSS_AK_SECRET}" \
+            --force
+        done
+
+        echo "==== 上传完成 ===="
+        echo "版本目录: ${OSS_CDN}/${PREFIX}/"
+        echo "latest:   ${OSS_CDN}/lele-tools/latest/"
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:

@@ -313,33 +313,163 @@ endif()
 if(WITH_MYSQL)
     message(STATUS "Checking for MySQL ...")
 
-    # 使用自定义FindMySQL模块
-    find_package(MySQL QUIET)
+    # 优先用 MariaDB Connector/C — 它和 libmysqlclient 源码级 API 兼容
+    # （同一个 mysql.h、同一组函数），但同时原生支持 mysql_native_password
+    # 与 caching_sha2_password 两种认证协议；MySQL 9 客户端则把
+    # mysql_native_password 插件彻底删除了，连老服务器会失败。
+    set(HAVE_MYSQL FALSE)
+    set(USING_MARIADB_CLIENT FALSE)
 
-    if(MySQL_FOUND)
-        message(STATUS "MySQL found via FindMySQL module")
-        set(HAVE_MYSQL TRUE)
-    else()
-        message(WARNING "MySQL not found. Building without MySQL support.")
-        set(HAVE_MYSQL FALSE)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(MARIADB_PC QUIET libmariadb)
+        if(MARIADB_PC_FOUND)
+            message(STATUS "MariaDB Connector/C found (pkg-config): ${MARIADB_PC_LIBRARIES}")
+            target_compile_definitions(lele-tools PRIVATE WITH_MYSQL)
+            target_include_directories(lele-tools PRIVATE ${MARIADB_PC_INCLUDE_DIRS})
+            target_link_libraries(lele-tools PRIVATE ${MARIADB_PC_LDFLAGS})
+            set(HAVE_MYSQL TRUE)
+            set(USING_MARIADB_CLIENT TRUE)
+        endif()
+    endif()
+
+    if(NOT USING_MARIADB_CLIENT)
+        # 手动找 MariaDB Connector/C（无 pkg-config 时）
+        find_path(MARIADB_INC_DIR mysql.h
+            HINTS /opt/homebrew/include/mariadb
+                  /opt/homebrew/opt/mariadb-connector-c/include/mariadb
+                  /usr/local/include/mariadb
+                  /usr/include/mariadb
+            DOC "MariaDB Connector/C 头文件目录（含 mysql.h）")
+        find_library(MARIADB_LIB
+            NAMES mariadb mariadbclient libmariadb
+            HINTS /opt/homebrew/lib
+                  /opt/homebrew/opt/mariadb-connector-c/lib
+                  /usr/local/lib /usr/lib
+                  /usr/lib/x86_64-linux-gnu
+            DOC "MariaDB Connector/C 共享库（libmariadb）")
+        if(MARIADB_INC_DIR AND MARIADB_LIB)
+            message(STATUS "MariaDB Connector/C found (manual): ${MARIADB_LIB}")
+            target_compile_definitions(lele-tools PRIVATE WITH_MYSQL)
+            target_include_directories(lele-tools PRIVATE ${MARIADB_INC_DIR})
+            target_link_libraries(lele-tools PRIVATE ${MARIADB_LIB})
+            set(HAVE_MYSQL TRUE)
+            set(USING_MARIADB_CLIENT TRUE)
+        endif()
+    endif()
+
+    # 没找到 MariaDB Connector/C → 回退到 libmysqlclient
+    if(NOT USING_MARIADB_CLIENT)
+        find_package(MySQL QUIET)
+        if(MySQL_FOUND)
+            message(STATUS "MariaDB Connector/C not found; falling back to libmysqlclient")
+            message(STATUS "  注意：MySQL 9 客户端不支持 mysql_native_password 认证")
+            message(STATUS "  建议 brew install mariadb-connector-c 以获得最佳兼容性")
+            target_compile_definitions(lele-tools PRIVATE WITH_MYSQL)
+            if(TARGET MySQL::MySQL)
+                target_link_libraries(lele-tools PRIVATE MySQL::MySQL)
+            else()
+                target_include_directories(lele-tools PRIVATE ${MySQL_INCLUDE_DIRS})
+                target_link_libraries(lele-tools PRIVATE ${MySQL_LIBRARIES})
+            endif()
+            set(HAVE_MYSQL TRUE)
+        else()
+            message(WARNING "Neither MariaDB Connector/C nor libmysqlclient found - MySQL 支持已禁用")
+        endif()
     endif()
 else()
     message(STATUS "MySQL support disabled")
     set(HAVE_MYSQL FALSE)
 endif()
 
-# MySQL库链接
-if(HAVE_MYSQL)
-    message(STATUS "Linking MySQL to target")
-    target_compile_definitions(lele-tools PRIVATE WITH_MYSQL)
+# PostgreSQL libpq 支持（db-compare 模块用）
+option(WITH_LIBPQ "Enable PostgreSQL libpq client (db-compare module)" ON)
 
-    if(TARGET MySQL::MySQL)
-        target_link_libraries(lele-tools PRIVATE MySQL::MySQL)
+if(WITH_LIBPQ)
+    find_package(PostgreSQL QUIET)
+    if(PostgreSQL_FOUND)
+        message(STATUS "PostgreSQL libpq found: ${PostgreSQL_LIBRARIES}")
+        target_compile_definitions(lele-tools PRIVATE WITH_LIBPQ)
+        if(TARGET PostgreSQL::PostgreSQL)
+            target_link_libraries(lele-tools PRIVATE PostgreSQL::PostgreSQL)
+        else()
+            target_include_directories(lele-tools PRIVATE ${PostgreSQL_INCLUDE_DIRS})
+            target_link_libraries(lele-tools PRIVATE ${PostgreSQL_LIBRARIES})
+        endif()
+        set(HAVE_LIBPQ TRUE)
     else()
-        message(STATUS "MySQL target not found, linking manually")
-        target_include_directories(lele-tools PRIVATE ${MySQL_INCLUDE_DIRS})
-        target_link_libraries(lele-tools PRIVATE ${MySQL_LIBRARIES})
+        message(STATUS "PostgreSQL libpq not found - db-compare 的 PostgreSQL 驱动会禁用")
+        set(HAVE_LIBPQ FALSE)
     endif()
+else()
+    set(HAVE_LIBPQ FALSE)
+endif()
+
+# Oracle OCI 支持（可选 — Oracle Instant Client 许可限制，需用户自行安装）
+# 启用方式：cmake -DWITH_ORACLE_OCI=ON ...
+#   并通过环境变量 ORACLE_HOME（包含 sdk/include 和 lib）或显式
+#   -DORACLE_OCI_INCLUDE_DIR=... -DORACLE_OCI_LIBRARY=... 指定路径
+option(WITH_ORACLE_OCI "Enable Oracle OCI client (db-compare module)" OFF)
+
+if(WITH_ORACLE_OCI)
+    find_path(ORACLE_OCI_INCLUDE_DIR oci.h
+        HINTS $ENV{ORACLE_HOME}/sdk/include
+              $ENV{OCI_INC_DIR}
+              /opt/oracle/instantclient/sdk/include
+              /opt/oracle/instantclient_*/sdk/include
+              /usr/include/oracle/*/client64
+        DOC "Oracle OCI 头文件目录（含 oci.h）")
+    find_library(ORACLE_OCI_LIBRARY
+        NAMES clntsh oci
+        HINTS $ENV{ORACLE_HOME}/lib
+              $ENV{OCI_LIB_DIR}
+              /opt/oracle/instantclient
+              /opt/oracle/instantclient_*/
+              /usr/lib/oracle/*/client64/lib
+        DOC "Oracle OCI 库（libclntsh / oci.dll）")
+
+    if(ORACLE_OCI_INCLUDE_DIR AND ORACLE_OCI_LIBRARY)
+        message(STATUS "Oracle OCI found: ${ORACLE_OCI_LIBRARY}")
+        target_compile_definitions(lele-tools PRIVATE WITH_ORACLE_OCI)
+        target_include_directories(lele-tools PRIVATE ${ORACLE_OCI_INCLUDE_DIR})
+        target_link_libraries(lele-tools PRIVATE ${ORACLE_OCI_LIBRARY})
+        set(HAVE_ORACLE_OCI TRUE)
+    else()
+        message(STATUS "Oracle OCI 头/库未找到 — 跳过（db-compare 的 Oracle 驱动会显示未启用）")
+        set(HAVE_ORACLE_OCI FALSE)
+    endif()
+else()
+    set(HAVE_ORACLE_OCI FALSE)
+endif()
+
+# VTK 支持（科学可视化 demo 模块）
+option(WITH_VTK "Enable VTK demo module (point cloud / surface / heatmap / slice / model compare)" ON)
+if(WITH_VTK)
+    # VTK 9.5+ 的目标依赖 JsonCpp::JsonCpp，需先 find_package
+    find_package(jsoncpp QUIET)
+    find_package(VTK 9 QUIET COMPONENTS
+        CommonCore CommonDataModel CommonTransforms
+        CommonComputationalGeometry CommonColor
+        FiltersCore FiltersGeneral FiltersSources FiltersModeling FiltersGeometry
+        RenderingCore RenderingOpenGL2 RenderingAnnotation RenderingFreeType
+        RenderingVolumeOpenGL2 RenderingContextOpenGL2
+        InteractionStyle InteractionWidgets
+        ImagingCore ImagingSources ImagingHybrid
+        GUISupportQt
+    )
+    if(VTK_FOUND)
+        message(STATUS "VTK ${VTK_VERSION} found")
+        target_compile_definitions(lele-tools PRIVATE WITH_VTK)
+        target_link_libraries(lele-tools PRIVATE ${VTK_LIBRARIES})
+        # VTK 9 需要显式调 vtk_module_autoinit 来注册工厂
+        vtk_module_autoinit(TARGETS lele-tools MODULES ${VTK_LIBRARIES})
+        set(HAVE_VTK TRUE)
+    else()
+        message(STATUS "VTK not found — VTK demo 模块会被禁用")
+        set(HAVE_VTK FALSE)
+    endif()
+else()
+    set(HAVE_VTK FALSE)
 endif()
 
 # Npcap/libpcap支持 (网络工具的可选功能)

@@ -11,6 +11,8 @@
 
 #include "../../common/dynamicobjectbase.h"
 
+class QComboBox;
+
 class ImagesToPdf : public QWidget, public DynamicObjectBase
 {
     Q_OBJECT
@@ -46,6 +48,7 @@ private:
     QPushButton* m_rotateLeftBtn = nullptr;
     QPushButton* m_rotateRightBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
+    QComboBox* m_qualityCombo = nullptr;
     QLabel* m_statusLabel = nullptr;
 };
 

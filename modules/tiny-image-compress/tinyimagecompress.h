@@ -69,6 +69,10 @@ private:
     QSpinBox* m_qualitySpin = nullptr;
     QComboBox* m_formatCombo = nullptr;
     QCheckBox* m_keepMetadataCheck = nullptr;
+    QCheckBox* m_maxWidthCheck = nullptr;
+    QSpinBox*  m_maxWidthSpin = nullptr;
+    QCheckBox* m_maxSizeCheck = nullptr;
+    QSpinBox*  m_maxSizeSpin = nullptr;     // KB
     QTableWidget* m_table = nullptr;
     QProgressBar* m_progressBar = nullptr;
     QLabel* m_statusLabel = nullptr;

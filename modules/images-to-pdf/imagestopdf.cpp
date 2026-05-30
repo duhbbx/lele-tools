@@ -1,24 +1,183 @@
 #include "imagestopdf.h"
 
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QImageReader>
-#include <QPainter>
-#include <QPageSize>
-#include <QPdfWriter>
-#include <QDragEnterEvent>
-#include <QDropEvent>
-#include <QMimeData>
-#include <QUrl>
-#include <QFileInfo>
 #include <QApplication>
+#include <QBuffer>
+#include <QComboBox>
 #include <QDateTime>
-#include <QStandardPaths>
 #include <QDesktopServices>
-#include <QTransform>
+#include <QDialog>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QImageReader>
+#include <QKeyEvent>
+#include <QMessageBox>
+#include <QMimeData>
+#include <QPageSize>
+#include <QPainter>
+#include <QPalette>
+#include <QPdfWriter>
+#include <QScrollArea>
+#include <QStandardPaths>
 #include <QStyledItemDelegate>
+#include <QTimer>
+#include <QTransform>
+#include <QUrl>
+#include <QWheelEvent>
+
+#include <functional>
 
 REGISTER_DYNAMICOBJECT(ImagesToPdf);
+
+// 列表控件：既支持内部拖动重排，也接受从 Finder/其他应用拖入文件。
+// 之前父 widget 的 dragEnter/drop 接不到事件 — QListWidget 的 InternalMove 模式
+// 会把外部 URL 的 dragEnterEvent 默默吞掉，不冒泡到父级。
+class ImageListWidget : public QListWidget
+{
+public:
+    using QListWidget::QListWidget;
+    void setExternalFileHandler(std::function<void(const QStringList&)> h) {
+        m_handler = std::move(h);
+    }
+protected:
+    void dragEnterEvent(QDragEnterEvent* e) override {
+        if (e->mimeData()->hasUrls()) { e->acceptProposedAction(); return; }
+        QListWidget::dragEnterEvent(e);
+    }
+    void dragMoveEvent(QDragMoveEvent* e) override {
+        if (e->mimeData()->hasUrls()) { e->acceptProposedAction(); return; }
+        QListWidget::dragMoveEvent(e);
+    }
+    void dropEvent(QDropEvent* e) override {
+        if (e->mimeData()->hasUrls()) {
+            QStringList files;
+            for (const QUrl& u : e->mimeData()->urls()) {
+                if (u.isLocalFile()) files << u.toLocalFile();
+            }
+            if (!files.isEmpty() && m_handler) {
+                m_handler(files);
+                e->acceptProposedAction();
+                return;
+            }
+        }
+        QListWidget::dropEvent(e);   // 让内部移动走默认逻辑
+    }
+private:
+    std::function<void(const QStringList&)> m_handler;
+};
+
+// 预览对话框：双击列表项打开，滚轮 / +- / 0 / Esc 控制
+class ImagePreviewDialog : public QDialog
+{
+public:
+    ImagePreviewDialog(const QString& path, int rotation, QWidget* parent)
+        : QDialog(parent)
+    {
+        setWindowTitle(QFileInfo(path).fileName());
+        resize(960, 720);
+        setStyleSheet(R"(
+            QPushButton { padding: 4px 12px; border: 1px solid #ced4da;
+                          border-radius: 4px; background: #fff; min-width: 56px; }
+            QPushButton:hover  { background: #f1f3f5; }
+            QPushButton:pressed{ background: #e9ecef; }
+            QLabel#zoomLbl { color: #495057; min-width: 60px; font-size: 9pt; }
+        )");
+
+        auto* layout = new QVBoxLayout(this);
+        layout->setContentsMargins(8, 8, 8, 8);
+        layout->setSpacing(6);
+
+        m_scroll = new QScrollArea(this);
+        m_scroll->setWidgetResizable(false);
+        m_scroll->setAlignment(Qt::AlignCenter);
+        m_scroll->setBackgroundRole(QPalette::Dark);
+
+        m_label = new QLabel();
+        m_label->setAlignment(Qt::AlignCenter);
+        m_label->setBackgroundRole(QPalette::Dark);
+        m_scroll->setWidget(m_label);
+        layout->addWidget(m_scroll, 1);
+
+        m_image = QImage(path);
+        if (rotation != 0 && !m_image.isNull()) {
+            QTransform t; t.rotate(rotation);
+            m_image = m_image.transformed(t, Qt::SmoothTransformation);
+        }
+        if (m_image.isNull()) m_label->setText(tr("无法加载图片"));
+
+        auto* tbar = new QHBoxLayout();
+        auto* zoomOut = new QPushButton("−");
+        m_zoomLabel = new QLabel("100%");
+        m_zoomLabel->setObjectName("zoomLbl");
+        m_zoomLabel->setAlignment(Qt::AlignCenter);
+        auto* zoomIn = new QPushButton("+");
+        auto* zoom100 = new QPushButton(tr("1:1"));
+        auto* zoomFit = new QPushButton(tr("适合窗口"));
+        auto* closeBtn = new QPushButton(tr("关闭"));
+
+        tbar->addWidget(zoomOut);
+        tbar->addWidget(m_zoomLabel);
+        tbar->addWidget(zoomIn);
+        tbar->addSpacing(12);
+        tbar->addWidget(zoomFit);
+        tbar->addWidget(zoom100);
+        tbar->addStretch();
+        tbar->addWidget(closeBtn);
+        layout->addLayout(tbar);
+
+        connect(zoomOut, &QPushButton::clicked, this, [this]{ setZoom(m_zoom * 0.8); });
+        connect(zoomIn,  &QPushButton::clicked, this, [this]{ setZoom(m_zoom * 1.25); });
+        connect(zoom100, &QPushButton::clicked, this, [this]{ setZoom(1.0); });
+        connect(zoomFit, &QPushButton::clicked, this, [this]{ fitToWindow(); });
+        connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
+
+        QTimer::singleShot(0, this, [this]{ fitToWindow(); });
+    }
+protected:
+    void wheelEvent(QWheelEvent* e) override {
+        double f = (e->angleDelta().y() > 0) ? 1.15 : (1.0 / 1.15);
+        setZoom(m_zoom * f);
+        e->accept();
+    }
+    void keyPressEvent(QKeyEvent* e) override {
+        switch (e->key()) {
+            case Qt::Key_Escape: accept(); return;
+            case Qt::Key_Plus: case Qt::Key_Equal:
+                setZoom(m_zoom * 1.25); return;
+            case Qt::Key_Minus:
+                setZoom(m_zoom * 0.8); return;
+            case Qt::Key_0:
+                setZoom(1.0); return;
+        }
+        QDialog::keyPressEvent(e);
+    }
+private:
+    void setZoom(double z) {
+        m_zoom = qBound(0.05, z, 10.0);
+        if (m_image.isNull()) return;
+        QSize sz(int(m_image.width()  * m_zoom + 0.5),
+                 int(m_image.height() * m_zoom + 0.5));
+        m_label->setPixmap(QPixmap::fromImage(m_image).scaled(
+            sz, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        m_label->resize(sz);
+        m_zoomLabel->setText(QString("%1%").arg(int(m_zoom * 100 + 0.5)));
+    }
+    void fitToWindow() {
+        if (m_image.isNull()) return;
+        QSize avail = m_scroll->viewport()->size();
+        if (avail.width() <= 0 || avail.height() <= 0) return;
+        double zw = double(avail.width())  / m_image.width();
+        double zh = double(avail.height()) / m_image.height();
+        setZoom(qMin(zw, zh) * 0.98);
+    }
+    QImage m_image;
+    QScrollArea* m_scroll = nullptr;
+    QLabel* m_label = nullptr;
+    QLabel* m_zoomLabel = nullptr;
+    double m_zoom = 1.0;
+};
 
 // 自定义 delegate：显示缩略图 + 文件名 + 尺寸信息
 class ImageListDelegate : public QStyledItemDelegate
@@ -159,6 +318,27 @@ void ImagesToPdf::setupUI()
     toolbar->addWidget(m_rotateLeftBtn);
     toolbar->addWidget(m_rotateRightBtn);
     toolbar->addStretch();
+
+    auto* qLabel = new QLabel(tr("质量:"));
+    qLabel->setStyleSheet("color:#495057; font-size:9pt; padding:0 4px 0 8px;");
+    toolbar->addWidget(qLabel);
+
+    m_qualityCombo = new QComboBox();
+    m_qualityCombo->addItem(tr("高 (300 DPI)"));
+    m_qualityCombo->addItem(tr("中 (150 DPI)"));
+    m_qualityCombo->addItem(tr("低 (100 DPI)"));
+    m_qualityCombo->addItem(tr("原始 (无压缩)"));
+    m_qualityCombo->setCurrentIndex(1);   // 默认"中"
+    m_qualityCombo->setToolTip(tr(
+        "高：300 DPI + JPEG q95，接近无损，体积最大\n"
+        "中：150 DPI + JPEG q85，肉眼无差别，体积约 1/4（推荐）\n"
+        "低：100 DPI + JPEG q70，可读，体积最小\n"
+        "原始：保留原图分辨率，不重采样（旧行为）"));
+    m_qualityCombo->setStyleSheet(
+        "QComboBox { padding: 3px 8px; border: 1px solid #ced4da; "
+        "border-radius: 4px; background: #fff; min-width: 120px; font-size: 9pt; }");
+    toolbar->addWidget(m_qualityCombo);
+
     toolbar->addWidget(m_exportBtn);
 
     mainLayout->addLayout(toolbar);
@@ -169,9 +349,13 @@ void ImagesToPdf::setupUI()
     hint->setWordWrap(true);
     mainLayout->addWidget(hint);
 
-    // 图片列表
-    m_listWidget = new QListWidget();
-    m_listWidget->setDragDropMode(QAbstractItemView::InternalMove);
+    // 图片列表 — 用自定义子类支持外部文件拖入
+    auto* imgList = new ImageListWidget();
+    imgList->setExternalFileHandler([this](const QStringList& files) {
+        addImageFiles(files);
+    });
+    m_listWidget = imgList;
+    m_listWidget->setDragDropMode(QAbstractItemView::DragDrop);
     m_listWidget->setDefaultDropAction(Qt::MoveAction);
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_listWidget->setItemDelegate(new ImageListDelegate(this));
@@ -193,6 +377,17 @@ void ImagesToPdf::setupUI()
     connect(m_rotateRightBtn, &QPushButton::clicked, this, &ImagesToPdf::onRotateRight);
     connect(m_exportBtn, &QPushButton::clicked, this, &ImagesToPdf::onExportPdf);
     connect(m_listWidget->model(), &QAbstractItemModel::rowsMoved, this, [this]{ updateStatus(); });
+
+    // 双击列表项 → 弹预览
+    connect(m_listWidget, &QListWidget::itemDoubleClicked, this,
+            [this](QListWidgetItem* item) {
+        if (!item) return;
+        QString path = item->data(Qt::UserRole).toString();
+        if (path.isEmpty() || !QFileInfo::exists(path)) return;
+        int rotation = item->data(Qt::UserRole + 2).toInt();
+        ImagePreviewDialog dlg(path, rotation, this);
+        dlg.exec();
+    });
 
     updateStatus();
 }
@@ -359,10 +554,24 @@ void ImagesToPdf::onExportPdf()
         this, tr("保存 PDF"), defaultPath, tr("PDF 文件 (*.pdf)"));
     if (savePath.isEmpty()) return;
 
+    // 压缩档位：targetDPI = 0 表示保留原图分辨率；jpegQ = 0 表示不做 JPEG round-trip
+    struct QualityPreset { int dpi; int jpegQ; };
+    const QualityPreset presets[] = {
+        {300, 95},   // 高
+        {150, 85},   // 中（默认）
+        {100, 70},   // 低
+        {0,    0},   // 原始
+    };
+    int qi = qBound(0, m_qualityCombo->currentIndex(),
+                    int(sizeof(presets) / sizeof(presets[0])) - 1);
+    const int targetDPI = presets[qi].dpi;
+    const int jpegQ     = presets[qi].jpegQ;
+    const int pdfDPI    = 300;
+
     QPdfWriter writer(savePath);
     writer.setPageSize(QPageSize(QPageSize::A4));
     writer.setPageMargins(QMarginsF(0, 0, 0, 0));
-    writer.setResolution(300);
+    writer.setResolution(pdfDPI);
 
     QPainter painter(&writer);
 
@@ -376,22 +585,46 @@ void ImagesToPdf::onExportPdf()
         QImage image(filePath);
         if (image.isNull()) continue;
 
-        // 应用旋转
         if (rotation != 0) {
             QTransform transform;
             transform.rotate(rotation);
             image = image.transformed(transform, Qt::SmoothTransformation);
         }
 
-        // 计算缩放，让图片适应页面（保持比例）
+        // 页面上的目标显示尺寸（保持比例）
         QRect pageRect = painter.viewport();
-        QSize imgSize = image.size();
-        imgSize.scale(pageRect.size(), Qt::KeepAspectRatio);
+        QSize fitToPage = image.size();
+        fitToPage.scale(pageRect.size(), Qt::KeepAspectRatio);
 
-        int x = (pageRect.width() - imgSize.width()) / 2;
-        int y = (pageRect.height() - imgSize.height()) / 2;
+        // 重采样 + JPEG 预压缩（核心瘦身环节）
+        if (targetDPI > 0) {
+            // 嵌入图片所需的实际像素数 = 页面显示像素 × (目标DPI / PDF渲染DPI)
+            const double scaleF = double(targetDPI) / pdfDPI;
+            const QSize targetPx(int(fitToPage.width()  * scaleF + 0.5),
+                                 int(fitToPage.height() * scaleF + 0.5));
+            if (image.width() > targetPx.width() && targetPx.width() > 0) {
+                image = image.scaled(targetPx, Qt::KeepAspectRatio,
+                                     Qt::SmoothTransformation);
+            }
+            // JPEG round-trip 降低数据熵 → PDF 内部 zlib 再压时体积更小。
+            // 跳过有透明通道的图（JPEG 不支持 alpha）
+            if (jpegQ > 0 && !image.hasAlphaChannel()) {
+                QByteArray jpegBytes;
+                QBuffer buf(&jpegBytes);
+                buf.open(QIODevice::WriteOnly);
+                if (image.save(&buf, "JPEG", jpegQ)) {
+                    buf.close();
+                    QImage roundTripped = QImage::fromData(jpegBytes, "JPEG");
+                    if (!roundTripped.isNull()) image = roundTripped;
+                } else {
+                    buf.close();
+                }
+            }
+        }
 
-        painter.drawImage(QRect(x, y, imgSize.width(), imgSize.height()), image);
+        int x = (pageRect.width()  - fitToPage.width())  / 2;
+        int y = (pageRect.height() - fitToPage.height()) / 2;
+        painter.drawImage(QRect(x, y, fitToPage.width(), fitToPage.height()), image);
     }
 
     painter.end();

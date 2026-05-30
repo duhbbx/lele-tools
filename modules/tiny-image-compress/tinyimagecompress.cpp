@@ -100,8 +100,46 @@ void TinyImageCompress::setupUI()
     paramRow->addWidget(m_formatCombo);
     paramRow->addWidget(m_keepMetadataCheck);
     paramRow->addStretch();
-    paramRow->addWidget(m_compressBtn);
     mainLayout->addLayout(paramRow);
+
+    // 约束行：最大宽度 + 最大体积
+    auto* limitRow = new QHBoxLayout();
+    limitRow->setSpacing(6);
+
+    m_maxWidthCheck = new QCheckBox(tr("最大宽度"));
+    m_maxWidthCheck->setToolTip(tr("超过此宽度的图片会按比例缩放；高度自动调整"));
+    m_maxWidthSpin = new QSpinBox();
+    m_maxWidthSpin->setRange(64, 16384);
+    m_maxWidthSpin->setValue(1920);
+    m_maxWidthSpin->setSuffix(" px");
+    m_maxWidthSpin->setFixedWidth(110);
+    m_maxWidthSpin->setEnabled(false);
+    connect(m_maxWidthCheck, &QCheckBox::toggled, m_maxWidthSpin, &QSpinBox::setEnabled);
+
+    m_maxSizeCheck = new QCheckBox(tr("最大体积"));
+    m_maxSizeCheck->setToolTip(tr(
+        "压缩后体积上限。若按当前质量超过此值，会自动逐档降低质量直到满足；\n"
+        "最低降到质量 5；仍达不到会标记为「超限」但保留最佳结果"));
+    m_maxSizeSpin = new QSpinBox();
+    m_maxSizeSpin->setRange(10, 102400);     // 10KB ~ 100MB
+    m_maxSizeSpin->setValue(500);
+    m_maxSizeSpin->setSuffix(" KB");
+    m_maxSizeSpin->setFixedWidth(110);
+    m_maxSizeSpin->setEnabled(false);
+    connect(m_maxSizeCheck, &QCheckBox::toggled, m_maxSizeSpin, &QSpinBox::setEnabled);
+
+    auto* limitHint = new QLabel(tr("(留空则不限)"));
+    limitHint->setStyleSheet("color:#868e96; font-size:8pt;");
+
+    limitRow->addWidget(m_maxWidthCheck);
+    limitRow->addWidget(m_maxWidthSpin);
+    limitRow->addSpacing(16);
+    limitRow->addWidget(m_maxSizeCheck);
+    limitRow->addWidget(m_maxSizeSpin);
+    limitRow->addWidget(limitHint);
+    limitRow->addStretch();
+    limitRow->addWidget(m_compressBtn);
+    mainLayout->addLayout(limitRow);
 
     // 结果表格
     m_table = new QTableWidget();
@@ -255,6 +293,14 @@ void TinyImageCompress::compressImage(int index)
     else if (format == "WebP") ext = "webp";
     // "保持原格式" 则用原扩展名
 
+    // 1) 最大宽度限制 — 按比例缩放
+    if (m_maxWidthCheck->isChecked()) {
+        int maxW = m_maxWidthSpin->value();
+        if (image.width() > maxW) {
+            image = image.scaledToWidth(maxW, Qt::SmoothTransformation);
+        }
+    }
+
     // 如果是 JPEG 且不保留 EXIF，转换为 RGB（去除 alpha 和元数据）
     if ((ext == "jpg" || ext == "jpeg") && !m_keepMetadataCheck->isChecked()) {
         if (image.hasAlphaChannel()) {
@@ -266,41 +312,56 @@ void TinyImageCompress::compressImage(int index)
         }
     }
 
-    int quality = m_qualitySpin->value();
+    const int startQuality = m_qualitySpin->value();
 
-    // PNG 特殊处理：降低色深实现有损压缩（类似 pngquant）
-    if (ext == "png") {
-        // 量化为 indexed color（256 色调色板），类似 TinyPNG 的核心算法
-        if (quality < 100) {
-            image = image.convertToFormat(QImage::Format_Indexed8,
-                                          Qt::PreferDither | Qt::DiffuseAlphaDither);
+    // PNG 特殊处理：降低色深实现有损压缩（类似 pngquant）— 调色板转换是不可逆的
+    if (ext == "png" && startQuality < 100) {
+        image = image.convertToFormat(QImage::Format_Indexed8,
+                                      Qt::PreferDither | Qt::DiffuseAlphaDither);
+    }
+
+    // 内部 lambda：按指定质量压一次到 outBytes
+    auto encodeOnce = [&](int quality, QByteArray& outBytes) -> bool {
+        outBytes.clear();
+        QBuffer buffer(&outBytes);
+        buffer.open(QIODevice::WriteOnly);
+        QImageWriter writer(&buffer, ext.toUtf8());
+        if (ext == "jpg" || ext == "jpeg") {
+            writer.setQuality(quality);
+            writer.setCompression(1);
+        } else if (ext == "png") {
+            writer.setQuality(100 - quality);
+            writer.setCompression(9);
+        } else {
+            writer.setQuality(quality);
+        }
+        return writer.write(image);
+    };
+
+    // 2) 先按起始质量编码一次
+    if (!encodeOnce(startQuality, item.compressedData)) {
+        item.done = false;
+        item.compressedData.clear();
+        return;
+    }
+
+    // 3) 最大体积限制 — 超了就逐档降低质量重试
+    if (m_maxSizeCheck->isChecked()) {
+        qint64 maxBytes = qint64(m_maxSizeSpin->value()) * 1024;
+        int quality = startQuality;
+        // 步长：远超时大步，接近时小步
+        while (item.compressedData.size() > maxBytes && quality > 5) {
+            int over = int(item.compressedData.size() - maxBytes);
+            int step = (over > maxBytes / 2) ? 15 : (over > maxBytes / 8 ? 8 : 4);
+            quality = qMax(5, quality - step);
+            QByteArray nextBytes;
+            if (!encodeOnce(quality, nextBytes)) break;
+            item.compressedData = nextBytes;
         }
     }
 
-    // 压缩到内存
-    QBuffer buffer(&item.compressedData);
-    buffer.open(QIODevice::WriteOnly);
-
-    QImageWriter writer(&buffer, ext.toUtf8());
-    if (ext == "jpg" || ext == "jpeg") {
-        writer.setQuality(quality);
-        writer.setCompression(1);
-    } else if (ext == "png") {
-        writer.setQuality(100 - quality); // PNG: 0=no compression, 100=max
-        writer.setCompression(9); // zlib max compression
-    } else if (ext == "webp") {
-        writer.setQuality(quality);
-    } else {
-        writer.setQuality(quality);
-    }
-
-    if (writer.write(image)) {
-        item.compressedSize = item.compressedData.size();
-        item.done = true;
-    } else {
-        item.done = false;
-        item.compressedData.clear();
-    }
+    item.compressedSize = item.compressedData.size();
+    item.done = true;
 }
 
 void TinyImageCompress::onCompress()

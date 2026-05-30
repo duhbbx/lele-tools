@@ -210,6 +210,10 @@ private slots:
     void onSaveNote();
     void onInsertImage();
     void onInsertMedia();
+    void onInsertHr();          // 插入水平分割线
+    void onCursorFormatChanged(const QTextCharFormat& fmt);  // 光标位置变化时同步工具栏字号
+    void normalizeMinFontSizes();  // 把文档里所有 <20pt 的 char format 强制升到 20pt
+    void onCleanFormat();          // 一键清理：整篇统一 20pt，去掉 B/I/U/颜色等所有格式
     void onFontChanged();
     void onFontSizeChanged();
     void onBoldClicked();
@@ -289,6 +293,8 @@ private:
     QPushButton* alignRightBtn;
     QPushButton* alignJustifyBtn;
     QPushButton* insertImageBtn;
+    QPushButton* insertHrBtn = nullptr;
+    QPushButton* cleanFormatBtn = nullptr;
     QPushButton* insertMediaBtn;
     QPushButton* saveBtn;
     QPushButton* exportPdfBtn;
@@ -299,6 +305,8 @@ private:
     int currentNoteId;
     bool hasUnsavedChanges;
     QTimer* autoSaveTimer;
+    QTimer* fontNormalizeTimer = nullptr;
+    bool    suppressNormalize = false;   // 防止 normalize 自己触发 textChanged 形成死循环
     QString mediaStorageBasePath;
 
     // 快捷键
