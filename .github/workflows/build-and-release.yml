@@ -2015,7 +2015,7 @@ jobs:
         OSS_AK_SECRET: ${{ secrets.OSS_BUILD_AK_SECRET }}
         OSS_BUCKET:    skylerx-build
         OSS_ENDPOINT:  oss-cn-shanghai.aliyuncs.com
-        OSS_CDN:       https://skylerx-build.cn-shanghai.taihangpfm.cn
+        OSS_CDN:       https://skylerx-build.oss-cn-shanghai.aliyuncs.com
         VERSION:       ${{ steps.version.outputs.version }}
       run: |
         if [ -z "$OSS_AK_ID" ] || [ -z "$OSS_AK_SECRET" ]; then

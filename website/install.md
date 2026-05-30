@@ -4,7 +4,7 @@
 
 直接从 [**GitHub Releases**](https://github.com/duhbbx/lele-tools/releases/latest) 下载最新版。
 
-国内 CDN 加速下载：[`skylerx-build.cn-shanghai.taihangpfm.cn`](https://skylerx-build.cn-shanghai.taihangpfm.cn/lele-tools/latest/)（同步 GitHub Release，墙内速度更快）。
+国内加速镜像：[`skylerx-build.oss-cn-shanghai.aliyuncs.com`](https://skylerx-build.oss-cn-shanghai.aliyuncs.com/lele-tools/latest/)（阿里云 OSS 上海节点，同步 GitHub Release，国内速度更快）。
 
 ## 平台对照表
 
@@ -70,10 +70,10 @@ App 启动时会自动检查 GitHub Release 是否有新版（每天一次，可
 
 ## 上一版本回退
 
-每个版本在 OSS CDN 上都按版本号归档：
+每个版本在阿里云 OSS 上都按版本号归档：
 
 ```
-https://skylerx-build.cn-shanghai.taihangpfm.cn/lele-tools/<版本号>/
+https://skylerx-build.oss-cn-shanghai.aliyuncs.com/lele-tools/<版本号>/
 ```
 
 历史版本永久保留，可以随时回退到任意旧版本。
