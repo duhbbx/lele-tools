@@ -2079,14 +2079,14 @@ jobs:
           exit 0
         fi
 
-        # 安装 ossutil v2（官方推荐方式）
-        OSSUTIL_VERSION=2.0.5
-        curl -fSsL -o /tmp/ossutil.tar.gz \
-          "https://gosspublic.alicdn.com/ossutil/v2/${OSSUTIL_VERSION}/ossutil-${OSSUTIL_VERSION}-linux-amd64.tar.gz"
-        tar -xzf /tmp/ossutil.tar.gz -C /tmp
-        sudo mv "/tmp/ossutil-${OSSUTIL_VERSION}-linux-amd64/ossutil" /usr/local/bin/ossutil
+        # 安装 ossutil（latest stable: 1.7.19；v2 在 gosspublic 上已撤）
+        OSSUTIL_VERSION=1.7.19
+        curl -fSsL -o /tmp/ossutil.zip \
+          "https://gosspublic.alicdn.com/ossutil/${OSSUTIL_VERSION}/ossutil-v${OSSUTIL_VERSION}-linux-amd64.zip"
+        unzip -o /tmp/ossutil.zip -d /tmp
+        sudo mv "/tmp/ossutil-v${OSSUTIL_VERSION}-linux-amd64/ossutil" /usr/local/bin/ossutil
         sudo chmod +x /usr/local/bin/ossutil
-        ossutil version || true
+        ossutil --version || true
 
         # 路径前缀按版本号分目录：lele-tools/1.2.<patch>/
         PREFIX="lele-tools/${VERSION}"
