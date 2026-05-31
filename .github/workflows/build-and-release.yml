@@ -1982,7 +1982,16 @@ jobs:
         osascript -e 'tell application "Finder"' -e 'tell disk "LeleTools"' -e 'open' -e 'set current view of container window to icon view' -e 'set toolbar visible of container window to false' -e 'set statusbar visible of container window to false' -e 'set the bounds of container window to {200, 120, 720, 400}' -e 'set viewOptions to the icon view options of container window' -e 'set icon size of viewOptions to 80' -e 'set arrangement of viewOptions to not arranged' -e 'set position of item "lele-tools.app" of container window to {130, 140}' -e 'set position of item "Applications" of container window to {390, 140}' -e 'close' -e 'open' -e 'update without registering applications' -e 'delay 1' -e 'close' -e 'end tell' -e 'end tell' || echo "AppleScript 设置窗口样式失败（CI 环境可能无 GUI），跳过"
 
         # 卸载并转为压缩只读 DMG
-        hdiutil detach "$MOUNT_DIR" -force
+        # osascript 设置 Finder 窗口后，volume 偶发处于 "Resource busy" 状态，
+        # 退出 16；retry 几次即可（先 sync 确保所有写入落盘）。
+        sync
+        for i in 1 2 3 4 5; do
+            if hdiutil detach "$MOUNT_DIR" -force; then
+                break
+            fi
+            echo "hdiutil detach 失败，等 3s 重试 ($i/5)…"
+            sleep 3
+        done
         hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_FILE"
         rm -f "$DMG_TEMP"
         echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
